@@ -48,7 +48,7 @@ describe("sandbox section picker groups", () => {
     const { panel, listeners, release } = attachWithFakes();
     release();
     expect(panel.querySelector('[data-testid="sandbox-spawn-npc"]')).toBeNull();
-    expect(panel.querySelector('[data-testid="sandbox-window"]')).toBeNull();
+    expect(panel.querySelector('[data-testid="sandbox-window-keys"]')).toBeNull();
     expect(listeners.size).toBe(0);
     expect(() => release()).not.toThrow();
     expect(listeners.size).toBe(0);
@@ -101,10 +101,10 @@ describe("sandbox pickers dispatch through the runtime host", () => {
   });
 
   it("opens a converted window and notes a missing one without any adapter dispatch", async () => {
-    const { dispatched, openedWindowIds, submit, note } = attachWithFakes();
-    await submit("sandbox-window", { window: "StatusWnd" });
+    const { dispatched, openedWindowIds, pickTyped, note } = attachWithFakes();
+    await pickTyped("sandbox-window-keys", "StatusWnd");
     expect(note("sandbox-window-note")[0]!.textContent).toBe("window:StatusWnd opened");
-    await submit("sandbox-window", { window: "MissingWnd" });
+    await pickTyped("sandbox-window-keys", "MissingWnd");
     expect(note("sandbox-window-note")[0]!.textContent).toBe("window:MissingWnd not in catalog: interface windows are not converted yet (UI-01)");
     expect(note("sandbox-window-note")[0]!.dataset.tone).toBe("warning");
     expect(openedWindowIds).toEqual(["StatusWnd"]);
@@ -112,8 +112,8 @@ describe("sandbox pickers dispatch through the runtime host", () => {
   });
 
   it("reloads another tile through the location with only map set and never through the adapter", async () => {
-    const { adapter, assignedLocations, submit, note } = attachWithFakes();
-    await submit("sandbox-tile", { tile: "20_21" });
+    const { adapter, assignedLocations, pickTyped, note } = attachWithFakes();
+    await pickTyped("sandbox-tile-keys", "20_21");
     expect(assignedLocations).toEqual(["http://127.0.0.1:5173/?map=20_21"]);
     expect(note("sandbox-tile-note")[0]!.textContent).toBe("tile 20_21 reloading");
     expect(adapter.dispatch).not.toHaveBeenCalled();

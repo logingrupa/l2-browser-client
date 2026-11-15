@@ -2,6 +2,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 import { existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
+import { pickComboboxRow } from "./support/devSheetComboboxDriver";
 
 const laneName = "actors";
 const laneStorePath = resolve("artifacts/lane-store", laneName, "l2");
@@ -71,7 +72,7 @@ async function equipCastAndOpenWindow(page: Page, store: ServedStore): Promise<v
   await submitIdEntry(page, "sandbox-cast-skill", { skillId: "7", level: "1" });
   await expectNote(page, "sandbox-cast-note", expectedNoteFromServedStore(store, "skill:7:1"));
   expect(store.catalogHoldsWindows).toBe(false);
-  await submitIdEntry(page, "sandbox-window", { window: "StatusWnd" });
+  await pickComboboxRow(page, "sandbox-window-keys", "StatusWnd", "window:StatusWnd");
   await expectNote(page, "sandbox-window-note", expectedWindowOpenNoteWithoutWindowRecords("StatusWnd"));
 }
 

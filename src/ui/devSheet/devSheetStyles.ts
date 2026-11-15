@@ -131,6 +131,20 @@ export const devSheetStyles = String.raw`
 .dev-id-entry-actions > .dev-button { flex: 1; }
 .dev-id-entry-message { margin: 0; color: #ffcfb7; }
 .dev-id-entry-message[hidden] { display: none; }
+.dev-combobox { display: grid; gap: 4px; width: 100%; }
+.dev-combobox-list { display: grid; max-height: min(264px, 40vh); overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--line);
+  background: var(--dev-inset); scrollbar-width: thin; scrollbar-color: var(--bronze) transparent; }
+.dev-combobox-list[hidden] { display: none; }
+.dev-combobox-option, .dev-combobox-more { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 8px;
+  min-height: var(--dev-control); padding: 3px 8px; border-bottom: 1px solid var(--dev-hairline); }
+.dev-combobox-option { cursor: pointer; }
+.dev-combobox-option-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dev-text); }
+.dev-combobox-option-identifier { font: 500 11px/1.2 var(--dev-mono); color: var(--dev-bright); }
+.dev-combobox-option-status { grid-column: 1 / -1; font-size: 10.5px; line-height: 1.3; color: var(--muted); overflow-wrap: anywhere; }
+.dev-combobox-option:hover:not([aria-disabled="true"]) { background: rgb(237 205 136 / 9%); }
+.dev-combobox-option[aria-selected="true"] { background: rgb(237 205 136 / 17%); box-shadow: inset 3px 0 0 var(--gold); }
+.dev-combobox-more { grid-template-columns: minmax(0, 1fr); color: var(--muted); font-style: italic; }
+.dev-sheet .dev-combobox-more[aria-disabled="true"] { cursor: default; opacity: 1; }
 .dev-readout { font: 500 11.5px/1.35 var(--dev-mono); font-variant-numeric: tabular-nums; color: var(--dev-bright); overflow-wrap: anywhere; }
 .dev-button-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 136px), 1fr)); gap: 6px; }
 .dev-button-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }

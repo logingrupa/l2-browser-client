@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DevSheet } from "../../src/ui/devSheet/DevSheet";
 import type { NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
+import { comboboxRows, comboboxRowTexts, openCombobox } from "./support/comboboxDriver";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 import { attachSandboxSheetWithFakes, fakeCatalogIndexOver } from "./support/sandboxCommandSheetFakes";
 
@@ -80,8 +81,6 @@ describe("equip, cast and window picker coverage notes", () => {
     ["sandbox-cast-skill", "sandbox-cast-note", { skillId: "3", level: "1" }, "skill:3:1 converted", "info"],
     ["sandbox-cast-skill", "sandbox-cast-note", { skillId: "7", level: "1" }, "skill:7:1 gap: native-skill-dispatch-required", "warning"],
     ["sandbox-cast-skill", "sandbox-cast-note", { skillId: "999999", level: "1" }, "skill:999999:1 not in catalog", "warning"],
-    ["sandbox-window", "sandbox-window-note", { window: "StatusWnd" }, "window:StatusWnd opened", "info"],
-    ["sandbox-window", "sandbox-window-note", { window: "MissingWnd" }, "window:MissingWnd not in catalog: interface windows are not converted yet (UI-01)", "warning"],
   ])("%s with %o notes %s", async (testId, noteTestId, values, expectedText, expectedTone) => {
     const { submit, note } = attachWithLaneLookups();
     await submit(testId, values);
@@ -90,10 +89,22 @@ describe("equip, cast and window picker coverage notes", () => {
     expect(note(noteTestId)[0]!.dataset.tone).toBe(expectedTone);
   });
 
-  it("lists every catalog window with its status and gap reason in the window picker, in registry order", () => {
+  it.each([
+    ["StatusWnd", "window:StatusWnd opened", "info"],
+    ["MissingWnd", "window:MissingWnd not in catalog: interface windows are not converted yet (UI-01)", "warning"],
+  ])("window %s picked in the window picker notes %s", async (windowId, expectedText, expectedTone) => {
+    const { pickTyped, note } = attachWithLaneLookups();
+    await pickTyped("sandbox-window-keys", windowId);
+    expect(note("sandbox-window-note")).toHaveLength(1);
+    expect(note("sandbox-window-note")[0]!.textContent).toBe(expectedText);
+    expect(note("sandbox-window-note")[0]!.dataset.tone).toBe(expectedTone);
+  });
+
+  it("lists every catalog window with its status and gap reason in the window picker, in registry order, and disables the gap", async () => {
     const { panel } = attachWithLaneLookups();
-    const optionTexts = panel.querySelector('[data-testid="sandbox-window-keys"]')!.querySelectorAll("option").map(option => option.textContent);
-    expect(optionTexts).toEqual(["window:InventoryWnd gap: window-texture-missing", "window:StatusWnd converted"]);
+    await openCombobox(panel, "sandbox-window-keys");
+    expect(comboboxRowTexts(panel, "sandbox-window-keys")).toEqual(["InventoryWnd window:InventoryWnd gap: window-texture-missing", "StatusWnd window:StatusWnd converted"]);
+    expect(comboboxRows(panel, "sandbox-window-keys")[0]!.getAttribute("aria-disabled")).toBe("true");
   });
 
   it("still dispatches a gap item and a gap skill", async () => {
@@ -104,8 +115,9 @@ describe("equip, cast and window picker coverage notes", () => {
   });
 
   it("never dispatches a window open, whatever its lookup", async () => {
-    const { dispatched, submit } = attachWithLaneLookups();
-    for (const window of ["StatusWnd", "InventoryWnd", "MissingWnd"]) await submit("sandbox-window", { window });
+    const { dispatched, openedWindowIds, pickTyped } = attachWithLaneLookups();
+    for (const windowId of ["StatusWnd", "InventoryWnd", "MissingWnd"]) await pickTyped("sandbox-window-keys", windowId);
+    expect(openedWindowIds).toEqual(["StatusWnd"]);
     expect(dispatched).toEqual([]);
   });
 });

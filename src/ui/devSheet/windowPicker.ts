@@ -1,12 +1,12 @@
 import { describeNativeCatalogLookup, windowCatalogKey } from "../../assets/native/nativeCatalogIndex";
+import { windowIdPattern } from "../../assets/native/nativeCatalogRecords";
 import { buildNativeWindowRegistry } from "../nativeWindows/nativeWindowRegistry";
 import {
-  attachSandboxCatalogKeyChoice, createSandboxResultNote, failureText, sandboxCatalogIndexSource, startPickerLifetime, submittedText,
+  attachSandboxCatalogKeyCombobox, catalogKeyOption, createSandboxResultNote, failureText, sandboxCatalogIndexSource, startPickerLifetime,
 } from "./sandboxPickerControls";
 import type { SandboxPickerFactory } from "./sandboxPickerRegistry";
 import type { VariableInfo } from "./types";
 
-const windowKeyPrefix = "window:";
 const noWindowsConvertedText = "no windows converted";
 
 export const windowPicker: SandboxPickerFactory = {
@@ -22,22 +22,20 @@ export const windowPicker: SandboxPickerFactory = {
       catch (error) { result.show({ tone: "warning", text: `${requestedWindowKey} did not open: ${failureText(error)}` }); }
     };
     const variables = (): VariableInfo[] => [
-      { name: "sandbox.window.selected", value: () => keyChoice.selectedKey(), values: "window:<name>[#<ordinal>] | none",
+      { name: "sandbox.window.selected", value: () => windowCombobox.selectedKey(), values: "window:<name>[#<ordinal>] | none",
         source: sandboxCatalogIndexSource, status: "native" },
       { name: "sandbox.window.lookup", value: () => requestedWindowKey === "none" ? "none" : describeNativeCatalogLookup(context.catalogIndex.lookup(requestedWindowKey)),
         values: "window:<name> converted | gap: <reason> | not in catalog[: <reason>] | none", source: sandboxCatalogIndexSource, status: "native" },
       { name: "sandbox.window.outcome", value: () => result.current(), values: "the open outcome text | none", source: "SandboxPickerHost.openWindow", status: "native" },
     ];
-    const keyChoice = attachSandboxCatalogKeyChoice({
-      group, lifetime, keyPrefix: windowKeyPrefix, entries: buildNativeWindowRegistry(context.catalogIndex), emptyText: noWindowsConvertedText,
-      label: "Catalog windows", testId: "sandbox-window-keys", pickText: "Open selected window",
+    const windowCombobox = attachSandboxCatalogKeyCombobox({
+      group, lifetime, catalogIndex: context.catalogIndex, initialIdentifier: null,
+      options: buildNativeWindowRegistry(context.catalogIndex).map(entry => catalogKeyOption(entry.windowId, context.catalogIndex.lookup(entry.key))),
+      identifierPattern: windowIdPattern, catalogKeyOf: windowCatalogKey, emptyText: noWindowsConvertedText,
+      label: "Window", placeholder: "Window name, or a status word", testId: "sandbox-window-keys", pickText: "Open selected window", variables,
+      hint: "Opens an interface window through the sandbox host, never through the game adapter. Pick a catalog window or type a window name. "
+        + "Gap windows show their reason and are not pickable.",
       onPick: windowId => { void openWindow(windowId); },
-    });
-    group.idEntry({
-      label: "Open window", testId: "sandbox-window", submitText: "Open", variables,
-      hint: "Opens an interface window through the sandbox host, never through the game adapter. Each catalog window shows its status.",
-      fields: [{ name: "window", label: "Window", kind: "window" }],
-      onSubmit: values => { if (lifetime.active()) void openWindow(submittedText(values, "window")); },
     });
     return lifetime.release;
   },

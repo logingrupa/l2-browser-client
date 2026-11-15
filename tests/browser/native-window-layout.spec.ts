@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { desktopViewport, landscapePhone } from "./browserViewports";
+import { pickComboboxRow } from "./support/devSheetComboboxDriver";
 
 const windowLaneName = "data-ui";
 const laneStoreRoot = resolve("artifacts/lane-store", windowLaneName, "l2");
@@ -77,8 +78,7 @@ function windowRootLocator(page: Page, windowId: string) {
 }
 
 async function openWindowFromPicker(page: Page, windowId: string): Promise<void> {
-  await page.getByTestId("sandbox-window-keys").locator("select").selectOption(`window:${windowId}`);
-  await page.getByTestId("sandbox-window-keys-pick").click();
+  await pickComboboxRow(page, "sandbox-window-keys", windowId, `window:${windowId}`);
   await expect(page.getByTestId("sandbox-window-note")).toHaveText(new RegExp(`^window:${windowId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} opened`));
   await expect(windowRootLocator(page, windowId)).toHaveCount(1);
 }

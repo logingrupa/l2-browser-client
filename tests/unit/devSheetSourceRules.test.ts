@@ -6,7 +6,7 @@ const nativeTablesFolder = "src/ui/nativeTables";
 const maximumDevSheetFileLines = 400;
 const commentFreeDevSheetFiles = [
   "DevSheet.ts", "devSheetLayout.ts", "devSheetDrag.ts", "devSheetKeyboard.ts", "devSheetTabs.ts", "hoverCards.ts", "devSheetIdEntry.ts", "types.ts",
-  "sandboxPickerHost.ts", "sandboxPickerRegistry.ts", "sandboxPickerMatches.ts", "sandboxPickerControls.ts",
+  "devSheetCombobox.ts", "devSheetParts.ts", "devSheetStyles.ts", "sandboxPickerHost.ts", "sandboxPickerRegistry.ts", "sandboxPickerControls.ts",
   "tilePicker.ts", "spawnPicker.ts", "equipPicker.ts", "castPicker.ts", "windowPicker.ts",
 ].map(file => `${devSheetFolder}/${file}`);
 
@@ -95,7 +95,7 @@ describe("developer sheet source rules", () => {
     expect(unstyledPickerFiles).toEqual(expect.arrayContaining([
       `${devSheetFolder}/tilePicker.ts`, `${devSheetFolder}/spawnPicker.ts`, `${devSheetFolder}/equipPicker.ts`, `${devSheetFolder}/castPicker.ts`,
       `${devSheetFolder}/windowPicker.ts`, `${devSheetFolder}/sandboxPickerControls.ts`, `${devSheetFolder}/sandboxPickerHost.ts`,
-      `${devSheetFolder}/sandboxPickerMatches.ts`, `${devSheetFolder}/sandboxPickerRegistry.ts`, `${nativeTablesFolder}/readNativeTableNameIndex.ts`,
+      `${devSheetFolder}/sandboxPickerRegistry.ts`, `${nativeTablesFolder}/readNativeTableNameIndex.ts`,
     ]));
   });
 

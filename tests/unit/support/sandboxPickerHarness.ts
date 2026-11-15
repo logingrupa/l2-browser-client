@@ -7,6 +7,7 @@ import type { SandboxActionOutcome, SandboxPickerContext } from "../../../src/ui
 import { sandboxPickerSections, type SandboxPickerFactory } from "../../../src/ui/devSheet/sandboxPickerRegistry";
 import type { NativeTableNameEntry, NativeTableNameIndexRead } from "../../../src/ui/nativeTables/readNativeTableNameIndex";
 import type { WorldCommand } from "../../../src/world/worldTypes";
+import { comboboxRowTexts, openCombobox, pickComboboxRow, settleMicrotasks, typeIntoCombobox } from "./comboboxDriver";
 import { fakeMedia, fire, installMiniDom, type FakeElement, type MiniDom } from "./miniDom";
 
 export type CatalogEntries = Readonly<Record<string, NativeCatalogLookup>>;
@@ -17,10 +18,6 @@ export function converted(key: string, record: Record<string, unknown> = {}): Na
 
 export function nameEntries(rows: readonly (readonly [readonly number[], string])[]): NativeTableNameEntry[] {
   return rows.map(([identifiers, name], sourceOrder) => ({ identifiers, name, sourceOrder }));
-}
-
-export async function settle(): Promise<void> {
-  for (let turn = 0; turn < 5; turn += 1) await Promise.resolve();
 }
 
 function fakeCatalogIndex(entries: CatalogEntries): NativeCatalogIndex {
@@ -101,21 +98,17 @@ export function createPickerHarness() {
     const submit = async (testId: string, values: Record<string, string>) => {
       for (const [name, value] of Object.entries(values)) byTestId(`${testId}-${name}`)!.value = value;
       fire(byTestId(testId)!, "submit");
-      await settle();
+      await settleMicrotasks();
     };
-    const pick = async (searchTestId: string, position: number) => {
-      const select = byTestId(`${searchTestId}-matches`)!.querySelector("select")!;
-      select.value = String(position);
-      fire(select, "change");
-      byTestId(`${searchTestId}-pick`)!.click();
-      await settle();
-    };
+    const open = (testId: string) => openCombobox(groupElement, testId);
+    const type = (testId: string, text: string) => typeIntoCombobox(groupElement, testId, text);
+    const pick = (testId: string, position: number) => pickComboboxRow(groupElement, testId, position);
+    const rowTexts = (testId: string) => comboboxRowTexts(groupElement, testId);
     const optionTexts = (testId: string) => byTestId(testId)!.querySelectorAll("option").map(option => option.textContent);
-    const matchTexts = (searchTestId: string) => optionTexts(`${searchTestId}-matches`);
     const message = (testId: string) => byTestId(`${testId}-message`)!;
     const note = (testId: string) => byTestId(testId)?.textContent ?? null;
     const variables = (testId: string) => sheet.cards.info(byTestId(testId) as unknown as Element)?.variables?.() ?? [];
-    return { groupElement, childCountBefore, release, fakeHost, nameIndexReads, byTestId, submit, pick, optionTexts, matchTexts, message, note, variables };
+    return { groupElement, childCountBefore, release, fakeHost, nameIndexReads, byTestId, submit, open, type, pick, rowTexts, optionTexts, message, note, variables };
   }
 
   return { mountPicker, document: () => dom.document };

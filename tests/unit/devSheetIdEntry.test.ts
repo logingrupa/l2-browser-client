@@ -13,7 +13,7 @@ function mountIdEntry(overrides: Partial<DevIdEntryOptions> = {}) {
   const onSubmit = vi.fn();
   const entry = createDevIdEntry({
     label: "Cast skill", testId: "cast", submitText: "Cast",
-    fields: [{ name: "skillId", label: "Skill ID", kind: "integer", minimum: 0 }, { name: "level", label: "Level", kind: "integer", minimum: 1 }],
+    fields: [{ name: "skillId", label: "Skill ID", minimum: 0 }, { name: "level", label: "Level", minimum: 1 }],
     onSubmit, ...overrides,
   }, null);
   const form = entry.element as unknown as FakeElement;
@@ -52,43 +52,6 @@ describe("developer sheet ID entry", () => {
     expect(message.textContent).toBe("Level must be at least 1.");
   });
 
-  it("submits trimmed search text, accepts an empty search and bounds its length", () => {
-    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "query", label: "Name or ID", kind: "search" }] });
-    submit({ query: "  Greater Musveren  " });
-    expect(onSubmit).toHaveBeenLastCalledWith({ query: "Greater Musveren" });
-    submit({ query: "   " });
-    expect(onSubmit).toHaveBeenLastCalledWith({ query: "" });
-    submit({ query: "x".repeat(65) });
-    expect(onSubmit).toHaveBeenCalledTimes(2);
-    expect(message.textContent).toBe("Name or ID must be at most 64 characters.");
-  });
-
-  it.each(["2021", "20-21", "2_21", "20_210", "aa_bb"])("rejects tile %j before submitting", rejected => {
-    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "tile", label: "Tile", kind: "tile" }] });
-    submit({ tile: rejected });
-    expect(onSubmit).not.toHaveBeenCalled();
-    expect(message.textContent).toBe("Tile must be two two-digit numbers joined by an underscore (XX_YY).");
-  });
-
-  it("submits a tile written as XX_YY", () => {
-    const { onSubmit, submit } = mountIdEntry({ fields: [{ name: "tile", label: "Tile", kind: "tile" }] });
-    submit({ tile: " 20_21 " });
-    expect(onSubmit).toHaveBeenCalledWith({ tile: "20_21" });
-  });
-
-  it.each(["StatusWnd", "ShortcutWnd#2"])("submits window id %j", accepted => {
-    const { onSubmit, submit } = mountIdEntry({ fields: [{ name: "window", label: "Window", kind: "window" }] });
-    submit({ window: accepted });
-    expect(onSubmit).toHaveBeenCalledWith({ window: accepted });
-  });
-
-  it.each(["#2", "StatusWnd#0", "StatusWnd#", "Status Wnd", "<b>x</b>"])("rejects window id %j", rejected => {
-    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "window", label: "Window", kind: "window" }] });
-    submit({ window: rejected });
-    expect(onSubmit).not.toHaveBeenCalled();
-    expect(message.textContent).toMatch(/^Window must start with a letter/);
-  });
-
   it("is reachable from a sheet group with a hover-card info button", () => {
     const host = dom.document.createElement("section"); host.className = "world-interface";
     const canvas = dom.document.createElement("canvas");
@@ -101,7 +64,7 @@ describe("developer sheet ID entry", () => {
       const onSubmit = vi.fn();
       const group = sheet.section("sandbox", { title: "Sandbox" }).group("spawn-npc", "Spawn NPC");
       const entry = group.idEntry({ label: "Spawn NPC", testId: "spawn", submitText: "Spawn", hint: "Dispatches spawn-npc.",
-        fields: [{ name: "npcId", label: "NPC ID", kind: "integer", minimum: 0 }], onSubmit });
+        fields: [{ name: "npcId", label: "NPC ID", minimum: 0 }], onSubmit });
       const form = entry.element as unknown as FakeElement;
       expect((group.element as unknown as FakeElement).contains(form)).toBe(true);
       expect(form.querySelector(".dev-id-entry-actions .dev-info")).not.toBeNull();
