@@ -22,6 +22,8 @@ from world.material_texture_images import write_material_texture_images
 from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, single_graph_texture_export, sky_material_program, \
     sky_texture_pngs_by_node, sky_texture_products_by_node
 from world.static_mesh_step import conversion_failure_reason
+from world.struct_property_tag_rules import read_struct_property_tag_rules
+from world.struct_property_values import decode_binary_struct_hex
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
 from world.tile_census import WORLD_LANE_NAME
@@ -30,7 +32,7 @@ from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
 from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row
 
-SKY_STEP_ALGORITHM_VERSION = 2
+SKY_STEP_ALGORITHM_VERSION = 3
 SKY_STEP_NAME = 'sky'
 SKY_PRODUCT_NAME = 'sky.json'
 SKY_BUNDLE_KIND = 'native-sky-source-bundle'
@@ -43,10 +45,14 @@ RAW_MAP_PRODUCT_PATH = 'raw/map.unwrapped.bin'
 UNPORTED_NODE_STATUS = 'unported'
 AUTHORED_PROVENANCE = 'authored'
 SKY_ROOT_PRESENTATION_FIELDS = ('Color', 'AlphaBlend', 'RenderTwoSided')
+COLOR_STRUCT_NAME = 'Color'
+RGBA_CHANNEL_ORDER = ('R', 'G', 'B', 'A')
+SOURCE_COLOR_ORDER = ('serialized FColor bytes B, G, R, A; recipes/world/struct-property-tag-rules.json binary Color from Core.dll 9462f87a '
+                      'SerializeBin, research Q6 binary-member-order')
 SKY_LIMITATIONS = ['Frozen authored sky source state; no native visible-pixel parity is established.',
                    'Native runtime sky camera projection, parallax, far-plane/depth composition and live zone binding are unobserved.',
                    'Texture panner rates and stored matrices are retained in the material programs; no invented clock, phase or animation is applied.',
-                   'Source ColorModifier bytes are UE2 RGBA. Native time-of-day tint updates, sun, moon and lens-flare behavior are not reproduced.',
+                   'Source ColorModifier bytes are B, G, R, A (research Q6 binary-member-order). Native time-of-day tint updates, sun, moon and lens-flare behavior are not reproduced.',
                    'GLB source preview maps stored color/alpha declarations to unlit factors; native Shader/ColorModifier blending and BSP two-sided '
                    'precedence remain unverified.',
                    'Original mip blocks are preserved; PNG is an ordinary BC1/BC3 decode of mip 0, without alpha/channel repair, recoloring or generated '
@@ -132,6 +138,12 @@ def presentation_field_gap(fields):
     return None
 
 
+def authored_colour_rgba(color_value):
+    layout = read_struct_property_tag_rules().binary_struct_layout(COLOR_STRUCT_NAME)
+    channels = decode_binary_struct_hex(color_value['rawHex'], layout)
+    return [channels[channel] for channel in RGBA_CHANNEL_ORDER]
+
+
 def alpha_source(field):
     return 'serialized' if field['provenance'] == AUTHORED_PROVENANCE else f'{field.get("valueDeclaringClass")} class default'
 
@@ -182,8 +194,8 @@ class SkyRootConversion:
             return None
         receipt, files = products[drawn_texture['object']]
         self.add_texture_files(files)
-        return SkyRootSurface(root_export['object'], identity, list(bytes.fromhex(fields['Color']['value']['rawHex'])), fields['AlphaBlend']['value'],
-                              alpha_source(fields['AlphaBlend']), fields['RenderTwoSided']['value'], receipt)
+        return SkyRootSurface(root_export['object'], identity, authored_colour_rgba(fields['Color']['value']), fields['AlphaBlend']['value'],
+                              alpha_source(fields['AlphaBlend']), fields['RenderTwoSided']['value'], receipt, program_record)
 
 
 def sky_counts(parts):
@@ -202,7 +214,7 @@ def sky_snapshot(tile_id, level, zone_index, sky_actor, location, actor_properti
                        'modelOffset': level.export.serial_offset, 'modelBytes': level.export.serial_size,
                        'skyActorOffset': sky_actor['offset'], 'skyActorBytes': sky_actor['size'],
                        'skyActorSha256': sha256_hex(level.package.data[sky_actor['offset']:sky_actor['offset'] + sky_actor['size']]),
-                       'sourceColorOrder': 'UE1/2 archive RGBA; UEViewer a0bfb468 UnCore.h2474-2490'},
+                       'sourceColorOrder': SOURCE_COLOR_ORDER},
             'unresolvedDynamics': {'texturePanners': 'retained in the material programs; not applied', 'timeOfDay': 'unverified; no authored-color replacement',
                                    'sunMoonLensFlare': 'unimplemented; source actor references retained'},
             'limitations': SKY_LIMITATIONS}

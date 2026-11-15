@@ -148,6 +148,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: tile.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate,
       tileMovers: attached.movers, tileVisibility: attached.visibility.binding, environmentClock: attached.lighting.environmentClock,
+      materialUniforms: attached.lighting.materialUniforms,
       inspection: () => inspectNativeTileSection({ tileId, chunks, terrainMeshes, instances, bspChunks, modelCount: templates.size, disposed, anchor,
         systems: attached, loadedChunkCount: chunks.length, countedMeshes: countedMeshes() }),
       setTerrainPreview() {}, dispose };

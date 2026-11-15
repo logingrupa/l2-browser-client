@@ -78,7 +78,7 @@ describe("stored native sky presentation lifetime", () => {
     laterGroup.renderingGroupId = 2;
     scene.setRenderingAutoClearDepthStencil(1, false, false, false);
     const positions = meshes.map(mesh => mesh.getVerticesData("position")), materials = meshes.map(mesh => mesh.material);
-    const sky = await createNativeSkyPresentation(scene, abort.signal);
+    const sky = await createNativeSkyPresentation(scene, abort.signal, null);
     expect(sky?.inspection()).toMatchObject({ authored: true, meshes: 3, status: "source-snapshot" });
     expect(root.scaling.z).toBe(1); expect(meshes[0]!.sideOrientation).toBe(1);
     expect(world.renderingGroupId).toBe(1); expect(laterGroup.renderingGroupId).toBe(2);
@@ -97,7 +97,7 @@ describe("stored native sky presentation lifetime", () => {
   });
   it("preserves an authored RH sky orientation and restores it on normal disposal", async () => {
     const { root, meshes } = authored(); root.scaling.z = 1; meshes[0]!.sideOrientation = 1;
-    const sky = await createNativeSkyPresentation(scene, new AbortController().signal);
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null);
     expect(meshes[0]!.sideOrientation).toBe(1); sky?.dispose(); expect(root.scaling.z).toBe(1);
   });
   it.each(["identity", "parent", "duplicate", "missing-part"])("rejects %s without mutating authored state", async failure => {
@@ -106,13 +106,13 @@ describe("stored native sky presentation lifetime", () => {
     if (failure === "parent") root.parent = new TransformNode("other", scene);
     if (failure === "duplicate") authored();
     if (failure === "missing-part") meshes[0]!.dispose();
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal)).rejects.toThrow();
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null)).rejects.toThrow();
     expect(root.scaling.z).toBe(-1); expect(root.position.asArray()).toEqual([1, 2, 3]);
   });
   it("returns absent only for a missing optional source and rejects corrupted bytes", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(null, { status: 404 })).mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]))));
-    expect(await createNativeSkyPresentation(scene, new AbortController().signal)).toBeNull();
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal)).rejects.toThrow("hash/length mismatch");
+    expect(await createNativeSkyPresentation(scene, new AbortController().signal, null)).toBeNull();
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null)).rejects.toThrow("hash/length mismatch");
     expect(scene.meshes).toHaveLength(0);
   });
 });
@@ -125,7 +125,7 @@ describe("selected tile sky presentation", () => {
   it("presents the tile sky resource with one mesh per material root", async () => {
     const { sourceId, skyManifestSha256 } = tileSkyStore("resource", 2);
     vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 2));
-    const sky = await createNativeSkyPresentation(scene, new AbortController().signal);
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null);
     expect(sky?.inspection()).toMatchObject({ authored: false, meshes: 2, sourceId, manifestSha256: skyManifestSha256, tileId: fixtureTileId, tileSkyGap: null });
     sky?.dispose();
     expect(scene.meshes).toHaveLength(0);
@@ -134,19 +134,19 @@ describe("selected tile sky presentation", () => {
   it("refuses a tile sky whose meshes differ from its material root count", async () => {
     tileSkyStore("resource", 3);
     vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 2));
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal)).rejects.toThrow("each of its 3 material roots");
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null)).rejects.toThrow("each of its 3 material roots");
     expect(scene.meshes).toHaveLength(0);
   });
 
   it("names the tile sky gap reason when the tile has no sky resource", async () => {
     tileSkyStore("gap", 1);
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal)).rejects.toThrow(`Native tile ${fixtureTileId} sky is a gap: step-pending:sky.`);
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null)).rejects.toThrow(`Native tile ${fixtureTileId} sky is a gap: step-pending:sky.`);
     expect(LoadAssetContainerAsync).not.toHaveBeenCalled();
   });
 
   it("presents no sky for a tile whose sky step passed without a SkyZoneInfo zone", async () => {
     tileSkyStore("absent", 1);
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal)).resolves.toBeNull();
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null)).resolves.toBeNull();
     expect(LoadAssetContainerAsync).not.toHaveBeenCalled();
   });
 });

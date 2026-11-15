@@ -1,5 +1,5 @@
 import type { ReferenceConstantRow } from "../../../../shared/referenceConstant";
-import { combinerStageSemanticsReplay, materialNotes } from "./materialNotes";
+import { combinerStageSemanticsReplay, materialNotes, structPropertyTagsReplay } from "./materialNotes";
 
 const combinerStageEvidence = `D3DDrv.dll 05622dde HandleCombinedMaterial 0x10014400, Mask=None branch 0x10014a24, colour switch 0x1001509a, alpha switch 0x100154b1, CO6 cap test 0x10015466; ${combinerStageSemanticsReplay}`;
 
@@ -87,9 +87,9 @@ export const COLOUR_CONSTANTS = {
   byteOrder: {
     id: "colour.byte-order",
     value: ["B", "G", "R", "A"],
-    provenance: `${materialNotes} colour.byte-order: B, G, R, A in lineage2js/src/assets/unreal/un-color.ts:37-43 and src/scene/world/nativeMaterialGraph.ts, R, G, B, A in scripts/world/sky_step.py:184; B, G, R, A until the R != B fixture`,
-    status: "unknown",
-    interludeEvidence: null,
+    provenance: `${materialNotes} colour.byte-order: SerializeBin walks the Core.u Color children B, G, R, A and reads one byte each with no tag or gap (Q6 binary-member-order); lineage2js/src/assets/unreal/un-color.ts:37-43 agrees`,
+    status: "confirmed-interlude",
+    interludeEvidence: `Core.dll 9462f87a SerializeBin 0x101335f0, 0x10119210, 0x10114340, 0x10170c00; Core.u de5f0ee0 Core.Object.Color export 621; ${structPropertyTagsReplay}`,
     runtimeDefault: ["B", "G", "R", "A"],
   },
   fadeColourForms: {

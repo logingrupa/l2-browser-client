@@ -10,12 +10,14 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
+from native_store.native_material_program_pins import NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
 from world.sky_geometry import SKY_GLB_GENERATOR, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
 from world.sky_materials import SkyTextureUnsupported, external_reference_reasons, single_graph_texture_export
-from world.sky_step import SKY_STEP_ALGORITHM_VERSION, SKY_STEP_NAME, alpha_source, presentation_field_gap, sky_bundle_files, tile_sky_row
+from world.sky_step import SKY_STEP_ALGORITHM_VERSION, SKY_STEP_NAME, alpha_source, authored_colour_rgba, presentation_field_gap, sky_bundle_files, \
+    tile_sky_row
 from world.tile_step_gap_rows import TileStepGapRows
 from world.tile_manifest_step import PENDING_TILE_STEPS, pending_steps_after_sealed, tile_level_gap_rows, tile_resources
 
@@ -52,8 +54,13 @@ def synthetic_sky_model():
                                        zones=(synthetic_zone(), synthetic_zone(5)))
 
 
+def program_pin(identity):
+    program_sha256 = hashlib.sha256(identity.encode('utf-8')).hexdigest()
+    return {'directory': f'native-materials/{program_sha256}', 'programSha256': program_sha256}
+
+
 def root_surface(identity, texture_name):
-    return SkyRootSurface(identity, identity, [206, 150, 0, 255], True, 'serialized', False, texture_receipt(texture_name))
+    return SkyRootSurface(identity, identity, [206, 150, 0, 255], True, 'serialized', False, texture_receipt(texture_name), program_pin(identity))
 
 
 class SkyZoneGeometryTests(unittest.TestCase):
@@ -90,6 +97,8 @@ class SkyZoneGeometryTests(unittest.TestCase):
         self.assertEqual(document['asset']['generator'], SKY_GLB_GENERATOR)
         self.assertIn(b'ring-png', binary)
         self.assertEqual(document['materials'][0]['pbrMetallicRoughness']['baseColorFactor'], [206 / 255, 150 / 255, 0, 1])
+        self.assertEqual([material['extras'][NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD] for material in document['materials']],
+                         [program_pin('Sky_T.Shaders.Haze'), program_pin('Sky_T.Shaders.Back')])
 
     def test_only_the_position_accessor_carries_bounds_like_the_served_sky(self):
         package = SimpleNamespace(object_name=object_name)
@@ -114,6 +123,9 @@ class SkyMaterialTests(unittest.TestCase):
         self.assertEqual(presentation_field_gap({key: value for key, value in complete.items() if key != 'AlphaBlend'}),
                          'material-feature-unported:AlphaBlend')
 
+    def test_the_authored_colour_reads_the_serialized_color_bytes_as_b_g_r_a(self):
+        self.assertEqual(authored_colour_rgba({'rawHex': 'ce9600ff', 'structName': 'Color'}), [0, 150, 206, 255])
+
     def test_the_alpha_source_names_a_class_default_or_the_serialized_tag(self):
         self.assertEqual(alpha_source({'provenance': 'authored'}), 'serialized')
         self.assertEqual(alpha_source({'provenance': 'class-default', 'valueDeclaringClass': 'Engine.ColorModifier'}),
@@ -134,7 +146,7 @@ class SkyMaterialTests(unittest.TestCase):
 
 class SkyStepRecordTests(unittest.TestCase):
     def test_the_step_name_version_reasons_and_vocabulary_kind_are_registered(self):
-        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 2))
+        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 3))
         self.assertIn('sky', load_tile_manifest_vocabulary(ROOT).resource_kinds)
         patterns = load_gap_reason_patterns(ROOT)
         for reason in ('sky-zone-ambiguous:2', 'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):
@@ -184,7 +196,7 @@ class RealClientSkyTests(unittest.TestCase):
         converted = convert_tile_sky(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, zone_index, gaps)
         return converted, gaps.rows()
 
-    def test_the_generic_20_20_sky_glb_matches_the_served_sky_except_its_generator(self):
+    def test_the_generic_20_20_sky_glb_matches_the_served_sky_except_its_generator_colour_order_and_program_pins(self):
         served = (SERVED_SKY_FOLDER / 'sky.glb').read_bytes()
         self.assertEqual(hashlib.sha256(served).hexdigest(), SERVED_SKY_GLB_SHA256)
         converted, gap_rows = self.converted_sky_files('20_20')
@@ -194,6 +206,13 @@ class RealClientSkyTests(unittest.TestCase):
         self.assertEqual(generic_binary, served_binary)
         self.assertEqual(generic_document['asset'].pop('generator'), SKY_GLB_GENERATOR)
         served_document['asset'].pop('generator')
+        for generic_material, served_material in zip(generic_document['materials'], served_document['materials'], strict=True):
+            generic_red, generic_green, generic_blue, generic_alpha = generic_material['pbrMetallicRoughness'].pop('baseColorFactor')
+            served_red_read_from_blue, served_green, served_blue_read_from_red, served_alpha = served_material['pbrMetallicRoughness'].pop('baseColorFactor')
+            self.assertEqual((generic_red, generic_green, generic_blue, generic_alpha),
+                             (served_blue_read_from_red, served_green, served_red_read_from_blue, served_alpha))
+            program_directory = generic_material['extras'].pop(NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD)['directory']
+            self.assertTrue(program_directory.startswith('native-materials/'))
         self.assertEqual(generic_document, served_document)
         self.assertEqual(converted.counts, {'nodes': 53, 'vertices': 182, 'triangles': 76, 'materialRoots': 3, 'textures': 3})
 

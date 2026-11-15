@@ -4,8 +4,9 @@ The original `20_20` sky and its environment color tables. The browser shows a f
 
 ## Now
 
-- The sky is a separate final-BSP sky room. `scripts/world/convert_tile.py --map XX_YY --step sky` builds any tile's sky from its one SkyZoneInfo zone into `skies/<hash>/` of the world lane store (20_20: 53 polygons, 182 vertices, 76 triangles, three material chains; its `sky.glb` BIN chunk equals the served sky). Serialized FColor is RGBA.
+- The sky is a separate final-BSP sky room. `scripts/world/convert_tile.py --map XX_YY --step sky` builds any tile's sky from its one SkyZoneInfo zone into `skies/<hash>/` of the world lane store (20_20: 53 polygons, 182 vertices, 76 triangles, three material chains; its `sky.glb` BIN chunk equals the served sky). Serialized FColor bytes are B, G, R, A (research Q6 binary-member-order, Core.dll 9462f87a), so `SkybackgroundColor` `ce9600ff` is (0, 150, 206); the served 20_20 sky still holds the earlier R, G, B, A factors until the integration thread restages it. Each sky GLB material pins its material program.
 - `src/scene/world/nativeSkyPresentation.ts` loads the frozen `public/l2/skies/<hash>` 20_20 sky on `/` and the tile sky resource on `/?map=XX_YY`.
+- On `/?map=XX_YY` the sky binds each pinned program that compiles through the UE2 material library on the tile lighting clock (`src/scene/world/nativeSkyMaterialPrograms.ts`), without fog or depth write; without a tile lighting resource it reports `library-environment-clock-unwired`.
 - Interim browser policy until VIS-01 and MAT-01 (provisional, owner review): the sky follows the camera, draws first, writes no depth, keeps texture alpha and skips fog. Target: draw the sky zone from SkyZoneInfo when the visibility walk reaches a PF_FakeBackdrop surface.
 - `scripts/export-native-environment.py --input-dir <copies> --output <dir>` converts `Env.int` and `timeenv0..3`: 1,681 properties, 20 sky, haze and cloud tables, 500 color rows, anomalies kept. `scripts/stage-native-environment.mjs` stages them for `/l2/environments/<hash>/`.
 - The World sheet Sky group can **Load sky color tables**, **Compare selected sky row** and **Restore stored sky**: a reversible row comparison, not time of day.
@@ -15,7 +16,7 @@ The original `20_20` sky and its environment color tables. The browser shows a f
 ## Open
 
 - Sky for all 153 tiles (WORLD-02): the tile step runs on 20_20 and 20_21 so far.
-- Yellow sky and hard blue horizon against L2.exe (CHECK-01, then POL-04). Needs the native writer for color exports 76/77/78 and native draw state.
+- Yellow sky: the step read ColorModifier bytes as R, G, B, A; fixed on lane/combiner-db1, it clears when the integration thread reconverts. Hard blue horizon against L2.exe (CHECK-01, then POL-04). Needs the native writer for color exports 76/77/78 and native draw state.
 - Game time, Seven Signs and cursed-weapon red sky come as server packets in emulators; the native consumer is unknown. LATE-01 covers Seven Signs windows only.
 - Interpolation, the T=24 wrap, timeenv3 `NUM=1` against 25 rows, duplicate `[HSVTerrainLight]`, sun and moon assets. Interpolation and wrap: MAT-02, anomaly rule recorded as an owner decision; constants confirmed in POL-04.
 

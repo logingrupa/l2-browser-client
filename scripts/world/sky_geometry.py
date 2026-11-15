@@ -2,6 +2,7 @@ import math
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
+from native_store.native_material_program_pins import NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD
 from world.gltf_builder import GLTF_UNSIGNED_INTEGER_COMPONENT, GltfBuilder
 from world.terrain_coordinates import cross, dot, f32, subtract
 
@@ -22,6 +23,7 @@ class SkyRootSurface(NamedTuple):
     alpha_source: str
     render_two_sided: bool
     texture: dict
+    program: dict
 
 
 def sky_zone_material_nodes(package, model, zone_index):
@@ -84,7 +86,8 @@ def build_sky_zone_parts(package, model, zone_index, root_surfaces):
     for root in root_surfaces:
         part = {'sourceMaterial': root.source_material, 'mapReference': root.map_reference, 'positions': [], 'normals': [], 'uvs': [],
                 'indices': [], 'nodeRanges': [], 'texture': root.texture, 'authoredColorRGBA': root.authored_color_rgba,
-                'alphaBlend': root.alpha_blend, 'renderTwoSided': root.render_two_sided, 'alphaSource': root.alpha_source}
+                'alphaBlend': root.alpha_blend, 'renderTwoSided': root.render_two_sided, 'alphaSource': root.alpha_source,
+                'program': root.program}
         for node_index in sky_zone_node_indices(package, model, zone_index, root.map_reference):
             append_node(part, package, model, node_index, root.texture)
         parts.append(part)
@@ -110,7 +113,7 @@ def sky_part_material(part, texture_index):
             'pbrMetallicRoughness': {'baseColorTexture': {'index': texture_index},
                                      'baseColorFactor': [value / 255 for value in part['authoredColorRGBA']], 'metallicFactor': 0, 'roughnessFactor': 1},
             'alphaMode': 'BLEND' if part['alphaBlend'] else 'OPAQUE', 'doubleSided': part['renderTwoSided'],
-            'extras': {'nativeSourceReference': part['sourceMaterial'], 'sourceSnapshot': True,
+            'extras': {'nativeSourceReference': part['sourceMaterial'], NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD: part['program'], 'sourceSnapshot': True,
                        'nativeBspTwoSidedPrecedence': 'unverified; per-node flags retained in sky.json'}}
 
 

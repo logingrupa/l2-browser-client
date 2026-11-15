@@ -38,6 +38,7 @@ export interface TileLightingChunkSurfaces {
 
 export interface AttachedTileLighting {
   readonly environmentClock: WorldEnvironmentClock | null;
+  readonly materialUniforms: (() => NativeMaterialUniforms) | null;
   readonly binding: TileLightingBinding | null;
   addChunk(surfaces: TileLightingChunkSurfaces): Promise<void>;
   removeChunk(chunkId: string): void;
@@ -51,7 +52,7 @@ const payloadInvalidReasonPrefix = "lighting-payload-invalid:";
 const millisecondsPerSecond = 1000;
 
 function unboundTileLighting(gap: string): AttachedTileLighting {
-  return { environmentClock: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
+  return { environmentClock: null, materialUniforms: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
 }
 
 function terrainLayerCounts(meshes: readonly AbstractMesh[]): TerrainLayerCounts {
@@ -108,7 +109,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     uniforms: materialUniforms, loadProgram: loadNativeMaterial });
   const terrainLayerCountsByChunk = new Map<string, TerrainLayerCounts>();
   return {
-    environmentClock, binding,
+    environmentClock, materialUniforms, binding,
     async addChunk(surfaces) {
       const counts = terrainLayerCounts(surfaces.terrainMeshes);
       if (surfaces.bspChunk !== null) await binding.addChunk(surfaces.bspChunk);
