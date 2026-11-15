@@ -58,7 +58,8 @@ vi.mock("../../src/ui/WorldInterface", () => ({ WorldInterface: class {
       runtimeBoundaryMocks.sheetGroups.set(id, options);
       return { element: plainDomNode(), header: plainDomNode(), collapsed: false, button: plainDomNode, note: plainDomNode, idEntry: () => ({ element: plainDomNode(), setMessage() {} }),
         readout: () => ({ element: plainDomNode(), output: plainDomNode(), refresh() {} }),
-        choice: () => ({ element: plainDomNode(), value: "", set() {}, setOptions() {}, setDisabled() {} }) };
+        choice: () => ({ element: plainDomNode(), value: "", set() {}, setOptions() {}, setDisabled() {} }),
+        combobox: () => ({ element: plainDomNode(), input: plainDomNode(), selected: () => null, query: () => "" }) };
     };
     const inertHoverCardDescribe = () => () => {};
     return { section: () => ({ group }), describe: inertHoverCardDescribe, inspect: () => ({ open: false }) };
