@@ -45,14 +45,6 @@ export const TEXTURE_COORDINATE_CONSTANTS = {
     interludeEvidence: oscillatorEvidence,
     runtimeDefault: "OT_Pan adds o = A * sin(2 * pi * (frac(t * rate) + phase)) to the axis, a translation; the UOffset and VOffset pivot cancels; the serialized M is rebuilt from identity",
   },
-  oscillationTypeUnset: {
-    id: "uv.oscillation-type-unset",
-    value: "OT_Pan",
-    provenance: `${materialNotes} TexOscillator: an unset U or VOscillationType is zero-initialized ordinal 0, OT_Pan in ETexOscillationType; DB-2 declaration-defaults and ocean-formula (ocean-s VOscillationType has no tag and pans)`,
-    status: "confirmed-interlude",
-    interludeEvidence: oscillatorEvidence,
-    runtimeDefault: "OT_Pan",
-  },
   oscillatorForm: {
     id: "uv.oscillator",
     value: "o = A * sin(w * frac(t * rate) + 2 * pi * phase), w = 2 * pi for Stretch, pi / 2 for StretchRepeat; Stretch u' = (u - k) * (1 + o) + k, k = UOffset / USize; Jitter draws A * (2u - 1) per update from tex-jitter",

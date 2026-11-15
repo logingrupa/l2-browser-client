@@ -152,7 +152,7 @@ export function oceanSTriggeredOscillatorNode(id: string, material: string, over
     field("VOscillationPhase", Math.fround(0.3)), field("VOscillationAmplitude", Math.fround(0.05)), field("UOscillationType", enumValue(2, "OT_StretchRepeat")),
     field("UOffset", 10), field("VOffset", 10), field("RetriggerAction", enumValue(3, "RTA_Retrigger"), "class-default"),
     field("UOscillationRate", 0, "class-default"), field("UOscillationPhase", null, "ue-zero"), field("UOscillationAmplitude", 0, "class-default"),
-    field("VOscillationType", null, "ue-zero"), field("TriggeredTime", null, "ue-zero"), field("Reverse", null, "ue-zero"), field("Triggered", null, "ue-zero"),
+    field("VOscillationType", enumValue(0, "OT_Pan"), "ue-zero"), field("TriggeredTime", null, "ue-zero"), field("Reverse", null, "ue-zero"), field("Triggered", null, "ue-zero"),
   ];
   return reviewedNode(id, "Engine.TexOscillatorTriggered", [
     ...oceanSFields.filter(oceanSField => !overrides.some(override => override.field === oceanSField.field)), ...overrides]);

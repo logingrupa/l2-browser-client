@@ -478,7 +478,10 @@
           "field": "VOscillationType",
           "provenance": "ue-zero",
           "status": "typed",
-          "value": null
+          "value": {
+            "name": "OT_Pan",
+            "ordinal": 0
+          }
         },
         {
           "declaredType": null,

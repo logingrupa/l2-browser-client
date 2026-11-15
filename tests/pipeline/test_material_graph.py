@@ -236,7 +236,7 @@ class MaterialProgramTests(unittest.TestCase):
         self.assertEqual({name: (field['provenance'], field['status'], field['value']) for name, field in oscillator.items()}, {
             'Material': ('authored', 'typed', {'node': 'SyntheticUnported.PlainTexture'}),
             'VOscillationRate': ('class-default', 'typed', 0.5),
-            'VOscillationType': ('ue-zero', 'typed', None),
+            'VOscillationType': ('ue-zero', 'typed', {'ordinal': 0, 'name': 'OT_Pan'}),
             'RetriggerAction': ('authored', 'typed', {'ordinal': 1, 'name': 'RTA_Reset'}),
             'StopAfterPeriod': ('authored', 'typed', float32(0.05)),
             'TriggeredTime': ('ue-zero', 'typed', None),
@@ -265,6 +265,14 @@ class MaterialProgramTests(unittest.TestCase):
         self.assertEqual((final_blend['FrameBufferBlending']['status'], final_blend['FrameBufferBlending']['value']),
                          ('unconfirmed', {'ordinal': 8, 'name': 'FB_Add'}))
         self.assertEqual(program['gapReasons'], ['material-feature-unported:FrameBufferBlending'])
+
+    def test_an_unset_enum_field_writes_its_declared_member_zero(self):
+        _, graph = graph_of(UNPORTED_FIXTURE, 'TriggeredOscillator')
+        unset_declarations = copy.deepcopy(SYNTHETIC_CLASS_DEFAULTS)
+        oscillation_type = next(declaration for declaration in unset_declarations[TRIGGERED_OSCILLATOR] if declaration['field'] == 'VOscillationType')
+        oscillation_type['enumMembers'] = ['OT_First', 'OT_Second']
+        field = fields_of(derive_material_program(graph, unset_declarations), 'SyntheticUnported.TriggeredOscillator')['VOscillationType']
+        self.assertEqual((field['provenance'], field['status'], field['value']), ('ue-zero', 'typed', {'ordinal': 0, 'name': 'OT_First'}))
 
     def test_malformed_enums_and_missing_class_defaults_are_refused(self):
         _, graph = graph_of(MAIN_FIXTURE, 'SkyShader')
@@ -375,9 +383,19 @@ class ReferenceClientMaterialGraphTests(unittest.TestCase):
             'StopAfterPeriod': ('authored', float32(0.05)), 'VOscillationRate': ('authored', float32(0.05)),
             'VOscillationPhase': ('authored', float32(0.3)), 'VOscillationAmplitude': ('authored', float32(0.05)),
             'UOffset': ('authored', 10.0), 'VOffset': ('authored', 10.0)})
-        self.assertEqual((fields['UOscillationType']['value'], fields['VOscillationType']['provenance']),
-                         ({'ordinal': 2, 'name': 'OT_StretchRepeat'}, 'ue-zero'))
+        self.assertEqual((fields['UOscillationType']['value'], fields['VOscillationType']['provenance'], fields['VOscillationType']['value']),
+                         ({'ordinal': 2, 'name': 'OT_StretchRepeat'}, 'ue-zero', {'ordinal': 0, 'name': 'OT_Pan'}))
         self.assertEqual(fields['Material']['value'], {'node': 'FX_E_T.WaterSurfaceShaderSet.ocn_rot'})
+        rotation_type = fields_of(program, 'FX_E_T.WaterSurfaceShaderSet.ocn_rot')['TexRotationType']
+        self.assertEqual((rotation_type['provenance'], rotation_type['value']), ('ue-zero', {'ordinal': 0, 'name': 'TR_FixedRotation'}))
+
+    def test_fade_colour_unset_fade_type_is_the_first_decompiled_member_of_its_enum(self):
+        require_reference_client(CONVERSION_CLIENT_ROOT)
+        class_defaults = read_material_class_defaults({'nodes': [{'classObject': 'Engine.FadeColor', 'status': 'reviewed'}]},
+                                                      scratch_work_root(self, 'material-graph-fade-'), ReferenceClientClassScripts(CONVERSION_CLIENT_ROOT))
+        fade_type = next(declaration for declaration in class_defaults['Engine.FadeColor'] if declaration['field'] == 'ColorFadeType')
+        self.assertEqual((fade_type['declaredType'], fade_type['enumMembers'][0], fade_type['classDefault']['provenance']),
+                         ('FadeColor.EColorFadeType', 'FC_Linear', 'ue-zero'))
 
 
 class MaterialGapReasonTests(unittest.TestCase):

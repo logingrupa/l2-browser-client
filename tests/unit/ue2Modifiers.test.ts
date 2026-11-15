@@ -8,6 +8,7 @@ import {
   colourSourceValue, fadeColourBytes, IDENTITY_TEXTURE_COORDINATE_MATRIX, multiplyTextureCoordinateMatrices, texOscillatorTriggeredMatrix,
   textureCoordinateChainMatrix, textureCoordinateModifierMatrix, type TextureCoordinateMatrix,
 } from "../../src/materials/ue2/model/modifiers";
+import { COLOUR_CONSTANTS } from "../../src/materials/ue2/model/constants/combinerConstants";
 import { TEXTURE_COORDINATE_CONSTANTS } from "../../src/materials/ue2/model/constants/textureCoordinateConstants";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import { selectTextureFrame } from "../../src/materials/ue2/model/textureFrames";
@@ -134,12 +135,22 @@ describe("texture coordinate modifiers", () => {
       .toEqual({ status: "unported", reason: "material-feature-unported:EnvMapType" });
   });
 
-  it("TexOscillator evaluates an unset oscillation type as its zero member OT_Pan", () => {
-    const program = programWith([modifier("Synthetic.Oscillator", "Engine.TexOscillator", [
-      field("UOscillationType", null, "ue-zero"), field("UOscillationRate", 0.5), field("UOscillationPhase", 0.125), field("UOscillationAmplitude", 0.2),
-      field("VOscillationType", null, "ue-zero"), field("VOscillationRate", 0), field("VOscillationPhase", 0), field("VOscillationAmplitude", 0)])]);
+  it("TexOscillator evaluates the converter's unset oscillation type, member 0 OT_Pan, and reports a missing type unported", () => {
+    const unsetFields = (oscillationType: ReturnType<typeof enumValue> | null) => [
+      field("UOscillationType", oscillationType, "ue-zero"), field("UOscillationRate", 0.5), field("UOscillationPhase", 0.125), field("UOscillationAmplitude", 0.2),
+      field("VOscillationType", oscillationType, "ue-zero"), field("VOscillationRate", 0), field("VOscillationPhase", 0), field("VOscillationAmplitude", 0)];
     const levelSeconds = 0.75;
-    expectMatrix(evaluated(program, "Synthetic.Oscillator", levelSeconds), [1, 0, 0.2 * Math.sin(2 * Math.PI * (levelSeconds * 0.5 + 0.125)), 0, 1, 0]);
+    const converted = programWith([modifier("Synthetic.Oscillator", "Engine.TexOscillator", unsetFields(enumValue(0, "OT_Pan")))]);
+    expectMatrix(evaluated(converted, "Synthetic.Oscillator", levelSeconds), [1, 0, 0.2 * Math.sin(2 * Math.PI * (levelSeconds * 0.5 + 0.125)), 0, 1, 0]);
+    const typeless = programWith([modifier("Synthetic.Oscillator", "Engine.TexOscillator", unsetFields(null))]);
+    expect(textureCoordinateModifierMatrix(programNode(typeless, "Synthetic.Oscillator"), context(levelSeconds)))
+      .toEqual({ status: "unported", reason: "material-feature-unported:UOscillationType" });
+  });
+
+  it("TexRotator evaluates the converter's unset rotation type, member 0 TR_FixedRotation", () => {
+    const fixedRotator = programWith([modifier("Synthetic.Rotator", "Engine.TexRotator", [
+      field("TexRotationType", enumValue(0, "TR_FixedRotation"), "ue-zero"), field("Rotation", rotator(0, 16384, 0), "authored", "raw")])]);
+    expect(textureCoordinateModifierMatrix(programNode(fixedRotator, "Synthetic.Rotator"), context(5)).status).toBe("evaluated");
   });
 
   it("reports an unported class unported instead of evaluating it, and a triggered MaterialSequence stays unported", () => {
@@ -264,7 +275,6 @@ describe("TexOscillatorTriggered in its untriggered state", () => {
       interludeEvidence: expect.stringMatching(/^Engine\.dll 4dd2f63c .*0x1030b94c.*0x105e1270.*0x105df780.*DB-2 tex-oscillator-triggered 053c115e/),
     });
     expect(TEXTURE_COORDINATE_CONSTANTS.oscillatorPanForm).toMatchObject({ id: "uv.oscillator-pan", status: "confirmed-interlude" });
-    expect(TEXTURE_COORDINATE_CONSTANTS.oscillationTypeUnset).toMatchObject({ id: "uv.oscillation-type-unset", status: "confirmed-interlude", runtimeDefault: "OT_Pan" });
     expect(TEXTURE_COORDINATE_CONSTANTS.chainOrder).toMatchObject({
       id: "uv.chain-order", status: "confirmed-interlude", interludeEvidence: expect.stringMatching(/^D3DDrv\.dll 05622dde .*0x10011ca0/),
     });
@@ -300,6 +310,14 @@ describe("colour sources", () => {
     expect(fadeColourBytes(node, 0.4)).toEqual(flameBytes(0.8));
     expect(fadeColourBytes(node, 0.6)[0]).toBe(Math.floor(Math.fround(Math.fround(Math.fround(1) * Math.fround(0.5)) + Math.fround(Math.fround(20 / 255) * Math.fround(0.5))) * 255));
     expect(colourSourceValue(programNode(program, "Synthetic.Constant"), 0)).toEqual([1 / 255, 2 / 255, 3 / 255, 4 / 255]);
+  });
+
+  it("reads a serialized Color as B, G, R, A, the order Q6 confirms from Core.dll SerializeBin", () => {
+    const program = parseMaterialProgram(JSON.parse(JSON.stringify(programOf("Synthetic.SkyColour", [
+      reviewedNode("Synthetic.SkyColour", "Engine.ColorModifier", [field("Color", rawStruct("Color", "ce9600ff"), "authored", "raw")])]))));
+    expect(colourSourceValue(programNode(program, "Synthetic.SkyColour"), 0)).toEqual([0, 150 / 255, 206 / 255, 1]);
+    expect(COLOUR_CONSTANTS.byteOrder).toMatchObject({ id: "colour.byte-order", status: "confirmed-interlude", runtimeDefault: ["B", "G", "R", "A"],
+      interludeEvidence: expect.stringMatching(/^Core\.dll 9462f87a SerializeBin .*research Q6 struct-property-tags\.json 573e1265/) });
   });
 });
 

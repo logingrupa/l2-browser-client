@@ -22,7 +22,6 @@ export const IDENTITY_TEXTURE_COORDINATE_MATRIX: TextureCoordinateMatrix = [1, 0
 const fullTurn = 2 * Math.PI;
 const rotatorComponent = TEXTURE_COORDINATE_CONSTANTS.rotatorComponent.runtimeDefault;
 const rotatorOscillationUnitsPerTurn = TEXTURE_COORDINATE_CONSTANTS.rotatorOscillationUnitsPerTurn.runtimeDefault;
-const unsetOscillationType = TEXTURE_COORDINATE_CONSTANTS.oscillationTypeUnset.runtimeDefault;
 const triggeredOscillatorStartTriggeredTime = TEXTURE_COORDINATE_CONSTANTS.triggeredOscillatorStartState.runtimeDefault;
 
 export function multiplyTextureCoordinateMatrices(outer: TextureCoordinateMatrix, inner: TextureCoordinateMatrix): TextureCoordinateMatrix {
@@ -90,7 +89,8 @@ function oscillationOffset(node: MaterialProgramNode, axis: "U" | "V", oscillati
 }
 
 function oscillationAxis(node: MaterialProgramNode, axis: "U" | "V", centre: number, context: TextureCoordinateContext): readonly [number, number] | null {
-  const oscillationType = readEnumName(node, `${axis}OscillationType`) ?? unsetOscillationType;
+  const oscillationType = readEnumName(node, `${axis}OscillationType`);
+  if (oscillationType === null) return null;
   const offset = oscillationOffset(node, axis, oscillationType, context);
   if (offset === null) return null;
   if (oscillationType === "OT_Pan" || oscillationType === "OT_Jitter") return [1, offset];
