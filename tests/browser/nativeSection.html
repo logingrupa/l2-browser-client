@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Native 20_20 map section inspection</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #252b30; color: #f4f3ed; font: 14px system-ui, sans-serif; }
+      main { display: grid; grid-template-rows: auto 1fr auto; height: 100dvh; }
+      header, footer { padding: 12px 18px; background: #20262a; }
+      h1 { margin: 0 0 6px; font-size: 18px; }
+      p { margin: 6px 0; }
+      .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+      button { color: inherit; background: #384349; border: 1px solid #849395; border-radius: 3px; padding: 8px 12px; font: inherit; }
+      button:disabled { opacity: .5; }
+      .viewport { min-height: 0; position: relative; }
+      canvas { width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+      #fps { position: absolute; top: 12px; right: 12px; padding: 7px 10px; background: #152022dd; font-variant-numeric: tabular-nums; }
+      footer { font-size: 12px; color: #d0d7d4; }
+      @media (max-width: 600px) { header, footer { padding: 8px; } h1 { font-size: 16px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Native 20_20 · source map section</h1>
+        <div class="controls">
+          <button id="frame-section" type="button" disabled>Frame section</button>
+          <button id="dispose-section" type="button" disabled>Unload section</button>
+          <span>Source terrain · native material parity unverified</span>
+        </div>
+        <p id="section-status" role="status">Loading the staged native section…</p>
+      </header>
+      <div class="viewport">
+        <canvas id="section-canvas" aria-label="Native terrain and static models"></canvas>
+        <output id="fps">FPS diagnostic · loading</output>
+      </div>
+      <footer>Source coordinates, matrices and model materials retained. Terrain blending, native lighting and collision remain unverified. FPS is a live diagnostic, not a benchmark.</footer>
+    </main>
+    <script type="module" src="./nativeSection.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,306 @@
+{
+  "filenameSearch": {
+    "filesEnumerated": 250,
+    "rootBasename": "music",
+    "rule": "Case-insensitive native file basename equals stored musicinfo string; no runtime resolver was traced"
+  },
+  "joins": [
+    {
+      "entereventgrpIdRows": [],
+      "filenameJoins": [
+        {
+          "arrayIndex": 0,
+          "filenameMatches": [
+            {
+              "bytes": 2725755,
+              "pathBasename": "d03_f.ogg",
+              "sha256": "86104b32bb956906e860e5966da1506cf2c60d223fa0865f35f81f87232bb276"
+            }
+          ],
+          "storedString": "D03_F",
+          "tableColumn": "str[0]"
+        },
+        {
+          "arrayIndex": 1,
+          "filenameMatches": [
+            {
+              "bytes": 1169438,
+              "pathBasename": "d03_s01.ogg",
+              "sha256": "331496ee4637681369a942b018ddf8d2168a67bda51eee6edbe0c6078f0f32bf"
+            }
+          ],
+          "storedString": "D03_S01",
+          "tableColumn": "str[1]"
+        },
+        {
+          "arrayIndex": 2,
+          "filenameMatches": [
+            {
+              "bytes": 2864451,
+              "pathBasename": "d03_s02.ogg",
+              "sha256": "5200c0d8a4890b0f2390e642121de4b2df15ef76afdfa30634bea8dee03e6a56"
+            }
+          ],
+          "storedString": "D03_S02",
+          "tableColumn": "str[2]"
+        }
+      ],
+      "musicinfo": {
+        "cnt": 3,
+        "fields": {
+          "cnt": "3",
+          "id": "202001",
+          "str[0]": "D03_F",
+          "str[1]": "D03_S01",
+          "str[2]": "D03_S02",
+          "str[3]": "",
+          "str[4]": "",
+          "str[5]": "",
+          "str[6]": "",
+          "str[7]": "",
+          "str[8]": "",
+          "str[9]": ""
+        },
+        "id": 202001,
+        "line": 96,
+        "orderedStrings": [
+          "D03_F",
+          "D03_S01",
+          "D03_S02"
+        ],
+        "rawLine": "202001\t3\tD03_F\tD03_S01\tD03_S02\t\t\t\t\t\t\t"
+      },
+      "volumeEvidence": {
+        "exportIndex": 335,
+        "nMusicID": 202001,
+        "object": "20_20.MusicVolume0",
+        "payloadBytes": 269,
+        "payloadOffset": 1235549,
+        "payloadSha256": "e0e5e3b49eabfaf4cffcbffb4d2637ef4b968cba1884a6c9fee0dd69e2f9e1c6"
+      }
+    },
+    {
+      "entereventgrpIdRows": [],
+      "filenameJoins": [
+        {
+          "arrayIndex": 0,
+          "filenameMatches": [
+            {
+              "bytes": 405603,
+              "pathBasename": "f09_f.ogg",
+              "sha256": "c8d6af028e1e9c76cfc0e16ef630909c107139f365db13152db6e45933215171"
+            }
+          ],
+          "storedString": "F09_F",
+          "tableColumn": "str[0]"
+        },
+        {
+          "arrayIndex": 1,
+          "filenameMatches": [
+            {
+              "bytes": 357733,
+              "pathBasename": "f09_s01.ogg",
+              "sha256": "8b129d5380b53a391fcb9a471028efedaeb5c8ae352bae78bc69c3973bb8ad7a"
+            }
+          ],
+          "storedString": "F09_S01",
+          "tableColumn": "str[1]"
+        },
+        {
+          "arrayIndex": 2,
+          "filenameMatches": [
+            {
+              "bytes": 495760,
+              "pathBasename": "f10_f.ogg",
+              "sha256": "3af979b12cb7944c359745fa4b91d3bb744216a7212f0ea6e80fe623048049fb"
+            }
+          ],
+          "storedString": "F10_F",
+          "tableColumn": "str[2]"
+        },
+        {
+          "arrayIndex": 3,
+          "filenameMatches": [
+            {
+              "bytes": 395124,
+              "pathBasename": "f10_s01.ogg",
+              "sha256": "229b3ef71212d1b70d7821fecf3a6dd251edd989b5b633b5d8f6ce0fe9bc8869"
+            }
+          ],
+          "storedString": "F10_S01",
+          "tableColumn": "str[3]"
+        },
+        {
+          "arrayIndex": 4,
+          "filenameMatches": [
+            {
+              "bytes": 495429,
+              "pathBasename": "f04_f.ogg",
+              "sha256": "4c3551f7210458d91b52fa626a277cec2e91e42b946f2b8b3e18e71cd791eaa5"
+            }
+          ],
+          "storedString": "F04_F",
+          "tableColumn": "str[4]"
+        },
+        {
+          "arrayIndex": 5,
+          "filenameMatches": [
+            {
+              "bytes": 471602,
+              "pathBasename": "f04_s01.ogg",
+              "sha256": "ed98312e0963bea50c6bb6b1d84499bc42fbf1dad1b2d4645376951396ef62b8"
+            }
+          ],
+          "storedString": "F04_S01",
+          "tableColumn": "str[5]"
+        }
+      ],
+      "musicinfo": {
+        "cnt": 6,
+        "fields": {
+          "cnt": "6",
+          "id": "202002",
+          "str[0]": "F09_F",
+          "str[1]": "F09_S01",
+          "str[2]": "F10_F",
+          "str[3]": "F10_S01",
+          "str[4]": "F04_F",
+          "str[5]": "F04_S01",
+          "str[6]": "",
+          "str[7]": "",
+          "str[8]": "",
+          "str[9]": ""
+        },
+        "id": 202002,
+        "line": 339,
+        "orderedStrings": [
+          "F09_F",
+          "F09_S01",
+          "F10_F",
+          "F10_S01",
+          "F04_F",
+          "F04_S01"
+        ],
+        "rawLine": "202002\t6\tF09_F\tF09_S01\tF10_F\tF10_S01\tF04_F\tF04_S01\t\t\t\t"
+      },
+      "volumeEvidence": {
+        "bForcePlayMusic": true,
+        "exportIndex": 1329,
+        "nMusicID": 202002,
+        "object": "20_20.MusicVolume1",
+        "payloadBytes": 218,
+        "payloadOffset": 1542798,
+        "payloadSha256": "d780fedad7e27ca01c642d0918aacbc51d200865bdaf65243f48792a71f7fd03"
+      }
+    }
+  ],
+  "kind": "Exact DAT music ID metadata and local basename join",
+  "limits": [
+    "Array order, count and spelling are source facts; they do not establish sequential or random selection",
+    "The filename join identifies unique local candidates, not observed file loading or audible playback",
+    "bForcePlayMusic is retained as authored metadata; its runtime consumer and override policy remain unresolved",
+    "No matching entereventgrp ID row does not establish absence of other event relationships",
+    "Native triggers, loops, transitions, gain, interruption, selection policy and audio tolerances remain unresolved"
+  ],
+  "mapPackagePinFromNote": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
+  "observedAtRiga": "2026-11-06T14:23:46.9415504+02:00",
+  "sourceHost": "IMPORTA-PC",
+  "sourceTables": [
+    {
+      "decodedPin": {
+        "bytes": 13616,
+        "pathBasename": "musicinfo.tsv",
+        "sha256": "9dc45e1412fa662f3e06736828d1c9286d768d2f72d036297c3b2e95db282542"
+      },
+      "header": [
+        "id",
+        "cnt",
+        "str[0]",
+        "str[1]",
+        "str[2]",
+        "str[3]",
+        "str[4]",
+        "str[5]",
+        "str[6]",
+        "str[7]",
+        "str[8]",
+        "str[9]"
+      ],
+      "manifestPin": {
+        "bytes": 7169,
+        "pathBasename": "musicinfo.tsv.manifest.json",
+        "sha256": "fac2226e110cc26f358fb06a17d6834c75135dd22c3af1cd0262013076b240e6"
+      },
+      "name": "musicinfo",
+      "rowCount": 358,
+      "schema": {
+        "bytes": 137,
+        "host": "IMPORTA-PC",
+        "pathBasename": "musicinfo.ddf",
+        "sha256": "5C178D3222DC007FE8C90985363C0ABDCDD5D90714920F28AAB6471DBD54327C"
+      },
+      "source": {
+        "bytes": 3376,
+        "host": "IMPORTA-PC",
+        "pathBasename": "musicinfo.dat",
+        "sha256": "837692B210A943DEEC1CAA9AD0C6B3A2A5839FEF677F500483506F287CD8797B"
+      },
+      "validation": {
+        "clientCompatibility": "not-tested",
+        "editedDatTextEqual": null,
+        "encryptionRoundTripBytesEqual": null,
+        "schemaRoundTripBytesEqual": true,
+        "sourceUnchanged": true
+      }
+    },
+    {
+      "decodedPin": {
+        "bytes": 116867,
+        "pathBasename": "entereventgrp.tsv",
+        "sha256": "37bd960a6fccc3a38cfa3eee12bd9563da0a469b3c677668f7510224042ffe85"
+      },
+      "header": [
+        "id",
+        "UNK_0",
+        "skill_sound",
+        "sound_vol",
+        "sound_rad",
+        "isrise",
+        "spawn_type",
+        "effect_name",
+        "anim_name"
+      ],
+      "manifestPin": {
+        "bytes": 7208,
+        "pathBasename": "entereventgrp.tsv.manifest.json",
+        "sha256": "5a80b935e5fb8558adf3d119f34fdc9f7a1ef8f8243041e9e564d9c2fad7034b"
+      },
+      "name": "entereventgrp",
+      "rowCount": 1152,
+      "schema": {
+        "bytes": 280,
+        "host": "IMPORTA-PC",
+        "pathBasename": "entereventgrp.ddf",
+        "sha256": "320F82ABAEEB43DC52BE1503345956E19B91B9796E6EBADDB0CDCDAFE24252D3"
+      },
+      "source": {
+        "bytes": 4016,
+        "host": "IMPORTA-PC",
+        "pathBasename": "entereventgrp.dat",
+        "sha256": "748A0B56F4C92854DDD639945C40D1956601BBC78A034A79C15FFA415F6608F5"
+      },
+      "validation": {
+        "clientCompatibility": "not-tested",
+        "editedDatTextEqual": null,
+        "encryptionRoundTripBytesEqual": null,
+        "schemaRoundTripBytesEqual": true,
+        "sourceUnchanged": true
+      }
+    }
+  ],
+  "volumeEvidenceNote": {
+    "bytes": 10825,
+    "pathBasename": "AUDIO_ACCEPTANCE.md",
+    "sha256": "b73ba8ab0f08949182c0c5b20825d7de56b3cccc08cfc1305d6752f40b20cfa6"
+  }
+}

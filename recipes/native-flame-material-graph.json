@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "model",
+    "object": "FX_E_S.Flameset.Default_Flame01",
+    "package": "staticmeshes/FX_E_S.usx",
+    "materialPolicy": "preserve-native-graph"
+  }
+]

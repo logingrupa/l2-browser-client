@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "sourceHost": "IMPORTA-PC",
+  "sourceRoot": "C:/Lineage2-client/system",
+  "scope": "Five copied original Env/timeenv inputs; separate from the unchanged native-inputs.lock.json.",
+  "files": [
+    {"relativePath":"Env.int","bytes":5943,"sha256":"972439ef9087daaadcbb3179a988c61a5fa16848c6cd257414690c72873eb587"},
+    {"relativePath":"timeenv0.int","bytes":13233,"sha256":"99fe1d3c71298a03f22d1d9491600e3cec89e0934e56b67a50c8afec08cfae54"},
+    {"relativePath":"timeenv1.int","bytes":14452,"sha256":"992a4f473b9dc2e0329c54f76dc32e70abceb61f5fbe04d131bcf46b1c32c3aa"},
+    {"relativePath":"timeenv2.int","bytes":13322,"sha256":"9a05072f521557d26d1a21dec6effd30e989f5515359f785f361909dd7b13ce3"},
+    {"relativePath":"timeenv3.int","bytes":14099,"sha256":"55a9fe7e8cb80c7e88896d07aa1ace925b6fb3d884ca26308da282eb03e3eeee"}
+  ]
+}

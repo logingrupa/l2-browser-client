@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "kind": "minimap-radar-route",
+  "binaries": [
+    {"path": "system/interface.u", "eSha256": "4addc1323405170219233435074c279b5cba7c041d518c1673780af8f2622cf9", "lockClass": "equal"},
+    {"path": "system/nwindow.u", "eSha256": "eda69831ff20c997dcbc6f922bd0041981f4fe3010ca27dd5015f9c39c881c3b", "lockClass": "equal"},
+    {"path": "system/Core.dll", "eSha256": "9462f87a5e77d21865e2e00264efd44df25feb47aa78f8a72e9cf66ce4e919bf", "lockClass": "equal"},
+    {"path": "system/engine.dll", "eSha256": "4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08", "lockClass": "equal", "imageBase": "0x10300000"},
+    {"path": "system/nwindow.dll", "eSha256": "c673288a5c3ca5567a5ac917dfc01f0cf607bb59e9495e9f321191ca7da5a75d", "lockClass": "differing"},
+    {"path": "system/Localization.ini", "eSha256": "4c782e313970a322068da9bb2be9d5f99466e9dd999c446f6bd3d75ede6cb970", "lockClass": "volatile-config"}
+  ],
+  "verification": {
+    "date": "2026-11-13",
+    "workflows": [
+      {"id": "wf_11d9b437-31f", "scope": "radar texture choice, world map pieces and zone key, re-derived by 4 fresh-context agents from the lock-equal E:/Lineage2-client"},
+      {"id": "wf_c74f1a43-96a", "scope": "texture formats 5 and 7 byte replay", "instructions": "164/164", "dataRows": "108/108"},
+      {"id": "wf_1821e7d7-8fe", "scope": "zone sampler byte replay", "instructions": "127/127", "dataRows": "46/46"}
+    ],
+    "factsSha256": {
+      "minimapRadar": "f7c7273a99ade6b55c19c3d0580c786dd5d14b5b6b734b719e1842b9bb5493cb",
+      "textureFormats": "3987c583b5c45e10930b0d99cbdf63b9990187c10ac26d6cd457d8b2bb4e9a4f",
+      "zoneSampler": "c64255952883708dd3c0bf46a172514e970df878a5087132cb7141b43b1d6453"
+    }
+  },
+  "radar": {
+    "zoneTitleEvent": {"id": 2420, "name": "nwindow.UIEventManager.EV_BeginShowZoneTitleWnd", "binary": "system/nwindow.u", "constExport": 2251},
+    "zoneCodeEvent": {"id": 110, "name": "EV_SetRadarZoneCode", "parse": "ZoneCode into ZoneID"},
+    "onLoad": {"function": "interface.NewRadarWnd.OnLoad", "binary": "system/interface.u", "export": 7688, "binding": "TexMap = GetHandle(m_WindowName $ \".texMap\")"},
+    "onEvent": {"function": "interface.NewRadarWnd.OnEvent", "binary": "system/interface.u", "export": 7194, "zoneName": "ParseString(a_Param, \"ZoneName\", ZoneName)"},
+    "getLocInfo": {"function": "interface.NewRadarWnd.GetLocInfo", "binary": "system/interface.u", "export": 7786, "serialOffset": "0x97650", "bytecodeOffset": "0x97666", "scriptSize": 1728},
+    "match": {"function": "UObject::execSwitch", "binary": "system/Core.dll", "address": "0x10146830", "compareCall": "0x1014695c", "compare": "appStricmp", "rule": "whole string, case-insensitive"},
+    "texturePackage": "systextures/L2_RadarMap.utx",
+    "textureGroup": "L2_RadarMap.RadarMaps",
+    "cases": [
+      {"zoneName": "Giran Castle Town", "texture": "giran_castle_town", "mapX": 12100, "mapY": 17150},
+      {"zoneName": "Town of Aden", "texture": "town_of_aden", "mapX": 14140, "mapY": 15640},
+      {"zoneName": "Town of Oren", "texture": "town_of_oren", "mapX": 70900, "mapY": 44510},
+      {"zoneName": "Town of Dion", "texture": "dion_castle_town", "mapX": 8000, "mapY": 12400},
+      {"zoneName": "Heine", "texture": "heine", "mapX": 100900, "mapY": 212470},
+      {"zoneName": "Town of Gludio", "texture": "gludio_castle_town", "mapX": -24360, "mapY": 114620},
+      {"zoneName": "Town  of Goddard", "texture": "godard_castle_town", "mapX": 137230, "mapY": -84100},
+      {"zoneName": "Town of Schuttgart", "texture": "town_of_schuttgart", "mapX": 76930, "mapY": -150750},
+      {"zoneName": "Gludin Village", "texture": "gludin_village", "mapX": -92150, "mapY": 143100},
+      {"zoneName": "Hunters Village", "texture": "hunters_village", "mapX": 107900, "mapY": 67830},
+      {"zoneName": "Floran Village", "texture": "floran_village", "mapX": 6990, "mapY": 160670},
+      {"zoneName": "Rune Township", "texture": "rune_village", "mapX": 29650, "mapY": -58400},
+      {"zoneName": "Elven Village", "texture": "elven_village", "mapX": 35710, "mapY": 35720},
+      {"zoneName": "Dark Elf Village", "texture": "dark_elven_village", "mapX": 1000, "mapY": 6350},
+      {"zoneName": "Talking Island Village", "texture": "talkin_island_village", "mapX": -94320, "mapY": 232710},
+      {"zoneName": "Dwarven Village", "texture": "dwarven_village", "mapX": 105560, "mapY": -191400},
+      {"zoneName": "Orc Village", "texture": "orc_village", "mapX": -58236, "mapY": -123080}
+    ],
+    "default": {"texture": "Global", "mapX": -229300, "mapY": -260600, "isGlobal": true},
+    "anchor": {"fields": ["MapX", "MapY"], "status": "unresolved"}
+  },
+  "textureFormat5": {
+    "getFormatDesc": {"function": "UTexture::GetFormatDesc", "binary": "system/engine.dll", "address": "0x10335e90", "formatByteOffset": "0x578", "jumpTable": "0x10335f4c"},
+    "formatId": 5,
+    "formatName": "RGBA8",
+    "pixelOrder": ["B", "G", "R", "A"],
+    "pixelOrderAddress": "0x10331600",
+    "bytesPerPixel": 4,
+    "rows": "tight rows of width x 4 bytes",
+    "materialInt": {"field": "UMaterial +0x40", "bytes": 4, "minimumPackageVersion": 123, "minimumLicensee": 16},
+    "package": {"path": "systextures/L2_RadarMap.utx", "wrapper": "Lineage2Ver121", "key": "0xd4", "packageVersion": 118, "licensee": 0},
+    "townMapMip": {"count": 1, "width": 1024, "height": 1024, "bytes": 4194304}
+  },
+  "worldMap": {
+    "initializeMapDisplay": {"function": "NCMinimapWnd::InitializeMapDisplay", "binary": "system/nwindow.dll", "address": "0x1018b050",
+      "localizationKey": "<language>_minimap", "localization": "system/Localization.ini", "english": "L2Font-e.Minimap.int_worldmap", "suffixes": [1, 2, 3, 4, 5, 6],
+      "storage": "this+0x1cc..0x1e0", "fallback": "L2Font.Minimap.ch4_worldmap"},
+    "drawWorldMap": {"function": "NCMinimapWnd::DrawWorldMap", "binary": "system/nwindow.dll", "address": "0x10187910", "columns": 2, "rows": 3,
+      "index": "column + 2 x row", "pieceWidth": 1024, "pieceHeight": 1024, "pieceFormat": "DXT1"},
+    "getMinimapPosition": {"function": "NCMinimapWnd::GetMinimapPosition", "binary": "system/nwindow.dll", "address": "0x10187c10", "branch": "global",
+      "offsetX": 131072, "offsetY": 262144, "scaleNumerator": 41, "scaleDenominator": 8192, "scaleAddress": "0x1028e030", "scale": 0.0050048828125,
+      "formula": "map = (world + offset) * 41 / 8192", "truncationAddress": "0x101c19e0", "truncation": "toward zero (cvttsd2si, x87 fallback)"}
+  },
+  "zoneSampler": {
+    "sampler": {"function": "processGetZoneNameInfo", "binary": "system/engine.dll", "address": "0x10462970"},
+    "lookup": {"function": "FL2GameData::GetZoneNameInfo", "binary": "system/engine.dll", "address": "0x10462780"},
+    "worldOffsetX": 360448,
+    "worldOffsetY": 294912,
+    "tileSize": 32768,
+    "tileBias": 9,
+    "originTileX": 20,
+    "originTileY": 18,
+    "texture": "L2ZoneName.<tileX>_<tileY>",
+    "texturePackage": "systextures/l2zonename.utx",
+    "formulas": [
+      "tileX = T((x + 360448) / 32768 + 9)",
+      "tileY = T((y + 294912) / 32768 + 9)",
+      "originX = T((tileX - 20) * 32768)",
+      "originY = T((tileY - 18) * 32768)",
+      "px = T(i32((x - originX) * width) / 32768)",
+      "py = T(i32((y - originY) * height) / 32768)",
+      "key = byte of mip 0 at py * width + px",
+      "GetZoneNameInfo(key, tileX, tileY, float32(z))"
+    ],
+    "truncation": "T truncates toward zero; i32 keeps the low 32 bits signed",
+    "missCacheKey": "(tileY << 8) | tileX",
+    "clamp": false,
+    "missingTextureKey": 0,
+    "constants": [{"address": "0x10854b70", "value": 32768.0}, {"address": "0x10898798", "value": 0.000030517578125}]
+  },
+  "zoneKey": {
+    "serialize": {"function": "FZoneNameInfo::Serialize", "binary": "system/engine.dll", "address": "0x10447270",
+      "fields": [
+        {"name": "ID", "field": 0},
+        {"name": "Color", "field": 1, "offset": "0x4"},
+        {"name": "MapX", "field": 2, "offset": "0x8"},
+        {"name": "MapY", "field": 3, "offset": "0xc"},
+        {"name": "TownMapX", "offset": "0x2c"},
+        {"name": "TownMapY", "offset": "0x30"}
+      ]},
+    "helper": {"function": "zone key helper", "binary": "system/engine.dll", "address": "0x1044bf90", "globalBelowColor": 200, "compare": "signed",
+      "globalKey": "Color << 8", "tileKey": "((((MapY << 8) | MapX) << 8) | Color) << 8"},
+    "keyRun": {"probe": "returns NULL at the first missing key", "rowRule": "Bottom < Z < Top", "fieldType": "float"},
+    "table": "system/zonename-e.dat"
+  },
+  "open": [
+    {"id": "radar-anchor", "what": "the meaning of the GetLocInfo MapX and MapY values", "tileGap": "minimap-join-unresolved:radar-anchor", "scope": "every tile"},
+    {"id": "zone-title-source", "what": "the native caller chain that supplies the ShowZoneTitle zone name from a position update", "tileGap": "minimap-join-unresolved:zone-title-source", "scope": "every tile"},
+    {"id": "zone-key-run", "what": "the order of the rows of a key run whose Bottom-Top ranges overlap", "tileGap": "minimap-join-unresolved:zone-key-run", "scope": "tiles with an overlapping key run"},
+    {"id": "special-hidden-map", "what": "the live use and visibility of NewRadarWnd.specialHiddenMap", "tileGap": null, "scope": "no tile"},
+    {"id": "minimap-binding", "what": "the full MinimapWnd.Minimap binding", "tileGap": null, "scope": "no tile"}
+  ]
+}

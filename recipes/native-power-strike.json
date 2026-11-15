@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "id": "interlude:skill:3:level:1:raw-source-dispatch",
+  "skillId": 3,
+  "level": 1,
+  "source": {
+    "host": "IMPORTA-PC",
+    "root": "C:/Lineage2-client"
+  },
+  "effectClasses": [
+    {
+      "object": "LineageEffect.s_u002_a",
+      "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+    },
+    {
+      "object": "LineageEffect.p_u004_a",
+      "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+    }
+  ],
+  "sourceDispatch": {
+    "binary": {
+      "path": "system/Engine.dll",
+      "bytes": 30704468,
+      "sha256": "4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08"
+    },
+    "bindings": [
+      {
+        "stage": "init",
+        "effectObject": "LineageEffect.s_u002_a",
+        "switchVA": "0x104f2f65",
+        "selectorBase": "0x104fa774",
+        "targetTable": "0x104fa708",
+        "caseIndex": 2,
+        "caseVA": "0x104f5e83",
+        "classPushVA": "0x104f5ee8",
+        "classLiteralVA": "0x108aa2dc",
+        "nativeSuperClass": "Engine.Emitter",
+        "authoredPropertiesSha256": "e5919c4f01c2e51b6e99f4f2522b2a992f5298f493e2bfd2890c7ffc25735f97",
+        "emittersSha256": "b4654ff48d29f34eb9809ebd10781f11dee995e1fa001cf8a97e9a7df4a552d7"
+      },
+      {
+        "stage": "shot",
+        "effectObject": "LineageEffect.p_u004_a",
+        "switchVA": "0x104fe6f4",
+        "selectorBase": "0x1050cfa8",
+        "targetTable": "0x1050cf24",
+        "caseIndex": 2,
+        "caseVA": "0x10508bef",
+        "classPushVA": "0x1050ba57",
+        "classLiteralVA": "0x108a80d8",
+        "nativeSuperClass": "Engine.Emitter",
+        "authoredPropertiesSha256": "ba7e3d7d41436a35c753f5f142b0d61c34f421ed5c4ef673630c17649fe6e8fb",
+        "emittersSha256": "b9600c35a2432dc67e30c84b2e12574a341f412dbd4b566eed57aa4f3619d726"
+      }
+    ],
+    "reviewedObservations": {
+      "init": {
+        "target": "LineageEffect.s_u002_a",
+        "caseVA": "0x104f5e83",
+        "spawnArgs": [
+          null,
+          "this",
+          "LineageEffect.s_u002_a",
+          0,
+          "this.Location",
+          [
+            0,
+            0,
+            0
+          ],
+          1,
+          0,
+          1,
+          0,
+          1
+        ],
+        "postSpawn": [
+          "setPhysics(0, null, Vector(0,0,1))",
+          "effect+0xe8 = MagicInfo.ShotTime",
+          "AttachToBone(effect, GetRHandBoneName(), 0); if name None then AttachToBone(effect,2,0)"
+        ],
+        "attachmentVA": "0x104f3290",
+        "tracking": "final spawn flag 1 adds to caster MagicInfo.EffectActor array"
+      },
+      "preshot": {
+        "skill3Result": "default return",
+        "returnVA": "0x104fdbcf"
+      },
+      "shot": {
+        "target": "LineageEffect.p_u004_a",
+        "caseVA": "0x10508bef",
+        "conditions": [
+          "PendingNotify == 2",
+          "target exists, or nonempty associated-actor branch"
+        ],
+        "spawnArgs": [
+          null,
+          "target",
+          "LineageEffect.p_u004_a",
+          0,
+          "target.Location - (unitDirection(caster->target) * target.CollisionRadius) / 2",
+          "Rotation(target.Location-caster.Location)",
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "spawnVA": "0x1050ba79",
+        "associatedActorSpawnVA": "0x10508e27"
+      },
+      "timingAdjustments": {
+        "spawnHelper": "0x104eeec0",
+        "onCasterMagicAniStatusZero": "AdjustparticleLife(caster.MagicInfo.ShotTime + 1.0)",
+        "adjustMethod": "0x1060ac50 calls SetParticleLifeTimeRange then SetParticleMaxParticles",
+        "sharedArgumentFlags": {
+          "arg8": 0,
+          "arg9": 1,
+          "arg10": 0,
+          "arg11Init": 1,
+          "arg11Shot": 0,
+          "note": "Positional native flags retained; arg9 writes emitter+0x3f0 from scalar arg7; arg11 enrolls effect in caster cleanup array."
+        },
+        "limitation": "ForcedLifeTime, ForcedFade and ForcedMaxParticles paths require runtime parity; retain authored values and native adjustment evidence separately."
+      }
+    },
+    "evidence": [
+      "artifacts/native-parity/research/fighter-action-reference/findings.json SHA-256 64cf1371491845faf0b436c3a5dfa742045fd6f2d0cb50be0eb8f9718f44a20b",
+      "artifacts/native-parity/research/fighter-action-reference/README.md"
+    ],
+    "limitations": [
+      "Automated validation checks the pinned Engine.dll, switch selectors/targets, class literals, direct superclass and complete authored actor/emitter defaults. Reviewed observation text is retained metadata, not executed behavior.",
+      "The target-position divide formula also relies on separately reviewed Core.dll evidence; this adapter does not validate that binary or execute placement.",
+      "Live runtime SkillHitTime, effective tween/playback timing, adjusted emitter lifetimes, target reaction and cleanup remain unverified.",
+      "Init and shot identify source handlers; their metadata is not a browser effect timeline or proof of native-to-browser visual parity."
+    ]
+  },
+  "notes": [
+    "Skill 3 retains animation S and its empty visual description. The pinned native switch dispatch selects LineageEffect.s_u002_a at init and conditionally LineageEffect.p_u004_a at shot; both directly extend Engine.Emitter.",
+    "The init class has authored DrawScale 0.05 and the shot class 0.02. Init emitter payloads equal the old at_power_strike_cs candidate, but actor identity and authored defaults differ and must remain exact.",
+    "All authored and inherited defaults, raw exports, mesh/material/texture dependencies and skill sound rows are preserved. No live timing, lifetime, attachment transform or effect sequencing is inferred.",
+    "Full native fighter motion and synchronized effect playback remain unverified. No browser particle runtime is implemented."
+  ]
+}

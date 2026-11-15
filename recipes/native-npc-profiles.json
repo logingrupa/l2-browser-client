@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "interlude:npc-profiles:reference",
+  "nameTable": "npcname-e.dat",
+  "sourceUnitsPerMetre": 100,
+  "profiles": [
+    {
+      "npcId": 21622,
+      "expectedName": "Greater Musveren",
+      "expectedMesh": "LineageMonsters.field_stalker_m00",
+      "expectedActorClass": "LineageMonster.field_stalker_20_bi"
+    }
+  ]
+}

@@ -1,0 +1,257 @@
+import type { GameWorldAdapter } from "./GameWorldAdapter";
+import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent } from "./worldTypes";
+import { commandRejectedEvent, createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip,
+  isLineageIdentifier, reportedPositionRejectionReason, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
+import { sourceHeadingToWorldYaw, sourcePositionToWorld, worldPositionToSource, worldYawToSourceHeading, type WorldPosition } from "./sourceFrame";
+
+type PreviewActionCommand = Extract<WorldCommand, { readonly type: "preview-action" }>;
+type ReportPositionCommand = Extract<WorldCommand, { readonly type: "report-position" }>;
+type CannotMoveCommand = Extract<WorldCommand, { readonly type: "cannot-move" }>;
+type MoveLocalCommand = Extract<WorldCommand, { readonly type: "move-local" }>;
+
+export interface NativeSliceCollisionCylinder {
+  readonly radius: number;
+  readonly height: number;
+}
+
+export interface NativeSliceMoveTypes {
+  readonly walk: number;
+  readonly run: number;
+}
+
+const sandboxActorSpacingMetres = 1.4;
+const localCollisionAbsentReason = "local-collision-cylinder-absent";
+const localMoveTypesAbsentReason = "local-move-types-absent";
+const velocityWithoutAccelerationRampRoutine = "APawn::calcVelocity 0x10639950";
+const runStartAtWalkSpeedRoutine = "APawn::GetCurSpeed 0x1061eaf0 (MoveTimer <= WalkAnimFrameInMove / 30)";
+
+export interface SourcedNativeSliceSpeedProfile {
+  readonly isSourced: true;
+  readonly walkMetresPerSecond: number;
+  readonly runMetresPerSecond: number;
+  readonly walkSourceUnitsPerSecond: number;
+  readonly runSourceUnitsPerSecond: number;
+  readonly swimSourceUnitsPerSecond: number;
+  readonly runStartSeconds: number;
+  readonly source: string;
+}
+export interface UnresolvedNativeSliceSpeedProfile {
+  readonly isSourced: false;
+  readonly playerProfileId: string;
+  readonly source: string;
+}
+export type NativeSliceSpeedProfile = SourcedNativeSliceSpeedProfile | UnresolvedNativeSliceSpeedProfile;
+export type NativeSliceAdapterWithSourcedSpeed = NativeSliceAdapter & { readonly speedProfile: SourcedNativeSliceSpeedProfile };
+export const ACIS_HUMAN_FIGHTER_SPEED = Object.freeze({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115, swimUnitsPerSecond: 50, runStartSeconds: 12 / 30,
+  source: "aCis server data, not client data (humanFighter.xml line 6, sha256 6f7ef9f6b5cb8e5e…, class 0, both sexes: walkSpd 80, runSpd 115, swimSpd 50 UU/s, move multiplier 1.0; " +
+    "UserInfo.java lines 141-146, sha256 199507324bd130da…, writes swimSpd as both the swim run and the swim walk speed; " +
+    `chargrp walkanimframe 12/30 s run start, rows 0..13, ${runStartAtWalkSpeedRoutine}; no acceleration ramp, ${velocityWithoutAccelerationRampRoutine})` });
+const sourcedServerSpeedByPlayerProfileId: ReadonlyMap<string, typeof ACIS_HUMAN_FIGHTER_SPEED> = new Map([
+  ["human-male-fighter", ACIS_HUMAN_FIGHTER_SPEED], ["human-female-fighter", ACIS_HUMAN_FIGHTER_SPEED]]);
+const speedProfileAbsent: UnresolvedNativeSliceSpeedProfile = Object.freeze({ isSourced: false, playerProfileId: "no-speed-profile",
+  source: "speed unresolved: the adapter was given no player speed profile" });
+function speedUnresolvedReason(speed: UnresolvedNativeSliceSpeedProfile): string { return `speed-unresolved:${speed.playerProfileId}`; }
+export function nativeSliceSpeedProfile(playerProfileId: string, sourceUnitsPerMetre: number): NativeSliceSpeedProfile {
+  if (!Number.isFinite(sourceUnitsPerMetre) || sourceUnitsPerMetre <= 0) throw new Error("Invalid source units per metre.");
+  const sourcedServerSpeed = sourcedServerSpeedByPlayerProfileId.get(playerProfileId);
+  if (!sourcedServerSpeed) {
+    return Object.freeze({ isSourced: false, playerProfileId,
+      source: `speed unresolved for ${playerProfileId}: no sourced server speed is recorded for this class` });
+  }
+  return Object.freeze({ isSourced: true, walkMetresPerSecond: sourcedServerSpeed.walkUnitsPerSecond / sourceUnitsPerMetre,
+    runMetresPerSecond: sourcedServerSpeed.runUnitsPerSecond / sourceUnitsPerMetre,
+    walkSourceUnitsPerSecond: sourcedServerSpeed.walkUnitsPerSecond, runSourceUnitsPerSecond: sourcedServerSpeed.runUnitsPerSecond,
+    swimSourceUnitsPerSecond: sourcedServerSpeed.swimUnitsPerSecond, runStartSeconds: sourcedServerSpeed.runStartSeconds, source: sourcedServerSpeed.source });
+}
+export function isNativeSliceAdapterWithSourcedSpeed(adapter: NativeSliceAdapter): adapter is NativeSliceAdapterWithSourcedSpeed {
+  return adapter.speedProfile.isSourced;
+}
+
+export class NativeSliceAdapter implements GameWorldAdapter {
+  private readonly entities = new Map<string, WorldEntity>();
+  private readonly listeners = new Set<(event: WorldEvent) => void>();
+  private readonly commandListeners = new Set<(command: WorldCommand) => void>();
+  private localMoveIssued = false;
+  private paused = false;
+  private disposed = false;
+  private spawnedNpcCount = 0;
+  private spawnedCharacterCount = 0;
+  private sandboxSpawnPlacementOrdinal = 0;
+  private readonly speed: NativeSliceSpeedProfile;
+  private readonly walkSupported: boolean;
+  private readonly specialAttackPreviewSupported: boolean;
+  private readonly localCollision: NativeSliceCollisionCylinder | null;
+  private readonly moveTypes: NativeSliceMoveTypes | null;
+  constructor(origin: WorldPosition, upperItem: number | null = null,
+    presentation: { displayName: string; appearanceId: string } = { displayName: "Human male fighter", appearanceId: "native-human-fighter" },
+    locomotion: { walkSupported: boolean; specialAttackPreviewSupported?: boolean; speed?: NativeSliceSpeedProfile; collision?: NativeSliceCollisionCylinder; moveTypes?: NativeSliceMoveTypes } = { walkSupported: false }) {
+    this.walkSupported = locomotion.walkSupported === true;
+    const collision = locomotion.collision ?? null;
+    if (collision !== null && !([collision.radius, collision.height].every(value => Number.isFinite(value) && value > 0))) {
+      throw new Error("Invalid native slice collision cylinder.");
+    }
+    this.localCollision = collision;
+    this.moveTypes = locomotion.moveTypes ?? null;
+    const speed = locomotion.speed ?? speedProfileAbsent;
+    if (speed.isSourced && (![speed.walkMetresPerSecond, speed.runMetresPerSecond, speed.walkSourceUnitsPerSecond, speed.runSourceUnitsPerSecond,
+      speed.swimSourceUnitsPerSecond].every(value => Number.isFinite(value) && value > 0) ||
+      !Number.isFinite(speed.runStartSeconds) || speed.runStartSeconds < 0)) throw new Error("Invalid native slice speed profile.");
+    this.speed = speed;
+    this.specialAttackPreviewSupported = locomotion.specialAttackPreviewSupported === true;
+    const player: WorldEntity = { id: "local-player", kind: "local-player", displayName: presentation.displayName,
+      appearanceId: presentation.appearanceId, health: 100, maximumHealth: 100, animation: "idle", orientationRadians: 0,
+      position: { x: origin.x, y: origin.y, z: origin.z }, ...(upperItem === null ? {} : { equipment: { upper: upperItem } }) };
+    const monster: WorldEntity = { id: "native-musveren", kind: "monster", displayName: "Greater Musveren",
+      appearanceId: "native-musveren", health: 100, maximumHealth: 100, animation: "idle", orientationRadians: 0,
+      position: { x: origin.x + sandboxActorSpacingMetres, y: origin.y, z: origin.z } };
+    this.entities.set(player.id, player); this.entities.set(monster.id, monster);
+  }
+  getInitialState(): readonly WorldEntity[] { return [...this.entities.values()].map(entity => structuredClone(entity)); }
+  get isPaused(): boolean { return this.paused; }
+  get locomotionMode(): LocomotionMode { return this.entities.get("local-player")?.locomotion ?? "run"; }
+  get speedProfile(): NativeSliceSpeedProfile { return this.speed; }
+  subscribe(listener: (event: WorldEvent) => void): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener); }
+  subscribeCommands(listener: (command: WorldCommand) => void): () => void { this.commandListeners.add(listener); return () => this.commandListeners.delete(listener); }
+  private emit(event: WorldEvent): void { for (const listener of this.listeners) listener(event); }
+  private update(entity: WorldEntity): void { this.entities.set(entity.id, entity); this.emit({ type: "update", entity }); }
+  dispatch(command: WorldCommand): void {
+    if (this.disposed) return;
+    for (const listener of this.commandListeners) listener(command);
+    const player = this.entities.get("local-player");
+    switch (command.type) {
+      case "set-paused":
+        this.paused = command.isPaused;
+        break;
+      case "set-locomotion":
+        if (player) this.setLocomotion(player, command.mode);
+        break;
+      case "set-health": {
+        const entity = this.entities.get(command.entityId);
+        const healthChanged = entity ? entityWithClampedHealth(entity, command.health) : null;
+        if (healthChanged) this.update(healthChanged);
+        break;
+      }
+      case "despawn":
+        if (command.entityId !== "local-player" && this.entities.delete(command.entityId)) this.emit({ type: "despawn", entityId: command.entityId });
+        break;
+      case "spawn-npc":
+        if (player) this.spawnNpc(player, command.npcId);
+        break;
+      case "spawn-character":
+        if (player) this.spawnCharacter(player, command.characterTemplateIndex);
+        break;
+      case "equip-item": {
+        const equippedEntity = entityWithEquippedItem(this.entities, command);
+        if (equippedEntity) this.update(equippedEntity);
+        break;
+      }
+      case "cast-skill": {
+        const castEvent = skillCastEvent(this.entities, command);
+        if (castEvent) this.emit(castEvent);
+        break;
+      }
+      case "play-clip": {
+        const clipRequestedEntity = entityWithRequestedClip(this.entities, command);
+        if (clipRequestedEntity) this.update(clipRequestedEntity);
+        break;
+      }
+      case "preview-action":
+        if (player) this.previewAction(player, command);
+        break;
+      case "set-animation": {
+        const entity = this.entities.get(command.entityId ?? "local-player");
+        if (entity) {
+          if (entity.id === "local-player") this.stopLocalMove(entity);
+          const { actionPreview: _preview, actionTargetId: _target, ...ordinary } = entity;
+          this.update({ ...ordinary, animation: command.animation, animationSequence: (entity.animationSequence ?? 0) + 1 });
+        }
+        break;
+      }
+      case "move-local":
+        if (player) this.moveLocalPlayer(player, command);
+        break;
+      case "report-position":
+        if (player) this.acceptReportedPosition(player, command);
+        break;
+      case "cannot-move":
+        if (player) this.stopAtReportedPosition(player, command);
+        break;
+      case "set-environment":
+        this.emit({ type: "environment", gameMinutes: command.gameMinutes, environmentType: command.environmentType });
+        break;
+      default: {
+        const unhandledCommand: never = command;
+        throw unknownWorldCommandError(unhandledCommand);
+      }
+    }
+  }
+  private setLocomotion(player: WorldEntity, mode: LocomotionMode): void {
+    if ((mode !== "walk" && mode !== "run") || (mode === "walk" && !this.walkSupported) || mode === this.locomotionMode) return;
+    this.update({ ...player, locomotion: mode });
+  }
+  private previewAction(player: WorldEntity, command: PreviewActionCommand): void {
+    if (command.action !== "special-attack" || !this.specialAttackPreviewSupported || player.health <= 0) return;
+    const target = command.targetId === undefined ? null : this.entities.get(command.targetId);
+    if (command.targetId !== undefined && (!target || target.id === player.id || target.health <= 0 ||
+      ![target.position.x, target.position.y, target.position.z].every(Number.isFinite))) return;
+    this.stopLocalMove(player);
+    const { actionTargetId: _previousTarget, ...unbound } = player;
+    this.update({ ...unbound, animation: "attack", actionPreview: command.action,
+      ...(target ? { actionTargetId: target.id, orientationRadians: Math.atan2(target.position.x - player.position.x, target.position.z - player.position.z) } : {}),
+      animationSequence: (player.animationSequence ?? 0) + 1 });
+  }
+  private moveLocalPlayer(player: WorldEntity, command: MoveLocalCommand): void {
+    const origin = command.origin ?? player.position, destination = command.position;
+    if (player.health <= 0 || ![origin.x, origin.y, origin.z, destination.x, destination.y, destination.z].every(Number.isFinite)) return;
+    if (this.localCollision === null) { this.emit(commandRejectedEvent(command.type, localCollisionAbsentReason)); return; }
+    if (this.moveTypes === null) { this.emit(commandRejectedEvent(command.type, localMoveTypesAbsentReason)); return; }
+    const speed = this.speed;
+    if (!speed.isSourced) { this.emit(commandRejectedEvent(command.type, speedUnresolvedReason(speed))); return; }
+    this.localMoveIssued = true;
+    const { actionPreview, actionTargetId, ...ordinary } = player;
+    if (actionPreview !== undefined || actionTargetId !== undefined || player.animation !== "idle") this.update({ ...ordinary, animation: "idle" });
+    this.emit({ type: "move", entityId: player.id, origin: worldPositionToSource(origin), destination: worldPositionToSource(destination),
+      moveType: this.locomotionMode === "walk" ? this.moveTypes.walk : this.moveTypes.run,
+      speeds: { walk: speed.walkSourceUnitsPerSecond, run: speed.runSourceUnitsPerSecond,
+        swimWalk: speed.swimSourceUnitsPerSecond, swimRun: speed.swimSourceUnitsPerSecond },
+      collision: { radius: this.localCollision.radius, height: this.localCollision.height } });
+  }
+  private stopLocalMove(player: WorldEntity): void {
+    if (!this.localMoveIssued) return;
+    this.localMoveIssued = false;
+    this.emit({ type: "stop", entityId: player.id, position: worldPositionToSource(player.position), heading: worldYawToSourceHeading(player.orientationRadians) });
+  }
+  private acceptReportedPosition(player: WorldEntity, command: ReportPositionCommand): void {
+    const rejectionReason = reportedPositionRejectionReason(command);
+    if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
+    this.update({ ...player, position: sourcePositionToWorld(command.position), orientationRadians: sourceHeadingToWorldYaw(command.heading) });
+  }
+  private stopAtReportedPosition(player: WorldEntity, command: CannotMoveCommand): void {
+    const rejectionReason = reportedPositionRejectionReason(command);
+    if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
+    this.localMoveIssued = false;
+    this.update({ ...player, position: sourcePositionToWorld(command.position), orientationRadians: sourceHeadingToWorldYaw(command.heading) });
+    this.emit({ type: "stop", entityId: player.id, position: { x: command.position.x, y: command.position.y, z: command.position.z }, heading: command.heading });
+  }
+  private nextSandboxSpawnPosition(player: WorldEntity): WorldPosition {
+    this.sandboxSpawnPlacementOrdinal += 1;
+    return { x: player.position.x + sandboxActorSpacingMetres * this.sandboxSpawnPlacementOrdinal, y: player.position.y, z: player.position.z };
+  }
+  private spawnNpc(player: WorldEntity, npcId: number): void {
+    if (!isLineageIdentifier(npcId)) return;
+    const position = this.nextSandboxSpawnPosition(player);
+    this.spawnedNpcCount += 1;
+    this.addSpawnedEntity(createSpawnedNpcEntity(npcId, this.spawnedNpcCount, position));
+  }
+  private spawnCharacter(player: WorldEntity, characterTemplateIndex: number): void {
+    if (!isLineageIdentifier(characterTemplateIndex)) return;
+    const position = this.nextSandboxSpawnPosition(player);
+    this.spawnedCharacterCount += 1;
+    this.addSpawnedEntity(createSpawnedCharacterEntity(characterTemplateIndex, this.spawnedCharacterCount, position));
+  }
+  private addSpawnedEntity(entity: WorldEntity): void {
+    this.entities.set(entity.id, entity);
+    this.emit({ type: "spawn", entity });
+  }
+  dispose(): void { this.disposed = true; this.listeners.clear(); this.commandListeners.clear(); this.entities.clear(); this.localMoveIssued = false; }
+}

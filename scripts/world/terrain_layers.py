@@ -1,0 +1,138 @@
+import math
+
+from native_catalog.ue2 import FormatError
+from world.map_actor_properties import property_value
+from world.map_sources import sha
+from world.terrain_coordinates import dot, f32
+
+UV_TOLERANCE = 0.00001
+QUALIFIED_MASK_UV_RULE_ID = 'interlude-20_20-submitted-mask-uv-20261106'
+QUALIFIED_MASK_UV_FORMULA = '(gridXY + 0.5) / heightmapDimensions - max(gridXY - 240, 0) / 4096'
+LAYER_INCOMPLETE_REASON_PREFIX = 'terrain-layer-incomplete:'
+LAYER_UV_UNVERIFIED_REASON_PREFIX = 'terrain-layer-uv-unverified:'
+UNROTATED_LAYER_ROTATION = {'Pitch': 0, 'Yaw': 0, 'Roll': 0}
+
+
+def layer_object_presence(layer):
+    texture, alpha_map = (property_value(layer['properties'], name) for name in ('Texture', 'AlphaMap'))
+    return bool(texture and texture['object']), bool(alpha_map and alpha_map['object'])
+
+
+def is_empty_layer_slot(layer):
+    return not any(layer_object_presence(layer))
+
+
+def layer_uv_scale(properties):
+    return [property_value(properties, name) for name in ('UScale', 'VScale')]
+
+
+def has_verified_xy_uv_placement(properties):
+    return (property_value(properties, 'TextureMapAxis') == 0 and property_value(properties, 'TextureRotation') == 0
+            and property_value(properties, 'LayerRotation') == UNROTATED_LAYER_ROTATION
+            and all(property_value(properties, name) == 0 for name in ('UPan', 'VPan'))
+            and all(value is not None and value > 0 for value in layer_uv_scale(properties)))
+
+
+def layer_gap_reason(layer):
+    texture_present, alpha_map_present = layer_object_presence(layer)
+    if texture_present != alpha_map_present:
+        return f'{LAYER_INCOMPLETE_REASON_PREFIX}{layer["index"]}'
+    if texture_present and not has_verified_xy_uv_placement(layer['properties']):
+        return f'{LAYER_UV_UNVERIFIED_REASON_PREFIX}{layer["index"]}'
+    return None
+
+
+def terrain_layer_gap_reasons(serialized_layers):
+    gap_reasons = {}
+    for layer in serialized_layers:
+        reason = layer_gap_reason(layer)
+        if reason is not None:
+            gap_reasons[layer['index']] = reason
+    return gap_reasons
+
+
+def serialized_matrix(properties):
+    rows = property_value(properties, 'TerrainMatrix')
+    if not isinstance(rows, list):
+        raise FormatError('Missing serialized terrain material matrix')
+    result = []
+    for label in ('XPlane', 'YPlane', 'ZPlane', 'WPlane'):
+        plane = property_value(rows, label)
+        if not isinstance(plane, list):
+            raise FormatError('Missing material matrix plane')
+        values = [property_value(plane, axis) for axis in 'XYZW']
+        if not all(type(v) in (int, float) and math.isfinite(v) for v in values):
+            raise FormatError('Incomplete material matrix fields')
+        result.append(values)
+    return result
+
+
+def texture_uv(matrix, native_point):
+    p = [*native_point, 1]
+    return [sum(p[row]*matrix[row][column] for row in range(4)) for column in (0, 1)]
+
+
+def terrain_mask_uv(x, y, width, height, mask_uv_rule):
+    if mask_uv_rule['formula'] != QUALIFIED_MASK_UV_FORMULA:
+        raise FormatError(f'Unsupported terrain mask UV formula: {mask_uv_rule["formula"]!r}')
+    half_texel = [(x+.5)/width, (y+.5)/height]
+    return [half_texel[0] - max(x-240, 0)/4096, half_texel[1] - max(y-240, 0)/4096]
+
+
+def layer_sampling_source(layer, package, terrain_export, source_path):
+    names = ('Scale', 'ToWorld', 'ToMaskmap', 'bUseAlpha')
+    properties = []
+    start, end = terrain_export['offset'], terrain_export['offset'] + terrain_export['size']
+    for prop in layer['properties']:
+        if prop['name'] not in names:
+            continue
+        payload = prop['payload']
+        tag_start, payload_start, size = prop['offset'], payload['offset'], payload['bytes']
+        if (payload['path'] != 'raw/map.unwrapped.bin' or
+                not all(type(value) is int for value in (tag_start, payload_start, size)) or size < 0 or
+                not 0 <= start <= tag_start < payload_start <= payload_start + size <= end <= len(package.data)):
+            raise FormatError('Terrain layer property exceeds its native export')
+        raw_payload = package.data[payload_start:payload_start+size]
+        if sha(raw_payload) != payload['sha256']:
+            raise FormatError('Terrain layer property payload hash differs from native source')
+        serialized = package.data[tag_start:payload_start+size]
+        properties.append({'property': prop, 'serializedTagAndPayload': {
+            'offset': tag_start, 'bytes': len(serialized), 'payloadOffsetWithinRecord': payload_start-tag_start,
+            'sha256': sha(serialized), 'hex': serialized.hex()}})
+    return {'package': source_path, 'packageSha256': package.source_hash,
+            'object': terrain_export['object'], 'exportIndex': terrain_export['exportIndex'],
+            'layerIndex': layer['index'], 'offsetBasis': 'unwrapped native package; raw map property paths are provenance only',
+            'properties': properties, 'omittedProperties': [name for name in names if not any(p['name'] == name for p in layer['properties'])],
+            'interpretation': 'Original property tags, array indices and bytes; no defaults, resampling or native sampling/blend semantics inferred.'}
+
+
+def layer_records(terrain, native, package, source_path, layer_gap_reasons):
+    terrain_export = package.exports[native['exportIndex']-1]
+    if terrain['id'] != 'interlude:'+terrain_export['object'] or native['object'] != terrain_export['object']:
+        raise FormatError('Terrain layer source identity differs from native export')
+    records = []
+    for layer in terrain['layers']:
+        if is_empty_layer_slot(layer) or layer['index'] in layer_gap_reasons:
+            continue
+        props = layer['properties']
+        texture, alpha = property_value(props, 'Texture'), property_value(props, 'AlphaMap')
+        matrix = serialized_matrix(props)
+        scale = layer_uv_scale(props)
+        inv = native['toHeightmap']
+        transposed_origin = [-f32(dot(inv['origin'], axis)) for axis in inv['axes']]
+        tex_origin = [f32(dot([-v for v in transposed_origin], axis)) for axis in inv['axes']]
+        errors = []
+        for axis in (0, 1):
+            coefficient = f32(inv['axes'][axis][axis]/scale[axis])
+            expected_translation = f32(-tex_origin[axis]*coefficient)
+            errors += [abs(matrix[axis][axis]-coefficient), abs(matrix[3][axis]-expected_translation)]
+            errors += [abs(matrix[row][axis]) for row in range(3) if row != axis]
+        if max(errors) > UV_TOLERANCE:
+            raise FormatError('Serialized terrain UV matrix differs from native reference calculation')
+        records.append({'index': layer['index'], 'texture': texture['object'], 'alphaMap': alpha['object'],
+                        'useAlpha': property_value(props, 'bUseAlpha'), 'worldToTextureRowMajor': matrix,
+                        'uvCoefficientMaxError': max(errors), 'maskUV': '(gridXY + 0.5) / heightmapDimensions',
+                        'maskUVStatus': 'inspection-candidate; native mask sampling remains unverified',
+                        'nativeSamplingSource': layer_sampling_source(layer, package, terrain_export, source_path),
+                        'channelAndBlendStatus': 'Lineage compressed alpha-map channel selection and layer blending remain unverified; source references and bUseAlpha are preserved'})
+    return records

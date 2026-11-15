@@ -1,0 +1,1869 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-player-stage",
+  "models": [],
+  "profiles": [
+    {
+      "id": "human-male-fighter",
+      "name": "Human male fighter",
+      "catalogId": "human-male-fighter:0",
+      "assetId": "interlude:assembly:MFighter-native-body-face0-hair0",
+      "sourceObject": "Fighter.MFighter_m001_u",
+      "sourceSha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c",
+      "clips": {
+        "idle": "Wait_Hand_MFighter",
+        "walk": "Walk_Hand_MFighter",
+        "run": "Run_Hand_MFighter",
+        "turn": "Walk_Hand_MFighter",
+        "atkWait": "AtkWait_Hand_MFighter",
+        "attack": "Atk01_Hand_MFighter",
+        "atk02": "Atk01_Hand_MFighter",
+        "atk03": "Atk01_Hand_MFighter",
+        "shieldAtk": "ShieldAtk_1HS_MFighter",
+        "castShort": "CastShort_MFighter",
+        "castMid": "CastMid_MFighter",
+        "castLong": "CastLong_MFighter",
+        "castEnd": "CastEnd_MFighter",
+        "magicShot": "Magicshot_MFighter",
+        "magicThrow": "MagicThrow_MFighter",
+        "magicNoTarget": "MagicNotarget_MFighter",
+        "sit": "Sit_MFighter",
+        "sitWait": "SitWait_MFighter",
+        "stand": "Stand_MFighter",
+        "chairSit": "ChairSit_MFighter",
+        "chairWait": "ChairWait_MFighter",
+        "chairStand": "ChairStand_MFighter",
+        "pickup": "PicItem_MFighter",
+        "death": "Death_MFighter",
+        "deathWait": "DeathWait_MFighter",
+        "deathStand": "Rebirth_MFighter",
+        "damageFly": "Damagefly_MFighter",
+        "fall": "Falling_MFighter",
+        "swim": "Swim_MFighter",
+        "swimWait": "SwimWait_MFighter",
+        "swimAtkWait": "SwimWait_MFighter",
+        "swimDeath": "SwimDeath_MFighter",
+        "swimDeathWait": "SwimDeathWait_MFighter",
+        "social2": "Social_nod_MFighter",
+        "social3": "Social_victory_MFighter",
+        "social4": "Social_Atk_MFighter",
+        "social5": "Social_no_MFighter",
+        "social6": "Social_yes_MFighter",
+        "social7": "Social_bow_MFighter",
+        "social8": "Social_unaware_MFighter",
+        "social9": "Social_waiting_a_MFighter",
+        "social10": "Social_laugh_MFighter",
+        "social11": "Social_clap_MFighter",
+        "social12": "Social_dance_MFighter",
+        "social13": "Social_sad_MFighter"
+      },
+      "forwardAxis": [
+        1,
+        0,
+        0
+      ],
+      "actorScale": [
+        1,
+        1,
+        1
+      ],
+      "collisionRadius": 9,
+      "collisionHeight": 23,
+      "sourceUnitsPerMetre": 100,
+      "upperItems": [
+        {
+          "itemId": 22,
+          "catalogId": "fighter-equipment:0",
+          "sourceObject": "Fighter.MFighter_m001_u",
+          "sourceSha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c"
+        }
+      ],
+      "sourceEvidence": {
+        "scope": "Existing verified male slice, LineageWarrior.MFighter dimensions and preserved mesh-facing transform"
+      },
+      "limitations": [
+        "Synthetic movement, navigation and action selection; native gameplay dispatch remains unverified."
+      ],
+      "aliasEvidence": {
+        "generator": "scripts/prepare-native-player-aliases.py",
+        "report": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/ALIAS_COVERAGE.json",
+        "reportSha256": "d52e3e1e25bb824530f9ed0ca7f5285c57a3539c3b9f939ec5fa1f89542055d3",
+        "family": "WT_HAND",
+        "familySource": "/l2/678067311414990c82307a045f01b3da0cb083d2075ed927c83372ca647bd2d5/animation-families.json",
+        "familySourceSha256": "6638c1876cdf17c8b931286e14e4673e7d38851267a1d97c04b0819644e77b40",
+        "rows": [
+          {
+            "alias": "idle",
+            "key": "WaitAnimName[0]",
+            "status": "case-only",
+            "reference": "wait_Hand_MFighter",
+            "line": 6,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "walk",
+            "key": "WalkAnimName[0]",
+            "status": "case-only",
+            "reference": "walk_Hand_MFighter",
+            "line": 4,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "run",
+            "key": "RunAnimName[0]",
+            "status": "case-only",
+            "reference": "run_Hand_MFighter",
+            "line": 5,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "turn",
+            "key": "TurnAnimName[0]",
+            "status": "case-only",
+            "reference": "walk_Hand_MFighter",
+            "line": 3,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atkWait",
+            "key": "AtkWaitAnimName[0]",
+            "status": "case-only",
+            "reference": "atkWait_Hand_MFighter",
+            "line": 7,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "attack",
+            "key": "Atk01AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_MFighter",
+            "line": 8,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atk02",
+            "key": "Atk02AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_MFighter",
+            "line": 9,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atk03",
+            "key": "Atk03AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_MFighter",
+            "line": 10,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "shieldAtk",
+            "key": "ShieldAtkAnimName[0]",
+            "status": "case-only",
+            "reference": "shieldatk_1HS_MFighter",
+            "line": 28,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castShort",
+            "key": "CastShortAnimName[0]",
+            "status": "exact",
+            "reference": "CastShort_MFighter",
+            "line": 18,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castMid",
+            "key": "CastMidAnimName[0]",
+            "status": "exact",
+            "reference": "CastMid_MFighter",
+            "line": 19,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castLong",
+            "key": "CastLongAnimName[0]",
+            "status": "exact",
+            "reference": "CastLong_MFighter",
+            "line": 20,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castEnd",
+            "key": "CastEndAnimName[0]",
+            "status": "exact",
+            "reference": "CastEnd_MFighter",
+            "line": 21,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicShot",
+            "key": "MagicShotAnimName[0]",
+            "status": "case-only",
+            "reference": "MagicShot_MFighter",
+            "line": 22,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicThrow",
+            "key": "MagicThrowAnimName[0]",
+            "status": "exact",
+            "reference": "MagicThrow_MFighter",
+            "line": 23,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicNoTarget",
+            "key": "MagicNoTargetAnimName[0]",
+            "status": "case-only",
+            "reference": "MagicNoTarget_MFighter",
+            "line": 24,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "sit",
+            "key": "SitAnimName[0]",
+            "status": "exact",
+            "reference": "Sit_MFighter",
+            "line": 12,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "sitWait",
+            "key": "SitWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SitWait_MFighter",
+            "line": 13,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "stand",
+            "key": "StandAnimName[0]",
+            "status": "exact",
+            "reference": "Stand_MFighter",
+            "line": 14,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairSit",
+            "key": "ChairSitAnimName[0]",
+            "status": "exact",
+            "reference": "ChairSit_MFighter",
+            "line": 38,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairWait",
+            "key": "ChairWaitAnimName[0]",
+            "status": "exact",
+            "reference": "ChairWait_MFighter",
+            "line": 39,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairStand",
+            "key": "ChairStandAnimName[0]",
+            "status": "exact",
+            "reference": "ChairStand_MFighter",
+            "line": 40,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "pickup",
+            "key": "PicItemAnimName[0]",
+            "status": "exact",
+            "reference": "PicItem_MFighter",
+            "line": 11,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "death",
+            "key": "DeathAnimName[0]",
+            "status": "exact",
+            "reference": "Death_MFighter",
+            "line": 15,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "deathWait",
+            "key": "DeathWaitAnimName[0]",
+            "status": "exact",
+            "reference": "DeathWait_MFighter",
+            "line": 16,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "deathStand",
+            "key": "DeathStandAnimName[0]",
+            "status": "exact",
+            "reference": "Rebirth_MFighter",
+            "line": 31,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "damage",
+            "key": "DamageAnimName[0]",
+            "status": "no-family-value",
+            "selectionPath": "base-class-direct-getter",
+            "reason": "No hit-reaction clip exists in the native MFighter animation set and the [MFighter] section assigns no DamageAnimName (Engine.Pawn declares it with getter GetDamageAnimName, so the field is empty). The only damage-like clip is Damagefly_MFighter, bound through DamageFlyAnimName[0] = DamageFly_MFighter (a knock-back). The 'damage' alias must stay unmapped; do not substitute DamageFly or any invented clip."
+          },
+          {
+            "alias": "damageFly",
+            "key": "DamageFlyAnimName[0]",
+            "status": "case-only",
+            "reference": "DamageFly_MFighter",
+            "line": 32,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "fall",
+            "key": "FallAnimName[0]",
+            "status": "exact",
+            "reference": "Falling_MFighter",
+            "line": 30,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swim",
+            "key": "SwimAnimName[0]",
+            "status": "exact",
+            "reference": "Swim_MFighter",
+            "line": 33,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimWait",
+            "key": "SwimWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimWait_MFighter",
+            "line": 34,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimAtkWait",
+            "key": "SwimAtkWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimWait_MFighter",
+            "line": 35,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimDeath",
+            "key": "SwimDeathAnimName[0]",
+            "status": "exact",
+            "reference": "SwimDeath_MFighter",
+            "line": 36,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimDeathWait",
+            "key": "SwimDeathWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimDeathWait_MFighter",
+            "line": 37,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social2",
+            "key": "PcSocialAnimName[2]",
+            "status": "case-only",
+            "reference": "Social_Nod_MFighter",
+            "line": 374,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social3",
+            "key": "PcSocialAnimName[3]",
+            "status": "case-only",
+            "reference": "Social_Victory_MFighter",
+            "line": 375,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social4",
+            "key": "PcSocialAnimName[4]",
+            "status": "exact",
+            "reference": "Social_Atk_MFighter",
+            "line": 376,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social5",
+            "key": "PcSocialAnimName[5]",
+            "status": "exact",
+            "reference": "Social_no_MFighter",
+            "line": 377,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social6",
+            "key": "PcSocialAnimName[6]",
+            "status": "exact",
+            "reference": "Social_yes_MFighter",
+            "line": 378,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social7",
+            "key": "PcSocialAnimName[7]",
+            "status": "exact",
+            "reference": "Social_bow_MFighter",
+            "line": 379,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social8",
+            "key": "PcSocialAnimName[8]",
+            "status": "exact",
+            "reference": "Social_unaware_MFighter",
+            "line": 380,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social9",
+            "key": "PcSocialAnimName[9]",
+            "status": "exact",
+            "reference": "Social_waiting_a_MFighter",
+            "line": 381,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social10",
+            "key": "PcSocialAnimName[10]",
+            "status": "exact",
+            "reference": "Social_laugh_MFighter",
+            "line": 382,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social11",
+            "key": "PcSocialAnimName[11]",
+            "status": "exact",
+            "reference": "Social_clap_MFighter",
+            "line": 383,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social12",
+            "key": "PcSocialAnimName[12]",
+            "status": "exact",
+            "reference": "Social_dance_MFighter",
+            "line": 384,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social13",
+            "key": "PcSocialAnimName[13]",
+            "status": "exact",
+            "reference": "Social_sad_MFighter",
+            "line": 385,
+            "selectionPath": "unverified"
+          }
+        ]
+      }
+    },
+    {
+      "actorScale": [
+        1,
+        1,
+        1
+      ],
+      "assetId": "interlude:assembly:FFighter-native-body-face0-hair0",
+      "catalogId": "human-female-fighter:0",
+      "clips": {
+        "idle": "Wait_Hand_FFighter",
+        "walk": "Walk_Hand_FFighter",
+        "run": "Run_Hand_FFighter",
+        "turn": "Walk_Hand_FFighter",
+        "atkWait": "AtkWait_Hand_FFighter",
+        "attack": "Atk01_Hand_FFighter",
+        "atk02": "Atk01_Hand_FFighter",
+        "atk03": "Atk01_Hand_FFighter",
+        "shieldAtk": "ShieldAtk_1HS_FFighter",
+        "castShort": "CastShort_FFighter",
+        "castMid": "CastMid_FFighter",
+        "castLong": "CastLong_FFighter",
+        "castEnd": "CastEnd_FFighter",
+        "magicShot": "MagicShot_FFighter",
+        "magicThrow": "MagicThrow_FFighter",
+        "magicNoTarget": "MagicNotarget_FFighter",
+        "sit": "Sit_FFighter",
+        "sitWait": "SitWait_FFighter",
+        "stand": "Stand_FFighter",
+        "chairSit": "Chairsit_FFighter",
+        "chairWait": "Chairwait_FFighter",
+        "chairStand": "ChairStand_FFighter",
+        "pickup": "PicItem_FFighter",
+        "death": "Death_FFighter",
+        "deathWait": "DeathWait_FFighter",
+        "deathStand": "Rebirth_FFighter",
+        "damageFly": "Damagefly_FFighter",
+        "fall": "Falling_FFighter",
+        "swim": "Swim_FFighter",
+        "swimWait": "Swimwait_FFighter",
+        "swimAtkWait": "Swimwait_FFighter",
+        "swimDeath": "Swimdeath_FFighter",
+        "swimDeathWait": "Swimdeathwait_FFighter",
+        "social2": "Social_nod_FFighter",
+        "social3": "Social_victory_FFighter",
+        "social4": "Social_Atk_FFighter",
+        "social5": "Social_no_FFighter",
+        "social6": "Social_yes_FFighter",
+        "social7": "Social_bow_FFighter",
+        "social8": "Social_unaware_FFighter",
+        "social9": "Social_waiting_a_FFighter",
+        "social10": "Social_laugh_FFighter",
+        "social11": "Social_clap_FFighter",
+        "social12": "Social_dance_FFighter",
+        "social13": "Social_sad_FFighter"
+      },
+      "collisionHeight": 23.5,
+      "collisionRadius": 8,
+      "forwardAxis": [
+        1,
+        0,
+        0
+      ],
+      "id": "human-female-fighter",
+      "limitations": [
+        "Human female fighter base appearance only; other human classes, skills and appearances are unfinished.",
+        "PrePivot is absent through checked ancestry and unresolved; no native zero-pivot claim or extra offset is applied.",
+        "Navigation uses the existing browser capsule/step/slope policy, not a native collision reconstruction.",
+        "Death and action choices are explicit browser previews; complete native dispatch, listener/spatial/random rules remain unverified.",
+        "Four direct death cues are resolved. AttackVoice, AttackItem and AttackShot events remain uncovered; no substitute audio is added.",
+        "Existing male authored clip/material settings remain authoritative. This profile does not overwrite saved Editor content."
+      ],
+      "name": "Human female fighter",
+      "sourceEvidence": {
+        "audio": "Direct original AnimNotify_Sound dependencies travel in the character archive; specialized attack dispatch stays uncovered.",
+        "class": "LineageWarrior.FFighter inherited Engine.Actor scale and exact collision dimensions.",
+        "equipment": "armorgrp item 22 f_HumnFigh binds Fighter.FFighter_m001_u to FFighter.FFighter_m001_t04_u.",
+        "facing": "Independent transformed native ankle-to-toe vectors establish +X.",
+        "report": "artifacts/native-parity/research/native-ffighter-world-20261107/source/REPORT.md",
+        "sourceManifestSha256": "85f3218bcca14306e22d43b1f82ca49f648f240d3ba6c438a8eb9d8daa014b34"
+      },
+      "sourceObject": "Fighter.FFighter_m001_u",
+      "sourceSha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c",
+      "sourceUnitsPerMetre": 100,
+      "upperItems": [
+        {
+          "catalogId": "female-fighter-equipment:0",
+          "itemId": 22,
+          "sourceObject": "Fighter.FFighter_m001_u",
+          "sourceSha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c"
+        }
+      ],
+      "aliasEvidence": {
+        "generator": "scripts/prepare-native-player-aliases.py",
+        "report": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/ALIAS_COVERAGE.json",
+        "reportSha256": "d52e3e1e25bb824530f9ed0ca7f5285c57a3539c3b9f939ec5fa1f89542055d3",
+        "family": "WT_HAND",
+        "familySource": "/l2/ce3984dded01419ce9fc1ec1644ffe06346803f889d5925684d583a154015990/animation-families.json",
+        "familySourceSha256": "06c0d54842bc37bad72e945b1badc7c04fce42230d2b20c26df4d0b7a9a0dc6a",
+        "rows": [
+          {
+            "alias": "idle",
+            "key": "WaitAnimName[0]",
+            "status": "case-only",
+            "reference": "wait_Hand_FFighter",
+            "line": 433,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "walk",
+            "key": "WalkAnimName[0]",
+            "status": "case-only",
+            "reference": "walk_Hand_FFighter",
+            "line": 431,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "run",
+            "key": "RunAnimName[0]",
+            "status": "case-only",
+            "reference": "run_Hand_FFighter",
+            "line": 432,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "turn",
+            "key": "TurnAnimName[0]",
+            "status": "case-only",
+            "reference": "walk_Hand_FFighter",
+            "line": 430,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atkWait",
+            "key": "AtkWaitAnimName[0]",
+            "status": "case-only",
+            "reference": "atkWait_Hand_FFighter",
+            "line": 434,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "attack",
+            "key": "Atk01AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_FFighter",
+            "line": 435,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atk02",
+            "key": "Atk02AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_FFighter",
+            "line": 436,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atk03",
+            "key": "Atk03AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_FFighter",
+            "line": 437,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "shieldAtk",
+            "key": "ShieldAtkAnimName[0]",
+            "status": "case-only",
+            "reference": "shieldatk_1HS_FFighter",
+            "line": 455,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castShort",
+            "key": "CastShortAnimName[0]",
+            "status": "exact",
+            "reference": "CastShort_FFighter",
+            "line": 445,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castMid",
+            "key": "CastMidAnimName[0]",
+            "status": "exact",
+            "reference": "CastMid_FFighter",
+            "line": 446,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castLong",
+            "key": "CastLongAnimName[0]",
+            "status": "exact",
+            "reference": "CastLong_FFighter",
+            "line": 447,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castEnd",
+            "key": "CastEndAnimName[0]",
+            "status": "exact",
+            "reference": "CastEnd_FFighter",
+            "line": 448,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicShot",
+            "key": "MagicShotAnimName[0]",
+            "status": "exact",
+            "reference": "MagicShot_FFighter",
+            "line": 449,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicThrow",
+            "key": "MagicThrowAnimName[0]",
+            "status": "exact",
+            "reference": "MagicThrow_FFighter",
+            "line": 450,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicNoTarget",
+            "key": "MagicNoTargetAnimName[0]",
+            "status": "case-only",
+            "reference": "MagicNoTarget_FFighter",
+            "line": 451,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "sit",
+            "key": "SitAnimName[0]",
+            "status": "exact",
+            "reference": "Sit_FFighter",
+            "line": 439,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "sitWait",
+            "key": "SitWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SitWait_FFighter",
+            "line": 440,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "stand",
+            "key": "StandAnimName[0]",
+            "status": "exact",
+            "reference": "Stand_FFighter",
+            "line": 441,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairSit",
+            "key": "ChairSitAnimName[0]",
+            "status": "case-only",
+            "reference": "ChairSit_FFighter",
+            "line": 465,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairWait",
+            "key": "ChairWaitAnimName[0]",
+            "status": "case-only",
+            "reference": "ChairWait_FFighter",
+            "line": 466,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairStand",
+            "key": "ChairStandAnimName[0]",
+            "status": "exact",
+            "reference": "ChairStand_FFighter",
+            "line": 467,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "pickup",
+            "key": "PicItemAnimName[0]",
+            "status": "exact",
+            "reference": "PicItem_FFighter",
+            "line": 438,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "death",
+            "key": "DeathAnimName[0]",
+            "status": "exact",
+            "reference": "Death_FFighter",
+            "line": 442,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "deathWait",
+            "key": "DeathWaitAnimName[0]",
+            "status": "exact",
+            "reference": "DeathWait_FFighter",
+            "line": 443,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "deathStand",
+            "key": "DeathStandAnimName[0]",
+            "status": "exact",
+            "reference": "Rebirth_FFighter",
+            "line": 458,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "damage",
+            "key": "DamageAnimName[0]",
+            "status": "no-family-value",
+            "selectionPath": "base-class-direct-getter",
+            "reason": "No hit-reaction clip exists in the native FFighter animation set and the [FFighter] section assigns no DamageAnimName (Engine.Pawn declares it with getter GetDamageAnimName, so the field is empty). The only damage-like clip is Damagefly_FFighter, bound through DamageFlyAnimName[0] = DamageFly_FFighter (a knock-back). The 'damage' alias must stay unmapped; do not substitute DamageFly or any invented clip."
+          },
+          {
+            "alias": "damageFly",
+            "key": "DamageFlyAnimName[0]",
+            "status": "case-only",
+            "reference": "DamageFly_FFighter",
+            "line": 459,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "fall",
+            "key": "FallAnimName[0]",
+            "status": "exact",
+            "reference": "Falling_FFighter",
+            "line": 457,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swim",
+            "key": "SwimAnimName[0]",
+            "status": "exact",
+            "reference": "Swim_FFighter",
+            "line": 460,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimWait",
+            "key": "SwimWaitAnimName[0]",
+            "status": "case-only",
+            "reference": "SwimWait_FFighter",
+            "line": 461,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimAtkWait",
+            "key": "SwimAtkWaitAnimName[0]",
+            "status": "case-only",
+            "reference": "SwimWait_FFighter",
+            "line": 462,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimDeath",
+            "key": "SwimDeathAnimName[0]",
+            "status": "case-only",
+            "reference": "SwimDeath_FFighter",
+            "line": 463,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimDeathWait",
+            "key": "SwimDeathWaitAnimName[0]",
+            "status": "case-only",
+            "reference": "SwimDeathWait_FFighter",
+            "line": 464,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social2",
+            "key": "PcSocialAnimName[2]",
+            "status": "case-only",
+            "reference": "Social_Nod_FFighter",
+            "line": 801,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social3",
+            "key": "PcSocialAnimName[3]",
+            "status": "case-only",
+            "reference": "Social_Victory_FFighter",
+            "line": 802,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social4",
+            "key": "PcSocialAnimName[4]",
+            "status": "exact",
+            "reference": "Social_Atk_FFighter",
+            "line": 803,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social5",
+            "key": "PcSocialAnimName[5]",
+            "status": "exact",
+            "reference": "Social_no_FFighter",
+            "line": 804,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social6",
+            "key": "PcSocialAnimName[6]",
+            "status": "exact",
+            "reference": "Social_yes_FFighter",
+            "line": 805,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social7",
+            "key": "PcSocialAnimName[7]",
+            "status": "exact",
+            "reference": "Social_bow_FFighter",
+            "line": 806,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social8",
+            "key": "PcSocialAnimName[8]",
+            "status": "exact",
+            "reference": "Social_unaware_FFighter",
+            "line": 807,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social9",
+            "key": "PcSocialAnimName[9]",
+            "status": "exact",
+            "reference": "Social_waiting_a_FFighter",
+            "line": 808,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social10",
+            "key": "PcSocialAnimName[10]",
+            "status": "exact",
+            "reference": "Social_laugh_FFighter",
+            "line": 809,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social11",
+            "key": "PcSocialAnimName[11]",
+            "status": "exact",
+            "reference": "Social_clap_FFighter",
+            "line": 810,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social12",
+            "key": "PcSocialAnimName[12]",
+            "status": "exact",
+            "reference": "Social_dance_FFighter",
+            "line": 811,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social13",
+            "key": "PcSocialAnimName[13]",
+            "status": "exact",
+            "reference": "Social_sad_FFighter",
+            "line": 812,
+            "selectionPath": "unverified"
+          }
+        ]
+      }
+    },
+    {
+      "actorScale": [
+        1,
+        1,
+        1
+      ],
+      "assetId": "interlude:assembly:MMagic-native-body-face0-hair0",
+      "catalogId": "human-male-mystic:0",
+      "clips": {
+        "idle": "Wait_Hand_MMagic",
+        "walk": "Walk_Hand_MMagic",
+        "run": "Run_Hand_MMagic",
+        "turn": "Walk_Hand_MMagic",
+        "atkWait": "AtkWait_Hand_MMagic",
+        "attack": "Atk01_Hand_MMagic",
+        "atk02": "Atk01_Hand_MMagic",
+        "atk03": "Atk01_Hand_MMagic",
+        "shieldAtk": "ShieldAtk_1HS_MMagic",
+        "castShort": "CastShort_MMagic",
+        "castMid": "CastMid_MMagic",
+        "castLong": "CastLong_MMagic",
+        "castEnd": "CastEnd_MMagic",
+        "magicShot": "MagicShot_MMagic",
+        "magicThrow": "MagicThrow_MMagic",
+        "magicNoTarget": "MagicNotarget_MMagic",
+        "sit": "Sit_MMagic",
+        "sitWait": "SitWait_MMagic",
+        "stand": "Stand_MMagic",
+        "chairSit": "ChairSit_MMagic",
+        "chairWait": "ChairWait_MMagic",
+        "chairStand": "ChairStand_MMagic",
+        "pickup": "PicItem_MMagic",
+        "death": "Death_MMagic",
+        "deathWait": "DeathWait_MMagic",
+        "deathStand": "Stand_MMagic",
+        "damageFly": "Damagefly_MMagic",
+        "fall": "Falling_MMagic",
+        "swim": "Swim_MMagic",
+        "swimWait": "SwimWait_MMagic",
+        "swimAtkWait": "SwimWait_MMagic",
+        "swimDeath": "SwimDeath_MMagic",
+        "swimDeathWait": "SwimDeathWait_MMagic",
+        "social2": "Social_nod_MMagic",
+        "social3": "Social_victory_MMagic",
+        "social4": "Social_Atk_MMagic",
+        "social5": "Social_no_MMagic",
+        "social6": "Social_yes_MMagic",
+        "social7": "Social_bow_MMagic",
+        "social8": "Social_unaware_MMagic",
+        "social9": "Social_waiting_a_MMagic",
+        "social10": "Social_laugh_MMagic",
+        "social11": "Social_clap_MMagic",
+        "social12": "Social_dance_MMagic",
+        "social13": "Social_sad_MMagic"
+      },
+      "collisionHeight": 22.8,
+      "collisionRadius": 7.5,
+      "forwardAxis": [
+        1,
+        0,
+        0
+      ],
+      "id": "human-male-mystic",
+      "limitations": [
+        "Human male mystic base appearance (chargrp row8 choice0) only; equipment, skills and other appearances are unfinished.",
+        "PrePivot is absent through checked ancestry and unresolved; no native zero-pivot claim or extra offset is applied.",
+        "Navigation uses the existing browser capsule/step/slope policy, not a native collision reconstruction.",
+        "Death and action choices are explicit browser previews; complete native dispatch, listener/spatial/random rules remain unverified.",
+        "The native animation set has no hit-reaction clip and the [MMagic] localization assigns no DamageAnimName; Damagefly_MMagic is the DamageFlyAnimName knock-back, not a hit reaction."
+      ],
+      "name": "Human male mystic",
+      "sourceEvidence": {
+        "appearance": "chargrp row8 body_mesh1..4 Magic.MMagic_m005_u/m003_l/m005_g/m003_b with row8 body_texture1..4; face choice0 Magic.MMagic_m000_f/MMagic.MMagic_m000_t00_f; hair LineageWarrior.MMagic SubMeshes[4]/[5] with hair texture color0 (recipe appearance choice).",
+        "audio": "Direct original AnimNotify_Sound dependencies travel in the character archive; AttackItem/AttackVoice/AttackShot dispatch is not covered by this profile.",
+        "class": "LineageWarrior.MMagic -> LineagePawn -> Engine.Pawn -> Engine.Actor: CollisionRadius 7.5 / CollisionHeight 22.8 (LineageWarrior.MMagic); DrawScale 1.0 and DrawScale3D (1,1,1) inherited from Engine.Actor; GroundSpeed 120, GroundMinSpeed 80, WalkingPct 0.4 (class defaults; server speeds are separate).",
+        "facing": "Converted bind-pose ankle-to-toe vectors of both feet point +X after the native mesh transform.",
+        "pipeline": "recipes/native-pipeline-mmagic.json -> recipes/native-mmagic.json (inputs: recipes/native-pipeline-magic.inputs.lock.json)",
+        "report": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/PROFILE_EVIDENCE.json",
+        "reportSha256": "dae2de14bde6e9d5f9208f9132b4344fe3e079baf62f26c07e6e7018168f5b52",
+        "scale": "Native scale only: converter 0.01 m per source unit, native MeshOrigin/RotOrigin/MeshScale parent, actor DrawScale 1.0. No height fitting, recentering or grounding."
+      },
+      "sourceObject": "Magic.MMagic_M005_u",
+      "sourceSha256": "26443ed7a5b972010c614f74ac8b625e3ae2dbbaa12f7d0a0fa9302622326fa2",
+      "sourceUnitsPerMetre": 100,
+      "upperItems": [],
+      "aliasEvidence": {
+        "generator": "scripts/prepare-native-player-aliases.py",
+        "report": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/ALIAS_COVERAGE.json",
+        "reportSha256": "d52e3e1e25bb824530f9ed0ca7f5285c57a3539c3b9f939ec5fa1f89542055d3",
+        "family": "WT_HAND",
+        "familySource": "/l2/322213d21fe24c8b603a7ce03382464037e72d2b21b66a270db0b056e4a53d3b/animation-families.json",
+        "familySourceSha256": "9f33c2be27dd83b55cbd3817492831565abbf852d40198dc65200862a4d23e9f",
+        "rows": [
+          {
+            "alias": "idle",
+            "key": "WaitAnimName[0]",
+            "status": "case-only",
+            "reference": "wait_Hand_MMagic",
+            "line": 859,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "walk",
+            "key": "WalkAnimName[0]",
+            "status": "case-only",
+            "reference": "walk_Hand_MMagic",
+            "line": 857,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "run",
+            "key": "RunAnimName[0]",
+            "status": "case-only",
+            "reference": "run_Hand_MMagic",
+            "line": 858,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "turn",
+            "key": "TurnAnimName[0]",
+            "status": "case-only",
+            "reference": "walk_Hand_MMagic",
+            "line": 856,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atkWait",
+            "key": "AtkWaitAnimName[0]",
+            "status": "case-only",
+            "reference": "atkWait_Hand_MMagic",
+            "line": 860,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "attack",
+            "key": "Atk01AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_MMagic",
+            "line": 861,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atk02",
+            "key": "Atk02AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_MMagic",
+            "line": 862,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atk03",
+            "key": "Atk03AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_MMagic",
+            "line": 863,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "shieldAtk",
+            "key": "ShieldAtkAnimName[0]",
+            "status": "case-only",
+            "reference": "shieldatk_1HS_MMagic",
+            "line": 881,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castShort",
+            "key": "CastShortAnimName[0]",
+            "status": "exact",
+            "reference": "CastShort_MMagic",
+            "line": 871,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castMid",
+            "key": "CastMidAnimName[0]",
+            "status": "exact",
+            "reference": "CastMid_MMagic",
+            "line": 872,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castLong",
+            "key": "CastLongAnimName[0]",
+            "status": "exact",
+            "reference": "CastLong_MMagic",
+            "line": 873,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castEnd",
+            "key": "CastEndAnimName[0]",
+            "status": "exact",
+            "reference": "CastEnd_MMagic",
+            "line": 874,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicShot",
+            "key": "MagicShotAnimName[0]",
+            "status": "exact",
+            "reference": "MagicShot_MMagic",
+            "line": 875,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicThrow",
+            "key": "MagicThrowAnimName[0]",
+            "status": "exact",
+            "reference": "MagicThrow_MMagic",
+            "line": 876,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicNoTarget",
+            "key": "MagicNoTargetAnimName[0]",
+            "status": "case-only",
+            "reference": "MagicNoTarget_MMagic",
+            "line": 877,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "sit",
+            "key": "SitAnimName[0]",
+            "status": "exact",
+            "reference": "Sit_MMagic",
+            "line": 865,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "sitWait",
+            "key": "SitWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SitWait_MMagic",
+            "line": 866,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "stand",
+            "key": "StandAnimName[0]",
+            "status": "exact",
+            "reference": "Stand_MMagic",
+            "line": 867,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairSit",
+            "key": "ChairSitAnimName[0]",
+            "status": "exact",
+            "reference": "ChairSit_MMagic",
+            "line": 891,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairWait",
+            "key": "ChairWaitAnimName[0]",
+            "status": "exact",
+            "reference": "ChairWait_MMagic",
+            "line": 892,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairStand",
+            "key": "ChairStandAnimName[0]",
+            "status": "exact",
+            "reference": "ChairStand_MMagic",
+            "line": 893,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "pickup",
+            "key": "PicItemAnimName[0]",
+            "status": "exact",
+            "reference": "PicItem_MMagic",
+            "line": 864,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "death",
+            "key": "DeathAnimName[0]",
+            "status": "exact",
+            "reference": "Death_MMagic",
+            "line": 868,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "deathWait",
+            "key": "DeathWaitAnimName[0]",
+            "status": "exact",
+            "reference": "DeathWait_MMagic",
+            "line": 869,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "deathStand",
+            "key": "DeathStandAnimName[0]",
+            "status": "exact",
+            "reference": "Stand_MMagic",
+            "line": 884,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "damage",
+            "key": "DamageAnimName[0]",
+            "status": "no-family-value",
+            "selectionPath": "base-class-direct-getter",
+            "reason": "No hit-reaction clip exists in the native MMagic animation set and the [MMagic] section assigns no DamageAnimName (Engine.Pawn declares it with getter GetDamageAnimName, so the field is empty). The only damage-like clip is Damagefly_MMagic, bound through DamageFlyAnimName[0] = DamageFly_MMagic (a knock-back). The 'damage' alias must stay unmapped; do not substitute DamageFly or any invented clip."
+          },
+          {
+            "alias": "damageFly",
+            "key": "DamageFlyAnimName[0]",
+            "status": "case-only",
+            "reference": "DamageFly_MMagic",
+            "line": 885,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "fall",
+            "key": "FallAnimName[0]",
+            "status": "exact",
+            "reference": "Falling_MMagic",
+            "line": 883,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swim",
+            "key": "SwimAnimName[0]",
+            "status": "exact",
+            "reference": "Swim_MMagic",
+            "line": 886,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimWait",
+            "key": "SwimWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimWait_MMagic",
+            "line": 887,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimAtkWait",
+            "key": "SwimAtkWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimWait_MMagic",
+            "line": 888,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimDeath",
+            "key": "SwimDeathAnimName[0]",
+            "status": "exact",
+            "reference": "SwimDeath_MMagic",
+            "line": 889,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimDeathWait",
+            "key": "SwimDeathWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimDeathWait_MMagic",
+            "line": 890,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social2",
+            "key": "PcSocialAnimName[2]",
+            "status": "case-only",
+            "reference": "Social_Nod_MMagic",
+            "line": 1221,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social3",
+            "key": "PcSocialAnimName[3]",
+            "status": "case-only",
+            "reference": "Social_Victory_MMagic",
+            "line": 1222,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social4",
+            "key": "PcSocialAnimName[4]",
+            "status": "exact",
+            "reference": "Social_Atk_MMagic",
+            "line": 1223,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social5",
+            "key": "PcSocialAnimName[5]",
+            "status": "exact",
+            "reference": "Social_no_MMagic",
+            "line": 1224,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social6",
+            "key": "PcSocialAnimName[6]",
+            "status": "exact",
+            "reference": "Social_yes_MMagic",
+            "line": 1225,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social7",
+            "key": "PcSocialAnimName[7]",
+            "status": "exact",
+            "reference": "Social_bow_MMagic",
+            "line": 1226,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social8",
+            "key": "PcSocialAnimName[8]",
+            "status": "exact",
+            "reference": "Social_unaware_MMagic",
+            "line": 1227,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social9",
+            "key": "PcSocialAnimName[9]",
+            "status": "exact",
+            "reference": "Social_waiting_a_MMagic",
+            "line": 1228,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social10",
+            "key": "PcSocialAnimName[10]",
+            "status": "exact",
+            "reference": "Social_laugh_MMagic",
+            "line": 1229,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social11",
+            "key": "PcSocialAnimName[11]",
+            "status": "exact",
+            "reference": "Social_clap_MMagic",
+            "line": 1230,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social12",
+            "key": "PcSocialAnimName[12]",
+            "status": "exact",
+            "reference": "Social_dance_MMagic",
+            "line": 1231,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social13",
+            "key": "PcSocialAnimName[13]",
+            "status": "exact",
+            "reference": "Social_sad_MMagic",
+            "line": 1232,
+            "selectionPath": "unverified"
+          }
+        ]
+      }
+    },
+    {
+      "actorScale": [
+        1,
+        1,
+        1
+      ],
+      "assetId": "interlude:assembly:FMagic-native-body-face0-hair0",
+      "catalogId": "human-female-mystic:0",
+      "clips": {
+        "idle": "Wait_Hand_FMagic",
+        "walk": "Walk_Hand_FMagic",
+        "run": "Run_Hand_FMagic",
+        "turn": "Walk_Hand_FMagic",
+        "atkWait": "AtkWait_Hand_FMagic",
+        "attack": "Atk01_Hand_FMagic",
+        "atk02": "Atk01_Hand_FMagic",
+        "atk03": "Atk01_Hand_FMagic",
+        "shieldAtk": "ShieldAtk_1HS_FMagic",
+        "castShort": "CastShort_FMagic",
+        "castMid": "castMid_FMagic",
+        "castLong": "castLong_FMagic",
+        "castEnd": "castEnd_FMagic",
+        "magicShot": "MagicShot_FMagic",
+        "magicThrow": "MagicThrow_FMagic",
+        "magicNoTarget": "MagicNotarget_FMagic",
+        "sit": "Sit_FMagic",
+        "sitWait": "SitWait_FMagic",
+        "stand": "Stand_FMagic",
+        "chairSit": "ChairSit_FMagic",
+        "chairWait": "ChairWait_FMagic",
+        "chairStand": "ChairStand_FMagic",
+        "pickup": "PicItem_FMagic",
+        "death": "Death_FMagic",
+        "deathWait": "DeathWait_FMagic",
+        "deathStand": "Stand_FMagic",
+        "damageFly": "Damagefly_FMagic",
+        "fall": "Falling_FMagic",
+        "swim": "Swim_FMagic",
+        "swimWait": "SwimWait_FMagic",
+        "swimAtkWait": "SwimWait_FMagic",
+        "swimDeath": "SwimDeath_FMagic",
+        "swimDeathWait": "SwimDeathWait_FMagic",
+        "social2": "Social_nod_FMagic",
+        "social3": "Social_victory_FMagic",
+        "social4": "Social_Atk_FMagic",
+        "social5": "Social_no_FMagic",
+        "social6": "Social_yes_FMagic",
+        "social7": "Social_bow_FMagic",
+        "social8": "Social_unaware_FMagic",
+        "social9": "Social_waiting_a_FMagic",
+        "social10": "Social_laugh_FMagic",
+        "social11": "Social_clap_FMagic",
+        "social12": "Social_dance_FMagic",
+        "social13": "Social_sad_FMagic"
+      },
+      "collisionHeight": 22.5,
+      "collisionRadius": 6.5,
+      "forwardAxis": [
+        1,
+        0,
+        0
+      ],
+      "id": "human-female-mystic",
+      "limitations": [
+        "Human female mystic base appearance (chargrp row9 choice0) only; equipment, skills and other appearances are unfinished.",
+        "PrePivot is absent through checked ancestry and unresolved; no native zero-pivot claim or extra offset is applied.",
+        "Navigation uses the existing browser capsule/step/slope policy, not a native collision reconstruction.",
+        "Death and action choices are explicit browser previews; complete native dispatch, listener/spatial/random rules remain unverified.",
+        "The native animation set has no hit-reaction clip and the [FMagic] localization assigns no DamageAnimName; Damagefly_FMagic is the DamageFlyAnimName knock-back, not a hit reaction.",
+        "SpAtk13AnimName[3] (WT_DUAL) has two different native source rows; no precedence is applied and that family slot stays unresolved."
+      ],
+      "name": "Human female mystic",
+      "sourceEvidence": {
+        "appearance": "chargrp row9 body_mesh1..4 Magic.FMagic_m003_u/m002_l/m003_g/m002_b with row9 body_texture1..4; face choice0 Magic.FMagic_m000_f/FMagic.FMagic_m000_t00_f; hair LineageWarrior.FMagic SubMeshes[4]/[5] with hair texture color0 (recipe appearance choice).",
+        "audio": "Direct original AnimNotify_Sound dependencies travel in the character archive; AttackItem/AttackVoice/AttackShot dispatch is not covered by this profile.",
+        "class": "LineageWarrior.FMagic -> LineagePawn -> Engine.Pawn -> Engine.Actor: CollisionRadius 6.5 / CollisionHeight 22.5 (LineageWarrior.FMagic); DrawScale 1.0 and DrawScale3D (1,1,1) inherited from Engine.Actor; GroundSpeed 120, GroundMinSpeed 80, WalkingPct 0.4 (class defaults; server speeds are separate).",
+        "facing": "Converted bind-pose ankle-to-toe vectors of both feet point +X after the native mesh transform.",
+        "families": "The [FMagic] localization assigns SpAtk13AnimName[3] twice with different values (lines 1449/1450); the package therefore carries no converter animation-families.json. The conflict-preserving family document is artifacts/native-parity/research/dev-sheet-audio-20261107/models/families/FMagic.animation-families.json.",
+        "pipeline": "recipes/native-pipeline-fmagic.json -> recipes/native-fmagic.json (inputs: recipes/native-pipeline-magic.inputs.lock.json)",
+        "report": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/PROFILE_EVIDENCE.json",
+        "reportSha256": "dae2de14bde6e9d5f9208f9132b4344fe3e079baf62f26c07e6e7018168f5b52",
+        "scale": "Native scale only: converter 0.01 m per source unit, native MeshOrigin/RotOrigin/MeshScale parent, actor DrawScale 1.0. No height fitting, recentering or grounding."
+      },
+      "sourceObject": "Magic.FMagic_m003_u",
+      "sourceSha256": "26443ed7a5b972010c614f74ac8b625e3ae2dbbaa12f7d0a0fa9302622326fa2",
+      "sourceUnitsPerMetre": 100,
+      "upperItems": [],
+      "aliasEvidence": {
+        "generator": "scripts/prepare-native-player-aliases.py",
+        "report": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/ALIAS_COVERAGE.json",
+        "reportSha256": "d52e3e1e25bb824530f9ed0ca7f5285c57a3539c3b9f939ec5fa1f89542055d3",
+        "family": "WT_HAND",
+        "familySource": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/families/FMagic.animation-families.json",
+        "familySourceSha256": "630c28a928920d67ee615aeee26ee80a7edf994fa594c8dfcc9ce97540e3f50a",
+        "rows": [
+          {
+            "alias": "idle",
+            "key": "WaitAnimName[0]",
+            "status": "case-only",
+            "reference": "wait_Hand_FMagic",
+            "line": 1279,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "walk",
+            "key": "WalkAnimName[0]",
+            "status": "case-only",
+            "reference": "walk_Hand_FMagic",
+            "line": 1277,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "run",
+            "key": "RunAnimName[0]",
+            "status": "case-only",
+            "reference": "run_Hand_FMagic",
+            "line": 1278,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "turn",
+            "key": "TurnAnimName[0]",
+            "status": "case-only",
+            "reference": "walk_Hand_FMagic",
+            "line": 1276,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atkWait",
+            "key": "AtkWaitAnimName[0]",
+            "status": "case-only",
+            "reference": "atkWait_Hand_FMagic",
+            "line": 1280,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "attack",
+            "key": "Atk01AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_FMagic",
+            "line": 1281,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atk02",
+            "key": "Atk02AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_FMagic",
+            "line": 1282,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "atk03",
+            "key": "Atk03AnimName[0]",
+            "status": "exact",
+            "reference": "Atk01_Hand_FMagic",
+            "line": 1283,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "shieldAtk",
+            "key": "ShieldAtkAnimName[0]",
+            "status": "case-only",
+            "reference": "shieldatk_1HS_FMagic",
+            "line": 1301,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castShort",
+            "key": "CastShortAnimName[0]",
+            "status": "exact",
+            "reference": "CastShort_FMagic",
+            "line": 1291,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castMid",
+            "key": "CastMidAnimName[0]",
+            "status": "case-only",
+            "reference": "CastMid_FMagic",
+            "line": 1292,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castLong",
+            "key": "CastLongAnimName[0]",
+            "status": "case-only",
+            "reference": "CastLong_FMagic",
+            "line": 1293,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "castEnd",
+            "key": "CastEndAnimName[0]",
+            "status": "case-only",
+            "reference": "CastEnd_FMagic",
+            "line": 1294,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicShot",
+            "key": "MagicShotAnimName[0]",
+            "status": "exact",
+            "reference": "MagicShot_FMagic",
+            "line": 1295,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicThrow",
+            "key": "MagicThrowAnimName[0]",
+            "status": "exact",
+            "reference": "MagicThrow_FMagic",
+            "line": 1296,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "magicNoTarget",
+            "key": "MagicNoTargetAnimName[0]",
+            "status": "case-only",
+            "reference": "MagicNoTarget_FMagic",
+            "line": 1297,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "sit",
+            "key": "SitAnimName[0]",
+            "status": "exact",
+            "reference": "Sit_FMagic",
+            "line": 1285,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "sitWait",
+            "key": "SitWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SitWait_FMagic",
+            "line": 1286,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "stand",
+            "key": "StandAnimName[0]",
+            "status": "exact",
+            "reference": "Stand_FMagic",
+            "line": 1287,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairSit",
+            "key": "ChairSitAnimName[0]",
+            "status": "exact",
+            "reference": "ChairSit_FMagic",
+            "line": 1311,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairWait",
+            "key": "ChairWaitAnimName[0]",
+            "status": "exact",
+            "reference": "ChairWait_FMagic",
+            "line": 1312,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "chairStand",
+            "key": "ChairStandAnimName[0]",
+            "status": "exact",
+            "reference": "ChairStand_FMagic",
+            "line": 1313,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "pickup",
+            "key": "PicItemAnimName[0]",
+            "status": "exact",
+            "reference": "PicItem_FMagic",
+            "line": 1284,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "death",
+            "key": "DeathAnimName[0]",
+            "status": "exact",
+            "reference": "Death_FMagic",
+            "line": 1288,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "deathWait",
+            "key": "DeathWaitAnimName[0]",
+            "status": "exact",
+            "reference": "DeathWait_FMagic",
+            "line": 1289,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "deathStand",
+            "key": "DeathStandAnimName[0]",
+            "status": "exact",
+            "reference": "Stand_FMagic",
+            "line": 1304,
+            "selectionPath": "base-class-direct-getter"
+          },
+          {
+            "alias": "damage",
+            "key": "DamageAnimName[0]",
+            "status": "no-family-value",
+            "selectionPath": "base-class-direct-getter",
+            "reason": "No hit-reaction clip exists in the native FMagic animation set and the [FMagic] section assigns no DamageAnimName (Engine.Pawn declares it with getter GetDamageAnimName, so the field is empty). The only damage-like clip is Damagefly_FMagic, bound through DamageFlyAnimName[0] = DamageFly_FMagic (a knock-back). The 'damage' alias must stay unmapped; do not substitute DamageFly or any invented clip."
+          },
+          {
+            "alias": "damageFly",
+            "key": "DamageFlyAnimName[0]",
+            "status": "case-only",
+            "reference": "DamageFly_FMagic",
+            "line": 1305,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "fall",
+            "key": "FallAnimName[0]",
+            "status": "exact",
+            "reference": "Falling_FMagic",
+            "line": 1303,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swim",
+            "key": "SwimAnimName[0]",
+            "status": "exact",
+            "reference": "Swim_FMagic",
+            "line": 1306,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimWait",
+            "key": "SwimWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimWait_FMagic",
+            "line": 1307,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimAtkWait",
+            "key": "SwimAtkWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimWait_FMagic",
+            "line": 1308,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimDeath",
+            "key": "SwimDeathAnimName[0]",
+            "status": "exact",
+            "reference": "SwimDeath_FMagic",
+            "line": 1309,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "swimDeathWait",
+            "key": "SwimDeathWaitAnimName[0]",
+            "status": "exact",
+            "reference": "SwimDeathWait_FMagic",
+            "line": 1310,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social2",
+            "key": "PcSocialAnimName[2]",
+            "status": "case-only",
+            "reference": "Social_Nod_FMagic",
+            "line": 1641,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social3",
+            "key": "PcSocialAnimName[3]",
+            "status": "case-only",
+            "reference": "Social_Victory_FMagic",
+            "line": 1642,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social4",
+            "key": "PcSocialAnimName[4]",
+            "status": "exact",
+            "reference": "Social_Atk_FMagic",
+            "line": 1643,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social5",
+            "key": "PcSocialAnimName[5]",
+            "status": "exact",
+            "reference": "Social_no_FMagic",
+            "line": 1644,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social6",
+            "key": "PcSocialAnimName[6]",
+            "status": "exact",
+            "reference": "Social_yes_FMagic",
+            "line": 1645,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social7",
+            "key": "PcSocialAnimName[7]",
+            "status": "exact",
+            "reference": "Social_bow_FMagic",
+            "line": 1646,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social8",
+            "key": "PcSocialAnimName[8]",
+            "status": "exact",
+            "reference": "Social_unaware_FMagic",
+            "line": 1647,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social9",
+            "key": "PcSocialAnimName[9]",
+            "status": "exact",
+            "reference": "Social_waiting_a_FMagic",
+            "line": 1648,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social10",
+            "key": "PcSocialAnimName[10]",
+            "status": "exact",
+            "reference": "Social_laugh_FMagic",
+            "line": 1649,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social11",
+            "key": "PcSocialAnimName[11]",
+            "status": "exact",
+            "reference": "Social_clap_FMagic",
+            "line": 1650,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social12",
+            "key": "PcSocialAnimName[12]",
+            "status": "exact",
+            "reference": "Social_dance_FMagic",
+            "line": 1651,
+            "selectionPath": "unverified"
+          },
+          {
+            "alias": "social13",
+            "key": "PcSocialAnimName[13]",
+            "status": "exact",
+            "reference": "Social_sad_FMagic",
+            "line": 1652,
+            "selectionPath": "unverified"
+          }
+        ]
+      }
+    }
+  ],
+  "supersedes": {
+    "human-male-fighter": "built-in",
+    "human-female-fighter": "46ea1d2d3d61350e7c435ec0aaf402d47bdffcf336f3485d45cf1a96e265c0b3",
+    "human-male-mystic": "3bafb866f3947c12ce5516a8a657caecad1c72af365237a5b681e27faec1cad7",
+    "human-female-mystic": "40c20a0e2495350140009f63f9c32965753a71ad3adb6ac063eda1c7619e1d0f"
+  }
+}

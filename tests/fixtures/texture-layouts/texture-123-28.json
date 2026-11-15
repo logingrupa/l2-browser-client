@@ -1,0 +1,44 @@
+{
+ "expected": {
+  "mipRecordOffsets": [
+   4117,
+   4140,
+   4163
+  ],
+  "mipSha256": [
+   "8a851ff82ee7048ad09ec3847f1ddf44944104d2cbd17ef4e3db22c6785a0d45",
+   "fa3f972053938c3fd0046fa9cfdabf7e86bfb63043a6ddea0a92506a0d54b269",
+   "7e683a43eaa4dcb74188a0fdbcb2fa78209a9d85f458a37deecdeec6a0b8117f"
+  ],
+  "mipSourceOffsets": [
+   4122,
+   4145,
+   4168
+  ],
+  "nativeMipBytes": 24,
+  "nativePrefixBytes": 5,
+  "sourceExportSha256": "37b203cea4747f326782abe7154baf95a089eab2832757e6f0e3042b7ad66022"
+ },
+ "licensee": 28,
+ "materialPrefix": "reserved-int32",
+ "packageVersion": 123,
+ "schemaVersion": 1,
+ "syntheticBody": {
+  "formatId": 3,
+  "mips": [
+   [
+    4,
+    4
+   ],
+   [
+    2,
+    2
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "reservedInt32": -741
+ }
+}

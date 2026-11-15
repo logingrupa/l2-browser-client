@@ -1,47 +1,23 @@
-# Source review and provenance
+# Source reuse and licences
 
-## Source-reuse rule
+Where this client's code and data come from and under which licence. Decisions and work order: [PROJECT.md](../.planning/PROJECT.md) (DEC-OWN-2, DEC-OWN-12, DEC-SRC-1) and [ROADMAP.md](../.planning/ROADMAP.md).
 
-No source or assets are copied from other workspaces or from projects without a redistribution license. The Phase 1 review of an earlier rendering repository found no such license, so it served only as a behavioral reference. No code, models, textures, animation clips or manifests from that earlier repository are in the published foundation; Phase 1 implements the behaviors independently with Babylon.js public APIs.
+## Now
 
-## Refactoring and dependency boundary
+- The native reference is IMPORTA-PC `C:/Lineage2-client`, a modified third-party Interlude client. Identity, Engine.dll hash and the E: guard: [NATIVE_CLIENT_AUDIT.md](NATIVE_CLIENT_AUDIT.md).
+- Native files stay read-only. Converted output, native audio and captures stay in ignored `artifacts/` and `public/l2/`. No Lineage II content is committed or published.
+- Lineage2Elbera is MIT, pinned at `12c9656e2f053b233ec3fd87056491a6a6da8b0c` ([reuse audit](LINEAGE2ELBERA_REUSE_AUDIT.md)). `scripts/vendor/lineage2elbera_bsp/` keeps its `LICENSE` and source hashes.
+- Lineage2JS (`854f62920319c458f9d339f8463b2ec8ed16fa9a`) and l2js-core (`4aac1bd28945746aa2ecddd72c96e473592ee0bd`) declare ISC in `package.json` but ship no LICENSE. They are read-only behaviour references at the gitignored `.assets/reference/lineage2js/` and `.assets/reference/l2js-core/` (DEC-OWN-12). No code is copied or lightly edited, and `tools/reference-overlap/` plus a reviewer check overlap. The vendored `scripts/vendor/lineage2elbera_bsp/` is in-repo, world-owned converter code pinned in `SOURCE.json`, and the Elbera gateway is a behaviour reference only.
+- DEC-SRC-1: no source or assets are copied from other workspaces or from projects without a redistribution licence.
+- The pinned conversion tools in the ignored `.assets/native-tools/` are read by path and never committed or published: UModel build1590, UELib, the l2-editor `.dat` schemas at revision `f2a2cc16120dd8ffabd60255aaad59fa4d6b6f53` (with its `LICENSE`) and open-l2encdec at commit `6f33578252389dfac2824c0132ce1d015cff04e5` (with its `LICENSE`).
+- The repo started from the Babylon.js Editor v5.5.3 Vanilla template (revision `e3fce2cea68c6a32fdbacbb4c5aa4e6a0f154db7`). Retained template files are modified: package management, strict checking and the application lifecycle changed; the example scene, sample bitmaps, example box behaviour and physics initialization are removed. `tests/editor/editorScript.test.ts` adapts Editor 5.5.3 `editor/src/tools/compile.ts`. These and Babylon.js are Apache-2.0 (`LICENSE`, `docs/licenses/`). The Editor is an optional viewer (DEC-OWN-8).
+- `@fontsource-variable/cormorant-garamond` 5.3.0 ships in `src/` styles under SIL OFL 1.1.
 
-Because that repository has no identified redistribution grant, there is no
-copied implementation to rename mechanically. New project-owned names use clear
-English instead of its Hungarian prefixes. Babylon.js API names and
-the native Editor's serialized contracts retain their required spelling.
+## Open
 
-The new world boundary carries stable identifiers, explicit entity state and
-typed lifecycle events. Rendering does not import `MockWorldAdapter` directly.
-Synthetic movement and action-state changes are adapter responsibilities;
-interpolation, targeting and animation playback are presentation concerns.
+- DEC-OWN-10 dropped Cormorant Garamond headings with the custom HUD direction. The owner decides whether the font stays (UI-03).
 
-That repository's SpacetimeDB bindings, Evenfall data model, shared simulation,
-session epochs, server clock synchronization, progression, loot, classes,
-skills, predicted dashes, collision rules, projectiles and lab bootstrap are
-excluded. A later Interlude adapter can supply the same view contract without
-bringing those systems into Phase 1.
+## Pointers
 
-## Assets, licensing and attribution
-
-The character documentation of that repository describes converted external
-character GLBs and hundreds of supplied clips, but provides no redistribution
-license for those inputs. No original Lineage II maps, characters, textures,
-audio or converted assets are included here.
-
-The Phase 1 characters and environment are procedural project assets. Loading
-an optional model is a runtime capability, not a grant to redistribute that
-model: any subsequently committed external model needs its own documented
-license and attribution.
-
-That repository has no copyright notices to preserve here because no code or
-assets from it are redistributed. Babylon.js and the official Editor template
-are separate upstream dependencies; their actual upstream notices must remain
-with the template and any retained template assets. This document does not
-grant a new license to either upstream project.
-
-The foundation starts from the official **Babylon.js Editor v5.5.3 Vanilla template**, revision `e3fce2cea68c6a32fdbacbb4c5aa4e6a0f154db7`, at `templates/vanillajs/`. Its Apache-2.0 license is retained in `LICENSE` and `docs/licenses/BabylonJS-Editor.txt`; changes are identified in `NOTICE`. Native entry names, project metadata, scene directory conventions, Vite and the official packer/loader remain. Package management, strict checking, application lifecycle and the example scene were changed; sample bitmap assets, example box behavior and unnecessary physics initialization were removed.
-
-`tests/unit/editorScript.test.ts` adapts the official Editor compiler settings and import-replacement rules from `editor/src/tools/compile.ts` at the same release under Apache-2.0. This permits a real compiler regression check without claiming a desktop Editor session.
-
-Cormorant Garamond is self-hosted through `@fontsource-variable/cormorant-garamond@5.3.0`, under SIL Open Font License 1.1; its copyright and license are retained in `docs/licenses/Cormorant-Garamond.txt`. Babylon.js's Apache-2.0 notice is retained in `docs/licenses/BabylonJS.txt`. UI icons, synthetic GLB test fixtures, character geometry and native environment geometry are original project assets. The user-supplied UI screenshot is a visual reference only; its pixels and proprietary artwork are not shipped.
+- [NATIVE_CLIENT_AUDIT.md](NATIVE_CLIENT_AUDIT.md), [NATIVE_BSP_FLOOR.md](NATIVE_BSP_FLOOR.md), [OUTPUT_CONTRACT.md](OUTPUT_CONTRACT.md).
+- `LICENSE`, `docs/licenses/`, `scripts/vendor/lineage2elbera_bsp/SOURCE.json`.

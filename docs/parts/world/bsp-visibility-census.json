@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "sampleCellsPerAxis": [
+    16,
+    16,
+    8
+  ],
+  "tiles": [
+    {
+      "tileId": "20_20",
+      "resourceSha256": "e1206a7b06db4a7fdec0ee5c59daecc23f1de2ee3c65461e938e4d3705b93dea",
+      "nodes": 4675,
+      "leaves": 1235,
+      "zones": 30,
+      "portals": 30,
+      "staticMeshMembers": 3626,
+      "emitterPlacements": 0,
+      "solidityDisagreements": 0,
+      "gapReasons": []
+    },
+    {
+      "tileId": "20_21",
+      "resourceSha256": "5b0b1d0edcb55bcbb8702c310ecea65758df096ce3f6e5a953bb8798d78dc4cd",
+      "nodes": 4493,
+      "leaves": 1532,
+      "zones": 39,
+      "portals": 62,
+      "staticMeshMembers": 2923,
+      "emitterPlacements": 6,
+      "solidityDisagreements": 0,
+      "gapReasons": []
+    }
+  ]
+}

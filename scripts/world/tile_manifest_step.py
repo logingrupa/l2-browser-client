@@ -1,0 +1,370 @@
+import json
+from typing import NamedTuple
+
+from native_assets_lib.gltf import json_bytes
+from native_store.canonical_json import canonical_json_bytes
+from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, validate_catalog_record, write_store
+from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root, require_converter_output
+from native_store.tile_manifest_validation import (FRAME_FIELDS, TILE_CHUNK_MANIFEST_KIND, TILE_MANIFEST_KIND, TILE_MANIFEST_SCHEMA_VERSION,
+                                                   validate_tile_chunk_manifest, validate_tile_manifest)
+from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger
+from world.bsp_step import BSP_STEP_NAME, sealed_bsp_chunks, tile_bsp_row
+from world.bsp_visibility_step import BSP_VISIBILITY_STEP_NAME, sealed_bsp_visibility, tile_bsp_visibility_row
+from world.collision_step import COLLISION_STEP_NAME, sealed_collision, tile_collision_row
+from world.lighting_step import LIGHTING_STEP_NAME, sealed_lighting, tile_lighting_row
+from world.map_emitter_step import MAP_EMITTER_STEP_NAME, sealed_map_emitters, tile_map_emitter_row
+from world.minimap_step import MINIMAP_STEP_NAME, sealed_minimap, tile_minimap_row
+from world.mover_step import MOVER_STEP_NAME, sealed_movers, tile_mover_row
+from world.native_material_listings import surface_materials_listing, unique_native_material_files
+from world.sky_step import SKY_STEP_NAME, sealed_sky, tile_sky_row
+from world.world_audio_step import WORLD_AUDIO_STEP_NAME, sealed_world_audio, tile_world_audio_row
+from world.raw_map_step import read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
+from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME, sealed_static_mesh_materials, tile_static_mesh_materials_row
+from world.static_mesh_step import STATIC_MESH_STEP_NAME, sealed_static_meshes, tile_static_mesh_row
+from world.terrain_chunk_step import TERRAIN_CHUNK_RESOURCE_NAME, TERRAIN_STEP_NAME, sealed_terrain_chunks
+from world.tile_chunk_plan import chunk_plan_ledger
+from world.tile_census import WORLD_LANE_NAME
+from world.tile_census_validation import GAP_STATUS
+
+TILE_MANIFEST_STEP_ALGORITHM_VERSION = 13
+TILE_MANIFEST_STEP_NAME = 'manifest'
+TILE_CATALOG_CAPACITY = 163
+PENDING_TILE_STEPS = ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'sky', 'audio', 'lighting', 'minimap',
+                      'terrain-material', 'static-mesh-materials')
+PENDING_CHUNK_STEPS = ('meshes', 'bsp', 'collision', 'terrain-material')
+PENDING_STATUS = 'pending'
+TERRAIN_QUADS_ALL_HIDDEN_REASON = 'terrain-quads-all-hidden'
+BSP_CHUNK_WITHOUT_NODES_REASON = 'bsp-chunk-without-nodes'
+NATIVE_TILE_COLLISION_KIND = 'native-tile-collision'
+TILE_MOVERS_RESOURCE_KIND = 'movers'
+TILE_BSP_VISIBILITY_RESOURCE_KIND = 'bsp-visibility'
+TILE_MAP_EMITTERS_RESOURCE_KIND = 'map-emitters'
+TILE_SKY_RESOURCE_KIND = 'sky'
+TILE_WORLD_AUDIO_RESOURCE_KIND = 'world-audio'
+TILE_LIGHTING_RESOURCE_KIND = 'lighting'
+TILE_MINIMAP_RESOURCE_KIND = 'minimap'
+TILE_SURFACE_MATERIALS_RESOURCE_KIND = 'surface-materials'
+TILE_STATIC_MESH_MATERIALS_RESOURCE_KIND = 'static-mesh-materials'
+CHUNK_TERRAIN_FOLDER = 'native-tile-chunk-terrain'
+CHUNK_MANIFEST_FOLDER = 'native-tile-chunk-runtime'
+CHUNK_MANIFEST_NAME = 'manifest.json'
+TILE_MANIFEST_NAME = 'tile.json'
+TILES_CATALOG_SLICE = 'tiles'
+
+
+class TileManifestStepError(ValueError):
+    pass
+
+
+class TileManifestUnit(NamedTuple):
+    ledger: object
+    unit_key: str
+    fingerprint: str
+    config: dict
+    sealed_upstream: dict
+
+
+def pending_step_row(tile_id, step, source_identity, evidence):
+    return tile_step_row(tile_id, step, PENDING_STATUS, f'step-pending:{step}', source_identity, evidence)
+
+
+def pending_step_rows(tile_id, steps, source_identity, evidence):
+    return [pending_step_row(tile_id, step, source_identity, evidence) for step in steps]
+
+
+def sorted_by_step(rows):
+    return sorted(rows, key=lambda row: row['step'])
+
+
+def chunk_terrain_store_path(terrain_sha256):
+    return f'maps/{terrain_sha256}/{CHUNK_TERRAIN_FOLDER}/{TERRAIN_CHUNK_RESOURCE_NAME}'
+
+
+def chunk_manifest_store_path(manifest_sha256):
+    return f'maps/{manifest_sha256}/{CHUNK_MANIFEST_FOLDER}/{CHUNK_MANIFEST_NAME}'
+
+
+def tile_manifest_store_path(manifest_sha256):
+    return f'tiles/{manifest_sha256}/{TILE_MANIFEST_NAME}'
+
+
+def chunk_terrain_gap_rows(tile_id, chunk_record, chunk_plan_entry, source_identity, evidence):
+    if chunk_record['terrain'] is not None:
+        return []
+    if chunk_record['gapRows']:
+        return chunk_record['gapRows']
+    return [tile_step_row(tile_id, TERRAIN_STEP_NAME, GAP_STATUS, TERRAIN_QUADS_ALL_HIDDEN_REASON,
+                          {**source_identity, 'object': chunk_plan_entry['sectorObjects'][0]}, evidence)]
+
+
+def pending_steps_after_sealed(steps, static_meshes, bsp, collision=None, movers=None, bsp_visibility=None, map_emitters=None, sky=None,
+                               world_audio=None, lighting=None, minimap=None, static_mesh_materials=None):
+    sealed = {name for name, product in ((STATIC_MESH_STEP_NAME, static_meshes), (BSP_STEP_NAME, bsp), (COLLISION_STEP_NAME, collision),
+                                         (MOVER_STEP_NAME, movers), (BSP_VISIBILITY_STEP_NAME, bsp_visibility),
+                                         (MAP_EMITTER_STEP_NAME, map_emitters), (SKY_STEP_NAME, sky),
+                                         (WORLD_AUDIO_STEP_NAME, world_audio), (LIGHTING_STEP_NAME, lighting), (MINIMAP_STEP_NAME, minimap),
+                                         (STATIC_MESH_MATERIALS_STEP_NAME, static_mesh_materials))
+              if product is not None}
+    return tuple(step for step in steps if step not in sealed)
+
+
+def chunk_static_mesh_parts(static_meshes, chunk_id):
+    if static_meshes is None:
+        return [], []
+    chunk = static_meshes['chunks'].get(chunk_id)
+    if chunk is None:
+        raise TileManifestStepError(f'sealed static meshes list no chunk {chunk_id}')
+    return chunk['models'], chunk['gapRows'][:1]
+
+
+def chunk_bsp_parts(tile_id, bsp, chunk_plan_entry, source_identity, evidence):
+    if bsp is None:
+        return None, []
+    chunk = bsp['chunks'].get(chunk_plan_entry['chunkId'])
+    if chunk is None:
+        raise TileManifestStepError(f'sealed bsp chunks list no chunk {chunk_plan_entry["chunkId"]}')
+    if chunk['resource'] is None:
+        return None, chunk['gapRows'][:1] or [tile_step_row(tile_id, BSP_STEP_NAME, GAP_STATUS, BSP_CHUNK_WITHOUT_NODES_REASON,
+                                                            {**source_identity, 'object': chunk_plan_entry['sectorObjects'][0]}, evidence)]
+    return {'resource': chunk['resource'], 'sha256': chunk['sha256']}, chunk['gapRows'][:1]
+
+
+def chunk_collision_parts(collision, chunk_plan_entry):
+    if collision is None:
+        return None, []
+    chunk = collision['chunks'].get(chunk_plan_entry['chunkId'])
+    if chunk is None:
+        raise TileManifestStepError(f'sealed collision lists no chunk {chunk_plan_entry["chunkId"]}')
+    return {'resource': chunk['resource'], 'sha256': chunk['sha256']}, chunk['gapRows'][:1]
+
+
+def build_tile_chunk_manifest(tile_id, chunk_record, chunk_plan_entry, source_identity, evidence, static_meshes=None, bsp=None, collision=None):
+    if chunk_record['chunkId'] != chunk_plan_entry['chunkId']:
+        raise TileManifestStepError(f'terrain record {chunk_record["chunkId"]} does not match chunk plan entry {chunk_plan_entry["chunkId"]}')
+    terrain = chunk_record['terrain']
+    models, static_mesh_gap_rows = chunk_static_mesh_parts(static_meshes, chunk_plan_entry['chunkId'])
+    bsp_component, bsp_gap_rows = chunk_bsp_parts(tile_id, bsp, chunk_plan_entry, source_identity, evidence)
+    collision_component, collision_gap_rows = chunk_collision_parts(collision, chunk_plan_entry)
+    gaps = [*pending_step_rows(tile_id, pending_steps_after_sealed(PENDING_CHUNK_STEPS, static_meshes, bsp, collision), source_identity, evidence),
+            *static_mesh_gap_rows, *bsp_gap_rows, *collision_gap_rows,
+            *chunk_terrain_gap_rows(tile_id, chunk_record, chunk_plan_entry, source_identity, evidence)]
+    manifest = {'kind': TILE_CHUNK_MANIFEST_KIND, 'schemaVersion': TILE_MANIFEST_SCHEMA_VERSION, 'tileId': tile_id,
+                'chunkId': chunk_plan_entry['chunkId'], 'sectorRange': dict(chunk_plan_entry['sectorRange']),
+                'terrain': None if terrain is None else {'resource': '/l2/' + chunk_terrain_store_path(terrain['sha256']),
+                                                         'sha256': terrain['sha256'], 'maskUvRule': chunk_record['maskUvRule']},
+                'models': models, 'bsp': bsp_component, 'collision': collision_component, 'gaps': sorted_by_step(gaps)}
+    return validate_tile_chunk_manifest(manifest)
+
+
+def tile_level_gap_rows(tile_id, source_identity, evidence, static_meshes, bsp, collision, movers, bsp_visibility=None, map_emitters=None, sky=None,
+                        world_audio=None, lighting=None, minimap=None, static_mesh_materials=None):
+    rows = pending_step_rows(tile_id, pending_steps_after_sealed(PENDING_TILE_STEPS, static_meshes, bsp, collision, movers, bsp_visibility, map_emitters,
+                                                                 sky, world_audio, lighting, minimap, static_mesh_materials), source_identity, evidence)
+    if static_meshes is not None and static_meshes['gapRows']:
+        rows.append(tile_static_mesh_row(tile_id, source_identity, static_meshes['gapRows'], evidence))
+    if bsp is not None and bsp['gapRows']:
+        rows.append(tile_bsp_row(tile_id, source_identity, bsp['gapRows'], evidence))
+    if collision is not None and collision['gapRows']:
+        rows.append(tile_collision_row(tile_id, source_identity, collision['gapRows'], evidence))
+    if movers is not None and movers['gapRows']:
+        rows.append(tile_mover_row(tile_id, source_identity, movers['gapRows'], evidence))
+    if bsp_visibility is not None and bsp_visibility['gapRows']:
+        rows.append(tile_bsp_visibility_row(tile_id, source_identity, bsp_visibility['gapRows'], evidence))
+    if map_emitters is not None and map_emitters['gapRows']:
+        rows.append(tile_map_emitter_row(tile_id, source_identity, map_emitters['gapRows'], evidence))
+    if sky is not None and sky['gapRows']:
+        rows.append(tile_sky_row(tile_id, source_identity, sky['gapRows'], evidence))
+    if world_audio is not None and world_audio['gapRows']:
+        rows.append(tile_world_audio_row(tile_id, source_identity, world_audio['gapRows'], evidence))
+    if lighting is not None and lighting['gapRows']:
+        rows.append(tile_lighting_row(tile_id, source_identity, lighting['gapRows'], evidence))
+    if minimap is not None and minimap['gapRows']:
+        rows.append(tile_minimap_row(tile_id, source_identity, minimap['gapRows'], evidence))
+    if static_mesh_materials is not None and static_mesh_materials['gapRows']:
+        rows.append(tile_static_mesh_materials_row(tile_id, source_identity, static_mesh_materials['gapRows'], evidence))
+    return rows
+
+
+def pinned_tile_resource(kind, record):
+    return {'kind': kind, 'manifest': record['resource'], 'manifestSha256': record['sha256'], 'manifestBytes': record['bytes']}
+
+
+def tile_resources(collision, movers, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None, minimap=None,
+                   surface_materials=None, static_mesh_materials=None):
+    resources = []
+    if collision is not None:
+        tile = collision['tile']
+        resources.append({'kind': NATIVE_TILE_COLLISION_KIND, 'manifest': tile['resource'], 'manifestSha256': tile['sha256'], 'manifestBytes': tile['bytes']})
+    if movers is not None and movers['manifest'] is not None:
+        manifest = movers['manifest']
+        resources.append({'kind': TILE_MOVERS_RESOURCE_KIND, 'manifest': manifest['resource'], 'manifestSha256': manifest['sha256'],
+                          'manifestBytes': manifest['bytes']})
+    if bsp_visibility is not None:
+        resources.append(pinned_tile_resource(TILE_BSP_VISIBILITY_RESOURCE_KIND, bsp_visibility['resource']))
+    if map_emitters is not None and map_emitters['manifest'] is not None:
+        resources.append(pinned_tile_resource(TILE_MAP_EMITTERS_RESOURCE_KIND, map_emitters['manifest']))
+    if sky is not None and sky['manifest'] is not None:
+        resources.append(pinned_tile_resource(TILE_SKY_RESOURCE_KIND, sky['manifest']))
+    if world_audio is not None:
+        resources.extend(pinned_tile_resource(TILE_WORLD_AUDIO_RESOURCE_KIND, manifest) for manifest in world_audio['manifests'])
+    if lighting is not None:
+        resources.append(pinned_tile_resource(TILE_LIGHTING_RESOURCE_KIND, lighting['resource']))
+    if minimap is not None:
+        resources.append(pinned_tile_resource(TILE_MINIMAP_RESOURCE_KIND, minimap['manifest']))
+    if surface_materials is not None:
+        resources.append(pinned_tile_resource(TILE_SURFACE_MATERIALS_RESOURCE_KIND, surface_materials))
+    if static_mesh_materials is not None and static_mesh_materials['listing'] is not None:
+        resources.append(pinned_tile_resource(TILE_STATIC_MESH_MATERIALS_RESOURCE_KIND, static_mesh_materials['listing']))
+    return sorted(resources, key=lambda resource: (resource['kind'], resource['manifest']))
+
+
+def build_tile_manifest(tile_id, source_identity, chunk_plan, chunk_manifest_records, evidence, static_meshes=None, bsp=None, collision=None,
+                        movers=None, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None, minimap=None,
+                        surface_materials=None, static_mesh_materials=None):
+    manifest = {'kind': TILE_MANIFEST_KIND, 'schemaVersion': TILE_MANIFEST_SCHEMA_VERSION, 'tileId': tile_id,
+                'sourceMap': tile_map_path(tile_id), 'sourceSha256': source_identity['sha256'],
+                'frame': {field: chunk_plan['frame'][field] for field in FRAME_FIELDS}, 'anchor': dict(chunk_plan['anchor']),
+                'chunks': list(chunk_manifest_records),
+                'resources': tile_resources(collision, movers, bsp_visibility, map_emitters, sky, world_audio, lighting, minimap, surface_materials,
+                                            static_mesh_materials),
+                'gaps': sorted_by_step(tile_level_gap_rows(tile_id, source_identity, evidence, static_meshes, bsp, collision, movers, bsp_visibility,
+                                                           map_emitters, sky, world_audio, lighting, minimap, static_mesh_materials))}
+    return validate_tile_manifest(manifest)
+
+
+def pinned_manifest_entry(relative_path, payload):
+    return {'manifest': '/l2/' + relative_path, 'manifestSha256': sha256_hex(payload), 'manifestBytes': len(payload)}
+
+
+def tile_store_files(tile_id, source_identity, chunk_plan, terrain_records, terrain_glbs_by_chunk, evidence, static_meshes=None, bsp=None,
+                     collision=None, movers=None, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None,
+                     minimap=None, static_mesh_materials=None):
+    if chunk_plan['anchor'] is None:
+        raise TileManifestStepError(f'chunk plan of tile {tile_id} has no anchor; a tile without an anchor gets no manifest')
+    terrain_records_by_chunk = {record['chunkId']: record for record in terrain_records}
+    if list(terrain_records_by_chunk) != [chunk['chunkId'] for chunk in chunk_plan['chunks']]:
+        raise TileManifestStepError(f'terrain records of tile {tile_id} do not list the chunk plan chunks in order')
+    files, chunk_manifest_records = {}, []
+    for chunk_plan_entry in chunk_plan['chunks']:
+        chunk_record = terrain_records_by_chunk[chunk_plan_entry['chunkId']]
+        if chunk_record['terrain'] is not None:
+            terrain_glb = terrain_glbs_by_chunk[chunk_plan_entry['chunkId']]
+            if sha256_hex(terrain_glb) != chunk_record['terrain']['sha256']:
+                raise TileManifestStepError(f'terrain GLB of {chunk_plan_entry["chunkId"]} differs from its terrain record SHA-256')
+            files[chunk_terrain_store_path(chunk_record['terrain']['sha256'])] = terrain_glb
+        chunk_manifest = build_tile_chunk_manifest(tile_id, chunk_record, chunk_plan_entry, source_identity, evidence, static_meshes, bsp,
+                                                   collision)
+        chunk_payload = canonical_json_bytes(chunk_manifest)
+        chunk_path = chunk_manifest_store_path(sha256_hex(chunk_payload))
+        files[chunk_path] = chunk_payload
+        chunk_manifest_records.append({'chunkId': chunk_plan_entry['chunkId'], **pinned_manifest_entry(chunk_path, chunk_payload)})
+    surface_materials = None
+    material_files = unique_native_material_files(tile_id, [product['materialFiles'] for product in (bsp, sky) if product is not None])
+    if material_files:
+        listing_path, listing_payload = surface_materials_listing(tile_id, material_files)
+        files[listing_path] = listing_payload
+        surface_materials = {'resource': '/l2/' + listing_path, 'sha256': sha256_hex(listing_payload), 'bytes': len(listing_payload)}
+    tile_payload = canonical_json_bytes(build_tile_manifest(tile_id, source_identity, chunk_plan, chunk_manifest_records, evidence, static_meshes,
+                                                            bsp, collision, movers, bsp_visibility, map_emitters, sky, world_audio, lighting,
+                                                            minimap, surface_materials, static_mesh_materials))
+    tile_path = tile_manifest_store_path(sha256_hex(tile_payload))
+    files[tile_path] = tile_payload
+    return files, validate_catalog_record(TILES_CATALOG_SLICE, {'id': tile_id, **pinned_manifest_entry(tile_path, tile_payload)})
+
+
+def is_earlier_tile_record_of_this_store(store_root, existing):
+    manifest_path = confined_child_path(store_root, existing['manifest'].removeprefix('/l2/'))
+    if not manifest_path.is_file():
+        return False
+    payload = manifest_path.read_bytes()
+    if sha256_hex(payload) != existing['manifestSha256'] or len(payload) != existing['manifestBytes']:
+        return False
+    try:
+        return validate_tile_manifest(json.loads(payload))['tileId'] == existing['id']
+    except (ValueError, KeyError, TypeError):
+        return False
+
+
+def catalog_with_tile_record(store_root, catalog, record):
+    existing_records = [existing for existing in catalog.get(TILES_CATALOG_SLICE, []) if existing.get('id') == record['id']]
+    if existing_records and all(is_earlier_tile_record_of_this_store(store_root, existing) for existing in existing_records):
+        catalog = {**catalog, TILES_CATALOG_SLICE: [existing for existing in catalog[TILES_CATALOG_SLICE] if existing.get('id') != record['id']]}
+    return merge_catalog_slice(catalog, TILES_CATALOG_SLICE, record, TILE_CATALOG_CAPACITY)
+
+
+def tile_manifest_ledger(project_root):
+    return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), TILE_MANIFEST_STEP_NAME, TILE_MANIFEST_STEP_ALGORITHM_VERSION)
+
+
+def sealed_tile_manifest_upstream(project_root, tile_id, lock_record):
+    return {STATIC_MESH_STEP_NAME: sealed_static_meshes(project_root, tile_id, lock_record), BSP_STEP_NAME: sealed_bsp_chunks(project_root, tile_id, lock_record),
+            COLLISION_STEP_NAME: sealed_collision(project_root, tile_id, lock_record), MOVER_STEP_NAME: sealed_movers(project_root, tile_id, lock_record),
+            BSP_VISIBILITY_STEP_NAME: sealed_bsp_visibility(project_root, tile_id, lock_record),
+            MAP_EMITTER_STEP_NAME: sealed_map_emitters(project_root, tile_id, lock_record), SKY_STEP_NAME: sealed_sky(project_root, tile_id, lock_record),
+            WORLD_AUDIO_STEP_NAME: sealed_world_audio(project_root, tile_id, lock_record),
+            LIGHTING_STEP_NAME: sealed_lighting(project_root, tile_id, lock_record), MINIMAP_STEP_NAME: sealed_minimap(project_root, tile_id, lock_record),
+            STATIC_MESH_MATERIALS_STEP_NAME: sealed_static_mesh_materials(project_root, tile_id, lock_record)}
+
+
+def tile_manifest_unit_config(terrain_unit, sealed_upstream):
+    fingerprints = {step: fingerprint for step, (fingerprint, _) in sealed_upstream.items()}
+    return {'chunksFingerprint': terrain_unit.chunks_fingerprint, 'terrainFingerprint': terrain_unit.fingerprint,
+            'meshesFingerprint': fingerprints[STATIC_MESH_STEP_NAME], 'bspFingerprint': fingerprints[BSP_STEP_NAME],
+            'collisionFingerprint': fingerprints[COLLISION_STEP_NAME], 'moversFingerprint': fingerprints[MOVER_STEP_NAME],
+            'bspVisibilityFingerprint': fingerprints[BSP_VISIBILITY_STEP_NAME], 'emittersFingerprint': fingerprints[MAP_EMITTER_STEP_NAME],
+            'skyFingerprint': fingerprints[SKY_STEP_NAME], 'audioFingerprint': fingerprints[WORLD_AUDIO_STEP_NAME],
+            'lightingFingerprint': fingerprints[LIGHTING_STEP_NAME], 'minimapFingerprint': fingerprints[MINIMAP_STEP_NAME],
+            'staticMeshMaterialsFingerprint': fingerprints[STATIC_MESH_MATERIALS_STEP_NAME]}
+
+
+def tile_manifest_unit(project_root, tile_id, lock_record, terrain_unit):
+    sealed_upstream = sealed_tile_manifest_upstream(project_root, tile_id, lock_record)
+    ledger = tile_manifest_ledger(project_root)
+    config = tile_manifest_unit_config(terrain_unit, sealed_upstream)
+    return TileManifestUnit(ledger, tile_unit_key(tile_id), ledger.unit_fingerprint([lock_record['eSha256']], config), config, sealed_upstream)
+
+
+def require_world_lane_store(project_root, output):
+    store_root = require_converter_output(project_root, output)
+    if store_root != lane_store_root(project_root, WORLD_LANE_NAME):
+        raise TileManifestStepError(f'tile manifests are sealed only in the world lane store {lane_store_root(project_root, WORLD_LANE_NAME)}: {store_root}')
+    return store_root
+
+
+def tile_manifest_step_rows(tile_id, source_identity, evidence, upstream_products):
+    return [tile_step_row(tile_id, TILE_MANIFEST_STEP_NAME, 'pass', None, source_identity, evidence),
+            *pending_step_rows(tile_id, pending_steps_after_sealed(PENDING_TILE_STEPS, *upstream_products), source_identity, evidence)]
+
+
+def run_tile_manifest_step(project_root, tile_id, output):
+    require_tile_id(tile_id)
+    store_root = require_world_lane_store(project_root, output)
+    lock_record = read_tile_map_lock_record(tile_id)
+    source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
+    terrain_unit, terrain_records, terrain_products = sealed_terrain_chunks(project_root, tile_id, lock_record)
+    chunk_plan = terrain_unit.chunk_plan
+    unit_key = tile_unit_key(tile_id)
+    if chunk_plan['anchor'] is None:
+        chunk_plan_receipt = chunk_plan_ledger(project_root).unit_step_directory(unit_key) / RECEIPT_RECORD_NAME
+        return [tile_step_row(tile_id, TILE_MANIFEST_STEP_NAME, GAP_STATUS, chunk_plan['anchorGap']['reason'], source_identity,
+                              chunk_plan_receipt.relative_to(terrain_unit.ledger.lane_folder).as_posix())]
+    unit = tile_manifest_unit(project_root, tile_id, lock_record, terrain_unit)
+    ledger, config, fingerprint = unit.ledger, unit.config, unit.fingerprint
+    upstream_products = tuple(product for _, product in unit.sealed_upstream.values())
+    receipt_evidence = (ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
+    if ledger.is_sealed(unit_key, fingerprint):
+        return tile_manifest_step_rows(tile_id, source_identity, receipt_evidence, upstream_products)
+    terrain_glbs_by_chunk = {record['chunkId']: (terrain_products / record['chunkId'] / TERRAIN_CHUNK_RESOURCE_NAME).read_bytes()
+                             for record in terrain_records if record['terrain'] is not None}
+    files, record = tile_store_files(tile_id, source_identity, chunk_plan, terrain_records, terrain_glbs_by_chunk, receipt_evidence, *upstream_products)
+    catalog, before = read_store_catalog(store_root)
+    catalog = catalog_with_tile_record(store_root, catalog, record)
+    ledger.begin(unit_key, fingerprint)
+    store_files = {}
+    for relative_path, payload in files.items():
+        add_store_file(store_files, relative_path, payload)
+    write_store(store_root, store_files, before, json_bytes(catalog))
+    outputs = [{'path': (store_root / relative_path).relative_to(ledger.lane_folder).as_posix(), 'sha256': sha256_hex(payload),
+                'bytes': len(payload)} for relative_path, payload in sorted(files.items())]
+    ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': [source_identity], 'gapRows': [], 'outputs': outputs})
+    return tile_manifest_step_rows(tile_id, source_identity, receipt_evidence, upstream_products)

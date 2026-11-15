@@ -1,0 +1,118 @@
+{
+ "schemaVersion": 1,
+ "reader": "map",
+ "packageVersion": 123,
+ "licenseeVersion": 18,
+ "map": "maps/90_90.unr",
+ "staticMeshActor": {
+  "name": "StaticMeshActor0",
+  "location": [
+   1152.0,
+   -144.5,
+   18.25
+  ]
+ },
+ "terrainInfo": {
+  "name": "TerrainInfo0",
+  "terrainMap": "T_FixtureTerrain.HeightFixture",
+  "sectorCounts": [
+   1,
+   1
+  ],
+  "toWorld": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    128.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    128.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.25
+   ]
+  ],
+  "toHeightmap": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0078125,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0078125,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    4.0
+   ]
+  ],
+  "heightmapSize": [
+   2,
+   2
+  ],
+  "vertexColorsBGRA": [
+   54,
+   72,
+   90,
+   108,
+   126,
+   144,
+   162,
+   180,
+   198,
+   216,
+   234,
+   252,
+   14,
+   32,
+   50,
+   68
+  ],
+  "sector": {
+   "name": "TerrainSector0",
+   "quads": [
+    1,
+    1
+   ],
+   "offset": [
+    0,
+    0
+   ],
+   "bounds": [
+    0.0,
+    0.0,
+    0.0,
+    128.0,
+    128.0,
+    64.0
+   ]
+  }
+ },
+ "materialExport": {
+  "name": "MaterialFixture",
+  "materialPrefix": "reserved-int32"
+ },
+ "readers": [
+  "map-actor",
+  "terrain-info",
+  "raw-map"
+ ],
+ "synthetic": "Hand-written test values, no Lineage II bytes"
+}

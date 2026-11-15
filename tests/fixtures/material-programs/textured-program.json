@@ -1,0 +1,117 @@
+{
+  "gapReasons": [],
+  "graphSha256": "7af1c00b66d5194749a3be985de535c9f0ddd2de1c299dbda87cfa8460d12868",
+  "kind": "ue2-material-program",
+  "nodes": [
+    {
+      "class": "Engine.TexPanner",
+      "fields": [
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Modifier",
+          "field": "Material",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticMaterials.SkyTexture"
+          }
+        },
+        {
+          "declaredType": "TexModifier.ETexCoordSrc",
+          "declaringClass": "Engine.TexModifier",
+          "field": "TexCoordSource",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "name": "TCS_One",
+            "ordinal": 1
+          },
+          "valueDeclaringClass": "Engine.TexModifier"
+        },
+        {
+          "declaredType": "Rotator",
+          "declaringClass": "Engine.TexPanner",
+          "field": "PanDirection",
+          "provenance": "authored",
+          "status": "raw",
+          "value": {
+            "propertyType": 10,
+            "rawHex": "000000000040000000000000",
+            "structName": "Rotator"
+          }
+        },
+        {
+          "declaredType": "float",
+          "declaringClass": "Engine.TexPanner",
+          "field": "PanRate",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 0.25
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticMaterials.SkyPanner",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": "const int",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 256
+        },
+        {
+          "declaredType": "BitmapMaterial.ETextureFormat",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "Format",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "F3",
+            "ordinal": 3
+          }
+        },
+        {
+          "declaredType": "Palette",
+          "declaringClass": "Engine.Texture",
+          "field": "Palette",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bMasked",
+          "provenance": "authored",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": "Texture",
+          "declaringClass": "Engine.Texture",
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticMaterials.SkyTexture",
+      "image": {
+        "bytes": 86,
+        "path": "/l2/native-material-textures/f94018a8dfe1674d7de8b8d805ebb4f0f7d9194206728246623f214327a6d493/texture.png",
+        "sha256": "f94018a8dfe1674d7de8b8d805ebb4f0f7d9194206728246623f214327a6d493"
+      },
+      "status": "reviewed"
+    }
+  ],
+  "root": "SyntheticMaterials.SkyPanner",
+  "schemaVersion": 1
+}

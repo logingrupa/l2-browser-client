@@ -1,0 +1,43 @@
+{
+  "description": "Synthetic RibbonEmitter trail authored for the simulator (D3): one head particle, sampling every 0.05 s with a minimum sample distance, cubic Hermite interpolation, ByTimeDual point drop and a fade-out. No value is copied from a client record.",
+  "actor": {
+    "object": "synthetic.ribbon_trail",
+    "properties": {
+      "Emitters": [{ "symbol": "RibbonEmitter1" }],
+      "AutoDestroy": true,
+      "bNoDelete": false
+    }
+  },
+  "components": [
+    {
+      "object": "synthetic.ribbon_trail.RibbonEmitter1",
+      "class": "Engine.RibbonEmitter",
+      "properties": {
+        "MaxParticles": 1,
+        "RespawnDeadParticles": false,
+        "AutomaticInitialSpawning": false,
+        "InitialParticlesPerSecond": 600.0,
+        "DrawStyle": 3,
+        "LifetimeRange": { "Min": 1.5, "Max": 1.5 },
+        "FadeOut": true,
+        "FadeOutStartTime": 1.0,
+        "SampleRate": 0.05,
+        "NumPoints": 10,
+        "AccDrop": 3,
+        "PointsDropRate": 2,
+        "MinPoints": 3,
+        "ThresholdTime": 0.6,
+        "ThresholdTime2": 1.1,
+        "RibbonWidth": 12.0,
+        "MinSampleDist": 1.0,
+        "bUseInterpolation": true,
+        "CntrPoints": 3,
+        "ScaleRatio": 2.0,
+        "bSamplePoints": true,
+        "bDecayPoints": true,
+        "bDecayPointsWhenStopped": true,
+        "bSyncDecayWhenKilled": true
+      }
+    }
+  ]
+}

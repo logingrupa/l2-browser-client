@@ -1,0 +1,7 @@
+{
+  "name": "l2-editor-webgpu-compat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "index.cjs"
+}

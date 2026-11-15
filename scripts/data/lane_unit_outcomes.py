@@ -1,0 +1,100 @@
+from __future__ import annotations
+
+from contextlib import contextmanager
+from pathlib import Path
+
+from hash_reference_client_tree import canonical_json_bytes
+from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, write_store
+from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
+from native_store.unit_ledger import RECEIPT_RECORD_NAME
+
+DECODE_ERROR_RECORD_NAME = 'decode-error.json'
+DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
+
+
+class LaneUnitOutcomeError(ValueError):
+    pass
+
+
+def lane_relative_path(ledger, path):
+    try:
+        return Path(path).relative_to(ledger.lane_folder).as_posix()
+    except ValueError as error:
+        raise LaneUnitOutcomeError(f'{path} is outside the {ledger.lane_name} lane folder {ledger.lane_folder}') from error
+
+
+def replace_step_gap_rows(project_root, lane_name, step, replaced_keys, gap_rows, rewrite_when_unchanged):
+    current_rows = sorted_gap_rows(row for row in read_gap_rows(project_root, lane_name) if row['step'] == step)
+    desired_rows = sorted_gap_rows([row for row in current_rows if row['key'] not in replaced_keys] + list(gap_rows))
+    if rewrite_when_unchanged or desired_rows != current_rows:
+        write_gap_rows(project_root, lane_name, step, desired_rows)
+    return desired_rows
+
+
+def replace_step_gap_row(project_root, lane_name, step, unit_key, gap_row):
+    replace_step_gap_rows(project_root, lane_name, step, {unit_key}, [gap_row] if gap_row else [], gap_row is not None)
+
+
+class StepGapRowReplacements:
+    def __init__(self, project_root, lane_name):
+        self.project_root, self.lane_name = project_root, lane_name
+        self.recorded_rows_by_step = None
+
+    def replace(self, step, unit_key, gap_row):
+        if self.recorded_rows_by_step is None:
+            replace_step_gap_row(self.project_root, self.lane_name, step, unit_key, gap_row)
+        else:
+            self.recorded_rows_by_step.setdefault(step, {})[unit_key] = gap_row
+
+    def take_recorded(self, step):
+        return self.recorded_rows_by_step.pop(step, {})
+
+    @contextmanager
+    def recorded_until_exit(self):
+        self.recorded_rows_by_step = {}
+        try:
+            yield
+        finally:
+            recorded_rows_by_step, self.recorded_rows_by_step = self.recorded_rows_by_step, None
+            for step, rows_by_key in recorded_rows_by_step.items():
+                gap_rows = [row for row in rows_by_key.values() if row is not None]
+                replace_step_gap_rows(self.project_root, self.lane_name, step, set(rows_by_key), gap_rows, bool(gap_rows))
+
+
+def replace_unit_gap_row(project_root, ledger, unit_key, gap_row):
+    replace_step_gap_row(project_root, ledger.lane_name, ledger.step, unit_key, gap_row)
+
+
+def write_pinned_manifest_to_store(output_root, slice_name, record, manifest_relative, manifest_bytes, capacity):
+    catalog, before = read_store_catalog(output_root)
+    merged = merge_catalog_slice(catalog, slice_name, record, capacity)
+    merged[slice_name] = sorted(merged[slice_name], key=lambda existing: existing['id'])
+    files = {}
+    add_store_file(files, manifest_relative, manifest_bytes)
+    write_store(output_root, files, before, canonical_json_bytes(merged))
+    return Path(output_root) / manifest_relative
+
+
+def seal_unit_manifest(project_root, ledger, unit_key, fingerprint, inputs, config, manifest_path, record):
+    manifest_output = {'path': lane_relative_path(ledger, manifest_path), 'sha256': record['manifestSha256'], 'bytes': record['manifestBytes']}
+    replace_unit_gap_row(project_root, ledger, unit_key, None)
+    ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'gapRows': [], 'outputs': [manifest_output]})
+
+
+def seal_unit_decode_failure(project_root, ledger, unit_key, fingerprint, step_directory, part_name, inputs, config, error):
+    return seal_unit_decode_gap(project_root, ledger, unit_key, fingerprint, step_directory, part_name, inputs, config, error,
+                                DECODE_FAILED_REASON_PREFIX + type(error).__name__)
+
+
+def seal_unit_decode_gap(project_root, ledger, unit_key, fingerprint, step_directory, part_name, inputs, config, error, reason):
+    error_bytes = canonical_json_bytes({'errorClass': type(error).__name__, 'message': str(error)})
+    error_path = step_directory / DECODE_ERROR_RECORD_NAME
+    error_path.write_bytes(error_bytes)
+    gap_row = {'key': unit_key, 'part': part_name, 'step': ledger.step, 'status': 'gap',
+               'reason': reason,
+               'sourceIdentity': {'path': inputs[0]['path'], 'sha256': inputs[0]['sha256']},
+               'evidence': lane_relative_path(ledger, step_directory / RECEIPT_RECORD_NAME)}
+    replace_unit_gap_row(project_root, ledger, unit_key, gap_row)
+    ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'gapRows': [gap_row], 'outputs': [
+        {'path': lane_relative_path(ledger, error_path), 'sha256': sha256_hex(error_bytes), 'bytes': len(error_bytes)}]})
+    return {'unit': unit_key, 'status': 'gap', 'reason': gap_row['reason']}

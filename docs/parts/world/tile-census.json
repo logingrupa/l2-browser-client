@@ -1,0 +1,3197 @@
+{
+  "maps": [
+    {
+      "key": "map:Auto0",
+      "kind": "non-tile",
+      "licensee": 0,
+      "map": "maps/Auto0.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 118,
+      "reason": "map-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "map:Auto1",
+      "kind": "non-tile",
+      "licensee": 0,
+      "map": "maps/Auto1.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 118,
+      "reason": "map-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "map:Auto2",
+      "kind": "non-tile",
+      "licensee": 0,
+      "map": "maps/Auto2.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 118,
+      "reason": "map-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "map:Auto3",
+      "kind": "non-tile",
+      "licensee": 0,
+      "map": "maps/Auto3.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 118,
+      "reason": "map-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "map:Auto4",
+      "kind": "non-tile",
+      "licensee": 0,
+      "map": "maps/Auto4.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 118,
+      "reason": "map-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "map:Auto5",
+      "kind": "non-tile",
+      "licensee": 0,
+      "map": "maps/Auto5.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 118,
+      "reason": "map-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "map:Lobby",
+      "kind": "non-tile",
+      "licensee": 30,
+      "map": "maps/Lobby.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "map:entry",
+      "kind": "non-tile",
+      "licensee": 0,
+      "map": "maps/entry.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 123,
+      "reason": "map-licensee-unsupported:123/0",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "map:ship_position",
+      "kind": "non-tile",
+      "licensee": 6,
+      "map": "maps/ship_position.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 118,
+      "reason": "map-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "map:skylevel",
+      "kind": "non-tile",
+      "licensee": 0,
+      "map": "maps/skylevel.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 118,
+      "reason": "map-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "not-applicable",
+      "terrainMapPackage": null,
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "tile:15_20",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/15_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_15_20.Height.15_20",
+        "packageVersion": 123,
+        "path": "textures/t_15_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:15_21",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/15_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_15_20.Height.15_20",
+        "packageVersion": 123,
+        "path": "textures/t_15_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:15_22",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/15_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_15_22.Height.15_22",
+        "packageVersion": 123,
+        "path": "textures/t_15_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:15_23",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/15_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_15_23.Height.15_23",
+        "packageVersion": 123,
+        "path": "textures/t_15_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:15_24",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/15_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_15_24.Height.15_24",
+        "packageVersion": 123,
+        "path": "textures/t_15_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:15_25",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/15_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_15_25.Height.15_25",
+        "packageVersion": 123,
+        "path": "textures/t_15_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:15_26",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/15_26.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_15_26.Height.15_26",
+        "packageVersion": 123,
+        "path": "textures/t_15_26.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_10",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/16_10.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_16_10.Height.16_10",
+        "packageVersion": 123,
+        "path": "textures/t_16_10.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_11",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/16_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_16_11.Height.16_11",
+        "packageVersion": 123,
+        "path": "textures/t_16_11.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_12",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/16_12.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_16_12.Height.16_12",
+        "packageVersion": 123,
+        "path": "textures/t_16_12.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_19",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/16_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_16_19.Height.16_19",
+        "packageVersion": 123,
+        "path": "textures/t_16_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_20",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/16_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_16_20.Height.16_20",
+        "packageVersion": 123,
+        "path": "textures/t_16_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_21",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/16_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 20,
+        "object": "T_16_21.Height.16_21",
+        "packageVersion": 123,
+        "path": "textures/t_16_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_22",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/16_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_16_22.Height.16_22",
+        "packageVersion": 123,
+        "path": "textures/t_16_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_23",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/16_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 20,
+        "object": "T_16_23.Height.16_23",
+        "packageVersion": 123,
+        "path": "textures/t_16_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_24",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/16_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_16_24.Height.16_24",
+        "packageVersion": 123,
+        "path": "textures/t_16_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_25",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/16_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_16_25.Height.16_25",
+        "packageVersion": 123,
+        "path": "textures/T_16_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:16_26",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/16_26.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_16_26.Height.16_26",
+        "packageVersion": 123,
+        "path": "textures/t_16_26.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_10",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/17_10.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_17_10.Height.17_10",
+        "packageVersion": 123,
+        "path": "textures/t_17_10.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_11",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/17_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_17_11.Height.17_11",
+        "packageVersion": 123,
+        "path": "textures/t_17_11.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_12",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/17_12.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_17_12.Height.17_12",
+        "packageVersion": 123,
+        "path": "textures/t_17_12.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_18",
+      "kind": "tile",
+      "licensee": 18,
+      "map": "maps/17_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_17_18.Height.17_18",
+        "packageVersion": 123,
+        "path": "textures/t_17_18.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_19",
+      "kind": "tile",
+      "licensee": 18,
+      "map": "maps/17_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_17_19.Height.17_19",
+        "packageVersion": 123,
+        "path": "textures/t_17_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_20",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/17_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_17_20.Height.17_20",
+        "packageVersion": 123,
+        "path": "textures/t_17_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_21",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/17_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_17_21.Height.17_21",
+        "packageVersion": 123,
+        "path": "textures/t_17_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_22",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/17_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_17_22.Height.17_22",
+        "packageVersion": 123,
+        "path": "textures/t_17_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_23",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/17_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": "terrain-height-version-unsupported:118",
+      "status": "gap",
+      "terrainHeightGate": "fail",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 11,
+        "object": "T_17_23.Height.17_23",
+        "packageVersion": 118,
+        "path": "textures/t_17_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_24",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/17_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_17_24.Height.17_24",
+        "packageVersion": 123,
+        "path": "textures/t_17_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_25",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/17_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 16,
+        "object": "T_17_25.Height.17_25",
+        "packageVersion": 123,
+        "path": "textures/t_17_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:17_26",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/17_26.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_17_26.Height.17_26",
+        "packageVersion": 123,
+        "path": "textures/t_17_26.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_10",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/18_10.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_10.Height.18_10",
+        "packageVersion": 123,
+        "path": "textures/t_18_10.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_11",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/18_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_11.Height.18_11",
+        "packageVersion": 123,
+        "path": "textures/t_18_11.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_12",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/18_12.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_12.Height.18_12",
+        "packageVersion": 123,
+        "path": "textures/t_18_12.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_13",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/18_13.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 18,
+        "object": "T_18_13.Height.18_13",
+        "packageVersion": 123,
+        "path": "textures/t_18_13.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_14",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/18_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_18_14.Height.18_14",
+        "packageVersion": 123,
+        "path": "textures/t_18_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_15",
+      "kind": "tile",
+      "licensee": 18,
+      "map": "maps/18_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 18,
+        "object": "T_18_15.Height.18_15",
+        "packageVersion": 123,
+        "path": "textures/t_18_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_17",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/18_17.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_17.Height.18_17",
+        "packageVersion": 123,
+        "path": "textures/t_18_17.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_18",
+      "kind": "tile",
+      "licensee": 18,
+      "map": "maps/18_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_18_18.Height.18_18",
+        "packageVersion": 123,
+        "path": "textures/t_18_18.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_19",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/18_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_18_19.Height.18_19",
+        "packageVersion": 123,
+        "path": "textures/t_18_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_20",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/18_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_20.Height.18_20",
+        "packageVersion": 123,
+        "path": "textures/T_18_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_21",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/18_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_18_21.Height.18_21",
+        "packageVersion": 123,
+        "path": "textures/t_18_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_22",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/18_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_22.Height.18_22",
+        "packageVersion": 123,
+        "path": "textures/T_18_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_23",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/18_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 20,
+        "object": "T_18_23.Height.18_23",
+        "packageVersion": 123,
+        "path": "textures/t_18_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_24",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/18_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_18_24.Height.18_24",
+        "packageVersion": 123,
+        "path": "textures/t_18_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_25",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/18_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_18_25.Height.18_25",
+        "packageVersion": 123,
+        "path": "textures/t_18_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:18_26",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/18_26.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_18_26.Height.18_26",
+        "packageVersion": 123,
+        "path": "textures/t_18_26.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_10",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/19_10.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_10.Height.19_10",
+        "packageVersion": 123,
+        "path": "textures/t_19_10.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_11",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/19_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": "terrain-height-package-missing",
+      "status": "gap",
+      "terrainHeightGate": "missing",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": null,
+        "object": "T_19_11.Height.19_11",
+        "packageVersion": null,
+        "path": null
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_13",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/19_13.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_19_13.Height.19_13",
+        "packageVersion": 123,
+        "path": "textures/t_19_13.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_14",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/19_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_19_14.Height.19_14",
+        "packageVersion": 123,
+        "path": "textures/t_19_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_15",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/19_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 20,
+        "object": "T_19_15.Height.19_15",
+        "packageVersion": 123,
+        "path": "textures/t_19_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_16",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/19_16.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_16.Height.19_16",
+        "packageVersion": 123,
+        "path": "textures/t_19_16.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_17",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/19_17.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_17.Height.19_17",
+        "packageVersion": 123,
+        "path": "textures/T_19_17.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_18",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/19_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_19_18.Height.19_18",
+        "packageVersion": 123,
+        "path": "textures/t_19_18.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_19",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/19_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_19_19.Height.19_19",
+        "packageVersion": 123,
+        "path": "textures/t_19_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_20",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/19_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_19_20.Height.19_20",
+        "packageVersion": 123,
+        "path": "textures/t_19_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_21",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/19_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 22,
+        "object": "T_19_21.Height.19_21",
+        "packageVersion": 123,
+        "path": "textures/t_19_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_22",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/19_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_22.Height.19_22",
+        "packageVersion": 123,
+        "path": "textures/T_19_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_23",
+      "kind": "tile",
+      "licensee": 31,
+      "map": "maps/19_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_19_23.Height.19_23",
+        "packageVersion": 123,
+        "path": "textures/t_19_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_24",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/19_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_24.Height.19_24",
+        "packageVersion": 123,
+        "path": "textures/T_19_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:19_25",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/19_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_19_25.Height.19_25",
+        "packageVersion": 123,
+        "path": "textures/t_19_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_10",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/20_10.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_10.Height.20_10",
+        "packageVersion": 123,
+        "path": "textures/t_20_10.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_11",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/20_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": "terrain-height-package-missing",
+      "status": "gap",
+      "terrainHeightGate": "missing",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": null,
+        "object": "T_20_11.Height.20_11",
+        "packageVersion": null,
+        "path": null
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_13",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/20_13.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_20_13.Height.20_13",
+        "packageVersion": 123,
+        "path": "textures/t_20_13.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_14",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/20_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_14.Height.20_14",
+        "packageVersion": 123,
+        "path": "textures/t_20_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_15",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/20_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_20_15.Height.20_15",
+        "packageVersion": 123,
+        "path": "textures/t_20_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_16",
+      "kind": "tile",
+      "licensee": 31,
+      "map": "maps/20_16.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_16.Height.20_16",
+        "packageVersion": 123,
+        "path": "textures/t_20_16.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_17",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/20_17.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_17.Height.20_17",
+        "packageVersion": 123,
+        "path": "textures/t_20_17.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_18",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/20_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_20_18.Height.20_18",
+        "packageVersion": 123,
+        "path": "textures/t_20_18.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_19",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/20_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_20_19.Height.20_19",
+        "packageVersion": 123,
+        "path": "textures/t_20_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_20",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/20_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_20.Height.20_20",
+        "packageVersion": 123,
+        "path": "textures/T_20_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_21",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/20_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_21.Height.20_21",
+        "packageVersion": 123,
+        "path": "textures/T_20_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_22",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/20_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_22.Height.20_22",
+        "packageVersion": 123,
+        "path": "textures/T_20_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_23",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/20_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_23.Height.20_23",
+        "packageVersion": 123,
+        "path": "textures/T_20_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_24",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/20_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_20_24.Height.20_24",
+        "packageVersion": 123,
+        "path": "textures/t_20_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:20_25",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/20_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_20_25.Height.20_25",
+        "packageVersion": 123,
+        "path": "textures/t_20_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_13",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/21_13.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_21_13.Height.21_13",
+        "packageVersion": 123,
+        "path": "textures/t_21_13.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_14",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/21_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_21_14.Height.21_14",
+        "packageVersion": 123,
+        "path": "textures/t_21_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_15",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/21_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_15.Height.21_15",
+        "packageVersion": 123,
+        "path": "textures/T_21_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_16",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/21_16.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_16.21_16",
+        "packageVersion": 123,
+        "path": "textures/T_21_16.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_17",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/21_17.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_21_17.Height.21_17",
+        "packageVersion": 123,
+        "path": "textures/t_21_17.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_18",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/21_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_21_18.Height.21_18",
+        "packageVersion": 123,
+        "path": "textures/t_21_18.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_19",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/21_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_19.Height.21_19",
+        "packageVersion": 123,
+        "path": "textures/T_21_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_20",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/21_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_21_20.Height.21_20",
+        "packageVersion": 123,
+        "path": "textures/t_21_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_21",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/21_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_21_21.Height.21_21",
+        "packageVersion": 123,
+        "path": "textures/t_21_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_22",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/21_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_22.Height.21_22",
+        "packageVersion": 123,
+        "path": "textures/T_21_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_23",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/21_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_21_23.Height.21_23",
+        "packageVersion": 123,
+        "path": "textures/t_21_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_24",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/21_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_24.Height.21_24",
+        "packageVersion": 123,
+        "path": "textures/t_21_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:21_25",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/21_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_21_25.Height.21_17",
+        "packageVersion": 123,
+        "path": "textures/t_21_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_13",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/22_13.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_13.Height.22_13",
+        "packageVersion": 123,
+        "path": "textures/T_22_13.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_14",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/22_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_14.Height.22_14",
+        "packageVersion": 123,
+        "path": "textures/T_22_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_15",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/22_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_15.Height.22_15",
+        "packageVersion": 123,
+        "path": "textures/T_22_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_16",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/22_16.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_16.Height.22_16",
+        "packageVersion": 123,
+        "path": "textures/T_22_16.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_17",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/22_17.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_22_17.Height.22_17",
+        "packageVersion": 123,
+        "path": "textures/t_22_17.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_18",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/22_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_18.Height.22_18",
+        "packageVersion": 123,
+        "path": "textures/T_22_18.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_19",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/22_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_19.Height.22_19",
+        "packageVersion": 123,
+        "path": "textures/T_22_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_20",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/22_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_20.Height.22_20",
+        "packageVersion": 123,
+        "path": "textures/T_22_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_21",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/22_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_22_21.Height.22_21",
+        "packageVersion": 123,
+        "path": "textures/t_22_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_22",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/22_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_22_22.Height.22_22",
+        "packageVersion": 123,
+        "path": "textures/t_22_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_23",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/22_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_23.Height.22_23",
+        "packageVersion": 123,
+        "path": "textures/T_22_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_24",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/22_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_22_24.Height.22_24",
+        "packageVersion": 123,
+        "path": "textures/t_22_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_25",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/22_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 22,
+        "object": "T_22_25.Height.22_25",
+        "packageVersion": 123,
+        "path": "textures/t_22_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:22_26",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/22_26.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_22_26.Height.22_26",
+        "packageVersion": 123,
+        "path": "textures/t_22_26.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_10",
+      "kind": "tile",
+      "licensee": 18,
+      "map": "maps/23_10.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 15,
+        "object": "T_23_10.Height.23_10",
+        "packageVersion": 123,
+        "path": "textures/t_23_10.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_11",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/23_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 20,
+        "object": "T_23_11.Height.23_11",
+        "packageVersion": 123,
+        "path": "textures/t_23_11.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_12",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/23_12.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_23_12.Height.23_12",
+        "packageVersion": 123,
+        "path": "textures/t_23_12.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_13",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_13.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_13.Height.23_13",
+        "packageVersion": 123,
+        "path": "textures/T_23_13.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_14",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_14.Height.23_14",
+        "packageVersion": 123,
+        "path": "textures/t_23_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_15",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_23_15.Height.23_15",
+        "packageVersion": 123,
+        "path": "textures/t_23_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_16",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_16.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_16.Height.23_16",
+        "packageVersion": 123,
+        "path": "textures/T_23_16.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_17",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_17.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_17.Height.23_17",
+        "packageVersion": 123,
+        "path": "textures/T_23_17.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_18",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_23_18.Height.23_18",
+        "packageVersion": 123,
+        "path": "textures/t_23_18.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_19",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_23_19.Height.23_19",
+        "packageVersion": 123,
+        "path": "textures/t_23_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_20",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/23_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_20.Height.23_20",
+        "packageVersion": 123,
+        "path": "textures/T_23_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_21",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_21.Height.23_21",
+        "packageVersion": 123,
+        "path": "textures/T_23_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_22",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_22.Height.23_22",
+        "packageVersion": 123,
+        "path": "textures/t_23_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_23",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/23_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_23_23.Height.23_23",
+        "packageVersion": 123,
+        "path": "textures/t_23_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_24",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/23_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_24.Height.23_24",
+        "packageVersion": 123,
+        "path": "textures/T_23_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_25",
+      "kind": "tile",
+      "licensee": 31,
+      "map": "maps/23_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_23_25.Height.23_25",
+        "packageVersion": 123,
+        "path": "textures/t_23_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:23_26",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/23_26.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_23_26.Height.23_26",
+        "packageVersion": 123,
+        "path": "textures/t_23_26.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_10",
+      "kind": "tile",
+      "licensee": 16,
+      "map": "maps/24_10.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 123,
+      "reason": "map-licensee-unsupported:123/16",
+      "status": "gap",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 15,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_10.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_11",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/24_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 19,
+        "object": "T_24_11.Height.24_11",
+        "packageVersion": 123,
+        "path": "textures/t_24_11.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_12",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/24_12.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_24_12.Height.24_12",
+        "packageVersion": 123,
+        "path": "textures/t_24_12.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_13",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/24_13.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_24_13.Height.24_13",
+        "packageVersion": 123,
+        "path": "textures/t_24_13.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_14",
+      "kind": "tile",
+      "licensee": 31,
+      "map": "maps/24_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_24_14.Height.24_14",
+        "packageVersion": 123,
+        "path": "textures/t_24_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_15",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/24_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_24_15.Height.24_15",
+        "packageVersion": 123,
+        "path": "textures/T_24_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_16",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/24_16.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_24_16.Height.24_16",
+        "packageVersion": 123,
+        "path": "textures/T_24_16.utx"
+      },
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "tile:24_17",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/24_17.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_24_17.Height.24_17",
+        "packageVersion": 123,
+        "path": "textures/t_24_17.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_18",
+      "kind": "tile",
+      "licensee": 30,
+      "map": "maps/24_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_24_18.Height.24_18",
+        "packageVersion": 123,
+        "path": "textures/t_24_18.utx"
+      },
+      "wrapper": "UnrealPackage"
+    },
+    {
+      "key": "tile:24_19",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/24_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_24_19.Height.24_19",
+        "packageVersion": 123,
+        "path": "textures/T_24_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_20",
+      "kind": "tile",
+      "licensee": 31,
+      "map": "maps/24_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_24_20.Height.24_20",
+        "packageVersion": 123,
+        "path": "textures/T_24_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_21",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/24_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_24_21.Height.24_21",
+        "packageVersion": 123,
+        "path": "textures/t_24_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_22",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/24_22.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_24_22.Height.24_22",
+        "packageVersion": 123,
+        "path": "textures/t_24_22.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_23",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/24_23.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 22,
+        "object": "T_24_23.Height.24_23",
+        "packageVersion": 123,
+        "path": "textures/t_24_23.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_24",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/24_24.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 20,
+        "object": "T_24_24.Height.24_24",
+        "packageVersion": 123,
+        "path": "textures/t_24_24.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_25",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/24_25.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 22,
+        "object": "T_24_25.Height.24_25",
+        "packageVersion": 123,
+        "path": "textures/t_24_25.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:24_26",
+      "kind": "tile",
+      "licensee": 20,
+      "map": "maps/24_26.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_24_26.Height.24_26",
+        "packageVersion": 123,
+        "path": "textures/t_24_26.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_10",
+      "kind": "tile",
+      "licensee": 16,
+      "map": "maps/25_10.unr",
+      "mapReaderGate": "fail",
+      "packageVersion": 123,
+      "reason": "map-licensee-unsupported:123/16",
+      "status": "gap",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 15,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_25_10.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_11",
+      "kind": "tile",
+      "licensee": 23,
+      "map": "maps/25_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 16,
+        "object": "T_25_11.Height.25_11",
+        "packageVersion": 123,
+        "path": "textures/t_25_11.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_12",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/25_12.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_25_12.Height.25_12",
+        "packageVersion": 123,
+        "path": "textures/t_25_12.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_14",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/25_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_25_14.Height.25_14",
+        "packageVersion": 123,
+        "path": "textures/t_25_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_15",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/25_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_25_15.Height.25_15",
+        "packageVersion": 123,
+        "path": "textures/t_25_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_16",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/25_16.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_25_16.Height.25_16",
+        "packageVersion": 123,
+        "path": "textures/t_25_16.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_17",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/25_17.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_25_17.Height.25_17",
+        "packageVersion": 123,
+        "path": "textures/t_25_17.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_18",
+      "kind": "tile",
+      "licensee": 25,
+      "map": "maps/25_18.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_25_18.Height.25_18",
+        "packageVersion": 123,
+        "path": "textures/t_25_18.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_19",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/25_19.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_25_19.Height.25_19",
+        "packageVersion": 123,
+        "path": "textures/T_25_19.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_20",
+      "kind": "tile",
+      "licensee": 31,
+      "map": "maps/25_20.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_25_20.Height.25_20",
+        "packageVersion": 123,
+        "path": "textures/t_25_20.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:25_21",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/25_21.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 19,
+        "object": "T_25_21.Height.25_21",
+        "packageVersion": 123,
+        "path": "textures/t_25_21.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:26_11",
+      "kind": "tile",
+      "licensee": 19,
+      "map": "maps/26_11.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 19,
+        "object": "T_26_11.Height.26_11",
+        "packageVersion": 123,
+        "path": "textures/t_26_11.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:26_12",
+      "kind": "tile",
+      "licensee": 18,
+      "map": "maps/26_12.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 16,
+        "object": "T_26_12.Height.26_12",
+        "packageVersion": 123,
+        "path": "textures/t_26_12.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:26_14",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/26_14.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_26_14.Height.26_14",
+        "packageVersion": 123,
+        "path": "textures/t_26_14.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:26_15",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/26_15.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_26_15.Height.26_15",
+        "packageVersion": 123,
+        "path": "textures/t_26_15.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    },
+    {
+      "key": "tile:26_16",
+      "kind": "tile",
+      "licensee": 28,
+      "map": "maps/26_16.unr",
+      "mapReaderGate": "pass",
+      "packageVersion": 123,
+      "reason": null,
+      "status": "eligible",
+      "terrainHeightGate": "pass",
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_26_16.Height.26_16",
+        "packageVersion": 123,
+        "path": "textures/t_26_16.utx"
+      },
+      "wrapper": "Lineage2Ver111"
+    }
+  ],
+  "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+  "reviewedReaderPairs": {
+    "g16-heightmap": [
+      [
+        123,
+        12
+      ],
+      [
+        123,
+        15
+      ],
+      [
+        123,
+        16
+      ],
+      [
+        123,
+        18
+      ],
+      [
+        123,
+        19
+      ],
+      [
+        123,
+        20
+      ],
+      [
+        123,
+        22
+      ],
+      [
+        123,
+        23
+      ],
+      [
+        123,
+        25
+      ],
+      [
+        123,
+        28
+      ]
+    ],
+    "map-actor": [
+      [
+        123,
+        16
+      ],
+      [
+        123,
+        18
+      ],
+      [
+        123,
+        19
+      ],
+      [
+        123,
+        20
+      ],
+      [
+        123,
+        23
+      ],
+      [
+        123,
+        25
+      ],
+      [
+        123,
+        28
+      ],
+      [
+        123,
+        30
+      ],
+      [
+        123,
+        31
+      ]
+    ],
+    "raw-map": [
+      [
+        123,
+        16
+      ],
+      [
+        123,
+        18
+      ],
+      [
+        123,
+        19
+      ],
+      [
+        123,
+        20
+      ],
+      [
+        123,
+        23
+      ],
+      [
+        123,
+        25
+      ],
+      [
+        123,
+        28
+      ],
+      [
+        123,
+        30
+      ],
+      [
+        123,
+        31
+      ]
+    ],
+    "terrain-info": [
+      [
+        123,
+        18
+      ],
+      [
+        123,
+        19
+      ],
+      [
+        123,
+        20
+      ],
+      [
+        123,
+        23
+      ],
+      [
+        123,
+        25
+      ],
+      [
+        123,
+        28
+      ],
+      [
+        123,
+        30
+      ],
+      [
+        123,
+        31
+      ]
+    ]
+  },
+  "schemaVersion": 1
+}

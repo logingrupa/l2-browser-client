@@ -1,0 +1,47 @@
+{
+  "file": "SyntheticMaterials.utx",
+  "packageVersion": 123,
+  "licensee": 28,
+  "exports": [
+    {
+      "name": "SkyShader",
+      "class": "Engine.Shader",
+      "properties": [
+        {"name": "Diffuse", "object": "SkyCombiner"},
+        {"name": "Opacity", "importedObject": "SharedTextures.Mask", "importedClass": "Engine.Texture"},
+        {"name": "Specular", "object": null},
+        {"name": "OutputBlending", "byte": 3},
+        {"name": "TwoSided", "bool": true}
+      ]
+    },
+    {
+      "name": "SkyCombiner",
+      "class": "Engine.Combiner",
+      "properties": [
+        {"name": "Material1", "object": "SkyPanner"},
+        {"name": "Material2", "object": "SkyTexture"},
+        {"name": "CombineOperation", "byte": 2},
+        {"name": "Modulate2X", "bool": true}
+      ]
+    },
+    {
+      "name": "SkyPanner",
+      "class": "Engine.TexPanner",
+      "properties": [
+        {"name": "Material", "object": "SkyTexture"},
+        {"name": "PanRate", "float": 0.25},
+        {"name": "PanDirection", "struct": "Rotator", "payloadHex": "000000000040000000000000"}
+      ]
+    },
+    {
+      "name": "SkyTexture",
+      "class": "Engine.Texture",
+      "tailHex": "0102030405",
+      "properties": [
+        {"name": "USize", "int": 256},
+        {"name": "Format", "byte": 3},
+        {"name": "bMasked", "bool": false}
+      ]
+    }
+  ]
+}

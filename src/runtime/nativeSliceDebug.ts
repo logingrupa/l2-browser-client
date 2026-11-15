@@ -1,0 +1,75 @@
+import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import type { Scene } from "@babylonjs/core/scene";
+import type { EntityRegistry } from "../entities/EntityRegistry";
+import type { DevSection } from "../ui/devSheet/DevSheet";
+import type { VariableInfo } from "../ui/devSheet/types";
+import type { NativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
+import { worldPositionToSource } from "../world/sourceFrame";
+import { authoredWorldParameter, isAuthoredWorldSelected, selectAuthoredWorld } from "../scene/authoredWorldSelection";
+import { readout } from "./nativeSliceSheet";
+
+export interface NativeSliceDebugOptions {
+  scene: Scene;
+  camera: ArcRotateCamera;
+  registry: () => EntityRegistry;
+  playerProfile: NativePlayerProfile;
+  playerChoices: ReadonlyMap<string, NativePlayerProfile>;
+  events: AbortSignal;
+}
+
+const currentQueryParameters = () => new URLSearchParams(globalThis.location?.search ?? "");
+const formatFinite = (value: number, digits = 2) => Number.isFinite(value) ? value.toFixed(digits) : "-";
+
+export function attachNativeSliceDebugSection(section: DevSection, options: NativeSliceDebugOptions): void {
+  const { scene, camera, registry, playerProfile, playerChoices, events } = options;
+  const frame = section.group("diagnostics", "Frame & position");
+  const position = () => registry().localPlayerPosition;
+  readout(frame, "Frame rate", () => `${Math.round(scene.getEngine().getFps())} FPS`, "native-debug-fps",
+    "Babylon engine frame rate, averaged by the engine. Same value as the HUD FPS counter.", () => [
+      { name: "debug.fps", value: () => formatFinite(scene.getEngine().getFps(), 1), values: "frames per second", source: "AbstractEngine.getFps()", status: "presentation" },
+    ]);
+  readout(frame, "Entities", () => String(registry().count), "native-debug-entities",
+    "Entities presented by the registry: the local fighter and Greater Musveren unless one was despawned.", () => [
+      { name: "debug.entities", value: () => String(registry().count), values: "0-2 in this slice", source: "EntityRegistry.count", status: "presentation" },
+    ]);
+  readout(frame, "Fighter (m)", () => {
+    const current = position();
+    return current ? `${formatFinite(current.x)}, ${formatFinite(current.y)}, ${formatFinite(current.z)}` : "unavailable";
+  }, "native-debug-position", "Browser metres, right-handed, Y up. Native units are (X, Z, Y) × 100.", () => [
+    { name: "debug.position.browser", value: () => { const current = position(); return current ? `${formatFinite(current.x, 3)}, ${formatFinite(current.y, 3)}, ${formatFinite(current.z, 3)}` : "unavailable"; },
+      values: "metres (x, y, z)", source: "EntityRegistry.localPlayerPosition", status: "presentation" },
+    { name: "debug.position.native", value: () => { const current = position(); if (!current) return "unavailable"; const source = worldPositionToSource(current); return `${formatFinite(source.x, 0)}, ${formatFinite(source.y, 0)}, ${formatFinite(source.z, 0)}`; },
+      values: "native units (X, Y, Z)", source: "section placement conversion: native = (x, z, y) × 100; native debug location match unverified", status: "unverified" },
+  ]);
+  readout(frame, "Camera", () => `r ${formatFinite(camera.radius, 1)} · α ${formatFinite(camera.alpha)} · β ${formatFinite(camera.beta)}`, "native-debug-camera",
+    "Orbit camera around the fighter (or the framed world/effect). Drag to orbit, pinch or scroll to zoom.", () => [
+      { name: "camera.radius", value: () => formatFinite(camera.radius, 2), values: `${formatFinite(camera.lowerRadiusLimit ?? 0, 1)}-${formatFinite(camera.upperRadiusLimit ?? Infinity, 1)} m`, source: "World camera (ArcRotateCamera)", status: "presentation" },
+      { name: "camera.target", value: () => camera.target.asArray().map(value => formatFinite(value)).join(", "), values: "metres", source: "Follow fighter / Frame world", status: "presentation" },
+    ]);
+
+  const url = section.group("url", "URL parameters", {
+    hint: "These query parameters choose what loads. Changing one reloads the page; current values are read live from the address bar.",
+  });
+  const urlVariable = (name: string, values: string, source: string): VariableInfo =>
+    ({ name: `url.${name}`, value: () => currentQueryParameters().get(name) ?? "(not set)", values, source, status: "presentation" });
+  readout(url, authoredWorldParameter, () => currentQueryParameters().get(authoredWorldParameter) ?? "(not set)", "native-debug-url-authored",
+    "authored=1 loads the Babylon Editor saved world (public/scene/native-world.babylon) instead of building the scene in code and loading the staged source section.",
+    () => [urlVariable(authoredWorldParameter, "1 | (not set)", "src/scene/authoredWorldSelection.ts")]);
+  readout(url, "character", () => currentQueryParameters().get("character") ?? `(not set → ${playerProfile.id})`, "native-debug-url-character",
+    "Player profile id from catalog.playerProfiles. Use Character › Play as… to switch.", () => [
+      urlVariable("character", [...playerChoices.keys()].join(" | "), "catalog.playerProfiles (src/runtime/createNativeSliceRuntime.ts)"),
+      { name: "character.active", value: () => `${playerProfile.id} · ${playerProfile.name}`, values: [...playerChoices.values()].map(choice => choice.name).join(" | "),
+        source: "loadNativeActorCatalog playerProfile", status: "native" },
+    ]);
+  const addWorldReloadButton = (label: string, testId: string, authored: boolean, hint: string) => {
+    const current = isAuthoredWorldSelected(globalThis.location?.search ?? "") === authored;
+    const button = url.button({ label, testId, hint, disabled: current });
+    button.addEventListener("click", () => {
+      const next = new URL(globalThis.location.href);
+      selectAuthoredWorld(next.searchParams, authored);
+      globalThis.location.assign(next.href);
+    }, { signal: events });
+  };
+  addWorldReloadButton("Open source world", "native-debug-open-source", false, "Reload without authored=1: the scene is built in code and the staged source section loads at startup.");
+  addWorldReloadButton("Open authored world", "native-debug-open-authored", true, "Reload with authored=1: the Babylon Editor saved native world.");
+}

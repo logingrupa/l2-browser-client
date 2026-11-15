@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-player-base-profile",
+  "description": "The browser's built-in Human male fighter profile (src/assets/native/loadNativePlayerProfiles.ts defaultNativePlayerProfile, kept equal by tests/unit/nativePlayerProfiles.test.ts). scripts/prepare-native-player-aliases.py adds its native animation aliases; the browser accepts the staged row only with this exact package/source/scale/collision/facing/equipment identity.",
+  "profile": {
+    "id": "human-male-fighter",
+    "name": "Human male fighter",
+    "catalogId": "human-male-fighter:0",
+    "assetId": "interlude:assembly:MFighter-native-body-face0-hair0",
+    "sourceObject": "Fighter.MFighter_m001_u",
+    "sourceSha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c",
+    "clips": {
+      "idle": "Wait_Hand_MFighter",
+      "run": "Run_Hand_MFighter",
+      "attack": "Atk01_Hand_MFighter",
+      "death": "Death_MFighter"
+    },
+    "forwardAxis": [1, 0, 0],
+    "actorScale": [1, 1, 1],
+    "collisionRadius": 9,
+    "collisionHeight": 23,
+    "sourceUnitsPerMetre": 100,
+    "upperItems": [
+      {
+        "itemId": 22,
+        "catalogId": "fighter-equipment:0",
+        "sourceObject": "Fighter.MFighter_m001_u",
+        "sourceSha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c"
+      }
+    ],
+    "sourceEvidence": {
+      "scope": "Existing verified male slice, LineageWarrior.MFighter dimensions and preserved mesh-facing transform"
+    },
+    "limitations": [
+      "Synthetic movement, navigation and action selection; native gameplay dispatch remains unverified."
+    ]
+  }
+}

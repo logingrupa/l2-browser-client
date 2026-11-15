@@ -1,30 +1,43 @@
 import { Scene } from "@babylonjs/core/scene";
-import type { Engine } from "@babylonjs/core/Engines/engine";
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import "@babylonjs/core/Loading/loadingScreen";
-import "@babylonjs/core/Loading/Plugins/babylonFileLoader";
-import "@babylonjs/core/Meshes/groundMesh";
-import "@babylonjs/core/Lights/hemisphericLight";
-import "@babylonjs/core/Lights/directionalLight";
-import "@babylonjs/core/Materials/standardMaterial";
-// Register the default WebGL shaders before serialized materials are parsed.
-import "@babylonjs/core/Shaders/default.vertex";
-import "@babylonjs/core/Shaders/default.fragment";
-import "@babylonjs/core/Materials/imageProcessingConfiguration";
-import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
-import { loadScene } from "babylonjs-editor-tools";
-import { scriptsMap } from "../scripts";
+import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
+import "./registerSceneShaders";
+import type { SceneStartupOptions } from "./guardSceneStartup";
+import { requireSceneStartup } from "./prepareSceneForReveal";
+import { buildPresentationScene } from "./buildPresentationScene";
+import { nativeSandboxPresentation } from "./presentationConfiguration";
+import { nativeSliceDocumentTitle } from "./documentTitles";
+import { startNativeSandboxRuntime } from "../runtime/startNativeSandboxRuntime";
+import { nativeSandboxConfiguration } from "../runtime/nativeSandboxConfiguration";
+import { isAuthoredWorldSelected } from "./authoredWorldSelection";
 
-export async function loadEnvironment(engine: Engine): Promise<Scene> {
-  const scene = new Scene(engine);
+type EnvironmentStatusListener = SceneStartupOptions["onStatus"];
+
+function loadNativeSandboxWorld(engine: AbstractEngine): Scene {
+  const { scene, camera } = buildPresentationScene(engine, nativeSandboxPresentation);
   try {
-    await loadScene("/scene/", "example.babylon", scene, scriptsMap, { quality: "high" });
-    const camera = scene.getCameraByName("World camera");
-    if (!(camera instanceof ArcRotateCamera)) throw new Error("The authored World camera must be an ArcRotateCamera.");
-    scene.activeCamera = camera;
+    document.title = nativeSliceDocumentTitle;
+    startNativeSandboxRuntime(scene, camera, nativeSandboxConfiguration);
     return scene;
   } catch (error: unknown) {
     scene.dispose();
     throw error;
   }
+}
+
+async function loadAuthoredNativeWorldOnDemand(engine: AbstractEngine, onStatus: EnvironmentStatusListener): Promise<Scene> {
+  const scene = new Scene(engine);
+  try {
+    requireSceneStartup(scene, "native-world");
+    const { loadAuthoredNativeWorld } = await import("./authoredNativeWorld");
+    await loadAuthoredNativeWorld(scene, onStatus);
+    return scene;
+  } catch (error: unknown) {
+    scene.dispose();
+    throw error;
+  }
+}
+
+export async function loadEnvironment(engine: AbstractEngine, onStatus?: EnvironmentStatusListener): Promise<Scene> {
+  if (isAuthoredWorldSelected(window.location.search)) return loadAuthoredNativeWorldOnDemand(engine, onStatus);
+  return loadNativeSandboxWorld(engine);
 }

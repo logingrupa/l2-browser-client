@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-placement-audio-bundle",
+  "properties": [
+    "StepSound_1",
+    "StepSound_2",
+    "StepSound_3"
+  ],
+  "section": {
+    "id": "map-20-20-section",
+    "manifest": {
+      "path": "public/l2/maps/2e73654e644bfe983021fbe5fdce01a907ac94c288702b4b7df77b4f74ee8d8a/map-section-runtime/manifest.json",
+      "bytes": 121142,
+      "sha256": "2e73654e644bfe983021fbe5fdce01a907ac94c288702b4b7df77b4f74ee8d8a"
+    }
+  },
+  "source": {
+    "map": {
+      "path": "maps/20_20.unr",
+      "bytes": 11131253,
+      "sha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4"
+    },
+    "receipt": {
+      "path": "artifacts/native-parity/research/audio-world-20261106/map-correction-second/receipt.json",
+      "bytes": 3585,
+      "sha256": "4b8c3a7ce7b6c8c481f1721244d52d9d4e3a1806d82c3cb7ab52e9b732d83d13"
+    },
+    "actors": {
+      "path": "artifacts/native-parity/research/audio-world-20261106/map-correction-second/actors.json",
+      "bytes": 32457958,
+      "sha256": "1144c374604804aec6721d8f4d21d33758128d3980e0007c3bd6034c1221a422"
+    },
+    "rawMap": {
+      "path": "artifacts/native-parity/research/audio-world-20261106/map-correction-second/raw/map.unwrapped.bin",
+      "bytes": 11131225,
+      "sha256": "78cc1bac9201fc926667886c461917f803f13ca301cdfe26ab29675cec60a420"
+    },
+    "qualification": {
+      "path": "artifacts/native-parity/research/native-ground-contact-20261107/source-surface/SOURCE_TABLE.json",
+      "bytes": 85326,
+      "sha256": "eabffba754eb0153d7ba59fb7ecf8d0905709025123b610cba392ca175a89ecb"
+    }
+  },
+  "corpus": {
+    "root": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected",
+    "inventory": {
+      "path": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected/inventory.json",
+      "bytes": 8802158,
+      "sha256": "ca6157d9db575099e075249c093625f7c688306f32015da340d004863b4ce9fa"
+    },
+    "coverage": {
+      "path": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected/coverage.json",
+      "bytes": 12247412,
+      "sha256": "3a1eb06d9103165aace23fd62eb1aaf7adb79d26f5aeec733bc6654966dd8532"
+    }
+  },
+  "absenceControls": [
+    "interlude:20_20.StaticMeshActor1914",
+    "interlude:20_20.StaticMeshActor1913",
+    "interlude:20_20.StaticMeshActor940"
+  ],
+  "expectedCoverage": {
+    "placements": 157,
+    "declaredPlacements": 8,
+    "omittedPlacements": 149,
+    "declaredSlots": 24,
+    "omittedSlots": 447,
+    "nullSlots": 0,
+    "soundReferenceSlots": 24,
+    "dependencies": 3,
+    "wavFiles": 3
+  },
+  "supportingEvidence": [
+    {
+      "path": "artifacts/native-parity/research/world-expanded/map-section/native-defaults/Engine.StaticMeshActor.uc",
+      "bytes": 898,
+      "sha256": "36a978b05af6332b193e037a741112f95771c8446527c614cb6e9080141cb989"
+    }
+  ]
+}

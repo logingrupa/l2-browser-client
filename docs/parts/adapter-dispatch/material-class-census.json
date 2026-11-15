@@ -1,0 +1,214 @@
+{
+  "classes": [
+    {
+      "class": "Engine.ColorModifier",
+      "exportCount": 26,
+      "packageCount": 2,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Combiner",
+      "exportCount": 103,
+      "packageCount": 22,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.ConstantColor",
+      "exportCount": 13,
+      "packageCount": 4,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Cubemap",
+      "exportCount": 36,
+      "packageCount": 17,
+      "status": "material-class-unported"
+    },
+    {
+      "class": "Engine.FadeColor",
+      "exportCount": 50,
+      "packageCount": 19,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.FinalBlend",
+      "exportCount": 982,
+      "packageCount": 54,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.GlowModifier",
+      "exportCount": 41,
+      "packageCount": 4,
+      "status": "material-class-unported"
+    },
+    {
+      "class": "Engine.MaterialSequence",
+      "exportCount": 21,
+      "packageCount": 3,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Shader",
+      "exportCount": 5420,
+      "packageCount": 181,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.TexCoordSource",
+      "exportCount": 80,
+      "packageCount": 16,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.TexEnvMap",
+      "exportCount": 852,
+      "packageCount": 46,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.TexOscillator",
+      "exportCount": 26,
+      "packageCount": 11,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.TexOscillatorTriggered",
+      "exportCount": 2,
+      "packageCount": 1,
+      "status": "material-class-unported"
+    },
+    {
+      "class": "Engine.TexPanner",
+      "exportCount": 100,
+      "packageCount": 31,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.TexRotator",
+      "exportCount": 15,
+      "packageCount": 10,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.TexScaler",
+      "exportCount": 18,
+      "packageCount": 4,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "exportCount": 34304,
+      "packageCount": 445,
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.VertexColor",
+      "exportCount": 29,
+      "packageCount": 16,
+      "status": "material-class-unported"
+    },
+    {
+      "class": "Fire.FireTexture",
+      "exportCount": 3,
+      "packageCount": 2,
+      "status": "material-class-unported"
+    },
+    {
+      "class": "Fire.WetTexture",
+      "exportCount": 3,
+      "packageCount": 1,
+      "status": "material-class-unported"
+    }
+  ],
+  "packageCount": 830,
+  "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+  "schemaVersion": 1,
+  "unreadablePackages": [],
+  "unresolvedClasses": [
+    {
+      "class": "Core.Package",
+      "exportCount": 2312,
+      "packageCount": 333,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.ConvexVolume",
+      "exportCount": 25,
+      "packageCount": 2,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.Font",
+      "exportCount": 9,
+      "packageCount": 1,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.KMeshProps",
+      "exportCount": 83,
+      "packageCount": 5,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.Level",
+      "exportCount": 163,
+      "packageCount": 163,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.MeshAnimation",
+      "exportCount": 566,
+      "packageCount": 18,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.Model",
+      "exportCount": 19304,
+      "packageCount": 167,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.Polys",
+      "exportCount": 19302,
+      "packageCount": 167,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.SkeletalMesh",
+      "exportCount": 3069,
+      "packageCount": 20,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.Sound",
+      "exportCount": 82,
+      "packageCount": 2,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.StaticMesh",
+      "exportCount": 9257,
+      "packageCount": 218,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.StaticMeshInstance",
+      "exportCount": 139858,
+      "packageCount": 115,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.TerrainSector",
+      "exportCount": 40960,
+      "packageCount": 160,
+      "reason": "no-script-class-export"
+    },
+    {
+      "class": "Engine.VertMesh",
+      "exportCount": 23,
+      "packageCount": 2,
+      "reason": "no-script-class-export"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+# Native world converter
+
+Terrain, static meshes, section loader. One hand-built `20_20` section loads today; the target is all 153 tiles through tile-general steps (DEC-OWN-7). Decisions and order: [PROJECT.md](../.planning/PROJECT.md), [ROADMAP.md](../.planning/ROADMAP.md).
+
+## Now
+
+- `/` loads catalog section `map-20-20-section` via `src/scene/world/loadNativeSection.ts`: hash and identity checks, visible failure, no stand-in. Limits: 128 models, 4,096 placements. `?map=XX_YY` loads a converted tile from its chunk manifests instead. No streaming or LOD.
+- The live section (62 models, 157 placements, BSP, sky) is frozen in `recipes/world/oracle/20_20/expected.json`; plan 02-71 retired its raw map, section and terrain chain, so no commit rebuilds it. Its remaining BSP, mover, sky and audio converters leave in 02-30, 02-31 and 02-45.
+- `scripts/world/raw_map_extraction.py` (`convert_tile.py --step raw`) reads a whole tile through the reviewed reader layouts in `scripts/world/reader_licensee_layouts.py`.
+- `scripts/world/static_placement_plan.py` puts every StaticMeshActor of a tile in the 4x4-sector chunk whose half-open native rectangle holds its serialized origin, with no Z window; `scripts/world/static_mesh_step.py` (`convert_tile.py --step meshes`) converts each placeable mesh once and keeps every other placement as a gap row. Meshes are never clipped or moved.
+- Mask UV: `(grid + 0.5)/H` if `(GIsL2Seamless == 0 || GIsEditor != 0) && gbStretchTerrainMask == 0`, else minus `max(grid - 240, 0)/4096`. 20_20 uses the latter, baked behind its map hash.
+- Units and handedness: [OUTPUT_CONTRACT.md](OUTPUT_CONTRACT.md). Babylon scene fog stays off. L2 fog comes from water volumes, L2FogInfo actors, ZoneInfo distance fog (bDistanceFog, DistanceFogColor, DistanceFogStart, DistanceFogEnd) and the Env.int preset through our per-material fog math (MAT-01, MAT-02). Mode 0 in `src/scene/presentationConfiguration.ts` is the interim state.
+- **Source textures** (World sheet) is a labelled candidate material (`nativeTerrainPreview.ts`), not native blending; its 9-layer and mask-size pins fail on 20_21.
+
+## Open
+
+- Whole-tile converter, pass or gap per tile and step (WORLD-01, WORLD-03). The audit's `pnpm world:build` is unbuilt.
+- DecoLayers grass: missing on every tile, DXT3 materials fail `texture_mips.py`. No requirement.
+- 784 final terrain COLOR0 colors missing (WORLD-01, CHECK-01). Terrain packet review: WORLD-07.
+- Static mesh and BSP collision from source declarations (WORLD-08). Walking any tile: WORLD-05.
+- Audit open questions: Z window, mask UV extrapolation.
+
+## Pointers
+
+- Audit: `artifacts/native-parity/research/genericity-audit-20261108/`, rated in the [research index](research/INDEX.md).
+- Related: [BSP](NATIVE_BSP_FLOOR.md), [sky](NATIVE_SKY.md), [doors](NATIVE_DOOR_MOVERS.md), [rendering](RENDERING.md), [world evidence](parts/world/EVIDENCE.md).

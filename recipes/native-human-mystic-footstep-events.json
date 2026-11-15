@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-footstep-event-inventory-recipe",
+  "description": "Walk_Hand/Run_Hand footstep notifies of the staged native Human mystic actors (MMagic, FMagic), copied from each archive's exporter event records, joined to the existing qualified StepSound dependency rows. Input to recipes/native-human-mystic-footstep-audio.json.",
+  "dependencies": {
+    "path": "artifacts/native-parity/research/native-ffighter-world-20261107/HUMAN_COVERAGE.json",
+    "sha256": "e59fc58b9d0cef1e6954ffe68fc788fde0a1d7db8fe800e5f2957f3d862242ce",
+    "bytes": 132066,
+    "pointer": "/locomotion/dependencies"
+  },
+  "actors": [
+    {
+      "catalogId": "human-male-mystic:0",
+      "assetId": "interlude:assembly:MMagic-native-body-face0-hair0",
+      "sex": "male",
+      "archive": {
+        "path": "public/l2/322213d21fe24c8b603a7ce03382464037e72d2b21b66a270db0b056e4a53d3b/asset.l2asset",
+        "sha256": "322213d21fe24c8b603a7ce03382464037e72d2b21b66a270db0b056e4a53d3b",
+        "bytes": 43614750
+      },
+      "clips": ["Walk_Hand_MMagic", "Run_Hand_MMagic"]
+    },
+    {
+      "catalogId": "human-female-mystic:0",
+      "assetId": "interlude:assembly:FMagic-native-body-face0-hair0",
+      "sex": "female",
+      "archive": {
+        "path": "public/l2/329a868a67a9d30c173b5d6f52458cfaa36ed1960ee5606ea5273bfae6f36622/asset.l2asset",
+        "sha256": "329a868a67a9d30c173b5d6f52458cfaa36ed1960ee5606ea5273bfae6f36622",
+        "bytes": 45726105
+      },
+      "clips": ["Walk_Hand_FMagic", "Run_Hand_FMagic"]
+    }
+  ]
+}

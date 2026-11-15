@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "listVersion": 12,
+  "reasons": [
+    "conversion-pending",
+    "mesh-package-not-in-client:<package>",
+    "texture-package-not-in-client:<package>",
+    "package-name-ambiguous:<package>",
+    "skill-row-ambiguous:<count>",
+    "npc-name-row-missing",
+    "npc-name-empty",
+    "animation-outside-mesh-package:<package>",
+    "converter-refused:<message>",
+    "class-closure-over-limit:<count>",
+    "profile-bundle-capacity-exceeded",
+    "skill-visual-reference-unqualified",
+    "effect-bundle-class-limit:<count>",
+    "emitter-class-unported:<class>",
+    "emitter-feature-unported:<property>",
+    "combat-role-route-unresolved:<table>/<role>",
+    "assembly-part-limit-exceeded:<count>",
+    "mesh-texture-pairing-undecoded:<meshes>/<textures>",
+    "npc-names-no-sound",
+    "skill-sound-row-names-no-sound",
+    "skillsound-row-match-ambiguous:<count>",
+    "skill-sound-caster-index-unresolved:<stage>",
+    "skill-sound-member-unrouted:<ordinal>",
+    "skill-dispatch-candidate-runtime-unresolved"
+  ]
+}

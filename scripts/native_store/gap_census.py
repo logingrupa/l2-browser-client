@@ -1,0 +1,206 @@
+from __future__ import annotations
+
+import re
+
+from native_store.coverage_denominators import UNKNOWN_DENOMINATOR
+from native_store.gap_census_derived_parts import DERIVED_KEY_KIND_PARTS
+from native_store.gap_rows import GapRowError, compile_gap_reason_pattern, load_gap_reason_patterns, validate_gap_row
+
+GAP_CENSUS_STATUS_PRECEDENCE = ('failed', 'gap', 'converted', 'pending')
+CONVERTED_CENSUS_STATUS = 'converted'
+CONVERTED_OVERRIDING_STATUSES = GAP_CENSUS_STATUS_PRECEDENCE[:GAP_CENSUS_STATUS_PRECEDENCE.index(CONVERTED_CENSUS_STATUS)]
+GAP_ROW_STATUS_PRECEDENCE = tuple(status for status in GAP_CENSUS_STATUS_PRECEDENCE if status != CONVERTED_CENSUS_STATUS)
+GAP_CENSUS_STEP_ORDER = ('census', 'raw', 'chunks', 'terrain', 'manifest', 'meshes', 'static-mesh-materials', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility',
+                         'sky', 'audio', 'lighting', 'minimap', 'terrain-material', 'decode', 'name-index', 'layout', 'controls', 'textures', 'field-cp', 'field-mp',
+                         'npc-model', 'npc-profile', 'npc-sound-identities', 'actor-sounds', 'skill-sounds', 'skills', 'characters', 'items')
+GAP_CENSUS_LOAD_STATUSES = ('pass', 'failed', 'unverified')
+UNVERIFIED_LOAD_STATUS = 'unverified'
+CONVERSION_VERDICT_STEP_BY_PART = {'skills-effects': 'skills'}
+CATALOG_KEY_KIND_PARTS = {'table': 'data', 'tile': 'world', 'map': 'world', 'character': 'player-characters', 'window': 'ui',
+                          'npc': 'npcs', 'item': 'items', 'skill': 'skills-effects', **DERIVED_KEY_KIND_PARTS}
+NAMED_EMITTER_GAP_REASONS = ('emitter-class-unported:<class>', 'emitter-feature-unported:<property>')
+NAMED_EMITTER_GAP_REASON_PATTERNS = tuple(compile_gap_reason_pattern(reason) for reason in NAMED_EMITTER_GAP_REASONS)
+SKILL_ROW_AMBIGUOUS_REASON_PATTERN = re.compile(r'^skill-row-ambiguous:(?P<count>[1-9]\d{0,8})$')
+NAMED_MISSING_KEY_LIMIT = 5
+ITEMS_PART = 'items'
+ITEM_CENSUS_STEP = 'census'
+ITEM_CENSUS_EVIDENCE = 'docs/coverage.md'
+ITEMNAME_TABLE_NAME = 'itemname-e'
+ETCITEM_TABLE_NAME = 'etcitemgrp'
+ETCITEM_PRESENTATION_UNPLANNED_REASON = 'etcitem-presentation-unplanned'
+ITEM_GROUP_ROW_ABSENT_REASON = 'item-group-row-absent'
+ITEM_KEY_PATTERN = re.compile(r'^item:(?P<id>\d{1,9})$')
+MAXIMUM_ITEM_ID = 999_999_999
+
+
+class GapCensusIncompleteError(ValueError):
+    pass
+
+
+def require_unique_item_ids(item_ids, table_name):
+    item_ids = list(item_ids)
+    if not all(type(item_id) is int and 0 <= item_id <= MAXIMUM_ITEM_ID for item_id in item_ids):
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: {table_name} item ids must be integers from 0 to {MAXIMUM_ITEM_ID}')
+    item_id_set = set(item_ids)
+    if len(item_id_set) != len(item_ids):
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: {table_name} repeats item ids')
+    return item_id_set
+
+
+def group_row_item_id(row):
+    match = ITEM_KEY_PATTERN.fullmatch(row['key']) if row.get('part') == ITEMS_PART else None
+    if match is None:
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: a weapon or armor row must be an items row with an item key: {row!r}')
+    return int(match['id'])
+
+
+def item_join_row(item_id, reason, source_identity):
+    return {'key': f'item:{item_id}', 'part': ITEMS_PART, 'step': ITEM_CENSUS_STEP, 'status': 'gap', 'reason': reason,
+            'sourceIdentity': {'path': source_identity['path'], 'sha256': source_identity['sha256']}, 'evidence': ITEM_CENSUS_EVIDENCE}
+
+
+def item_census_rows(itemname_ids, weapon_and_armor_rows, etcitem_ids, item_table_sources):
+    itemname_id_set = require_unique_item_ids(itemname_ids, ITEMNAME_TABLE_NAME)
+    etcitem_id_set = require_unique_item_ids(etcitem_ids, ETCITEM_TABLE_NAME)
+    group_item_ids = {group_row_item_id(row) for row in weapon_and_armor_rows}
+    unnamed_item_ids = (etcitem_id_set | group_item_ids) - itemname_id_set
+    if unnamed_item_ids:
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: group item ids are not in {ITEMNAME_TABLE_NAME}: '
+                                       f'{first_keys_text(f"item:{item_id}" for item_id in unnamed_item_ids)}')
+    twice_grouped_item_ids = etcitem_id_set & group_item_ids
+    if twice_grouped_item_ids:
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: item ids have both an {ETCITEM_TABLE_NAME} row and a weapon or armor row: '
+                                       f'{first_keys_text(f"item:{item_id}" for item_id in twice_grouped_item_ids)}')
+    etcitem_rows = [item_join_row(item_id, ETCITEM_PRESENTATION_UNPLANNED_REASON, item_table_sources[ETCITEM_TABLE_NAME])
+                    for item_id in sorted(etcitem_id_set)]
+    ungrouped_rows = [item_join_row(item_id, ITEM_GROUP_ROW_ABSENT_REASON, item_table_sources[ITEMNAME_TABLE_NAME])
+                      for item_id in sorted(itemname_id_set - etcitem_id_set - group_item_ids)]
+    return sorted(etcitem_rows + ungrouped_rows, key=lambda row: row['key'])
+
+
+def catalog_key_part(key):
+    return CATALOG_KEY_KIND_PARTS[key.split(':', 1)[0]]
+
+
+def first_keys_text(keys):
+    ordered_keys = sorted(keys)
+    shown_keys = ', '.join(ordered_keys[:NAMED_MISSING_KEY_LIMIT])
+    return shown_keys if len(ordered_keys) <= NAMED_MISSING_KEY_LIMIT else f'{shown_keys} and {len(ordered_keys) - NAMED_MISSING_KEY_LIMIT} more'
+
+
+def census_gap_row(row, reason_patterns):
+    part = row.get('part') if isinstance(row, dict) else None
+    try:
+        validate_gap_row(row, reason_patterns)
+    except GapRowError as error:
+        raise GapCensusIncompleteError(f'part {part}: gap row refused by the census: {error}') from error
+    if row['step'] not in GAP_CENSUS_STEP_ORDER:
+        raise GapCensusIncompleteError(f'part {part}: gap row {row["key"]} names step {row["step"]}, which is not in GAP_CENSUS_STEP_ORDER')
+    return row
+
+
+def gap_rows_by_part(gap_rows):
+    reason_patterns = load_gap_reason_patterns()
+    rows_by_part = {}
+    for row in gap_rows:
+        census_gap_row(row, reason_patterns)
+        rows_by_part.setdefault(row['part'], []).append(row)
+    return rows_by_part
+
+
+def declared_ambiguous_row_difference(part, part_rows):
+    row_count_by_key = {}
+    for row in part_rows:
+        match = SKILL_ROW_AMBIGUOUS_REASON_PATTERN.fullmatch(row['reason'] or '')
+        if match is None:
+            continue
+        if row_count_by_key.setdefault(row['key'], int(match['count'])) != int(match['count']):
+            raise GapCensusIncompleteError(f'part {part}: {row["key"]} declares two different ambiguous row counts')
+    return sum(row_count - 1 for row_count in row_count_by_key.values())
+
+
+def census_part_keys(part, denominator, part_rows, converted_part_keys):
+    listed_keys = {row['key'] for row in part_rows} | converted_part_keys
+    if denominator['count'] == UNKNOWN_DENOMINATOR:
+        if listed_keys:
+            raise GapCensusIncompleteError(f'part {part} has rows but its denominator is unknown ({denominator["source"]}): '
+                                           f'{first_keys_text(listed_keys)}')
+        return ()
+    if denominator['keys'] is None:
+        keys = listed_keys
+    else:
+        keys = set(denominator['keys'])
+        outside_keys = listed_keys - keys
+        if outside_keys:
+            raise GapCensusIncompleteError(f'part {part}: keys belong to no denominator ({denominator["source"]}): '
+                                           f'{first_keys_text(outside_keys)}')
+    declared_difference = declared_ambiguous_row_difference(part, part_rows)
+    if len(keys) + declared_difference != denominator['count']:
+        raise GapCensusIncompleteError(f'part {part}: {len(keys)} keys plus {declared_difference} declared ambiguous rows differ from '
+                                       f'the denominator {denominator["count"]} ({denominator["source"]})')
+    return tuple(sorted(keys))
+
+
+def deciding_row(rows, statuses):
+    for status in statuses:
+        status_rows = [row for row in rows if row['status'] == status]
+        if status_rows:
+            return min(status_rows, key=lambda row: (-GAP_CENSUS_STEP_ORDER.index(row['step']), row['reason'],
+                                                     row['sourceIdentity']['path'], row['sourceIdentity'].get('object', '')))
+    return None
+
+
+def is_named_emitter_gap_reason(reason):
+    return isinstance(reason, str) and any(pattern.fullmatch(reason) for pattern in NAMED_EMITTER_GAP_REASON_PATTERNS)
+
+
+def refuses_conversion(row, verdict_step):
+    return row['step'] == verdict_step and row['status'] != 'pass' and not is_named_emitter_gap_reason(row['reason'])
+
+
+def catalog_keys_not_refused_by_verdict_step(part, catalog_part_keys, rows_by_key):
+    verdict_step = CONVERSION_VERDICT_STEP_BY_PART.get(part)
+    if verdict_step is None:
+        return catalog_part_keys
+    return {key for key in catalog_part_keys if not any(refuses_conversion(row, verdict_step) for row in rows_by_key.get(key, []))}
+
+
+def census_row(part, key, converted, rows, load_status):
+    row = deciding_row(rows, CONVERTED_OVERRIDING_STATUSES if converted else GAP_ROW_STATUS_PRECEDENCE)
+    status, reason = (CONVERTED_CENSUS_STATUS, None) if row is None else (row['status'], row['reason'])
+    return {'key': key, 'part': part, 'status': status, 'reason': reason, 'converted': converted, 'loads': load_status}
+
+
+def require_every_key_stated(part, denominator, keys, rows_by_key, converted_part_keys):
+    unstated_keys = [key for key in keys if key not in converted_part_keys and deciding_row(rows_by_key.get(key, []), GAP_ROW_STATUS_PRECEDENCE) is None]
+    if unstated_keys:
+        raise GapCensusIncompleteError(f'part {part}: {len(unstated_keys)} denominator keys ({denominator["source"]}) have no failed, gap or '
+                                       f'pending row and no converted entry: {first_keys_text(unstated_keys)}')
+
+
+def require_load_statuses(load_checks):
+    for key, load_status in load_checks.items():
+        if load_status not in GAP_CENSUS_LOAD_STATUSES[:2]:
+            raise GapCensusIncompleteError(f'load check of {key} must be pass or failed: {load_status!r}')
+
+
+def build_gap_census(denominators, gap_rows, catalog_index_keys, load_checks):
+    require_load_statuses(load_checks)
+    rows_by_part = gap_rows_by_part(gap_rows)
+    stray_parts = sorted(set(rows_by_part) - set(denominators))
+    if stray_parts:
+        raise GapCensusIncompleteError(f'part {stray_parts[0]}: rows belong to no denominator: '
+                                       f'{first_keys_text(row["key"] for row in rows_by_part[stray_parts[0]])}')
+    census_rows = []
+    for part, denominator in denominators.items():
+        part_rows = rows_by_part.get(part, [])
+        catalog_part_keys = {key for key in catalog_index_keys if catalog_key_part(key) == part}
+        keys = census_part_keys(part, denominator, part_rows, catalog_part_keys)
+        rows_by_key = {}
+        for row in part_rows:
+            rows_by_key.setdefault(row['key'], []).append(row)
+        converted_part_keys = catalog_keys_not_refused_by_verdict_step(part, catalog_part_keys, rows_by_key)
+        require_every_key_stated(part, denominator, keys, rows_by_key, converted_part_keys)
+        census_rows.extend(census_row(part, key, key in converted_part_keys, rows_by_key.get(key, []),
+                                      load_checks.get(key, UNVERIFIED_LOAD_STATUS)) for key in keys)
+    return census_rows

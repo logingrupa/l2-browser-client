@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-sound-packages",
+  "source": {
+    "host": "IMPORTA-PC",
+    "root": "C:/Lineage2-client"
+  },
+  "selection": "all-Sound-exports-in-all-locked-uax-packages",
+  "packages": [
+    {
+      "file": "sounds/ambsound.uax",
+      "bytes": 74160470,
+      "sha256": "e116c5f1381930cbb7e961fdc1944e54214468e759b12a0be387305d8997de53",
+      "expectedSounds": 393
+    },
+    {
+      "file": "sounds/AmbSound2.uax",
+      "bytes": 27137943,
+      "sha256": "60711a53cfcab8b16f268fb70683fa7382c8066e89d0f022a96b9b21ba85e53f",
+      "expectedSounds": 34
+    },
+    {
+      "file": "sounds/chrsound.uax",
+      "bytes": 44340416,
+      "sha256": "a0afd64d23e7e2c89d2d89b196dc082080da89b17bfd6ac3e15ae0bb2d5b919e",
+      "expectedSounds": 1029
+    },
+    {
+      "file": "sounds/chrsound2.uax",
+      "bytes": 1932390,
+      "sha256": "451fba0025b68e0a0af5d939c22dc4ed366347d3218617e2cdbc61eca714b3ce",
+      "expectedSounds": 40
+    },
+    {
+      "file": "sounds/itemsound.uax",
+      "bytes": 18938678,
+      "sha256": "e16cd1701b485f4b76de4938af5674699b8622cb6e0c418c2c313044c485365d",
+      "expectedSounds": 330
+    },
+    {
+      "file": "sounds/ItemSound2.uax",
+      "bytes": 5420090,
+      "sha256": "7353f87065b4b0e154a580926f50fa5caafb1deb9b678b2dc22711af86618116",
+      "expectedSounds": 65
+    },
+    {
+      "file": "sounds/ItemSound3.uax",
+      "bytes": 7770666,
+      "sha256": "7f34951ffb002cccac526e13600dd3dbdb2c3a4da747f01a8aa780617a706f0a",
+      "expectedSounds": 33
+    },
+    {
+      "file": "sounds/monsound.uax",
+      "bytes": 81334481,
+      "sha256": "8386ca2cbf0d45a7bca1a32d2139317c3d0bcaf62b5bd88ba80ac326af372b26",
+      "expectedSounds": 1499
+    },
+    {
+      "file": "sounds/monsound2.uax",
+      "bytes": 16335543,
+      "sha256": "f2ab082d2a4f2f5541c1194d823364c3eb5c4383c3fbf8b9d5aa060c0ea2cb19",
+      "expectedSounds": 193
+    },
+    {
+      "file": "sounds/monsound3.uax",
+      "bytes": 15248780,
+      "sha256": "9de143ebbb8d479810017970b5dcd0e13d8b28a0bef7210b499439a37f0a0743",
+      "expectedSounds": 122
+    },
+    {
+      "file": "sounds/monsound4.uax",
+      "bytes": 12725273,
+      "sha256": "c931b1d9fb46e5bb32b4ccfb23c24b3668d717eb1b89b7f22cc657e322f187be",
+      "expectedSounds": 174
+    },
+    {
+      "file": "sounds/monsound5.uax",
+      "bytes": 43847844,
+      "sha256": "802b7dee689b31833e4167ac0e3f318c38622213396eb3b857a01e16f970c82a",
+      "expectedSounds": 406
+    },
+    {
+      "file": "sounds/MonSound7.uax",
+      "bytes": 12180108,
+      "sha256": "28cdb96ae651bf8edcbe5c8ca3a658897569e9a22c84581ce94f10ed1590e0b3",
+      "expectedSounds": 129
+    },
+    {
+      "file": "sounds/skillsound.uax",
+      "bytes": 19422267,
+      "sha256": "8485f32f6674b1e1020415678428429ac79027dc3cc7a4d66644275c2ab9aee2",
+      "expectedSounds": 74
+    },
+    {
+      "file": "sounds/skillsound2.uax",
+      "bytes": 48716499,
+      "sha256": "e0225a18d92b8fdd759429226d50b6548017a6a2af8b2abaf601007098d12804",
+      "expectedSounds": 53
+    },
+    {
+      "file": "sounds/SkillSound3.uax",
+      "bytes": 18490441,
+      "sha256": "e5edfa4b9a2fa92ee26246679f2002a1efa21865f60616cfa71467f50a8da84c",
+      "expectedSounds": 65
+    },
+    {
+      "file": "sounds/SkillSound5.uax",
+      "bytes": 16084966,
+      "sha256": "31e47a7fb68ecc720746921ad5dc71353e78dd5ea7134d6010b80ac87fc4d348",
+      "expectedSounds": 41
+    },
+    {
+      "file": "sounds/stepsound.uax",
+      "bytes": 1941334,
+      "sha256": "e4243b4bbcb4cd1dde927e4f4dec45caba5796385ad655855e87bd8572d57f05",
+      "expectedSounds": 93
+    }
+  ],
+  "expectedInventory": {
+    "packages": 18,
+    "sounds": 4773
+  }
+}

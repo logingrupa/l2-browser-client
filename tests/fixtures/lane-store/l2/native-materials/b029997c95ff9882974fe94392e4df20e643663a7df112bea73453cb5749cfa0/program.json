@@ -1,0 +1,411 @@
+{
+  "gapReasons": [],
+  "graphSha256": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+  "kind": "ue2-material-program",
+  "nodes": [
+    {
+      "class": "Engine.FinalBlend",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticCombinerSwatch.Combiner"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "FrameBufferBlending",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "FB_Overwrite",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "ZWrite",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": true
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "ZTest",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": true
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaTest",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "TwoSided",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaRef",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticCombinerSwatch.Overwrite",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Combiner",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "CombineOperation",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "CO_6",
+            "ordinal": 6
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaOperation",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "AO_1",
+            "ordinal": 1
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material1",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticCombinerSwatch.material1"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material2",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticCombinerSwatch.material2"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Mask",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticCombinerSwatch.mask"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "InvertMask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Modulate2X",
+          "provenance": "authored",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Modulate4X",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticCombinerSwatch.Combiner",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VSize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bMasked",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bAlphaTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "MaxFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticCombinerSwatch.material1",
+      "image": {
+        "bytes": 70,
+        "path": "/l2/native-material-textures/55be198f3e8e63842a923159f024d344a411eea7265d605ed05aa197afb100d7/texture.png",
+        "sha256": "55be198f3e8e63842a923159f024d344a411eea7265d605ed05aa197afb100d7"
+      },
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VSize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bMasked",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bAlphaTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "MaxFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticCombinerSwatch.material2",
+      "image": {
+        "bytes": 70,
+        "path": "/l2/native-material-textures/2d82e544b5e515fca1061aea8cd30dd695245aee9928fea4ad16d5bca07bc6b1/texture.png",
+        "sha256": "2d82e544b5e515fca1061aea8cd30dd695245aee9928fea4ad16d5bca07bc6b1"
+      },
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VSize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bMasked",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bAlphaTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "MaxFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticCombinerSwatch.mask",
+      "image": {
+        "bytes": 70,
+        "path": "/l2/native-material-textures/e1cf3cf21fccf5d2fee3ebbc5b3aed1d5f92992456d93ed99d76fa27e1d2b3f9/texture.png",
+        "sha256": "e1cf3cf21fccf5d2fee3ebbc5b3aed1d5f92992456d93ed99d76fa27e1d2b3f9"
+      },
+      "status": "reviewed"
+    }
+  ],
+  "root": "SyntheticCombinerSwatch.Overwrite",
+  "schemaVersion": 1
+}

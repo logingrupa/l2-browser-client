@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-player-stage",
+  "models": [
+    {
+      "catalogId": "human-male-mystic:0",
+      "archive": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/build/mmagic/jobs/human-male-mystic/322213d21fe24c8b603a7ce03382464037e72d2b21b66a270db0b056e4a53d3b/asset.l2asset",
+      "archiveSha256": "322213d21fe24c8b603a7ce03382464037e72d2b21b66a270db0b056e4a53d3b"
+    },
+    {
+      "catalogId": "human-female-mystic:0",
+      "archive": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/build/fmagic/jobs/human-female-mystic/329a868a67a9d30c173b5d6f52458cfaa36ed1960ee5606ea5273bfae6f36622/asset.l2asset",
+      "archiveSha256": "329a868a67a9d30c173b5d6f52458cfaa36ed1960ee5606ea5273bfae6f36622"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "human-male-mystic",
+      "name": "Human male mystic",
+      "catalogId": "human-male-mystic:0",
+      "assetId": "interlude:assembly:MMagic-native-body-face0-hair0",
+      "sourceObject": "Magic.MMagic_M005_u",
+      "sourceSha256": "26443ed7a5b972010c614f74ac8b625e3ae2dbbaa12f7d0a0fa9302622326fa2",
+      "clips": {
+        "idle": "Wait_Hand_MMagic",
+        "run": "Run_Hand_MMagic",
+        "attack": "Atk01_Hand_MMagic",
+        "death": "Death_MMagic"
+      },
+      "forwardAxis": [1, 0, 0],
+      "actorScale": [1, 1, 1],
+      "collisionRadius": 7.5,
+      "collisionHeight": 22.8,
+      "sourceUnitsPerMetre": 100,
+      "upperItems": [],
+      "sourceEvidence": {
+        "report": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/PROFILE_EVIDENCE.json",
+        "reportSha256": "dae2de14bde6e9d5f9208f9132b4344fe3e079baf62f26c07e6e7018168f5b52",
+        "pipeline": "recipes/native-pipeline-mmagic.json -> recipes/native-mmagic.json (inputs: recipes/native-pipeline-magic.inputs.lock.json)",
+        "appearance": "chargrp row8 body_mesh1..4 Magic.MMagic_m005_u/m003_l/m005_g/m003_b with row8 body_texture1..4; face choice0 Magic.MMagic_m000_f/MMagic.MMagic_m000_t00_f; hair LineageWarrior.MMagic SubMeshes[4]/[5] with hair texture color0 (recipe appearance choice).",
+        "class": "LineageWarrior.MMagic -> LineagePawn -> Engine.Pawn -> Engine.Actor: CollisionRadius 7.5 / CollisionHeight 22.8 (LineageWarrior.MMagic); DrawScale 1.0 and DrawScale3D (1,1,1) inherited from Engine.Actor; GroundSpeed 120, GroundMinSpeed 80, WalkingPct 0.4 (class defaults; server speeds are separate).",
+        "scale": "Native scale only: converter 0.01 m per source unit, native MeshOrigin/RotOrigin/MeshScale parent, actor DrawScale 1.0. No height fitting, recentering or grounding.",
+        "facing": "Converted bind-pose ankle-to-toe vectors of both feet point +X after the native mesh transform.",
+        "audio": "Direct original AnimNotify_Sound dependencies travel in the character archive; AttackItem/AttackVoice/AttackShot dispatch is not covered by this profile."
+      },
+      "limitations": [
+        "Human male mystic base appearance (chargrp row8 choice0) only; equipment, skills and other appearances are unfinished.",
+        "PrePivot is absent through checked ancestry and unresolved; no native zero-pivot claim or extra offset is applied.",
+        "Navigation uses the existing browser capsule/step/slope policy, not a native collision reconstruction.",
+        "Death and action choices are explicit browser previews; complete native dispatch, listener/spatial/random rules remain unverified.",
+        "The native animation set has no hit-reaction clip and the [MMagic] localization assigns no DamageAnimName; Damagefly_MMagic is the DamageFlyAnimName knock-back, not a hit reaction."
+      ]
+    },
+    {
+      "id": "human-female-mystic",
+      "name": "Human female mystic",
+      "catalogId": "human-female-mystic:0",
+      "assetId": "interlude:assembly:FMagic-native-body-face0-hair0",
+      "sourceObject": "Magic.FMagic_m003_u",
+      "sourceSha256": "26443ed7a5b972010c614f74ac8b625e3ae2dbbaa12f7d0a0fa9302622326fa2",
+      "clips": {
+        "idle": "Wait_Hand_FMagic",
+        "run": "Run_Hand_FMagic",
+        "attack": "Atk01_Hand_FMagic",
+        "death": "Death_FMagic"
+      },
+      "forwardAxis": [1, 0, 0],
+      "actorScale": [1, 1, 1],
+      "collisionRadius": 6.5,
+      "collisionHeight": 22.5,
+      "sourceUnitsPerMetre": 100,
+      "upperItems": [],
+      "sourceEvidence": {
+        "report": "artifacts/native-parity/research/dev-sheet-audio-20261107/models/PROFILE_EVIDENCE.json",
+        "reportSha256": "dae2de14bde6e9d5f9208f9132b4344fe3e079baf62f26c07e6e7018168f5b52",
+        "pipeline": "recipes/native-pipeline-fmagic.json -> recipes/native-fmagic.json (inputs: recipes/native-pipeline-magic.inputs.lock.json)",
+        "appearance": "chargrp row9 body_mesh1..4 Magic.FMagic_m003_u/m002_l/m003_g/m002_b with row9 body_texture1..4; face choice0 Magic.FMagic_m000_f/FMagic.FMagic_m000_t00_f; hair LineageWarrior.FMagic SubMeshes[4]/[5] with hair texture color0 (recipe appearance choice).",
+        "class": "LineageWarrior.FMagic -> LineagePawn -> Engine.Pawn -> Engine.Actor: CollisionRadius 6.5 / CollisionHeight 22.5 (LineageWarrior.FMagic); DrawScale 1.0 and DrawScale3D (1,1,1) inherited from Engine.Actor; GroundSpeed 120, GroundMinSpeed 80, WalkingPct 0.4 (class defaults; server speeds are separate).",
+        "scale": "Native scale only: converter 0.01 m per source unit, native MeshOrigin/RotOrigin/MeshScale parent, actor DrawScale 1.0. No height fitting, recentering or grounding.",
+        "facing": "Converted bind-pose ankle-to-toe vectors of both feet point +X after the native mesh transform.",
+        "families": "The [FMagic] localization assigns SpAtk13AnimName[3] twice with different values (lines 1449/1450); the package therefore carries no converter animation-families.json. The conflict-preserving family document is artifacts/native-parity/research/dev-sheet-audio-20261107/models/families/FMagic.animation-families.json.",
+        "audio": "Direct original AnimNotify_Sound dependencies travel in the character archive; AttackItem/AttackVoice/AttackShot dispatch is not covered by this profile."
+      },
+      "limitations": [
+        "Human female mystic base appearance (chargrp row9 choice0) only; equipment, skills and other appearances are unfinished.",
+        "PrePivot is absent through checked ancestry and unresolved; no native zero-pivot claim or extra offset is applied.",
+        "Navigation uses the existing browser capsule/step/slope policy, not a native collision reconstruction.",
+        "Death and action choices are explicit browser previews; complete native dispatch, listener/spatial/random rules remain unverified.",
+        "The native animation set has no hit-reaction clip and the [FMagic] localization assigns no DamageAnimName; Damagefly_FMagic is the DamageFlyAnimName knock-back, not a hit reaction.",
+        "SpAtk13AnimName[3] (WT_DUAL) has two different native source rows; no precedence is applied and that family slot stays unresolved."
+      ]
+    }
+  ]
+}

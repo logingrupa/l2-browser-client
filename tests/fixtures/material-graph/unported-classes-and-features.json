@@ -1,0 +1,82 @@
+{
+  "file": "SyntheticUnported.utx",
+  "packageVersion": 123,
+  "licensee": 28,
+  "exports": [
+    {
+      "name": "TriggeredOscillator",
+      "class": "Engine.TexOscillatorTriggered",
+      "properties": [
+        {"name": "Material", "object": "PlainTexture"},
+        {"name": "RetriggerAction", "byte": 1}
+      ]
+    },
+    {
+      "name": "PlainTexture",
+      "class": "Engine.Texture",
+      "properties": [
+        {"name": "Palette", "object": "PlainPalette"},
+        {"name": "USize", "int": 64}
+      ]
+    },
+    {
+      "name": "PlainPalette",
+      "class": "Engine.Palette",
+      "tailHex": "00ff00ff",
+      "properties": []
+    },
+    {
+      "name": "TriggeredSequence",
+      "class": "Engine.MaterialSequence",
+      "properties": [
+        {"name": "SequenceItems", "arrayPayloadHex": "00"},
+        {"name": "TriggerAction", "byte": 2},
+        {"name": "UnknownSetting", "int": 4}
+      ]
+    },
+    {
+      "name": "QuietSequence",
+      "class": "Engine.MaterialSequence",
+      "properties": [
+        {"name": "TriggerAction", "byte": 0}
+      ]
+    },
+    {
+      "name": "AddBlend",
+      "class": "Engine.FinalBlend",
+      "properties": [
+        {"name": "Material", "object": "PlainTexture"},
+        {"name": "FrameBufferBlending", "byte": 8}
+      ]
+    },
+    {
+      "name": "LoopFrameA",
+      "class": "Engine.Texture",
+      "properties": [
+        {"name": "AnimNext", "object": "LoopFrameB"}
+      ]
+    },
+    {
+      "name": "LoopFrameB",
+      "class": "Engine.Texture",
+      "properties": [
+        {"name": "AnimNext", "object": "LoopFrameA"}
+      ]
+    },
+    {
+      "name": "CycleShader",
+      "class": "Engine.Shader",
+      "properties": [
+        {"name": "Diffuse", "object": "CycleCombiner"}
+      ]
+    },
+    {
+      "name": "CycleCombiner",
+      "class": "Engine.Combiner",
+      "properties": [
+        {"name": "Material1", "object": "LoopFrameA"},
+        {"name": "Material2", "object": "CycleShader"}
+      ]
+    }
+  ]
+}

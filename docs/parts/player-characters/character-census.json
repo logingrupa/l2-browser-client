@@ -1,0 +1,1014 @@
+{
+ "chargrpSourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
+ "classJoin": {
+  "classSources": {
+   "path": "docs/parts/player-characters/character-class-sources.json",
+   "resultSha256": "df77711a37805524a6f3fc01dd3e0794ea9db276f5510eb2b2f1ec99b6033e81",
+   "verdict": "adopted"
+  },
+  "decodedFields": [
+   "class",
+   "description"
+  ],
+  "requiredFields": [
+   "chargrp_index",
+   "actor_class"
+  ]
+ },
+ "classinfoSourceSha256": "537681972450e4f3264efcc00748a3776f2420fa7e1531556934ebe41e560507",
+ "counts": {
+  "characters": 14,
+  "gapKeys": 14,
+  "modelsConverted": 9,
+  "padding": 1,
+  "pendingKeys": 0,
+  "profilesWritten": 0,
+  "rows": 15
+ },
+ "hairFieldProof": "client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
+ "hairgrpSourceSha256": "03df44930cd3752e0f67c99ad2f402028a4406d53a5e30978adc92b589c8fa59",
+ "helmetgrpSourceSha256": "ace5b171bf7bd6203de614257a4a523fe07e6fb14abc19af351f7b51c1809237",
+ "layoutRecordFields": {
+  "hairgrp": [],
+  "helmetgrp": [
+   "key",
+   "pairs"
+  ]
+ },
+ "rows": [
+  {
+   "chargrpIndex": 0,
+   "collision": {
+    "heightClass": "LineageWarrior.MFighter",
+    "radiusClass": "LineageWarrior.MFighter",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:0",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 1,
+   "collision": {
+    "heightClass": "LineageWarrior.FFighter",
+    "radiusClass": "LineageWarrior.FFighter",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "animation-reference-missing"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:1",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 2,
+   "collision": {
+    "heightClass": "LineageWarrior.MDarkElf",
+    "radiusClass": "LineageWarrior.MDarkElf",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "animation-reference-missing"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:2",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 3,
+   "collision": {
+    "heightClass": "LineageWarrior.FDarkElf",
+    "radiusClass": "LineageWarrior.FDarkElf",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:3",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 4,
+   "collision": {
+    "heightClass": "LineageWarrior.MDwarf",
+    "radiusClass": "LineageWarrior.MDwarf",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:4",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 5,
+   "collision": {
+    "heightClass": "LineageWarrior.FDwarf",
+    "radiusClass": "LineageWarrior.FDwarf",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:5",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 6,
+   "collision": {
+    "heightClass": "LineageWarrior.MElf",
+    "radiusClass": "LineageWarrior.MElf",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:6",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 7,
+   "collision": {
+    "heightClass": "LineageWarrior.FElf",
+    "radiusClass": "LineageWarrior.FElf",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:7",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 8,
+   "collision": {
+    "heightClass": "LineageWarrior.MMagic",
+    "radiusClass": "LineageWarrior.MMagic",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "converter-refused:Rigid attachment requires one verified root-only rigid skin"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:8",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 9,
+   "collision": {
+    "heightClass": "LineageWarrior.FMagic",
+    "radiusClass": "LineageWarrior.FMagic",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "animation-reference-missing"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:9",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 10,
+   "collision": {
+    "heightClass": "LineageWarrior.MOrc",
+    "radiusClass": "LineageWarrior.MOrc",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:10",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 11,
+   "collision": {
+    "heightClass": "LineageWarrior.FOrc",
+    "radiusClass": "LineageWarrior.FOrc",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:11",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 12,
+   "collision": {
+    "heightClass": "LineageWarrior.MShaman",
+    "radiusClass": "LineageWarrior.MShaman",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:12",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 13,
+   "collision": {
+    "heightClass": "LineageWarrior.FShaman",
+    "radiusClass": "LineageWarrior.FShaman",
+    "reason": null,
+    "status": "resolved"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "animation-reference-missing"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "actor-default-unresolved:WaitAnimName"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:13",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": null,
+     "status": "requested-unbound"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 14,
+   "collision": null,
+   "gaps": [
+    {
+     "field": "body_mesh1",
+     "reason": "no-mesh-in-row"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": "no-mesh-in-row"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": "no-mesh-in-row"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": "no-mesh-in-row"
+    }
+   ],
+   "hair": null,
+   "helmet": null,
+   "key": null,
+   "model": null,
+   "padding": true,
+   "parts": [],
+   "profile": null
+  }
+ ],
+ "schemaVersion": 1
+}

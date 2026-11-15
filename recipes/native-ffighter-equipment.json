@@ -1,0 +1,39 @@
+[
+  {
+    "kind": "model",
+    "name": "FFighter-Leather-Shirt-ClassID22",
+    "package": "Fighter",
+    "object": "FFighter_m001_u",
+    "animation": "FFighter_anim",
+    "materials": [
+      "0=FFighter.FFighter_m001_t04_u"
+    ],
+    "sourceBinding": {
+      "table": "armorgrp",
+      "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+      "meshPath": [
+        "item",
+        1,
+        "f_HumnFigh",
+        "var_0_",
+        "for_mtx_size_1_",
+        0,
+        "mtx_mesh_"
+      ],
+      "texturePath": [
+        "item",
+        1,
+        "f_HumnFigh",
+        "var_0_",
+        "for_mtx_size_2_",
+        0,
+        "mtx_text_"
+      ]
+    },
+    "limitations": [
+      "Native Human female fighter item22 upper-body replacement from exact female armorgrp binding; not a complete character assembly.",
+      "Retains the original female rig and FFighter clips. Reuse the existing complete female actor archive and its event audio; this equipment recipe requests no duplicate audio export.",
+      "Equipment state, native gameplay dispatch and application runtime rendering remain separate validation."
+    ]
+  }
+]

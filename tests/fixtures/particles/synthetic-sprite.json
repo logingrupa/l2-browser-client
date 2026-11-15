@@ -1,0 +1,57 @@
+{
+  "description": "Synthetic SpriteEmitter burst authored for the simulator (D3): Polar start, UseDirectionAs Up, OwnerAndStartPosition, a 2x2 atlas over cells 2 to 3, X-only spin, a SizeScale curve with UseRegularSizeScale false, a repeating ColorScale, a fade-out and velocity loss.",
+  "actor": {
+    "object": "synthetic.sprite_burst",
+    "properties": {
+      "Emitters": [{ "symbol": "SpriteEmitter1" }],
+      "AutoDestroy": true,
+      "bNoDelete": false
+    }
+  },
+  "components": [
+    {
+      "object": "synthetic.sprite_burst.SpriteEmitter1",
+      "class": "Engine.SpriteEmitter",
+      "properties": {
+        "MaxParticles": 6,
+        "RespawnDeadParticles": false,
+        "AutomaticInitialSpawning": false,
+        "InitialParticlesPerSecond": 360.0,
+        "DrawStyle": 1,
+        "LifetimeRange": { "Min": 0.4, "Max": 0.55 },
+        "StartLocationOffset": { "X": 3.0, "Y": -1.0, "Z": 0.5 },
+        "StartLocationShape": 2,
+        "StartLocationPolarRange": { "X": { "Min": 80.0, "Max": 100.0 }, "Y": { "Min": 0.0, "Max": 300.0 }, "Z": { "Min": 8.0, "Max": 12.0 } },
+        "UseDirectionAs": 1,
+        "GetVelocityDirectionFrom": 2,
+        "StartVelocityRange": { "X": { "Min": 90.0, "Max": 120.0 }, "Y": { "Min": 90.0, "Max": 120.0 }, "Z": { "Min": 40.0, "Max": 70.0 } },
+        "VelocityLossRange": { "X": { "Min": 0.3, "Max": 0.6 }, "Y": { "Min": 0.3, "Max": 0.6 }, "Z": { "Min": 0.3, "Max": 0.6 } },
+        "Acceleration": { "X": 0.0, "Y": 0.0, "Z": -30.0 },
+        "StartSizeRange": { "X": { "Min": 0.2, "Max": 0.5 }, "Y": { "Min": 6.0, "Max": 11.0 }, "Z": { "Min": 0.2, "Max": 0.5 } },
+        "UseSizeScale": true,
+        "UseRegularSizeScale": false,
+        "SizeScale": [{ "RelativeTime": 0.3, "RelativeSize": 1.8 }, { "RelativeTime": 1.0, "RelativeSize": 0.6 }],
+        "UseColorScale": true,
+        "ColorScaleRepeats": 2.0,
+        "ColorScale": [
+          { "RelativeTime": 0.0, "Color": { "R": 255, "G": 200, "B": 120, "A": 255 } },
+          { "RelativeTime": 0.5, "Color": { "R": 90, "G": 160, "B": 255, "A": 128 } },
+          { "RelativeTime": 1.0, "Color": { "R": 255, "G": 255, "B": 255, "A": 0 } }
+        ],
+        "ColorMultiplierRange": { "X": { "Min": 0.8, "Max": 1.0 }, "Y": { "Min": 0.8, "Max": 1.0 }, "Z": { "Min": 0.9, "Max": 1.0 } },
+        "FadeOut": true,
+        "FadeOutStartTime": 0.25,
+        "Opacity": 0.8,
+        "SpinParticles": true,
+        "StartSpinRange": { "X": { "Min": 0.0, "Max": 1.0 }, "Y": { "Min": 0.0, "Max": 0.0 }, "Z": { "Min": 0.0, "Max": 0.0 } },
+        "SpinsPerSecondRange": { "X": { "Min": 0.5, "Max": 1.5 }, "Y": { "Min": 0.0, "Max": 0.0 }, "Z": { "Min": 0.0, "Max": 0.0 } },
+        "TextureUSubdivisions": 2,
+        "TextureVSubdivisions": 2,
+        "SubdivisionStart": 2,
+        "SubdivisionEnd": 3,
+        "BlendBetweenSubdivisions": true,
+        "Texture": { "class": "Texture", "object": "SyntheticTextures.SpriteAtlas" }
+      }
+    }
+  ]
+}

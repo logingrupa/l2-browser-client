@@ -1,0 +1,407 @@
+{
+ "descriptorSha256": "5df8b7af1b510daa26008fa4fe91e100253f40161f1f1f9560e3569d539cdef6",
+ "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+ "rows": [
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/actionname-e.dat",
+   "descriptorLayout": true,
+   "file": "actionname-e.dat",
+   "layout": "actionname",
+   "recordCount": 102,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "actionname-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/armorgrp.dat",
+   "descriptorLayout": true,
+   "file": "armorgrp.dat",
+   "layout": "armorgrp",
+   "recordCount": 1014,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "armorgrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/castlename-e.dat",
+   "descriptorLayout": true,
+   "file": "castlename-e.dat",
+   "layout": "castlename",
+   "recordCount": 53,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "castlename-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/chargrp.dat",
+   "descriptorLayout": true,
+   "file": "chargrp.dat",
+   "layout": "chargrp",
+   "recordCount": 15,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "chargrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/classinfo-e.dat",
+   "descriptorLayout": true,
+   "file": "classinfo-e.dat",
+   "layout": "classinfo",
+   "recordCount": 10,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "classinfo-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/clientdata.dat",
+   "descriptorLayout": true,
+   "file": "clientdata.dat",
+   "layout": "clientdata",
+   "recordCount": 15,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "clientdata"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/commandname-e.dat",
+   "descriptorLayout": true,
+   "file": "commandname-e.dat",
+   "layout": "commandname",
+   "recordCount": 114,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "commandname-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/creditgrp-e.dat",
+   "descriptorLayout": true,
+   "file": "creditgrp-e.dat",
+   "layout": "credit",
+   "recordCount": 62,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "creditgrp-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/entereventgrp.dat",
+   "descriptorLayout": true,
+   "file": "entereventgrp.dat",
+   "layout": "entereventgrp",
+   "recordCount": 1152,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "entereventgrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/etcitemgrp.dat",
+   "descriptorLayout": true,
+   "file": "etcitemgrp.dat",
+   "layout": "etcitemgrp",
+   "recordCount": 6911,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "etcitemgrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/eula-e.dat",
+   "descriptorLayout": true,
+   "file": "eula-e.dat",
+   "layout": "eula",
+   "recordCount": 1,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "eula-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/gametip-e.dat",
+   "descriptorLayout": true,
+   "file": "gametip-e.dat",
+   "layout": "gametip",
+   "recordCount": 182,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "gametip-e"
+  },
+  {
+   "countSource": "scripts/data/hair_table_adapter.py (Elbera check_hair_selection_native.py at 12c9656) on lock-equal E:/Lineage2-client/system/hairaccessarygrp.dat",
+   "descriptorLayout": false,
+   "file": "hairaccessarygrp.dat",
+   "layout": null,
+   "recordCount": 4,
+   "route": "elbera",
+   "status": "decoded by Elbera adapter, client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
+   "table": "hairaccessarygrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/hairaccessorylocgrp.dat",
+   "descriptorLayout": true,
+   "file": "hairaccessorylocgrp.dat",
+   "layout": "hairaccessorylocgrp",
+   "recordCount": 112,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "hairaccessorylocgrp"
+  },
+  {
+   "countSource": "scripts/data/hair_table_adapter.py (Elbera check_hair_selection_native.py at 12c9656) on lock-equal E:/Lineage2-client/system/hairgrp.dat",
+   "descriptorLayout": false,
+   "file": "hairgrp.dat",
+   "layout": null,
+   "recordCount": 15,
+   "route": "elbera",
+   "status": "decoded by Elbera adapter, client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
+   "table": "hairgrp"
+  },
+  {
+   "countSource": "scripts/data/hair_table_adapter.py (Elbera check_hair_selection_native.py at 12c9656) on lock-equal E:/Lineage2-client/system/helmetgrp.dat",
+   "descriptorLayout": false,
+   "file": "helmetgrp.dat",
+   "layout": null,
+   "recordCount": 3,
+   "route": "elbera",
+   "status": "decoded by Elbera adapter, client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
+   "table": "helmetgrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/hennagrp-e.dat",
+   "descriptorLayout": true,
+   "file": "hennagrp-e.dat",
+   "layout": "hennagrp",
+   "recordCount": 180,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "hennagrp-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/huntingzone-e.dat",
+   "descriptorLayout": true,
+   "file": "huntingzone-e.dat",
+   "layout": "huntingzone",
+   "recordCount": 220,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "huntingzone-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/itemname-e.dat",
+   "descriptorLayout": true,
+   "file": "itemname-e.dat",
+   "layout": "itemname",
+   "recordCount": 9238,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "itemname-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/logongrp.dat",
+   "descriptorLayout": true,
+   "file": "logongrp.dat",
+   "layout": "logongrp",
+   "recordCount": 26,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "logongrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/mobskillanimgrp.dat",
+   "descriptorLayout": true,
+   "file": "mobskillanimgrp.dat",
+   "layout": "mobskillanimgrp",
+   "recordCount": 5463,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "mobskillanimgrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/musicinfo.dat",
+   "descriptorLayout": true,
+   "file": "musicinfo.dat",
+   "layout": "musicinfo",
+   "recordCount": 358,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "musicinfo"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/npcgrp.dat",
+   "descriptorLayout": true,
+   "file": "npcgrp.dat",
+   "layout": "npcgrp",
+   "recordCount": 6519,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "npcgrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/npcname-e.dat",
+   "descriptorLayout": true,
+   "file": "npcname-e.dat",
+   "layout": "npcname",
+   "recordCount": 6519,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "npcname-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/obscene-e.dat",
+   "descriptorLayout": true,
+   "file": "obscene-e.dat",
+   "layout": "obscene",
+   "recordCount": 13,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "obscene-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/optiondata_client-e.dat",
+   "descriptorLayout": true,
+   "file": "optiondata_client-e.dat",
+   "layout": "optiondata_client",
+   "recordCount": 16380,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "optiondata_client-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/questname-e.dat",
+   "descriptorLayout": true,
+   "file": "questname-e.dat",
+   "layout": "questname",
+   "recordCount": 2050,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "questname-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/raiddata-e.dat",
+   "descriptorLayout": true,
+   "file": "raiddata-e.dat",
+   "layout": "raiddata",
+   "recordCount": 220,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "raiddata-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/recipe-c.dat",
+   "descriptorLayout": true,
+   "file": "recipe-c.dat",
+   "layout": "recipe-c",
+   "recordCount": 871,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "recipe-c"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/servername-e.dat",
+   "descriptorLayout": true,
+   "file": "servername-e.dat",
+   "layout": "servername",
+   "recordCount": 200,
+   "route": "local-decoded",
+   "status": "decoded, 200 slots, 127 in use",
+   "table": "servername-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/skillgrp.dat",
+   "descriptorLayout": true,
+   "file": "skillgrp.dat",
+   "layout": "skillgrp",
+   "recordCount": 29812,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "skillgrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/skillname-e.dat",
+   "descriptorLayout": true,
+   "file": "skillname-e.dat",
+   "layout": "skillname",
+   "recordCount": 29812,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "skillname-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/skillsoundgrp.dat",
+   "descriptorLayout": true,
+   "file": "skillsoundgrp.dat",
+   "layout": "skillsoundgrp",
+   "recordCount": 1398,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "skillsoundgrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/staticobject-e.dat",
+   "descriptorLayout": true,
+   "file": "staticobject-e.dat",
+   "layout": "staticobject",
+   "recordCount": 577,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "staticobject-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/symbolname-e.dat",
+   "descriptorLayout": true,
+   "file": "symbolname-e.dat",
+   "layout": "symbolname",
+   "recordCount": 11,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "symbolname-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/sysstring-e.dat",
+   "descriptorLayout": true,
+   "file": "sysstring-e.dat",
+   "layout": "sysstring",
+   "recordCount": 2083,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "sysstring-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/systemmsg-e.dat",
+   "descriptorLayout": true,
+   "file": "systemmsg-e.dat",
+   "layout": "systemmsg",
+   "recordCount": 2083,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "systemmsg-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/variationeffectgrp-e.dat",
+   "descriptorLayout": true,
+   "file": "variationeffectgrp-e.dat",
+   "layout": "variationeffectgrp",
+   "recordCount": 288,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "variationeffectgrp-e"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/weapongrp.dat",
+   "descriptorLayout": true,
+   "file": "weapongrp.dat",
+   "layout": "weapongrp",
+   "recordCount": 1313,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "weapongrp"
+  },
+  {
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/zonename-e.dat",
+   "descriptorLayout": true,
+   "file": "zonename-e.dat",
+   "layout": "zonename",
+   "recordCount": 369,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "zonename-e"
+  }
+ ],
+ "schemaVersion": 1
+}

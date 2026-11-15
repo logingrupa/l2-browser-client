@@ -1,0 +1,1112 @@
+{
+  "adjacent": [
+    {
+      "id": "base-only-next-to-layer-6",
+      "sharedEdgeSourceIndices": [
+        955,
+        1004
+      ],
+      "triangles": [
+        {
+          "cell": [
+            88,
+            227
+          ],
+          "draws": [
+            142120
+          ],
+          "grid": [
+            [
+              88,
+              227
+            ],
+            [
+              88,
+              228
+            ],
+            [
+              89,
+              228
+            ]
+          ],
+          "key": "955,1004,1005",
+          "layers": [
+            0
+          ],
+          "occurrences": [
+            {
+              "absoluteStartIndex": 24912,
+              "draw": 142120,
+              "indexUploadByteOffset": 49824,
+              "layer": 0,
+              "nativeVertexIndices": [
+                926,
+                943,
+                944
+              ],
+              "orderedSourceIndices": [
+                955,
+                1004,
+                1005
+              ],
+              "orientedKey": "1004,1005,955",
+              "triangleInDraw": 8304
+            }
+          ],
+          "orientationCount": 1,
+          "repeatedLayers": [],
+          "sourceIndices": [
+            955,
+            1004,
+            1005
+          ],
+          "unitCell": true
+        },
+        {
+          "cell": [
+            87,
+            227
+          ],
+          "draws": [
+            142120,
+            142250
+          ],
+          "grid": [
+            [
+              87,
+              227
+            ],
+            [
+              88,
+              227
+            ],
+            [
+              88,
+              228
+            ]
+          ],
+          "key": "954,955,1004",
+          "layers": [
+            0,
+            6
+          ],
+          "occurrences": [
+            {
+              "absoluteStartIndex": 24909,
+              "draw": 142120,
+              "indexUploadByteOffset": 49818,
+              "layer": 0,
+              "nativeVertexIndices": [
+                925,
+                943,
+                926
+              ],
+              "orderedSourceIndices": [
+                954,
+                1004,
+                955
+              ],
+              "orientedKey": "1004,955,954",
+              "triangleInDraw": 8303
+            },
+            {
+              "absoluteStartIndex": 3405,
+              "draw": 142250,
+              "indexUploadByteOffset": 6810,
+              "layer": 6,
+              "nativeVertexIndices": [
+                925,
+                943,
+                926
+              ],
+              "orderedSourceIndices": [
+                954,
+                1004,
+                955
+              ],
+              "orientedKey": "1004,955,954",
+              "triangleInDraw": 1135
+            }
+          ],
+          "orientationCount": 1,
+          "repeatedLayers": [],
+          "sourceIndices": [
+            954,
+            955,
+            1004
+          ],
+          "unitCell": true
+        }
+      ]
+    },
+    {
+      "id": "layer-1-near-layer-6-boundary",
+      "sharedEdgeSourceIndices": [
+        1863,
+        1912
+      ],
+      "triangles": [
+        {
+          "cell": [
+            65,
+            246
+          ],
+          "draws": [
+            142120,
+            142131,
+            142175
+          ],
+          "grid": [
+            [
+              65,
+              246
+            ],
+            [
+              65,
+              247
+            ],
+            [
+              66,
+              247
+            ]
+          ],
+          "key": "1863,1912,1913",
+          "layers": [
+            0,
+            1,
+            2
+          ],
+          "occurrences": [
+            {
+              "absoluteStartIndex": 6726,
+              "draw": 142120,
+              "indexUploadByteOffset": 13452,
+              "layer": 0,
+              "nativeVertexIndices": [
+                5305,
+                5322,
+                5323
+              ],
+              "orderedSourceIndices": [
+                1863,
+                1912,
+                1913
+              ],
+              "orientedKey": "1863,1912,1913",
+              "triangleInDraw": 2242
+            },
+            {
+              "absoluteStartIndex": 39996,
+              "draw": 142131,
+              "indexUploadByteOffset": 6264,
+              "layer": 1,
+              "nativeVertexIndices": [
+                5305,
+                5322,
+                5323
+              ],
+              "orderedSourceIndices": [
+                1863,
+                1912,
+                1913
+              ],
+              "orientedKey": "1863,1912,1913",
+              "triangleInDraw": 1044
+            },
+            {
+              "absoluteStartIndex": 77886,
+              "draw": 142175,
+              "indexUploadByteOffset": 5520,
+              "layer": 2,
+              "nativeVertexIndices": [
+                5305,
+                5322,
+                5323
+              ],
+              "orderedSourceIndices": [
+                1863,
+                1912,
+                1913
+              ],
+              "orientedKey": "1863,1912,1913",
+              "triangleInDraw": 920
+            }
+          ],
+          "orientationCount": 1,
+          "repeatedLayers": [],
+          "sourceIndices": [
+            1863,
+            1912,
+            1913
+          ],
+          "unitCell": true
+        },
+        {
+          "cell": [
+            64,
+            246
+          ],
+          "draws": [
+            142120,
+            142131,
+            142175,
+            142255
+          ],
+          "grid": [
+            [
+              64,
+              246
+            ],
+            [
+              65,
+              246
+            ],
+            [
+              65,
+              247
+            ]
+          ],
+          "key": "1862,1863,1912",
+          "layers": [
+            0,
+            1,
+            2,
+            6
+          ],
+          "occurrences": [
+            {
+              "absoluteStartIndex": 6723,
+              "draw": 142120,
+              "indexUploadByteOffset": 13446,
+              "layer": 0,
+              "nativeVertexIndices": [
+                5304,
+                5322,
+                5305
+              ],
+              "orderedSourceIndices": [
+                1862,
+                1912,
+                1863
+              ],
+              "orientedKey": "1862,1912,1863",
+              "triangleInDraw": 2241
+            },
+            {
+              "absoluteStartIndex": 39993,
+              "draw": 142131,
+              "indexUploadByteOffset": 6258,
+              "layer": 1,
+              "nativeVertexIndices": [
+                5304,
+                5322,
+                5305
+              ],
+              "orderedSourceIndices": [
+                1862,
+                1912,
+                1863
+              ],
+              "orientedKey": "1862,1912,1863",
+              "triangleInDraw": 1043
+            },
+            {
+              "absoluteStartIndex": 77883,
+              "draw": 142175,
+              "indexUploadByteOffset": 5514,
+              "layer": 2,
+              "nativeVertexIndices": [
+                5304,
+                5322,
+                5305
+              ],
+              "orderedSourceIndices": [
+                1862,
+                1912,
+                1863
+              ],
+              "orientedKey": "1862,1912,1863",
+              "triangleInDraw": 919
+            },
+            {
+              "absoluteStartIndex": 8661,
+              "draw": 142255,
+              "indexUploadByteOffset": 690,
+              "layer": 6,
+              "nativeVertexIndices": [
+                5304,
+                5322,
+                5305
+              ],
+              "orderedSourceIndices": [
+                1862,
+                1912,
+                1863
+              ],
+              "orientedKey": "1862,1912,1863",
+              "triangleInDraw": 115
+            }
+          ],
+          "orientationCount": 1,
+          "repeatedLayers": [],
+          "sourceIndices": [
+            1862,
+            1863,
+            1912
+          ],
+          "unitCell": true
+        }
+      ]
+    }
+  ],
+  "sevenLayers": {
+    "cell": [
+      108,
+      226
+    ],
+    "draws": [
+      142120,
+      142138,
+      142145,
+      142189,
+      142219,
+      142250,
+      142263
+    ],
+    "grid": [
+      [
+        108,
+        226
+      ],
+      [
+        109,
+        226
+      ],
+      [
+        109,
+        227
+      ]
+    ],
+    "key": "926,927,976",
+    "layers": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "occurrences": [
+      {
+        "absoluteStartIndex": 26379,
+        "draw": 142120,
+        "indexUploadByteOffset": 52758,
+        "layer": 0,
+        "nativeVertexIndices": [
+          1202,
+          1220,
+          1203
+        ],
+        "orderedSourceIndices": [
+          926,
+          976,
+          927
+        ],
+        "orientedKey": "926,976,927",
+        "triangleInDraw": 8793
+      },
+      {
+        "absoluteStartIndex": 54957,
+        "draw": 142138,
+        "indexUploadByteOffset": 29838,
+        "layer": 2,
+        "nativeVertexIndices": [
+          1202,
+          1220,
+          1203
+        ],
+        "orderedSourceIndices": [
+          926,
+          976,
+          927
+        ],
+        "orientedKey": "926,976,927",
+        "triangleInDraw": 4973
+      },
+      {
+        "absoluteStartIndex": 68511,
+        "draw": 142145,
+        "indexUploadByteOffset": 8406,
+        "layer": 3,
+        "nativeVertexIndices": [
+          1202,
+          1220,
+          1203
+        ],
+        "orderedSourceIndices": [
+          926,
+          976,
+          927
+        ],
+        "orientedKey": "926,976,927",
+        "triangleInDraw": 1401
+      },
+      {
+        "absoluteStartIndex": 83631,
+        "draw": 142189,
+        "indexUploadByteOffset": 6162,
+        "layer": 4,
+        "nativeVertexIndices": [
+          1202,
+          1220,
+          1203
+        ],
+        "orderedSourceIndices": [
+          926,
+          976,
+          927
+        ],
+        "orientedKey": "926,976,927",
+        "triangleInDraw": 1027
+      },
+      {
+        "absoluteStartIndex": 90591,
+        "draw": 142219,
+        "indexUploadByteOffset": 3870,
+        "layer": 5,
+        "nativeVertexIndices": [
+          1202,
+          1220,
+          1203
+        ],
+        "orderedSourceIndices": [
+          926,
+          976,
+          927
+        ],
+        "orientedKey": "926,976,927",
+        "triangleInDraw": 645
+      },
+      {
+        "absoluteStartIndex": 3735,
+        "draw": 142250,
+        "indexUploadByteOffset": 7470,
+        "layer": 6,
+        "nativeVertexIndices": [
+          1202,
+          1220,
+          1203
+        ],
+        "orderedSourceIndices": [
+          926,
+          976,
+          927
+        ],
+        "orientedKey": "926,976,927",
+        "triangleInDraw": 1245
+      },
+      {
+        "absoluteStartIndex": 10767,
+        "draw": 142263,
+        "indexUploadByteOffset": 3102,
+        "layer": 7,
+        "nativeVertexIndices": [
+          1202,
+          1220,
+          1203
+        ],
+        "orderedSourceIndices": [
+          926,
+          976,
+          927
+        ],
+        "orientedKey": "926,976,927",
+        "triangleInDraw": 517
+      }
+    ],
+    "orientationCount": 1,
+    "repeatedLayers": [],
+    "sourceIndices": [
+      926,
+      927,
+      976
+    ],
+    "unitCell": true
+  },
+  "sparseOverlay": {
+    "cell": [
+      82,
+      245
+    ],
+    "draws": [
+      142120,
+      142263
+    ],
+    "grid": [
+      [
+        82,
+        245
+      ],
+      [
+        83,
+        245
+      ],
+      [
+        83,
+        246
+      ]
+    ],
+    "key": "1831,1832,1881",
+    "layers": [
+      0,
+      7
+    ],
+    "occurrences": [
+      {
+        "absoluteStartIndex": 8175,
+        "draw": 142120,
+        "indexUploadByteOffset": 16350,
+        "layer": 0,
+        "nativeVertexIndices": [
+          5578,
+          5596,
+          5579
+        ],
+        "orderedSourceIndices": [
+          1831,
+          1881,
+          1832
+        ],
+        "orientedKey": "1831,1881,1832",
+        "triangleInDraw": 2725
+      },
+      {
+        "absoluteStartIndex": 9381,
+        "draw": 142263,
+        "indexUploadByteOffset": 330,
+        "layer": 7,
+        "nativeVertexIndices": [
+          5578,
+          5596,
+          5579
+        ],
+        "orderedSourceIndices": [
+          1831,
+          1881,
+          1832
+        ],
+        "orientedKey": "1831,1881,1832",
+        "triangleInDraw": 55
+      }
+    ],
+    "orientationCount": 1,
+    "repeatedLayers": [],
+    "sourceIndices": [
+      1831,
+      1832,
+      1881
+    ],
+    "unitCell": true
+  },
+  "splitGroups": [
+    {
+      "groups": [
+        {
+          "draw": 142138,
+          "selectedTriangleCount": 1572,
+          "witness": {
+            "cell": [
+              93,
+              228
+            ],
+            "draws": [
+              142120,
+              142138,
+              142145
+            ],
+            "grid": [
+              [
+                93,
+                228
+              ],
+              [
+                94,
+                228
+              ],
+              [
+                94,
+                229
+              ]
+            ],
+            "key": "1009,1010,1059",
+            "layers": [
+              0,
+              2,
+              3
+            ],
+            "occurrences": [
+              {
+                "absoluteStartIndex": 25041,
+                "draw": 142120,
+                "indexUploadByteOffset": 50082,
+                "layer": 0,
+                "nativeVertexIndices": [
+                  948,
+                  966,
+                  949
+                ],
+                "orderedSourceIndices": [
+                  1009,
+                  1059,
+                  1010
+                ],
+                "orientedKey": "1009,1059,1010",
+                "triangleInDraw": 8347
+              },
+              {
+                "absoluteStartIndex": 54687,
+                "draw": 142138,
+                "indexUploadByteOffset": 29298,
+                "layer": 2,
+                "nativeVertexIndices": [
+                  948,
+                  966,
+                  949
+                ],
+                "orderedSourceIndices": [
+                  1009,
+                  1059,
+                  1010
+                ],
+                "orientedKey": "1009,1059,1010",
+                "triangleInDraw": 4883
+              },
+              {
+                "absoluteStartIndex": 67347,
+                "draw": 142145,
+                "indexUploadByteOffset": 6078,
+                "layer": 3,
+                "nativeVertexIndices": [
+                  948,
+                  966,
+                  949
+                ],
+                "orderedSourceIndices": [
+                  1009,
+                  1059,
+                  1010
+                ],
+                "orientedKey": "1009,1059,1010",
+                "triangleInDraw": 1013
+              }
+            ],
+            "orientationCount": 1,
+            "repeatedLayers": [],
+            "sourceIndices": [
+              1009,
+              1010,
+              1059
+            ],
+            "unitCell": true
+          }
+        },
+        {
+          "draw": 142175,
+          "selectedTriangleCount": 460,
+          "witness": {
+            "cell": [
+              64,
+              240
+            ],
+            "draws": [
+              142120,
+              142175,
+              142255
+            ],
+            "grid": [
+              [
+                64,
+                240
+              ],
+              [
+                65,
+                240
+              ],
+              [
+                65,
+                241
+              ]
+            ],
+            "key": "1568,1569,1618",
+            "layers": [
+              0,
+              2,
+              6
+            ],
+            "occurrences": [
+              {
+                "absoluteStartIndex": 6147,
+                "draw": 142120,
+                "indexUploadByteOffset": 12294,
+                "layer": 0,
+                "nativeVertexIndices": [
+                  5202,
+                  5220,
+                  5203
+                ],
+                "orderedSourceIndices": [
+                  1568,
+                  1618,
+                  1569
+                ],
+                "orientedKey": "1568,1618,1569",
+                "triangleInDraw": 2049
+              },
+              {
+                "absoluteStartIndex": 77361,
+                "draw": 142175,
+                "indexUploadByteOffset": 4470,
+                "layer": 2,
+                "nativeVertexIndices": [
+                  5202,
+                  5220,
+                  5203
+                ],
+                "orderedSourceIndices": [
+                  1568,
+                  1618,
+                  1569
+                ],
+                "orientedKey": "1568,1618,1569",
+                "triangleInDraw": 745
+              },
+              {
+                "absoluteStartIndex": 8319,
+                "draw": 142255,
+                "indexUploadByteOffset": 6,
+                "layer": 6,
+                "nativeVertexIndices": [
+                  5202,
+                  5220,
+                  5203
+                ],
+                "orderedSourceIndices": [
+                  1568,
+                  1618,
+                  1569
+                ],
+                "orientedKey": "1568,1618,1569",
+                "triangleInDraw": 1
+              }
+            ],
+            "orientationCount": 1,
+            "repeatedLayers": [],
+            "sourceIndices": [
+              1568,
+              1569,
+              1618
+            ],
+            "unitCell": true
+          }
+        }
+      ],
+      "layer": 2,
+      "sharedTriangles": [
+        {
+          "draws": [
+            142138,
+            142175
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "draw": 142250,
+          "selectedTriangleCount": 900,
+          "witness": {
+            "cell": [
+              85,
+              228
+            ],
+            "draws": [
+              142120,
+              142145,
+              142250
+            ],
+            "grid": [
+              [
+                85,
+                228
+              ],
+              [
+                86,
+                228
+              ],
+              [
+                86,
+                229
+              ]
+            ],
+            "key": "1001,1002,1051",
+            "layers": [
+              0,
+              3,
+              6
+            ],
+            "occurrences": [
+              {
+                "absoluteStartIndex": 24993,
+                "draw": 142120,
+                "indexUploadByteOffset": 49986,
+                "layer": 0,
+                "nativeVertexIndices": [
+                  940,
+                  958,
+                  941
+                ],
+                "orderedSourceIndices": [
+                  1001,
+                  1051,
+                  1002
+                ],
+                "orientedKey": "1001,1051,1002",
+                "triangleInDraw": 8331
+              },
+              {
+                "absoluteStartIndex": 67335,
+                "draw": 142145,
+                "indexUploadByteOffset": 6054,
+                "layer": 3,
+                "nativeVertexIndices": [
+                  940,
+                  958,
+                  941
+                ],
+                "orderedSourceIndices": [
+                  1001,
+                  1051,
+                  1002
+                ],
+                "orientedKey": "1001,1051,1002",
+                "triangleInDraw": 1009
+              },
+              {
+                "absoluteStartIndex": 3423,
+                "draw": 142250,
+                "indexUploadByteOffset": 6846,
+                "layer": 6,
+                "nativeVertexIndices": [
+                  940,
+                  958,
+                  941
+                ],
+                "orderedSourceIndices": [
+                  1001,
+                  1051,
+                  1002
+                ],
+                "orientedKey": "1001,1051,1002",
+                "triangleInDraw": 1141
+              }
+            ],
+            "orientationCount": 1,
+            "repeatedLayers": [],
+            "sourceIndices": [
+              1001,
+              1002,
+              1051
+            ],
+            "unitCell": true
+          }
+        },
+        {
+          "draw": 142255,
+          "selectedTriangleCount": 300,
+          "witness": {
+            "cell": [
+              64,
+              240
+            ],
+            "draws": [
+              142120,
+              142175,
+              142255
+            ],
+            "grid": [
+              [
+                64,
+                240
+              ],
+              [
+                65,
+                240
+              ],
+              [
+                65,
+                241
+              ]
+            ],
+            "key": "1568,1569,1618",
+            "layers": [
+              0,
+              2,
+              6
+            ],
+            "occurrences": [
+              {
+                "absoluteStartIndex": 6147,
+                "draw": 142120,
+                "indexUploadByteOffset": 12294,
+                "layer": 0,
+                "nativeVertexIndices": [
+                  5202,
+                  5220,
+                  5203
+                ],
+                "orderedSourceIndices": [
+                  1568,
+                  1618,
+                  1569
+                ],
+                "orientedKey": "1568,1618,1569",
+                "triangleInDraw": 2049
+              },
+              {
+                "absoluteStartIndex": 77361,
+                "draw": 142175,
+                "indexUploadByteOffset": 4470,
+                "layer": 2,
+                "nativeVertexIndices": [
+                  5202,
+                  5220,
+                  5203
+                ],
+                "orderedSourceIndices": [
+                  1568,
+                  1618,
+                  1569
+                ],
+                "orientedKey": "1568,1618,1569",
+                "triangleInDraw": 745
+              },
+              {
+                "absoluteStartIndex": 8319,
+                "draw": 142255,
+                "indexUploadByteOffset": 6,
+                "layer": 6,
+                "nativeVertexIndices": [
+                  5202,
+                  5220,
+                  5203
+                ],
+                "orderedSourceIndices": [
+                  1568,
+                  1618,
+                  1569
+                ],
+                "orientedKey": "1568,1618,1569",
+                "triangleInDraw": 1
+              }
+            ],
+            "orientationCount": 1,
+            "repeatedLayers": [],
+            "sourceIndices": [
+              1568,
+              1569,
+              1618
+            ],
+            "unitCell": true
+          }
+        }
+      ],
+      "layer": 6,
+      "sharedTriangles": [
+        {
+          "draws": [
+            142167,
+            142204
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142167,
+            142227
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142167,
+            142250
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142167,
+            142255
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142204,
+            142227
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142204,
+            142250
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142204,
+            142255
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142227,
+            142250
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142227,
+            142255
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        },
+        {
+          "draws": [
+            142250,
+            142255
+          ],
+          "sharedSelectedTriangles": 0,
+          "witnessKeys": []
+        }
+      ]
+    }
+  ]
+}

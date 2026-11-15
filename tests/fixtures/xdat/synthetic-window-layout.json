@@ -1,0 +1,265 @@
+[
+ {
+  "anchorProof": "Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b",
+  "kind": "native-window-layout",
+  "name": "SyntheticStatusWnd",
+  "root": {
+   "children": [
+    {
+     "children": [],
+     "height": 60,
+     "name": "SyntheticBackTex",
+     "parentResolution": {
+      "name": "SyntheticStatusWnd",
+      "source": "commonParent",
+      "status": "resolved"
+     },
+     "position": {
+      "offsetX": 8,
+      "offsetY": 10,
+      "selfAnchor": 1,
+      "target": "",
+      "targetAnchor": 1
+     },
+     "sizeMode": "absolute",
+     "sourceOffset": 259,
+     "tail": {
+      "end": 441,
+      "offset": 358,
+      "sha256": "5d4cbb70479b64f060405d71cf9c208a97b345a021f82d7d9cf8b5116fb2a1f1"
+     },
+     "textures": [
+      "SyntheticUI.StatusWnd.BackPlate"
+     ],
+     "type": "Texture",
+     "width": 120,
+     "x": 8,
+     "y": 10
+    },
+    {
+     "children": [],
+     "height": 12,
+     "name": "SyntheticGaugeBar",
+     "parentResolution": {
+      "name": "SyntheticStatusWnd",
+      "source": "commonParent",
+      "status": "resolved"
+     },
+     "position": {
+      "offsetX": -4,
+      "offsetY": 6,
+      "selfAnchor": 3,
+      "target": "SyntheticBackTex",
+      "targetAnchor": 3
+     },
+     "sizeMode": "absolute",
+     "sourceOffset": 441,
+     "tail": {
+      "end": 665,
+      "offset": 541,
+      "sha256": "5d5d87322ebee52fb8e397e50536e7c2b7492ff8791f2a90718232e638172fb9"
+     },
+     "textures": [
+      "SyntheticUI.StatusWnd.GaugeFill",
+      "SyntheticUI.StatusWnd.GaugeBack"
+     ],
+     "type": "BarCtrl",
+     "width": 90,
+     "x": -4,
+     "y": 6
+    }
+   ],
+   "declaredWindowParent": "undefined",
+   "drawer": {
+    "direction": 0
+   },
+   "height": 80,
+   "name": "SyntheticStatusWnd",
+   "position": {
+    "offsetX": 0,
+    "offsetY": 0,
+    "selfAnchor": 1,
+    "target": "",
+    "targetAnchor": 1
+   },
+   "sizeMode": "absolute",
+   "sourceOffset": 4,
+   "tail": {
+    "end": 259,
+    "offset": 86,
+    "sha256": "85557d606e2484c435a37703b6d8f19782b532d6f179ab58f0b49d6b7891350d"
+   },
+   "textures": [],
+   "type": "Window",
+   "width": 200,
+   "x": 0,
+   "y": 0
+  },
+  "schemaVersion": 1,
+  "sourceOffset": 4,
+  "sourceSha256": "27b5d525286241f9140d74a16f04f941e0923f412fb3f7a13c46a837dae3881e",
+  "textureRefs": [
+   "SyntheticUI.StatusWnd.BackPlate",
+   "SyntheticUI.StatusWnd.GaugeFill",
+   "SyntheticUI.StatusWnd.GaugeBack"
+  ],
+  "windowId": "SyntheticStatusWnd"
+ },
+ {
+  "anchorProof": "Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b",
+  "kind": "native-window-layout",
+  "name": "SyntheticRepeatedWnd",
+  "root": {
+   "children": [],
+   "declaredWindowParent": "undefined",
+   "drawer": {
+    "direction": 0
+   },
+   "height": 32,
+   "name": "SyntheticRepeatedWnd",
+   "position": {
+    "offsetX": 0,
+    "offsetY": 0,
+    "selfAnchor": 5,
+    "target": "",
+    "targetAnchor": 5
+   },
+   "sizeMode": "absolute",
+   "sourceOffset": 665,
+   "tail": {
+    "end": 922,
+    "offset": 749,
+    "sha256": "f0249182a4ce8c7a94cca3b817f795ed1bfc1dbb86ed3456bbf0595826c03927"
+   },
+   "textures": [],
+   "type": "Window",
+   "width": 64,
+   "x": 0,
+   "y": 0
+  },
+  "schemaVersion": 1,
+  "sourceOffset": 665,
+  "sourceSha256": "27b5d525286241f9140d74a16f04f941e0923f412fb3f7a13c46a837dae3881e",
+  "textureRefs": [],
+  "windowId": "SyntheticRepeatedWnd#1"
+ },
+ {
+  "anchorProof": "Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b",
+  "kind": "native-window-layout",
+  "name": "SyntheticRepeatedTex",
+  "root": {
+   "children": [],
+   "height": 16,
+   "name": "SyntheticRepeatedTex",
+   "parentResolution": {
+    "name": "SyntheticRepeatedWnd",
+    "source": "commonParent",
+    "status": "ambiguous"
+   },
+   "position": {
+    "offsetX": 2,
+    "offsetY": 2,
+    "selfAnchor": 1,
+    "target": "",
+    "targetAnchor": 1
+   },
+   "sizeMode": "absolute",
+   "sourceOffset": 922,
+   "tail": {
+    "end": 1096,
+    "offset": 1027,
+    "sha256": "2ab98fce1bd31ec08ed74d74a88f9064d0cf0123689685cf802296d53fc38d74"
+   },
+   "textures": [
+    "SyntheticUI.Repeated.Plate"
+   ],
+   "type": "Texture",
+   "width": 32,
+   "x": 2,
+   "y": 2
+  },
+  "schemaVersion": 1,
+  "sourceOffset": 922,
+  "sourceSha256": "27b5d525286241f9140d74a16f04f941e0923f412fb3f7a13c46a837dae3881e",
+  "textureRefs": [
+   "SyntheticUI.Repeated.Plate"
+  ],
+  "windowId": "SyntheticRepeatedTex"
+ },
+ {
+  "anchorProof": "Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b",
+  "kind": "native-window-layout",
+  "name": "SyntheticPlainWnd",
+  "root": {
+   "children": [],
+   "declaredWindowParent": "undefined",
+   "drawer": {
+    "direction": 0
+   },
+   "height": 24,
+   "name": "SyntheticPlainWnd",
+   "position": {
+    "offsetX": -12,
+    "offsetY": -6,
+    "selfAnchor": 9,
+    "target": "",
+    "targetAnchor": 9
+   },
+   "sizeMode": "absolute",
+   "sourceOffset": 1096,
+   "tail": {
+    "end": 1341,
+    "offset": 1177,
+    "sha256": "67a28247e8c1377c24cd69506a88a5a95e4ac5df0146bf0a0a30133db18a8cfe"
+   },
+   "textures": [],
+   "type": "Window",
+   "width": 48,
+   "x": -12,
+   "y": -6
+  },
+  "schemaVersion": 1,
+  "sourceOffset": 1096,
+  "sourceSha256": "27b5d525286241f9140d74a16f04f941e0923f412fb3f7a13c46a837dae3881e",
+  "textureRefs": [],
+  "windowId": "SyntheticPlainWnd"
+ },
+ {
+  "anchorProof": "Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b",
+  "kind": "native-window-layout",
+  "name": "SyntheticRepeatedWnd",
+  "root": {
+   "children": [],
+   "declaredWindowParent": "undefined",
+   "drawer": {
+    "direction": 0
+   },
+   "height": 32,
+   "name": "SyntheticRepeatedWnd",
+   "position": {
+    "offsetX": 4,
+    "offsetY": 0,
+    "selfAnchor": 7,
+    "target": "",
+    "targetAnchor": 7
+   },
+   "sizeMode": "absolute",
+   "sourceOffset": 1341,
+   "tail": {
+    "end": 1589,
+    "offset": 1425,
+    "sha256": "8b4ad9324b48e094bedb5fcc26582038740276dfa43eb83917023f3ee396222c"
+   },
+   "textures": [],
+   "type": "Window",
+   "width": 64,
+   "x": 4,
+   "y": 0
+  },
+  "schemaVersion": 1,
+  "sourceOffset": 1341,
+  "sourceSha256": "27b5d525286241f9140d74a16f04f941e0923f412fb3f7a13c46a837dae3881e",
+  "textureRefs": [],
+  "windowId": "SyntheticRepeatedWnd#2"
+ }
+]

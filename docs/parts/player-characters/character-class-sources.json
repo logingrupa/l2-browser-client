@@ -1,0 +1,5744 @@
+{
+  "candidates": {
+    "classDefaults": [
+      {
+        "class": "LineageWarrior.FDarkElf",
+        "headBoneDeclaringClass": "LineageWarrior.FDarkElf",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "DarkElf.FDarkElf_m000_f",
+          "DarkElf.FDarkElf_m001_b",
+          "DarkElf.FDarkElf_m001_g",
+          "DarkElf.FDarkElf_m001_l",
+          "DarkElf.FDarkElf_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          3
+        ]
+      },
+      {
+        "class": "LineageWarrior.FDwarf",
+        "headBoneDeclaringClass": "LineageWarrior.FDwarf",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "Dwarf.FDwarf_m000_f",
+          "Dwarf.FDwarf_m001_b",
+          "Dwarf.FDwarf_m001_g",
+          "Dwarf.FDwarf_m001_l",
+          "Dwarf.FDwarf_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          5
+        ]
+      },
+      {
+        "class": "LineageWarrior.FElf",
+        "headBoneDeclaringClass": "LineageWarrior.FElf",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "Elf.FElf_m000_f",
+          "Elf.FElf_m001_b",
+          "Elf.FElf_m001_g",
+          "Elf.FElf_m001_l",
+          "Elf.FElf_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          7
+        ]
+      },
+      {
+        "class": "LineageWarrior.FFighter",
+        "headBoneDeclaringClass": "LineageWarrior.FFighter",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "Fighter.FFighter_m000_f",
+          "Fighter.FFighter_m001_b",
+          "Fighter.FFighter_m001_g",
+          "Fighter.FFighter_m001_l",
+          "Fighter.FFighter_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          1
+        ]
+      },
+      {
+        "class": "LineageWarrior.FMagic",
+        "headBoneDeclaringClass": "LineageWarrior.FMagic",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "magic.FMagic_m000_f"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          9
+        ]
+      },
+      {
+        "class": "LineageWarrior.FOrc",
+        "headBoneDeclaringClass": "LineageWarrior.FOrc",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "orc.FOrc_m000_f",
+          "orc.FOrc_m001_b",
+          "orc.FOrc_m001_g",
+          "orc.FOrc_m001_l",
+          "orc.FOrc_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          11
+        ]
+      },
+      {
+        "class": "LineageWarrior.FShaman",
+        "headBoneDeclaringClass": "LineageWarrior.FShaman",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "Shaman.FShaman_m000_f",
+          "Shaman.FShaman_m001_b",
+          "Shaman.FShaman_m001_g",
+          "Shaman.FShaman_m001_l",
+          "Shaman.FShaman_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          13
+        ]
+      },
+      {
+        "class": "LineageWarrior.LineagePawn",
+        "headBoneDeclaringClass": "LineageWarrior.LineagePawn",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": []
+      },
+      {
+        "class": "LineageWarrior.LineagePawnNoMesh",
+        "headBoneDeclaringClass": "LineageWarrior.LineagePawn",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": []
+      },
+      {
+        "class": "LineageWarrior.MDarkElf",
+        "headBoneDeclaringClass": "LineageWarrior.MDarkElf",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "DarkElf.MDarkElf_m000_f",
+          "DarkElf.MDarkElf_m001_b",
+          "DarkElf.MDarkElf_m001_g",
+          "DarkElf.MDarkElf_m001_l",
+          "DarkElf.MDarkElf_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          2
+        ]
+      },
+      {
+        "class": "LineageWarrior.MDwarf",
+        "headBoneDeclaringClass": "LineageWarrior.MDwarf",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "Dwarf.MDwarf_m000_f",
+          "Dwarf.MDwarf_m001_b",
+          "Dwarf.MDwarf_m001_g",
+          "Dwarf.MDwarf_m001_l",
+          "Dwarf.MDwarf_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          4
+        ]
+      },
+      {
+        "class": "LineageWarrior.MElf",
+        "headBoneDeclaringClass": "LineageWarrior.MElf",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "Elf.MElf_m000_f",
+          "Elf.MElf_m001_b",
+          "Elf.MElf_m001_g",
+          "Elf.MElf_m001_l",
+          "Elf.MElf_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          6
+        ]
+      },
+      {
+        "class": "LineageWarrior.MFighter",
+        "headBoneDeclaringClass": "LineageWarrior.MFighter",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "Fighter.MFighter_m000_f",
+          "Fighter.MFighter_m001_b",
+          "Fighter.MFighter_m001_g",
+          "Fighter.MFighter_m001_l",
+          "Fighter.MFighter_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          0
+        ]
+      },
+      {
+        "class": "LineageWarrior.MMagic",
+        "headBoneDeclaringClass": "LineageWarrior.MMagic",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "magic.MMagic_m000_f"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          8
+        ]
+      },
+      {
+        "class": "LineageWarrior.MOrc",
+        "headBoneDeclaringClass": "LineageWarrior.MOrc",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "orc.MOrc_m000_f",
+          "orc.MOrc_m001_b",
+          "orc.MOrc_m001_g",
+          "orc.MOrc_m001_l",
+          "orc.MOrc_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          10
+        ]
+      },
+      {
+        "class": "LineageWarrior.MShaman",
+        "headBoneDeclaringClass": "LineageWarrior.MShaman",
+        "holdsHeadBone": true,
+        "namedRowMeshes": [
+          "Shaman.MShaman_m000_f",
+          "Shaman.MShaman_m001_b",
+          "Shaman.MShaman_m001_g",
+          "Shaman.MShaman_m001_l",
+          "Shaman.MShaman_m001_u"
+        ],
+        "package": "system/LineageWarrior.u",
+        "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+        "rowIndexes": [
+          12
+        ]
+      }
+    ],
+    "tableRecords": [
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          0
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          1
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          2
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          3,
+          4,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          3
+        ],
+        "rowIndexes": [
+          7,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          4
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          5
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          6
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          7
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          8
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          9
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          10
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          11
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          12
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          3,
+          4,
+          7,
+          9,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          13
+        ],
+        "rowIndexes": [
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          14
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          15
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          16
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          17
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          18
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          3,
+          4,
+          7,
+          9,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          19
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          27
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          28
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          3,
+          4,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          29
+        ],
+        "rowIndexes": [
+          7,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          30
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          37
+        ],
+        "rowIndexes": [
+          1,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          40
+        ],
+        "rowIndexes": [
+          2,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          41
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          51
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          52
+        ],
+        "rowIndexes": [
+          2,
+          6,
+          7,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          53
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          54
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          64
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          65
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          68
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          79
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          80
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          81
+        ],
+        "rowIndexes": [
+          2,
+          7,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          82
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          83
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          86
+        ],
+        "rowIndexes": [
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          88
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          89
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          90
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          91
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          93
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          94
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          7,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          95
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          4,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          96
+        ],
+        "rowIndexes": [
+          2,
+          5,
+          7,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          97
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          98
+        ],
+        "rowIndexes": [
+          4,
+          5
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          99
+        ],
+        "rowIndexes": [
+          1,
+          7,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          101
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          108
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          109
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          112
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          113
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          114
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          116
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          3,
+          8,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          117
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          118
+        ],
+        "rowIndexes": [
+          2,
+          4,
+          7,
+          10
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          119
+        ],
+        "rowIndexes": [
+          0,
+          5,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          120
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          121
+        ],
+        "rowIndexes": [
+          2,
+          7,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          122
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          124
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          125
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          126
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          127
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          128
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          129
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          130
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          131
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          132
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          6,
+          7,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          133
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          134
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          135
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          136
+        ],
+        "rowIndexes": [
+          0,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          137
+        ],
+        "rowIndexes": [
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          138
+        ],
+        "rowIndexes": [
+          0,
+          2,
+          6,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          139
+        ],
+        "rowIndexes": [
+          0,
+          2,
+          6,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          140
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          142
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          144
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          147
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          148
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          149
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          150
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          151
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          152
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          153
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          154
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          155
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          156
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          157
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          158
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          159
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          160
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          161
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          162
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          163
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          164
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          165
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          166
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          167
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          7,
+          8,
+          9,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          168
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          169
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          170
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          171
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          172
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          7,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          173
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          174
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          175
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          177
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          178
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          179
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          180
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          181
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          182
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          183
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          184
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          185
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          186
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          187
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          188
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          257
+        ],
+        "rowIndexes": [
+          0,
+          5,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          259
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          260
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          261
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          262
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          263
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          264
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          265
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          266
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          267
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          269
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          270
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          271
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          272
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          273
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          274
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          275
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          276
+        ],
+        "rowIndexes": [
+          4
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          278
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          279
+        ],
+        "rowIndexes": [
+          0,
+          5,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          280
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          281
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          283
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          284
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          285
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          288
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          289
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          290
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          291
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          295
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          296
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          297
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          298
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          300
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          301
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          303
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          306
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          5,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          308
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          4,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          309
+        ],
+        "rowIndexes": [
+          2,
+          5,
+          7,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          313
+        ],
+        "rowIndexes": [
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          314
+        ],
+        "rowIndexes": [
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          315
+        ],
+        "rowIndexes": [
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          317
+        ],
+        "rowIndexes": [
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          433
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          435
+        ],
+        "rowIndexes": [
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          437
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          443
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          6,
+          7,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          444
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          7,
+          12
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          445
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          6,
+          7,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          446
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          6,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          447
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          7,
+          12
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          448
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          8,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          449
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          450
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          451
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          452
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          5,
+          6,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          453
+        ],
+        "rowIndexes": [
+          2,
+          4,
+          7,
+          10
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          455
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          456
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          457
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          458
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          459
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          460
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          461
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          498
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          4,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          499
+        ],
+        "rowIndexes": [
+          2,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          503
+        ],
+        "rowIndexes": [
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          505
+        ],
+        "rowIndexes": [
+          8,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          507
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          508
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          512
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          513
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          517
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          518
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          519
+        ],
+        "rowIndexes": [
+          2,
+          6
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          522
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          534
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          535
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          536
+        ],
+        "rowIndexes": [
+          2,
+          7,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          538
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          542
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          543
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          544
+        ],
+        "rowIndexes": [
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          545
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          548
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          554
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          556
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          557
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          558
+        ],
+        "rowIndexes": [
+          4,
+          5
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          559
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          560
+        ],
+        "rowIndexes": [
+          1,
+          7,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          564
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          576
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          577
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          578
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          579
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          580
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          581
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          584
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          588
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          592
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          593
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          594
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          595
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          601
+        ],
+        "rowIndexes": [
+          0,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          626
+        ],
+        "rowIndexes": [
+          4,
+          5,
+          10,
+          11,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          627
+        ],
+        "rowIndexes": [
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          628
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          629
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          630
+        ],
+        "rowIndexes": [
+          1,
+          7,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          631
+        ],
+        "rowIndexes": [
+          1,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          658
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          659
+        ],
+        "rowIndexes": [
+          0,
+          5,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          660
+        ],
+        "rowIndexes": [
+          8,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          663
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          664
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          665
+        ],
+        "rowIndexes": [
+          0,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          666
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          667
+        ],
+        "rowIndexes": [
+          2,
+          6
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          669
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          681
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          686
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          689
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          690
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          3,
+          4,
+          7,
+          9,
+          11,
+          12
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          691
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          696
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          699
+        ],
+        "rowIndexes": [
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          728
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          729
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          738
+        ],
+        "rowIndexes": [
+          2,
+          6
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          740
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          741
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          746
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          760
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          761
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          765
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          766
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          782
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          783
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          787
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          788
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          829
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          831
+        ],
+        "rowIndexes": [
+          0,
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          832
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          833
+        ],
+        "rowIndexes": [
+          1
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          835
+        ],
+        "rowIndexes": [
+          1,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          836
+        ],
+        "rowIndexes": [
+          1,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          910
+        ],
+        "rowIndexes": [
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          911
+        ],
+        "rowIndexes": [
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          912
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          913
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          3,
+          4,
+          7,
+          9,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          914
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          6,
+          7,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          915
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          8,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          917
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          3,
+          4,
+          7,
+          9,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          918
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12,
+          13
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          920
+        ],
+        "rowIndexes": [
+          1,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          921
+        ],
+        "rowIndexes": [
+          1,
+          4,
+          5,
+          7,
+          8,
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          922
+        ],
+        "rowIndexes": [
+          0,
+          5,
+          9
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          923
+        ],
+        "rowIndexes": [
+          4,
+          5
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          924
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          925
+        ],
+        "rowIndexes": [
+          4,
+          5
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          926
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          8
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          927
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          928
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          929
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          930
+        ],
+        "rowIndexes": [
+          0,
+          1,
+          7
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          936
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          937
+        ],
+        "rowIndexes": [
+          2
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          966
+        ],
+        "rowIndexes": [
+          2,
+          6
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          968
+        ],
+        "rowIndexes": [
+          2,
+          6
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          973
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          975
+        ],
+        "rowIndexes": [
+          10,
+          11
+        ],
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          26
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          27
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          30
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          31
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          32
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          34
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          35
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          38
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          39
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "actorClasses": [],
+        "recordPath": [
+          "item",
+          40
+        ],
+        "rowIndexes": [
+          0
+        ],
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      }
+    ]
+  },
+  "chargrpSourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
+  "classDefaultFields": [
+    "HeadBone",
+    "Mesh",
+    "SubMeshes"
+  ],
+  "classDefaultParserSha256": "b28b6723efe88275870fc7daa519e5cddc380391c5c8293ca105abb5cdb4d86a",
+  "joinRule": [
+    "A chargrp row joins an actor class only when every source names exactly one class for the row and that class names no other row.",
+    "A class names a row when its Mesh or SubMeshes default, own or inherited, is a body_mesh or face_mesh reference of the row.",
+    "A decoded table record names a row through such a reference or a chargrp index field, and a class through a string equal to an Engine.Pawn subclass export.",
+    "Candidates are never ranked by name likeness and one of several is never picked."
+  ],
+  "rows": {
+    "0": {
+      "actorClass": "LineageWarrior.MFighter",
+      "candidateClasses": [
+        "LineageWarrior.MFighter"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 164
+    },
+    "1": {
+      "actorClass": "LineageWarrior.FFighter",
+      "candidateClasses": [
+        "LineageWarrior.FFighter"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 210
+    },
+    "10": {
+      "actorClass": "LineageWarrior.MOrc",
+      "candidateClasses": [
+        "LineageWarrior.MOrc"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 133
+    },
+    "11": {
+      "actorClass": "LineageWarrior.FOrc",
+      "candidateClasses": [
+        "LineageWarrior.FOrc"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 144
+    },
+    "12": {
+      "actorClass": "LineageWarrior.MShaman",
+      "candidateClasses": [
+        "LineageWarrior.MShaman"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 39
+    },
+    "13": {
+      "actorClass": "LineageWarrior.FShaman",
+      "candidateClasses": [
+        "LineageWarrior.FShaman"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 132
+    },
+    "2": {
+      "actorClass": "LineageWarrior.MDarkElf",
+      "candidateClasses": [
+        "LineageWarrior.MDarkElf"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 55
+    },
+    "3": {
+      "actorClass": "LineageWarrior.FDarkElf",
+      "candidateClasses": [
+        "LineageWarrior.FDarkElf"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 28
+    },
+    "4": {
+      "actorClass": "LineageWarrior.MDwarf",
+      "candidateClasses": [
+        "LineageWarrior.MDwarf"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 131
+    },
+    "5": {
+      "actorClass": "LineageWarrior.FDwarf",
+      "candidateClasses": [
+        "LineageWarrior.FDwarf"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 134
+    },
+    "6": {
+      "actorClass": "LineageWarrior.MElf",
+      "candidateClasses": [
+        "LineageWarrior.MElf"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 41
+    },
+    "7": {
+      "actorClass": "LineageWarrior.FElf",
+      "candidateClasses": [
+        "LineageWarrior.FElf"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 122
+    },
+    "8": {
+      "actorClass": "LineageWarrior.MMagic",
+      "candidateClasses": [
+        "LineageWarrior.MMagic"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 124
+    },
+    "9": {
+      "actorClass": "LineageWarrior.FMagic",
+      "candidateClasses": [
+        "LineageWarrior.FMagic"
+      ],
+      "candidateCount": 1,
+      "classPackageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558",
+      "tableRecordsWithoutClass": 48
+    }
+  },
+  "schemaVersion": 1,
+  "scriptSearchBound": [
+    "Class defaults are read for the Engine.Pawn subclasses of every script package whose name table holds a chargrp mesh object name.",
+    "Then for every Engine.Pawn subclass whose export-table ancestry reaches a class that names a row.",
+    "A class default can name a mesh only through a name in its own package or through an ancestor class."
+  ],
+  "sourcesSearched": {
+    "scriptPackages": [
+      {
+        "classExports": 8,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/Core.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "de5f0ee0a773327bce13c96622fd3c654cff7db88b9be065d1232590c140fda0"
+      },
+      {
+        "classExports": 16,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/Editor.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "da5c6fe8b2d3639286c0407695465ddfce72c2d5bbacb7c2ee0885451f0dc70f"
+      },
+      {
+        "classExports": 279,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": true,
+        "package": "system/Engine.u",
+        "pawnClasses": 4,
+        "refused": null,
+        "sha256": "9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761"
+      },
+      {
+        "classExports": 7,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/Fire.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "6933afddb8830aafa754a59b97782fe66dda102c58395b3776e4672aeef76527"
+      },
+      {
+        "classExports": 216,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/GamePlay.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "714639cdad265a7caeaf0f91ce76bb50492390eaa3faea15ed5a28a3e830b64a"
+      },
+      {
+        "classExports": 168,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/interface.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "4addc1323405170219233435074c279b5cba7c041d518c1673780af8f2622cf9"
+      },
+      {
+        "classExports": 14,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/IpDrv.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "0a156f4800c5c4c9b3b12e9944a779d9c4fcd517aa25d64964fa523836191f9b"
+      },
+      {
+        "classExports": 12,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/LineageCreature.u",
+        "pawnClasses": 6,
+        "refused": null,
+        "sha256": "6b13fe4e9d92e212aaac6d80bbb56370bdb43ea2be7df7aa7cafb74cfc085907"
+      },
+      {
+        "classExports": 13,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/LineageDeco.u",
+        "pawnClasses": 10,
+        "refused": null,
+        "sha256": "77a3f23688df5bd8919952c5b15a59e7cc6c5507357ccaf4e443150f882bc387"
+      },
+      {
+        "classExports": 864,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/lineageeffect.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      {
+        "classExports": 1,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/LineageEffect3.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "7452375c91b9f1f482df3bc7569b78fb170c0f2f2a997ec8c1edfb6108971650"
+      },
+      {
+        "classExports": 12,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/lineageenv.u",
+        "pawnClasses": 6,
+        "refused": null,
+        "sha256": "0813e3a46aa3eb19c733b4212c7523a15cb4d2507b9f923bb95661a12647297c"
+      },
+      {
+        "classExports": 585,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": true,
+        "package": "system/LineageMonster.u",
+        "pawnClasses": 583,
+        "refused": null,
+        "sha256": "f06ac53f7df24bd13d6e7a0d25d9e3ca4e4502af2437518e49d96a053987d7b6"
+      },
+      {
+        "classExports": 148,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/LineageMonster2.u",
+        "pawnClasses": 148,
+        "refused": null,
+        "sha256": "c623818bfe1b6ef201785afd4bdac3ffc20e443b4c122a78cea79c473fe99420"
+      },
+      {
+        "classExports": 95,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/LineageMonster3.u",
+        "pawnClasses": 95,
+        "refused": null,
+        "sha256": "f3b211e69a4cb94aa8962d5fdd3969dad895aa214e5cf60577ec7d3f69fc5709"
+      },
+      {
+        "classExports": 205,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/lineagenpc.u",
+        "pawnClasses": 204,
+        "refused": null,
+        "sha256": "22208e416e5b986042fb5d67bca3a519329d81b289843b5ea442d73b2495f7d0"
+      },
+      {
+        "classExports": 34,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/lineagenpc2.u",
+        "pawnClasses": 34,
+        "refused": null,
+        "sha256": "3a68b645d1912b7a882bca3bfd41f12be45286dd118798ea63244173fcb7b3fc"
+      },
+      {
+        "classExports": 17,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": true,
+        "package": "system/LineageNpc_Improved_01.u",
+        "pawnClasses": 17,
+        "refused": null,
+        "sha256": "146f8c7b2df115189b8fee44f219421be34a9dd480f48e3e1037b5210d67c59b"
+      },
+      {
+        "classExports": 28,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/lineagenpcev.u",
+        "pawnClasses": 28,
+        "refused": null,
+        "sha256": "9fdf8e870e7477d6b67b1a05a401f04a76deeeabba7dca8d9a48bc01062e09fb"
+      },
+      {
+        "classExports": 1,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/LineageVehicle.u",
+        "pawnClasses": 1,
+        "refused": null,
+        "sha256": "79282682d4e49df5287ecfa2d6ac89df4abb01ff6495b46f1ed16c9eaa624066"
+      },
+      {
+        "classExports": 16,
+        "classesRead": [
+          "LineageWarrior.FDarkElf",
+          "LineageWarrior.FDwarf",
+          "LineageWarrior.FElf",
+          "LineageWarrior.FFighter",
+          "LineageWarrior.FMagic",
+          "LineageWarrior.FOrc",
+          "LineageWarrior.FShaman",
+          "LineageWarrior.LineagePawn",
+          "LineageWarrior.LineagePawnNoMesh",
+          "LineageWarrior.MDarkElf",
+          "LineageWarrior.MDwarf",
+          "LineageWarrior.MElf",
+          "LineageWarrior.MFighter",
+          "LineageWarrior.MMagic",
+          "LineageWarrior.MOrc",
+          "LineageWarrior.MShaman"
+        ],
+        "namedChargrpRowMeshes": 62,
+        "namesHeadBone": true,
+        "package": "system/LineageWarrior.u",
+        "pawnClasses": 16,
+        "refused": null,
+        "sha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558"
+      },
+      {
+        "classExports": 0,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/nwindow.u",
+        "pawnClasses": 0,
+        "refused": "Package table adapter supports UE2 123/licensee0..31; other original bytes remain preserved",
+        "sha256": "eda69831ff20c997dcbc6f922bd0041981f4fe3010ca27dd5015f9c39c881c3b"
+      },
+      {
+        "classExports": 0,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/NWindows2.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "4ad359b273fe342e7fc6acdab9682c68864d8283256e64d39568f775091a000d"
+      },
+      {
+        "classExports": 12,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/udebugmenu.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "80ce780ae87300cded6af855e83b071fbb423ace22902b12490e1bc9e10cc543"
+      },
+      {
+        "classExports": 78,
+        "classesRead": [],
+        "namedChargrpRowMeshes": 0,
+        "namesHeadBone": false,
+        "package": "system/UWindow.u",
+        "pawnClasses": 0,
+        "refused": null,
+        "sha256": "eac8be32d9039d415989e93d8af549dc0bffe1d811e3cf46268318708e8fd3d4"
+      }
+    ],
+    "tables": [
+      {
+        "recordCount": 102,
+        "sourceSha256": "af5c157c5d7f04d3a08e0e328f53fcf14f4c260c61ab86bc29c7b91a6fa442fd",
+        "table": "actionname-e"
+      },
+      {
+        "recordCount": 1014,
+        "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+        "table": "armorgrp"
+      },
+      {
+        "recordCount": 53,
+        "sourceSha256": "4d26b3064836becae6b5f7173f210e777f53765069daa6cf1f66a9b412da37de",
+        "table": "castlename-e"
+      },
+      {
+        "recordCount": 10,
+        "sourceSha256": "537681972450e4f3264efcc00748a3776f2420fa7e1531556934ebe41e560507",
+        "table": "classinfo-e"
+      },
+      {
+        "recordCount": 15,
+        "sourceSha256": "e2b34a15adef5e105d0e13285020380612f53358b3284a9728e878d21138c733",
+        "table": "clientdata"
+      },
+      {
+        "recordCount": 114,
+        "sourceSha256": "65b37c242f55cbc437cd51551a1fe6c1f241a0e9cc882d19ddbbc066539f9e02",
+        "table": "commandname-e"
+      },
+      {
+        "recordCount": 62,
+        "sourceSha256": "521f3400a1e5c4700a7fe64279fb3f173889867eda8265399d616cec68e37ecf",
+        "table": "creditgrp-e"
+      },
+      {
+        "recordCount": 1152,
+        "sourceSha256": "748a0b56f4c92854ddd639945c40d1956601bbc78a034a79c15ffa415f6608f5",
+        "table": "entereventgrp"
+      },
+      {
+        "recordCount": 6911,
+        "sourceSha256": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+        "table": "etcitemgrp"
+      },
+      {
+        "recordCount": 1,
+        "sourceSha256": "b435be030473bbf9fd9321decb6b93d5311d8d7578caafcc50ff2cc6540e80ed",
+        "table": "eula-e"
+      },
+      {
+        "recordCount": 182,
+        "sourceSha256": "e0e1bf2810965f97d69e592509bdd4e4e2edd2cf92a3ad0eb2501626f254d422",
+        "table": "gametip-e"
+      },
+      {
+        "recordCount": 4,
+        "sourceSha256": "85964918a193c6aa39829f22e1a14c6a27b9076c5cd04a2996fa041f52e500a3",
+        "table": "hairaccessarygrp"
+      },
+      {
+        "recordCount": 112,
+        "sourceSha256": "ac38fdb88d26d348df08767814f5b34c73e0dafa9e33158a5c9b0027db1032cb",
+        "table": "hairaccessorylocgrp"
+      },
+      {
+        "recordCount": 15,
+        "sourceSha256": "03df44930cd3752e0f67c99ad2f402028a4406d53a5e30978adc92b589c8fa59",
+        "table": "hairgrp"
+      },
+      {
+        "recordCount": 3,
+        "sourceSha256": "ace5b171bf7bd6203de614257a4a523fe07e6fb14abc19af351f7b51c1809237",
+        "table": "helmetgrp"
+      },
+      {
+        "recordCount": 180,
+        "sourceSha256": "837e1665358e510dbd8e36b5d71737717f894b9e71a8d06db8b68ba29a54a03c",
+        "table": "hennagrp-e"
+      },
+      {
+        "recordCount": 220,
+        "sourceSha256": "658c794efe37538f7c4d6187672cb6012f02392582ddb759447e40c37ea64d2f",
+        "table": "huntingzone-e"
+      },
+      {
+        "recordCount": 9238,
+        "sourceSha256": "c9458c7bf3c8fda0fe391d9e7d0c93d33b8274888601c86b6c1f11a3d5c33945",
+        "table": "itemname-e"
+      },
+      {
+        "recordCount": 26,
+        "sourceSha256": "bf43f0d3d3a365288befbf5196f3a05e1f824bc0f06e8b451dd24efa40cfea5d",
+        "table": "logongrp"
+      },
+      {
+        "recordCount": 5463,
+        "sourceSha256": "332606a16ec24dd050abb597604eaed95280cd1887dddc0177858c20c025ff18",
+        "table": "mobskillanimgrp"
+      },
+      {
+        "recordCount": 358,
+        "sourceSha256": "837692b210a943deec1caa9ad0c6b3a2a5839fef677f500483506f287cd8797b",
+        "table": "musicinfo"
+      },
+      {
+        "recordCount": 6519,
+        "sourceSha256": "8ac7ce502769e25e503047e3a477da54703fc4e7f92aeb4c8c621e2729688d57",
+        "table": "npcgrp"
+      },
+      {
+        "recordCount": 6519,
+        "sourceSha256": "84c79b73a97e489b455f44f21d8c8cba0f4df401ccb1d56887a1eacc62285b9a",
+        "table": "npcname-e"
+      },
+      {
+        "recordCount": 13,
+        "sourceSha256": "c32e793ee0ce2758166634c26f34390ad6c24683fd4f3d74264940dfec20aef4",
+        "table": "obscene-e"
+      },
+      {
+        "recordCount": 16380,
+        "sourceSha256": "a8aadfb1d45820f94b8a3d0e578af5dd9c42ca9ca4ecc344e44071dbd7795a64",
+        "table": "optiondata_client-e"
+      },
+      {
+        "recordCount": 2050,
+        "sourceSha256": "1fcbd370a1b9515410cb680630636f4bd1bc9a23c24c31e1d11155306e156561",
+        "table": "questname-e"
+      },
+      {
+        "recordCount": 220,
+        "sourceSha256": "5344571b7ee413b616049a73d7eaabd0899b3ace79509b6d17410dd8a7eee359",
+        "table": "raiddata-e"
+      },
+      {
+        "recordCount": 871,
+        "sourceSha256": "86cc9502a876ff1128a237d3c414ea56ec1838a034b0ba7c2eb4871e2a2a9813",
+        "table": "recipe-c"
+      },
+      {
+        "recordCount": 200,
+        "sourceSha256": "5f93a71a2c124cb20da034ce04a54679dd4371e5100f90f410545a9df6ed9074",
+        "table": "servername-e"
+      },
+      {
+        "recordCount": 29812,
+        "sourceSha256": "ab9b9849ff1012adb7bfdd95ae8b6e26115641e4b5aafb6e8af19bc9d7a54ded",
+        "table": "skillgrp"
+      },
+      {
+        "recordCount": 29812,
+        "sourceSha256": "84745297ef0add25d2291b568382ff9c76f2d58a438bedbf11841dba82dd972b",
+        "table": "skillname-e"
+      },
+      {
+        "recordCount": 1398,
+        "sourceSha256": "14c9df542ccb0b342f1fd091b7177438cdf3705fb43581d0fc69b6c9ceeb14f5",
+        "table": "skillsoundgrp"
+      },
+      {
+        "recordCount": 577,
+        "sourceSha256": "9e0a2cfd4c1fa91b77b655d0dbaa76801335fa09bafe9522b3da4705921ee3c5",
+        "table": "staticobject-e"
+      },
+      {
+        "recordCount": 11,
+        "sourceSha256": "2b7646a2a400db7c7db5541bc5b5cf040f4b3376eb287ab9768dac6025a0f188",
+        "table": "symbolname-e"
+      },
+      {
+        "recordCount": 2083,
+        "sourceSha256": "29d7dafa17e3d95578369f3b7864a52e4f011fb646345fbe0abd2c3dbc45b699",
+        "table": "sysstring-e"
+      },
+      {
+        "recordCount": 2083,
+        "sourceSha256": "d2b1f074dfd1898af83008c1850cc82be7adf0561508c3a7bf29f2afde53a164",
+        "table": "systemmsg-e"
+      },
+      {
+        "recordCount": 288,
+        "sourceSha256": "3f936f7e4f43275085ac9f4172d8ed67465b8c90087ee667cb6cb8a761947643",
+        "table": "variationeffectgrp-e"
+      },
+      {
+        "recordCount": 1313,
+        "sourceSha256": "eea267ac21afa5f2e148349d5aaab9670dbc67cde3878f1a8db5aba2364550b9",
+        "table": "weapongrp"
+      },
+      {
+        "recordCount": 369,
+        "sourceSha256": "fa879035dfb15483f0dc073c460089e03a3d8a864caccc3c72afa14569586659",
+        "table": "zonename-e"
+      }
+    ]
+  },
+  "uelibSha256": "64ebfa8b290429b9d5b5e81f5018734c03ded27bb814c69b904cc269268f7bbc",
+  "verdict": "adopted"
+}

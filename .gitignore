@@ -1,4 +1,3 @@
-# Logs
 logs
 *.log
 npm-debug.log*
@@ -8,11 +7,12 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+__pycache__/
+*.pyc
 dist
 dist-ssr
 *.local
 
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 .bjseditor
 public/scene/
+public/vendor/babylon/
 test-results/
 playwright-report/
 .impeccable/*
@@ -31,3 +32,15 @@ artifacts/
 assets/.export-cache.json
 .env
 .env.*
+
+public/l2/
+.assets/private-preview/
+.assets/native-tools/
+.assets/reference/
+assets/native-parity.scene/geometries/*.babylonbinarymeshdata
+assets/native-parity.scene/*.png
+assets/native-world.scene/
+assets/native-generated/
+assets/native-sky-textures/
+assets/*.scene.native-editor-channels.json
+.claude/worktrees/

@@ -1,0 +1,320 @@
+import ast
+import json
+from pathlib import Path
+import struct
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
+import convert_tables
+from build_dat_table_inventory import (ELBERA_ADAPTER_COUNT_SOURCE, ELBERA_ADAPTER_DECODED_STATUS, ELBERA_PARSER_PRESENT_STATUS,
+                                       count_elbera_route_table)
+from convert_tables import DECODE_TABLE_ALGORITHM_VERSION, ELBERA_ADAPTER_ROUTE, convert_table_unit
+from data.hair_table_adapter import (ELBERA_HAIR_SELECTION_SCRIPT_PATH, ELBERA_HAIR_SELECTION_SCRIPT_SHA256, HAIR_LAYOUT_UNDECODED_REASON,
+                                     HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_PARSERS, HELMET_LAYOUT_UNDECODED_REASON, HairTableAdapterError,
+                                     HairTableUndecodedError, decode_hair_table, parse_decoded_hair_table, read_decoded_hair_table_bytes)
+from data.pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module
+from native_catalog.tables import SAFE_PACKAGE_TRAILER
+from native_store.gap_rows import read_gap_rows
+from native_store.store_paths import lane_store_root, lane_work_root
+from native_store.unit_ledger import UnitLedger
+from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock, require_reference_client
+from reference_client_lock_fixture import lock_client_as_checked_conversion_root
+
+ADAPTER_SOURCE_PATH = ROOT / 'scripts' / 'data' / 'hair_table_adapter.py'
+ELBERA_SCRIPT_AVAILABLE = (ELBERA_ROOT / ELBERA_HAIR_SELECTION_SCRIPT_PATH).is_file()
+ELBERA_UNAVAILABLE_REASON = f'Elbera checkout with {ELBERA_HAIR_SELECTION_SCRIPT_PATH} unavailable at {ELBERA_ROOT.as_posix()}'
+ELBERA_MODULE_PARAMETER_NAME = 'elbera_module'
+ALLOWED_ELBERA_ATTRIBUTES = {'hair_pairs', 'keyed_hair_pairs'}
+REFUSED_ELBERA_NAMES = ('verify', 'verify_material_native', 'audit_assets', 'main', '--check')
+HAIRGRP_FILE = 'system/hairgrp.dat'
+HELMETGRP_FILE = 'system/helmetgrp.dat'
+HAIRACCESSARYGRP_FILE = 'system/hairaccessarygrp.dat'
+REAL_CLIENT_ROOT = Path(json.loads(REFERENCE_CLIENT_LOCK_PATH.read_bytes())['conversionRoot'])
+PAIR_TABLE_WORD_COUNT = 450
+PAIR_TABLE_ROW_COUNT = 15
+PAIR_TABLE_STYLE_COUNT = 15
+PAIR_TABLE_BYTES = PAIR_TABLE_WORD_COUNT * 4
+KEYED_RECORD_BYTES = 4 + PAIR_TABLE_BYTES
+NO_MESH_SENTINEL = -1
+
+
+def synthetic_pair_table_payload():
+    return struct.pack(f'<{PAIR_TABLE_WORD_COUNT}i', *range(PAIR_TABLE_WORD_COUNT)) + SAFE_PACKAGE_TRAILER
+
+
+def client_layout_pair_rows(words):
+    return [[[words[2 * (row * PAIR_TABLE_STYLE_COUNT + style)], words[2 * (row * PAIR_TABLE_STYLE_COUNT + style) + 1]]
+             for style in range(PAIR_TABLE_STYLE_COUNT)] for row in range(PAIR_TABLE_ROW_COUNT)]
+
+
+def client_layout_pair_table_words(decoded_bytes, offset):
+    return struct.unpack_from(f'<{PAIR_TABLE_WORD_COUNT}i', decoded_bytes, offset)
+
+
+def client_layout_keyed_records(decoded_bytes):
+    [count] = struct.unpack_from('<i', decoded_bytes, 0)
+    return [{'key': struct.unpack_from('<i', decoded_bytes, 4 + index * KEYED_RECORD_BYTES)[0],
+             'pairs': client_layout_pair_rows(client_layout_pair_table_words(decoded_bytes, 8 + index * KEYED_RECORD_BYTES))}
+            for index in range(count)]
+
+
+class SyntheticHairClientTestCase(unittest.TestCase):
+    hair_files = (HAIRGRP_FILE,)
+
+    def setUp(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        base = Path(temporary_directory.name).resolve()
+        self.project_root = base / 'project'
+        (self.project_root / 'artifacts').mkdir(parents=True)
+        self.client_root = base / 'conversion'
+        (self.client_root / 'system').mkdir(parents=True)
+        for relative_path in self.hair_files:
+            (self.client_root / relative_path).write_bytes(f'synthetic encrypted {relative_path}'.encode())
+        lock_client_as_checked_conversion_root(self, self.client_root, base / 'importa', list(self.hair_files))
+        self.client_access = require_reference_client(self.client_root)
+        self.output_root = lane_store_root(self.project_root, 'data-ui')
+
+    def decode_with_payload(self, table, payload):
+        with patch('data.hair_table_adapter.decode413', return_value=('fixture', payload)):
+            return decode_hair_table(self.client_access, table)
+
+    def convert_with_payload(self, table, payload):
+        ledger = UnitLedger(lane_work_root(self.project_root, 'data-ui'), 'decode', DECODE_TABLE_ALGORITHM_VERSION)
+        with patch('data.hair_table_adapter.decode413', return_value=('fixture', payload)):
+            return convert_table_unit(self.project_root, self.client_access, table, self.output_root, ledger, [])
+
+    def tables_records(self):
+        return json.loads((self.output_root / 'catalog.json').read_bytes())['tables']
+
+    def receipt(self, table):
+        return json.loads((lane_work_root(self.project_root, 'data-ui') / f'table__{table}' / 'decode' / 'receipt.json').read_bytes())
+
+
+@unittest.skipUnless(ELBERA_SCRIPT_AVAILABLE, ELBERA_UNAVAILABLE_REASON)
+class PinnedElberaHairScriptTests(unittest.TestCase):
+    def test_the_pinned_script_loads_and_defines_both_parsers(self):
+        elbera_module = load_pinned_elbera_module(ELBERA_HAIR_SELECTION_SCRIPT_PATH, ELBERA_HAIR_SELECTION_SCRIPT_SHA256)
+        self.assertTrue(callable(elbera_module.hair_pairs))
+        self.assertTrue(callable(elbera_module.keyed_hair_pairs))
+
+
+@unittest.skipUnless(ELBERA_SCRIPT_AVAILABLE, ELBERA_UNAVAILABLE_REASON)
+class HairPairTableTests(SyntheticHairClientTestCase):
+    def test_exact_pair_table_decodes_to_fifteen_rows_of_fifteen_pairs(self):
+        decoded = self.decode_with_payload('hairgrp', synthetic_pair_table_payload())
+        self.assertEqual((decoded['recordCount'], decoded['decodedBytes'], decoded['keyFamily'], decoded['sourcePath']),
+                         (PAIR_TABLE_ROW_COUNT, PAIR_TABLE_BYTES + len(SAFE_PACKAGE_TRAILER), 'fixture', HAIRGRP_FILE))
+        self.assertEqual([len(row) for row in decoded['records']], [PAIR_TABLE_STYLE_COUNT] * PAIR_TABLE_ROW_COUNT)
+        self.assertEqual(decoded['records'][0][0], [0, 1])
+        self.assertEqual(decoded['records'][14][14], [448, 449])
+        self.assertEqual(decoded['sourceSha256'], self.client_access.lock.record(HAIRGRP_FILE)['eSha256'])
+
+    def test_decoded_words_follow_the_client_layout_and_keep_the_no_mesh_sentinel(self):
+        words = [NO_MESH_SENTINEL if index % 3 == 0 else index for index in range(PAIR_TABLE_WORD_COUNT)]
+        decoded = self.decode_with_payload('hairgrp', struct.pack(f'<{PAIR_TABLE_WORD_COUNT}i', *words) + SAFE_PACKAGE_TRAILER)
+        self.assertEqual(decoded['records'], client_layout_pair_rows(words))
+        self.assertEqual(decoded['records'][0][0], [NO_MESH_SENTINEL, 1])
+        self.assertEqual(decoded['records'][0][1], [2, NO_MESH_SENTINEL])
+        decoded_words = [word for row in decoded['records'] for pair in row for word in pair]
+        self.assertEqual(decoded_words.count(NO_MESH_SENTINEL), PAIR_TABLE_WORD_COUNT // 3)
+        self.assertNotIn(0xFFFFFFFF, decoded_words)
+        self.assertNotIn(0xFF, decoded_words)
+
+    def test_one_byte_short_is_hair_layout_undecoded(self):
+        payload = synthetic_pair_table_payload()
+        with self.assertRaises(HairTableUndecodedError) as raised:
+            self.decode_with_payload('hairgrp', payload[:PAIR_TABLE_BYTES - 1] + SAFE_PACKAGE_TRAILER)
+        self.assertEqual((raised.exception.table, raised.exception.reason), ('hairgrp', HAIR_LAYOUT_UNDECODED_REASON))
+
+    def test_missing_trailer_is_hair_layout_undecoded(self):
+        with self.assertRaises(HairTableUndecodedError) as raised:
+            self.decode_with_payload('hairgrp', synthetic_pair_table_payload()[:-1] + b'\x01')
+        self.assertEqual(raised.exception.reason, HAIR_LAYOUT_UNDECODED_REASON)
+
+    def test_converted_hairgrp_is_an_elbera_adapter_manifest_with_the_field_proof_in_its_receipt(self):
+        result = self.convert_with_payload('hairgrp', synthetic_pair_table_payload())
+        self.assertEqual((result['status'], result['recordCount']), ('decoded', PAIR_TABLE_ROW_COUNT))
+        [record] = self.tables_records()
+        manifest = json.loads((self.output_root / record['manifest'].removeprefix('/l2/')).read_bytes())
+        self.assertEqual((manifest['kind'], manifest['route'], manifest['descriptorSha256'], manifest['sourcePath'], manifest['recordCount']),
+                         ('native-table', ELBERA_ADAPTER_ROUTE, ELBERA_HAIR_SELECTION_SCRIPT_SHA256, HAIRGRP_FILE, PAIR_TABLE_ROW_COUNT))
+        self.assertEqual(manifest['records'][0][1], [2, 3])
+        config = self.receipt('hairgrp')['config']
+        self.assertEqual((config['route'], config['fieldProof'], config['elberaScriptSha256']),
+                         (ELBERA_ADAPTER_ROUTE, HAIR_TABLE_FIELD_PROOF, ELBERA_HAIR_SELECTION_SCRIPT_SHA256))
+
+    def test_converted_short_hairgrp_is_a_hair_layout_undecoded_gap_row_without_a_manifest(self):
+        result = self.convert_with_payload('hairgrp', synthetic_pair_table_payload()[1:])
+        self.assertEqual(result, {'unit': 'table:hairgrp', 'status': 'gap', 'reason': HAIR_LAYOUT_UNDECODED_REASON})
+        [gap_row] = read_gap_rows(self.project_root, 'data-ui')
+        self.assertEqual((gap_row['key'], gap_row['reason'], gap_row['sourceIdentity']['path']),
+                         ('table:hairgrp', HAIR_LAYOUT_UNDECODED_REASON, HAIRGRP_FILE))
+        self.assertFalse((self.output_root / 'tables').exists())
+        self.assertEqual(self.receipt('hairgrp')['config']['fieldProof'], HAIR_TABLE_FIELD_PROOF)
+
+
+def synthetic_keyed_table_payload(keys, declared_count=None):
+    count = len(keys) if declared_count is None else declared_count
+    records = b''.join(struct.pack('<i', key) + struct.pack(f'<{PAIR_TABLE_WORD_COUNT}i', *([key] * PAIR_TABLE_WORD_COUNT)) for key in keys)
+    return struct.pack('<I', count) + records + SAFE_PACKAGE_TRAILER
+
+
+@unittest.skipUnless(ELBERA_SCRIPT_AVAILABLE, ELBERA_UNAVAILABLE_REASON)
+class KeyedHairTableTests(SyntheticHairClientTestCase):
+    hair_files = (HELMETGRP_FILE, HAIRACCESSARYGRP_FILE)
+
+    def test_duplicate_keys_stay_two_records_in_file_order(self):
+        decoded = self.decode_with_payload('helmetgrp', synthetic_keyed_table_payload([7, 7]))
+        self.assertEqual([record['key'] for record in decoded['records']], [7, 7])
+        self.assertEqual(decoded['recordCount'], 2)
+        self.assertEqual([len(record['pairs']) for record in decoded['records']], [PAIR_TABLE_ROW_COUNT, PAIR_TABLE_ROW_COUNT])
+        self.assertEqual(decoded['records'][1]['pairs'][14][14], [7, 7])
+
+    def test_file_order_is_kept_for_distinct_keys(self):
+        decoded = self.decode_with_payload('hairaccessarygrp', synthetic_keyed_table_payload([9, NO_MESH_SENTINEL, 3]))
+        self.assertEqual([record['key'] for record in decoded['records']], [9, NO_MESH_SENTINEL, 3])
+        self.assertEqual(decoded['records'][1]['pairs'][0][0], [NO_MESH_SENTINEL, NO_MESH_SENTINEL])
+
+    def test_keyed_records_follow_the_client_layout(self):
+        payload = synthetic_keyed_table_payload([1, NO_MESH_SENTINEL, 3])
+        self.assertEqual(self.decode_with_payload('helmetgrp', payload)['records'], client_layout_keyed_records(payload))
+
+    def test_record_count_equals_the_count_header(self):
+        for keys in ([], [5], [1, 2, 3, 4]):
+            with self.subTest(keys=keys):
+                payload = synthetic_keyed_table_payload(keys)
+                self.assertEqual(struct.unpack_from('<I', payload)[0], len(keys))
+                self.assertEqual(self.decode_with_payload('helmetgrp', payload)['recordCount'], len(keys))
+
+    def test_a_size_that_disagrees_with_the_count_names_the_table_gap_reason(self):
+        expectations = {'helmetgrp': HELMET_LAYOUT_UNDECODED_REASON, 'hairaccessarygrp': HAIR_LAYOUT_UNDECODED_REASON}
+        for table, reason in expectations.items():
+            for payload in (synthetic_keyed_table_payload([7, 7], declared_count=3), synthetic_keyed_table_payload([7], declared_count=0)):
+                with self.subTest(table=table), self.assertRaises(HairTableUndecodedError) as raised:
+                    self.decode_with_payload(table, payload)
+                self.assertEqual((raised.exception.table, raised.exception.reason), (table, reason))
+
+    def test_a_converted_keyed_table_with_a_bad_count_is_a_gap_row_with_its_reason(self):
+        result = self.convert_with_payload('helmetgrp', synthetic_keyed_table_payload([7], declared_count=2))
+        self.assertEqual(result, {'unit': 'table:helmetgrp', 'status': 'gap', 'reason': HELMET_LAYOUT_UNDECODED_REASON})
+        [gap_row] = read_gap_rows(self.project_root, 'data-ui')
+        self.assertEqual((gap_row['key'], gap_row['sourceIdentity']['path']), ('table:helmetgrp', HELMETGRP_FILE))
+
+    def test_a_converted_keyed_table_keeps_duplicates_in_its_manifest(self):
+        self.assertEqual(self.convert_with_payload('hairaccessarygrp', synthetic_keyed_table_payload([7, 7]))['recordCount'], 2)
+        [record] = self.tables_records()
+        manifest = json.loads((self.output_root / record['manifest'].removeprefix('/l2/')).read_bytes())
+        self.assertEqual(([entry['key'] for entry in manifest['records']], manifest['route']), ([7, 7], ELBERA_ADAPTER_ROUTE))
+
+
+class HairTableNameTests(SyntheticHairClientTestCase):
+    def test_a_table_without_an_elbera_parser_is_refused_before_any_read(self):
+        with patch('data.hair_table_adapter.decode413', side_effect=AssertionError('decoded a table without a parser')):
+            with self.assertRaisesRegex(HairTableAdapterError, 'chargrp has no Elbera hair table parser'):
+                decode_hair_table(self.client_access, 'chargrp')
+
+    def test_a_table_without_layout_or_parser_still_exits_naming_it(self):
+        ledger = UnitLedger(lane_work_root(self.project_root, 'data-ui'), 'decode', DECODE_TABLE_ALGORITHM_VERSION)
+        with self.assertRaisesRegex(convert_tables.ConvertTablesError, 'chargrp.dat has no Interlude descriptor layout and no Elbera'):
+            convert_table_unit(self.project_root, self.client_access, 'chargrp', self.output_root, ledger, [])
+
+
+class HairTableFieldProofTests(unittest.TestCase):
+    def test_the_field_proof_cites_the_locked_engine_library(self):
+        engine_record = read_reference_client_lock(REFERENCE_CLIENT_LOCK_PATH).record(ENGINE_LIBRARY_RELATIVE_PATH)
+        self.assertEqual(engine_record['class'], 'equal')
+        self.assertIn(f'{ENGINE_LIBRARY_RELATIVE_PATH} {engine_record["eSha256"]}:', HAIR_TABLE_FIELD_PROOF)
+
+
+class ElberaCallScanTests(unittest.TestCase):
+    def setUp(self):
+        self.source_text = ADAPTER_SOURCE_PATH.read_text(encoding='utf-8')
+        self.tree = ast.parse(self.source_text)
+
+    def test_the_elbera_module_is_used_only_through_the_two_pure_parsers(self):
+        attributes = {node.attr for node in ast.walk(self.tree)
+                      if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == ELBERA_MODULE_PARAMETER_NAME}
+        self.assertEqual(attributes, ALLOWED_ELBERA_ATTRIBUTES)
+        self.assertEqual(set(HAIR_TABLE_PARSERS.values()), ALLOWED_ELBERA_ATTRIBUTES)
+
+    def test_the_elbera_module_never_escapes_into_another_call(self):
+        for node in ast.walk(self.tree):
+            if isinstance(node, ast.Call):
+                arguments = [*node.args, *(keyword.value for keyword in node.keywords)]
+                passed_names = {argument.id for argument in arguments if isinstance(argument, ast.Name)}
+                callee = node.func.id if isinstance(node.func, ast.Name) else None
+                if ELBERA_MODULE_PARAMETER_NAME in passed_names:
+                    self.assertEqual(callee, 'elbera_hair_table_parser')
+        self.assertNotIn('getattr', {node.id for node in ast.walk(self.tree) if isinstance(node, ast.Name)})
+
+    def test_no_engine_pinned_verifier_name_appears_in_the_adapter(self):
+        names = {node.attr for node in ast.walk(self.tree) if isinstance(node, ast.Attribute)}
+        constants = {node.value for node in ast.walk(self.tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)}
+        for refused_name in REFUSED_ELBERA_NAMES:
+            self.assertNotIn(refused_name, names)
+            self.assertNotIn(refused_name, constants)
+
+
+@unittest.skipUnless(ELBERA_SCRIPT_AVAILABLE and REAL_CLIENT_ROOT.is_dir(), 'lock-equal conversion client or Elbera checkout unavailable')
+class RealHairTableClientLayoutTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        client_access = require_reference_client(REAL_CLIENT_ROOT)
+        cls.decoded_bytes = {table: read_decoded_hair_table_bytes(client_access, table)['decodedBytes'] for table in HAIR_TABLE_PARSERS}
+
+    def test_hairgrp_is_one_headerless_pair_table_read_as_signed_words(self):
+        decoded_bytes = self.decoded_bytes['hairgrp']
+        self.assertEqual((len(decoded_bytes), decoded_bytes[PAIR_TABLE_BYTES:]), (PAIR_TABLE_BYTES + len(SAFE_PACKAGE_TRAILER), SAFE_PACKAGE_TRAILER))
+        words = client_layout_pair_table_words(decoded_bytes, 0)
+        self.assertEqual(parse_decoded_hair_table('hairgrp', decoded_bytes), client_layout_pair_rows(words))
+        self.assertEqual((words.count(NO_MESH_SENTINEL), min(words), max(words)), (258, NO_MESH_SENTINEL, 9))
+        self.assertEqual(client_layout_pair_rows(words)[14], [[0, 0]] * PAIR_TABLE_STYLE_COUNT)
+
+    def test_keyed_tables_are_a_count_then_key_and_pair_table_records(self):
+        for table, keys in (('helmetgrp', [1, 2, 3]), ('hairaccessarygrp', [0, 1, 2, 3])):
+            with self.subTest(table=table):
+                decoded_bytes = self.decoded_bytes[table]
+                self.assertEqual(len(decoded_bytes), 4 + len(keys) * KEYED_RECORD_BYTES + len(SAFE_PACKAGE_TRAILER))
+                self.assertTrue(decoded_bytes.endswith(SAFE_PACKAGE_TRAILER))
+                records = parse_decoded_hair_table(table, decoded_bytes)
+                self.assertEqual(records, client_layout_keyed_records(decoded_bytes))
+                self.assertEqual([record['key'] for record in records], keys)
+
+
+class InventoryElberaRouteCountTests(unittest.TestCase):
+    row = {'table': 'hairgrp', 'file': 'hairgrp.dat', 'route': 'elbera'}
+    source_sha256 = 'a' * 64
+    statuses = {'hairgrp': ELBERA_PARSER_PRESENT_STATUS}
+
+    def decoded_records(self, source_sha256):
+        return {'hairgrp': {'id': 'hairgrp', 'recordCount': PAIR_TABLE_ROW_COUNT, 'sourceSha256': source_sha256}}
+
+    def gap_rows(self, source_sha256):
+        return {'table:hairgrp': {'key': 'table:hairgrp', 'reason': HAIR_LAYOUT_UNDECODED_REASON,
+                                  'sourceIdentity': {'path': HAIRGRP_FILE, 'sha256': source_sha256}}}
+
+    def test_a_sealed_record_of_the_locked_source_carries_its_count_and_the_field_proof(self):
+        counted = count_elbera_route_table(self.row, self.statuses, self.source_sha256, self.decoded_records(self.source_sha256), {})
+        self.assertEqual(counted, {'recordCount': PAIR_TABLE_ROW_COUNT, 'countSource': f'{ELBERA_ADAPTER_COUNT_SOURCE}system/hairgrp.dat',
+                                   'status': ELBERA_ADAPTER_DECODED_STATUS})
+        self.assertEqual(ELBERA_ADAPTER_DECODED_STATUS, f'decoded by Elbera adapter, {HAIR_TABLE_FIELD_PROOF}')
+
+    def test_an_undecoded_gap_of_the_locked_source_names_its_reason(self):
+        counted = count_elbera_route_table(self.row, self.statuses, self.source_sha256, {}, self.gap_rows(self.source_sha256))
+        self.assertEqual(counted, {'recordCount': 'unknown', 'countSource': None, 'status': HAIR_LAYOUT_UNDECODED_REASON})
+
+    def test_a_record_or_gap_of_another_source_keeps_the_parser_presence_status(self):
+        counted = count_elbera_route_table(self.row, self.statuses, self.source_sha256, self.decoded_records('b' * 64), self.gap_rows('b' * 64))
+        self.assertEqual(counted['status'], ELBERA_PARSER_PRESENT_STATUS)
+        not_equal = count_elbera_route_table(self.row, self.statuses, None, self.decoded_records(self.source_sha256), {})
+        self.assertEqual(not_equal['recordCount'], 'unknown')
+
+
+if __name__ == '__main__':
+    unittest.main()

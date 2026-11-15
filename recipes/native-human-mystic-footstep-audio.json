@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-animation-audio-bundle",
+  "inventory": {
+    "path": "artifacts/native-parity/research/dev-sheet-audio-20261107/footstep-mystics/inventory/inventory.json",
+    "sha256": "464b83aeb6aa5117eef9a44f05c8c20cf305f65a7a013d089aae8eaf8e1193b1",
+    "bytes": 45639,
+    "eventsPointer": "/locomotion/events",
+    "dependenciesPointer": "/locomotion/dependencies"
+  },
+  "arrayProperties": [
+    "DefaultActorRunSound",
+    "DefaultActorWalkSound",
+    "DefaultRunSound",
+    "DefaultWalkSound",
+    "GrassRunSound",
+    "GrassWalkSound",
+    "WaterRunSound",
+    "WaterWalkSound"
+  ],
+  "actors": [
+    {
+      "catalogId": "human-male-mystic:0",
+      "assetId": "interlude:assembly:MMagic-native-body-face0-hair0",
+      "archive": {
+        "path": "public/l2/322213d21fe24c8b603a7ce03382464037e72d2b21b66a270db0b056e4a53d3b/asset.l2asset",
+        "sha256": "322213d21fe24c8b603a7ce03382464037e72d2b21b66a270db0b056e4a53d3b",
+        "bytes": 43614750
+      },
+      "clips": [
+        {
+          "name": "Walk_Hand_MMagic",
+          "gait": "walk"
+        },
+        {
+          "name": "Run_Hand_MMagic",
+          "gait": "run"
+        }
+      ]
+    },
+    {
+      "catalogId": "human-female-mystic:0",
+      "assetId": "interlude:assembly:FMagic-native-body-face0-hair0",
+      "archive": {
+        "path": "public/l2/329a868a67a9d30c173b5d6f52458cfaa36ed1960ee5606ea5273bfae6f36622/asset.l2asset",
+        "sha256": "329a868a67a9d30c173b5d6f52458cfaa36ed1960ee5606ea5273bfae6f36622",
+        "bytes": 45726105
+      },
+      "clips": [
+        {
+          "name": "Walk_Hand_FMagic",
+          "gait": "walk"
+        },
+        {
+          "name": "Run_Hand_FMagic",
+          "gait": "run"
+        }
+      ]
+    }
+  ]
+}

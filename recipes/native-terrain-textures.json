@@ -1,0 +1,20 @@
+[
+  {"kind":"texture","package":"T_texture","object":"T_texture.Texture.Base"},
+  {"kind":"texture","package":"T_texture","object":"T_texture.Texture.layer0"},
+  {"kind":"texture","package":"T_oren","object":"T_oren.Obase_1"},
+  {"kind":"texture","package":"T_20_20","object":"T_20_20.Height.20_20_BASE_C"},
+  {"kind":"texture","package":"T_texture","object":"T_texture.Texture.g_01"},
+  {"kind":"texture","package":"T_20_20","object":"T_20_20.Height.20_20_S_C"},
+  {"kind":"texture","package":"T_oren","object":"T_oren.OG_53"},
+  {"kind":"texture","package":"T_20_20","object":"T_20_20.Height.20_20_G1"},
+  {"kind":"texture","package":"T_oren","object":"T_oren.OG_44"},
+  {"kind":"texture","package":"T_20_20","object":"T_20_20.Height.20_20_G2"},
+  {"kind":"texture","package":"T_oren","object":"T_oren.OG_43_t"},
+  {"kind":"texture","package":"T_20_20","object":"T_20_20.Height.20_20_G3"},
+  {"kind":"texture","package":"T_oren","object":"T_oren.OST_10"},
+  {"kind":"texture","package":"T_20_20","object":"T_20_20.Height.20_20_C"},
+  {"kind":"texture","package":"T_oren","object":"T_oren.OS_01"},
+  {"kind":"texture","package":"T_20_20","object":"T_20_20.Height.20_20_R"},
+  {"kind":"texture","package":"T_oren","object":"T_oren.OG_49_t"},
+  {"kind":"texture","package":"T_20_20","object":"T_20_20.Height.20_20_G4"}
+]

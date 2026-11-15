@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-offline-asset-batch",
+  "id": "interlude-human-female-fighter",
+  "sources": {
+    "interlude": {
+      "root": "artifacts/native-parity/inputs/IMPORTA-PC",
+      "lock": "recipes/native-inputs.lock.json"
+    }
+  },
+  "jobs": [
+    {
+      "id": "human-female-fighter",
+      "adapter": "assets",
+      "source": "interlude",
+      "recipe": "recipes/native-ffighter.json"
+    }
+  ]
+}

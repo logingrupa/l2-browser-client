@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "listVersion": 1,
+  "source": "src/effects/particles/sim/particleEmitter.ts listEmitterFeatureChecks, with constants from src/effects/particles/sim/emitterConstants.ts and CAMERA_FACING_DIRECTION_USAGES",
+  "features": [
+    { "property": "UseCollision", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "is-true", "property": "UseCollision", "classDefault": false } },
+    { "property": "UseCollisionPlanes", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "is-true", "property": "UseCollisionPlanes", "classDefault": false } },
+    { "property": "UseActorForces", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "is-true", "property": "UseActorForces", "classDefault": false } },
+    { "property": "MeshSpawning", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "is-nonzero", "property": "MeshSpawning", "classDefault": false } },
+    { "property": "UseSkeletalLocationAs", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "is-nonzero", "property": "UseSkeletalLocationAs", "classDefault": false } },
+    { "property": "SpawnFromOtherEmitter", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "at-least", "property": "SpawnFromOtherEmitter", "classDefault": true, "value": 0 } },
+    { "property": "UseRotationFrom", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "equals", "property": "UseRotationFrom", "classDefault": false, "value": 3, "constant": "ROTATION_SOURCE.normal" } },
+    { "property": "CoordinateSystem", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "equals", "property": "CoordinateSystem", "classDefault": true, "value": 3, "constant": "COORDINATE_SYSTEM.relativeRotation" } },
+    { "property": "WeatherEffect", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+      "when": { "test": "is-true", "property": "WeatherEffect", "classDefault": false } },
+    { "property": "UseDirectionAs", "emitterClasses": ["Engine.SpriteEmitter"],
+      "when": { "test": "not-in", "property": "UseDirectionAs", "classDefault": false, "values": [0, 7], "constant": "CAMERA_FACING_DIRECTION_USAGES" } },
+    { "property": "BlendBetweenSubdivisions", "emitterClasses": ["Engine.SpriteEmitter"],
+      "when": { "test": "all-of", "conditions": [
+        { "test": "is-true", "property": "BlendBetweenSubdivisions", "classDefault": false },
+        { "test": "is-false", "property": "UseRandomSubdivision", "classDefault": false },
+        { "test": "any-of", "conditions": [
+          { "test": "at-least", "property": "TextureUSubdivisions", "classDefault": false, "value": 2 },
+          { "test": "at-least", "property": "TextureVSubdivisions", "classDefault": false, "value": 2 }
+        ] }
+      ] } },
+    { "property": "UseMeshBlendMode", "emitterClasses": ["Engine.MeshEmitter"],
+      "when": { "test": "is-true", "property": "UseMeshBlendMode", "classDefault": true } }
+  ]
+}

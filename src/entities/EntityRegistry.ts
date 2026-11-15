@@ -1,21 +1,53 @@
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
-import type { WorldEntity, WorldEvent } from "../world/worldTypes";
+import type { AnimationState, WorldEntity, WorldEvent } from "../world/worldTypes";
+import type { WorldPosition } from "../world/sourceFrame";
 import { PositionInterpolator } from "../interpolation/PositionInterpolator";
-import { createCharacterVisual, type CharacterVisual } from "../assets/CharacterVisual";
+import type { CharacterVisual, CharacterVisualFactory } from "../assets/CharacterVisual";
 import { EntityLabel } from "../ui/EntityLabel";
-import { projectPosition } from "../scene/projectPosition";
+import { playActorClip, type ActorClipPlayer } from "../animation/actorClipPlayback";
 
 interface EntityPresentation {
   entity: WorldEntity;
   readonly visual: CharacterVisual;
   readonly label: EntityLabel;
   readonly interpolation: PositionInterpolator;
+  clipDiagnostic: string | null;
+}
+
+export interface EntityMovementPose {
+  readonly feetPosition: WorldPosition;
+  readonly orientationRadians: number;
+  readonly isMoving: boolean;
+}
+
+interface EntityPresentationOptions {
+  readonly ground?: (position: WorldPosition) => WorldPosition | null;
+  readonly movementPose?: (entityId: string) => EntityMovementPose | null;
+  readonly createVisual: CharacterVisualFactory;
+  readonly actorClipPlayer?: (entityId: string) => ActorClipPlayer | undefined;
+}
+
+function animationWithMovement(animation: AnimationState, pose: EntityMovementPose | null): AnimationState {
+  return pose !== null && pose.isMoving && animation !== "attack" ? "run" : animation;
+}
+
+function labelDiagnosticOf(presentation: EntityPresentation): string | null {
+  const diagnostics = [presentation.visual.missingAssetDiagnostic, presentation.clipDiagnostic].filter(diagnostic => diagnostic !== null);
+  return diagnostics.length === 0 ? null : diagnostics.join("; ");
+}
+
+export interface EntityPivotView {
+  readonly entityId: string;
+  readonly root: TransformNode;
+  isValid(): boolean;
+  getWorldPositionToRef(out: Vector3): boolean;
 }
 
 export class EntityRegistry {
@@ -23,9 +55,11 @@ export class EntityRegistry {
   private readonly selectionRing: Mesh;
   private readonly selectionMaterial: StandardMaterial;
   private readonly unsubscribe: () => void;
+  private isDisposed = false;
   selectedEntityId: string | null = null;
 
-  constructor(private readonly scene: Scene, adapter: GameWorldAdapter, private readonly labels: HTMLElement, private readonly onAssetStatus: (message: string) => void) {
+  constructor(private readonly scene: Scene, adapter: GameWorldAdapter, private readonly labels: HTMLElement, private readonly onAssetStatus: (message: string) => void,
+    private readonly options: EntityPresentationOptions) {
     this.selectionMaterial = new StandardMaterial("Target indicator", scene);
     this.selectionMaterial.diffuseColor = Color3.FromHexString("#f6d884");
     this.selectionMaterial.emissiveColor = Color3.FromHexString("#b88c32");
@@ -38,12 +72,48 @@ export class EntityRegistry {
   }
 
   get count(): number { return this.entities.size; }
+  async whenReady(): Promise<void> {
+    for (;;) {
+      if (this.isDisposed) throw new DOMException("Entity loading was cancelled.", "AbortError");
+      const pending = [...this.entities.values()];
+      await Promise.all(pending.map(presentation => presentation.visual.ready.catch((error: unknown) => {
+        if (this.entities.get(presentation.entity.id) === presentation) throw error;
+      })));
+      if (this.isDisposed) throw new DOMException("Entity loading was cancelled.", "AbortError");
+      if (pending.length === this.entities.size && pending.every(presentation => this.entities.get(presentation.entity.id) === presentation)) return;
+    }
+  }
   get localPlayer(): WorldEntity | null {
     return [...this.entities.values()].find((presentation) => presentation.entity.kind === "local-player")?.entity ?? null;
   }
   get selectedEntity(): WorldEntity | null { return this.entities.get(this.selectedEntityId ?? "")?.entity ?? null; }
   get localPlayerPosition(): Vector3 | null {
     return [...this.entities.values()].find((presentation) => presentation.entity.kind === "local-player")?.visual.root.position ?? null;
+  }
+
+  attachmentAnchor(entityId: string, anchorId: string) {
+    return this.isDisposed ? null : this.entities.get(entityId)?.visual.attachmentAnchor(anchorId) ?? null;
+  }
+
+  sourceClock(entityId: string) {
+    return this.isDisposed ? null : this.entities.get(entityId)?.visual.sourceClock() ?? null;
+  }
+
+  entity(entityId: string): WorldEntity | null {
+    return this.isDisposed ? null : this.entities.get(entityId)?.entity ?? null;
+  }
+
+  actorPivot(entityId: string): EntityPivotView | null {
+    const owner = this.entities.get(entityId);
+    if (this.isDisposed || !owner || owner.visual.root.isDisposed()) return null;
+    const root = owner.visual.root;
+    const isValid = () => !this.isDisposed && this.entities.get(entityId) === owner &&
+      owner.visual.root === root && !root.isDisposed() && root.isEnabled();
+    return { entityId, root, isValid,
+      getWorldPositionToRef(out) {
+        if (!isValid()) return false;
+        root.computeWorldMatrix(true); out.copyFrom(root.getAbsolutePosition()); return true;
+      } };
   }
 
   select(entityId: string | null): void {
@@ -54,33 +124,49 @@ export class EntityRegistry {
 
   private spawn(entity: WorldEntity): void {
     this.remove(entity.id);
-    const visual = createCharacterVisual(this.scene, entity, this.onAssetStatus);
+    const visual = this.options.createVisual(this.scene, entity, this.onAssetStatus);
     visual.root.position.set(entity.position.x, entity.position.y, entity.position.z);
     visual.root.rotation.y = entity.orientationRadians;
-    this.entities.set(entity.id, {
-      entity, visual,
-      interpolation: new PositionInterpolator(entity.position),
-      label: new EntityLabel(this.labels, entity, () => this.select(entity.id)),
+    const label = new EntityLabel(this.labels, entity, () => this.select(entity.id));
+    const presentation: EntityPresentation = { entity, visual, label, interpolation: new PositionInterpolator(entity.position), clipDiagnostic: null };
+    label.setDiagnostic(labelDiagnosticOf(presentation));
+    this.entities.set(entity.id, presentation);
+    void visual.ready.catch(() => {
+      if (this.entities.get(entity.id) === presentation) label.setDiagnostic(labelDiagnosticOf(presentation));
     });
   }
 
   private apply(event: WorldEvent): void {
     if (event.type === "despawn") { this.remove(event.entityId); return; }
     if (event.type === "spawn") { this.spawn(event.entity); return; }
+    if (event.type !== "update") return;
     const presentation = this.entities.get(event.entity.id);
     if (!presentation) return;
-    if (presentation.entity.modelUrl !== event.entity.modelUrl || presentation.entity.kind !== event.entity.kind) {
+    if (presentation.entity.appearanceId !== event.entity.appearanceId || presentation.entity.kind !== event.entity.kind) {
       const wasSelected = this.selectedEntityId === event.entity.id;
       this.spawn(event.entity);
       if (wasSelected) this.select(event.entity.id);
       return;
     }
+    const shouldRetrigger = (presentation.entity.animationSequence ?? 0) !== (event.entity.animationSequence ?? 0);
+    const requestedClip = event.entity.requestedClip;
+    const isNewClipRequest = requestedClip !== undefined && requestedClip.requestSequence !== presentation.entity.requestedClip?.requestSequence;
     presentation.entity = event.entity;
+    presentation.visual.setEntity(event.entity);
     presentation.interpolation.setTarget(event.entity.position, event.shouldSnap ?? false);
     const position = presentation.interpolation.position;
     presentation.visual.root.position.set(position.x, position.y, position.z);
-    presentation.visual.animation.setState(event.entity.animation);
+    presentation.visual.animation.setState(animationWithMovement(event.entity.animation, this.options.movementPose?.(event.entity.id) ?? null), shouldRetrigger);
     presentation.label.setState(event.entity);
+    if (isNewClipRequest) this.presentRequestedClip(presentation, requestedClip.clipName);
+  }
+
+  private presentRequestedClip(presentation: EntityPresentation, clipName: string): void {
+    const entityId = presentation.entity.id;
+    const player = this.options.actorClipPlayer?.(entityId);
+    const isListed = player?.listing.clips.some(clip => clip.name === clipName) ?? false;
+    presentation.clipDiagnostic = isListed ? playActorClip(player, clipName) : `clip ${clipName} not in ${entityId} clip list`;
+    presentation.label.setDiagnostic(labelDiagnosticOf(presentation));
   }
 
   private remove(entityId: string): void {
@@ -92,34 +178,63 @@ export class EntityRegistry {
     this.entities.delete(entityId);
   }
 
+  private presentedGroundClearance(visual: CharacterVisual): number {
+    return this.options.ground ? visual.groundClearance : 0;
+  }
+
   update(deltaTimeSeconds: number): void {
     this.entities.forEach((presentation) => {
-      const position = presentation.interpolation.update(deltaTimeSeconds);
-      presentation.visual.root.position.set(position.x, position.y, position.z);
-      const difference = Math.atan2(Math.sin(presentation.entity.orientationRadians - presentation.visual.root.rotation.y), Math.cos(presentation.entity.orientationRadians - presentation.visual.root.rotation.y));
-      presentation.visual.root.rotation.y += difference * (1 - Math.exp(-12 * deltaTimeSeconds));
+      const interpolatedPosition = presentation.interpolation.update(deltaTimeSeconds);
+      const pose = this.options.movementPose?.(presentation.entity.id) ?? null;
+      if (pose) {
+        presentation.visual.root.position.set(pose.feetPosition.x, pose.feetPosition.y + presentation.visual.groundClearance, pose.feetPosition.z);
+        presentation.visual.root.rotation.y = pose.orientationRadians;
+        presentation.visual.animation.setState(animationWithMovement(presentation.entity.animation, pose));
+      } else {
+        const supportedPosition = this.options.ground?.(interpolatedPosition) ?? interpolatedPosition;
+        const pivotClearanceAboveSupport = this.presentedGroundClearance(presentation.visual);
+        presentation.visual.root.position.set(supportedPosition.x, supportedPosition.y + pivotClearanceAboveSupport, supportedPosition.z);
+        const difference = Math.atan2(Math.sin(presentation.entity.orientationRadians - presentation.visual.root.rotation.y), Math.cos(presentation.entity.orientationRadians - presentation.visual.root.rotation.y));
+        presentation.visual.root.rotation.y += difference * (1 - Math.exp(-12 * deltaTimeSeconds));
+      }
       presentation.visual.animation.update(deltaTimeSeconds);
-      presentation.label.update(this.scene, presentation.visual.root.position);
+      presentation.label.update(this.scene, presentation.visual.root.position, presentation.visual.bounds.labelHeight);
     });
     const selected = this.entities.get(this.selectedEntityId ?? "");
-    if (selected) this.selectionRing.position.copyFrom(selected.visual.root.position).addInPlaceFromFloats(0, 0.07, 0);
+    if (selected) {
+      const bounds = selected.visual.bounds;
+      const ringHeight = bounds.minimum.y + Math.min(.07, Math.max(.005, (bounds.maximum.y - bounds.minimum.y) * .03));
+      this.selectionRing.position.copyFrom(selected.visual.root.position).addInPlaceFromFloats(0, ringHeight, 0);
+      const scale = bounds.selectionRadius / 0.825;
+      this.selectionRing.scaling.set(scale, 1, scale);
+    }
   }
 
   snapshot() {
-    return [...this.entities.values()].map(({ entity, visual }) => {
-      const bodyPosition = visual.root.position.add(new Vector3(0, 1, 0));
-      const projected = projectPosition(this.scene, bodyPosition);
-      return {
-        id: entity.id, position: { x: visual.root.position.x, y: visual.root.position.y, z: visual.root.position.z },
-        authoritativePosition: { ...entity.position }, animation: visual.animation.state,
-        isFallback: visual.isFallback, screenPosition: { x: projected.x, y: projected.y },
-        meshCount: visual.root.getChildMeshes().length,
-        pose: visual.root.getDescendants().map((node) => "rotation" in node && node.rotation instanceof Vector3 ? node.rotation.asArray() : []),
-      };
-    });
+    return [...this.entities.values()].map(({ entity, visual, clipDiagnostic }) => ({
+      id: entity.id, position: { x: visual.root.position.x, y: visual.root.position.y, z: visual.root.position.z },
+      groundClearance: this.presentedGroundClearance(visual),
+      authoritativePosition: { ...entity.position }, animation: visual.animation.state,
+      locomotion: entity.locomotion ?? "run",
+      actionPreview: entity.actionPreview ?? null,
+      actionTargetId: entity.actionTargetId ?? null,
+      orientationRadians: visual.root.rotation.y, authoritativeOrientationRadians: entity.orientationRadians,
+      forwardDirection: visual.forwardDirection?.asArray() ?? null,
+      hasNativeModel: visual.hasNativeModel, missingAssetDiagnostic: visual.missingAssetDiagnostic, clipDiagnostic,
+      clipNames: this.options.actorClipPlayer?.(entity.id)?.listing.clips.map(clip => clip.name) ?? [],
+      modelId: visual.modelId, playback: visual.animation.playback, animationSequence: entity.animationSequence ?? 0,
+      attachments: visual.attachmentSnapshot(),
+      bounds: { minimum: visual.bounds.minimum.asArray(), maximum: visual.bounds.maximum.asArray(), labelHeight: visual.bounds.labelHeight, selectionRadius: visual.bounds.selectionRadius },
+      skeletons: [...new Set(visual.root.getChildMeshes().flatMap(mesh => mesh.skeleton ? [mesh.skeleton] : []))].map(skeleton => ({ name: skeleton.name, bones: skeleton.bones.length })),
+      parts: visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0).map(mesh => ({ name: mesh.name, enabled: mesh.isEnabled(), vertices: mesh.getTotalVertices(), material: mesh.material?.name ?? null })),
+      meshCount: visual.root.getChildMeshes().length,
+      pose: visual.root.getDescendants().map((node) => node instanceof TransformNode ? (node.rotationQuaternion?.asArray() ?? node.rotation.asArray()) : []),
+    }));
   }
 
   dispose(): void {
+    if (this.isDisposed) return;
+    this.isDisposed = true;
     this.unsubscribe();
     [...this.entities.keys()].forEach((identifier) => this.remove(identifier));
     this.selectionRing.dispose();

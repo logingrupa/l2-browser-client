@@ -1,17 +1,19 @@
-# Phase 1 - L2 browser client foundation
+# Phase 1 - L2 Browser Client Foundation
 
-> Original foundation brief, retained for requirements and acceptance history. The implementation was pushed in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`; see [verification](../docs/VERIFICATION.md) for actual checks and gaps. [The roadmap](../docs/ROADMAP.md) preserves Phase 2 Real M0 networking as the later step.
+> Original foundation brief, retained for requirements and acceptance history. The implementation was pushed in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`; see [verification](../docs/VERIFICATION.md) for actual checks and gaps. Current status and order are in [STATE.md](STATE.md) and [ROADMAP.md](ROADMAP.md); Real M0 networking is Phase 4 (stage B). The detailed Phase 1 brief and the later asset follow-up briefs are history in git.
+>
+> Current rules that override this brief: Babylon.js Editor is an optional viewer, off the build and runtime path (DEC-OWN-8), so the Editor template and editable-environment rules below do not apply. The synthetic demo, `MockWorldAdapter` and procedural placeholders it asked for were removed on 2026-11-08 (DEC-OWN-11). The current scope is [docs/PORT_SCOPE.md](../docs/PORT_SCOPE.md).
 
-Implement and verify a standalone Babylon.js + strict TypeScript browser client in https://github.com/logingrupa/l2-browser-client. Reuse proven rendering code from an earlier rendering repository after reviewing its license. Deliver a working synthetic demo, not just a proposal.
+Implement and verify a standalone Babylon.js + strict TypeScript browser client in https://github.com/logingrupa/l2-browser-client. Reuse proven rendering code from an earlier sibling project after reviewing its license (superseded 2026-11-08: the repository no longer depends on that project). Deliver a working synthetic demo, not just a proposal.
 
-The detailed requirements, folder structure and acceptance checks were in a separate details file, later removed as superseded. This prompt summarizes it.
+The detailed requirements, folder structure and acceptance checks for this brief are history in git; this prompt summarizes them.
 
 ## Foundation
 
 - Start with Babylon.js Editor v5's native Vanilla template. Preserve its `.bjseditor` metadata, editable scenes, required paths and supported workflow. Use Vite only where compatible.
 - Use pnpm exclusively, pin its version and commit `pnpm-lock.yaml`. Do not generate npm or yarn lockfiles. Use Vitest and Playwright.
 - Use clear English identifiers, meaningful boolean names, no abbreviations or Hungarian notation, no `any`, and small cohesive modules. Preserve required external API names and serialized contracts.
-- Inspect the seven rendering files of that repository listed in the details. Adapt reusable rendering code; remove SpacetimeDB, Evenfall gameplay and server-simulation dependencies. Record provenance and attribution. Treat that repository as read-only: never modify or deploy it, or run its server, lab or database commands.
+- Inspect the seven sibling-project files listed in the details. Adapt reusable rendering code; remove SpacetimeDB, Evenfall gameplay and server-simulation dependencies. Record provenance and attribution. Treat the sibling project as read-only: never modify or deploy it, or run its server, lab or database commands. (Superseded 2026-11-08: the repository no longer depends on that project.)
 
 ## Implementation
 
