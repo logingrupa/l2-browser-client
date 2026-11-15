@@ -98,23 +98,23 @@ Both Modulates fog toward 127/255, neutral under `2 * src * dst`. AlphaModulate,
 
 ### Combiner operations
 
-`m` is the mask value, or `1 - m` with InvertMask. `c1, a1` come from Material1 and `c2, a2` from Material2, white when absent.
+Interlude rules from DB-1 (D3DDrv.dll 05622dde, `combiner-stage-semantics` cb9b11ac, replayed 2026-11-15). Forms are in Material terms; the builder swaps stage arguments itself. `M1`, `M2` come from Material1 and Material2, white when absent (null Material2 is open). `F` is the child emitted first: Material2 when Material1 is a bitmap and Material2 is not, else Material1. `m` is the Mask alpha, `1 - alpha` with InvertMask; a Mask feeds only alpha arguments.
 
 | Op | Colour |
 |---|---|
-| 0 Use_Color_From_Material1 | `c1` |
-| 1 Use_Color_From_Material2 | `c2` |
-| 2 Multiply | `c1 * c2 * k`, `k` = 1, 2 with Modulate2X, 4 with Modulate4X |
-| 3 Add | `c1 + c2` |
-| 4 Subtract | `c1 - c2` |
-| 5 AlphaBlend_With_Mask | `c1 * m + c2 * (1 - m)` |
-| 6 Add_With_Mask_Modulation | `c1 + c2 * m` (from the name, unconfirmed) |
-| 7 Use_Color_From_Mask | `Mask.rgb` (from the name, unconfirmed) |
+| 0 Use_Color_From_Material1 | `M1.rgb` |
+| 1 Use_Color_From_Material2 | `M2.rgb` |
+| 2 Multiply | `M1 * M2 * k`, `k` = 4 with Modulate4X, else 2 with Modulate2X, else 1 |
+| 3 Add | `M1 + M2` |
+| 4 Subtract | `M2 - M1` |
+| 5 AlphaBlend_With_Mask | `M2 * m + M1 * (1 - m)`, `m = F.a` with Mask=None |
+| 6 Add_With_Mask_Modulation | `M2.rgb + M2.a * M1.rgb` with D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR (row `combiner.modulate-alpha-add-colour-cap`), else `M1 + M2` |
+| 7 Use_Color_From_Mask | `F.rgb`; the builder has no colour case |
 
-Alpha ops: 0 Use_Mask `m`, 1 Multiply `a1 * a2`, 2 Add `a1 + a2`, 3 From1 `a1`, 4 From2 `a2`. The reference implements only 3 and 4.
-- Clamp each result to [0, 1], an unconfirmed fixed-function assumption.
-- The mask channel is one constant, `combiner.mask-channel`.
-- With no Mask, a colour op that reads it is a diagnostic. AO_Use_Mask with no Mask gives alpha 0, as the flame owner writes for Default_Flame01 (`src/scene/world/nativeMaterialGraph.ts:213-214` on native-world-slice). That rule is open.
+Alpha ops: 0 Use_Mask `m`, or `F.a` with Mask=None; 1 Multiply `M1.a * M2.a`; 2 Add `M1.a + M2.a`; 3 From1 `M1.a`; 4 From2 `M2.a`. The reference implements only 3 and 4.
+- Mask=None is accepted by every operation (0x10014a24); no white or zero mask is substituted.
+- Clamp each result to [0, 1]: unconfirmed, DB-1 leaves gpu-clamp-and-precision open.
+- Open: native rejection of two non-bitmap children and of AO1-AO4 with a separate Mask, the Modulate2X compatibility path.
 - A Combiner is a full node anywhere, root included.
 
 ### UV modifiers
@@ -281,7 +281,7 @@ The last pass applies `out = clamp((C + 0.5) * x^(1/G) + (B - C) * 32768 / 65535
 | terrain.layer-matrix | serialized TextureMatrix, checked against TextureRotation, UScale, VScale, UPan, VPan, TextureMapAxis, LayerRotation | `lineage2js/src/assets/unreal/un-terrain-info.ts:525-592`; `scripts/native_map_geometry.py:405-424` | ue2-data | serialized matrix |
 | uv.modifiers | TexPanner, TexOscillator, TexEnvMap, FadeColor and AnimNext formulas | `shader-mesh-static.vs:407-444,752-796`; `un-material.ts:305-312,793-807`; `shader-mesh-static.fs:542-558`; `src/scene/world/nativeFlameMaterials.ts:75,91-108` on native-world-slice | unconfirmed | reference |
 | uv.rotator-conversion | exact `units * pi / 32768` or the float32 sine table, one choice per use in `src/shared/math/rotator.ts` | `shader-mesh-static.vs:407-416` | unconfirmed | exact until the Core.dll SinTab re-derivation |
-| combiner.mask-channel | green in the reference | `shader-mesh-static.fs:653-660` | unknown | green |
+| combiner.mask-channel | alpha (the reference reads green) | DB-1 mask-routing, D3DDrv.dll 05622dde | corrected-interlude | alpha |
 | colour.byte-order | B, G, R, A (reference, nativeMaterialGraph.ts:219) or R, G, B, A (native_sky.py:166) | `lineage2js/src/assets/unreal/un-color.ts:37-43`; `src/scene/world/nativeMaterialGraph.ts:219`; `scripts/native_sky.py:166` on native-world-slice | unknown | B, G, R, A until the R != B fixture |
 | gamma.ramp | formula in Display gamma; G = 0 off | `lineage2js/src/rendering/display-gamma.ts:7,53-57` (C4 D3DDrv UpdateGamma) | unconfirmed | reference |
 | gamma.setting | Option.ini [Video] Gamma=1.200000, TerrainClippingRange=0; [ClippingRange] Terrain=8.0; no Brightness or Contrast keys | client `system/Option.ini`, read-only | ue2-data | G = 1.2 |
@@ -484,7 +484,6 @@ In `src/materials/ue2/babylon/**`:
 - Fog: unit 2000 or 2048? What selects the preset? View z or radial distance, vertex or table fog? Which source wins in sun-affected zones, where the reference uses zone fog only with streaming off?
 - Do time tables wrap to T=0? What rule covers timeenv3 SkyBoxColor NUM=1 and the duplicate [HSVTerrainLight]?
 - Terrain: shadow maps lerped or switched? Layer 0 masked? Which alpha channel per format? What does bUseAlpha change?
-- Combiner: which mask channel? What do AO_Use_Mask and mask colour ops do with Mask None?
 - TexRotator: yaw only or pitch, yaw and roll summed? 65535 or 65536? Phase scale? Is the serialized M only a cache?
 - In Interlude, what are Jitter's random source and rate, the LT_Strobe and LT_Flicker rates, TexScaler's scale and offset order, MaterialSequence timing and loops, and VertexColor's effect?
 - After the axis swap, does the camera-space env map need the (-1, 1, -1) flip?

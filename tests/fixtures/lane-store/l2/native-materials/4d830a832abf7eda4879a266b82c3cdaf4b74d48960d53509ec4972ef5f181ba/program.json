@@ -1,0 +1,620 @@
+{
+  "gapReasons": [],
+  "graphSha256": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+  "kind": "ue2-material-program",
+  "nodes": [
+    {
+      "class": "Engine.FinalBlend",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.WaterShader01"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "FrameBufferBlending",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "FB_Overwrite",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "ZWrite",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": true
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "ZTest",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": true
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaTest",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "TwoSided",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaRef",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.Overwrite",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Shader",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Diffuse",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.reflection"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Opacity",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.base1"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "OutputBlending",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "OB_Normal",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "TwoSided",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.WaterShader01",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Combiner",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "CombineOperation",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "CO_6",
+            "ordinal": 6
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaOperation",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "AO_1",
+            "ordinal": 1
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material1",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.TexOscillator0"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material2",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.com"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Mask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "InvertMask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Modulate2X",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Modulate4X",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.reflection",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Combiner",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "CombineOperation",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "CO_3",
+            "ordinal": 3
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaOperation",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "AO_1",
+            "ordinal": 1
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material1",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.ocn_s"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material2",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.base1"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Mask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "InvertMask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Modulate2X",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Modulate4X",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.com",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Combiner",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "CombineOperation",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "CO_2",
+            "ordinal": 2
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaOperation",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "AO_0",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material1",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.oceanS"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material2",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.TexOscillator0"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Mask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "InvertMask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Modulate2X",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Modulate4X",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.ocn_s",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VSize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bMasked",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bAlphaTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "MaxFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.oceanS",
+      "image": {
+        "bytes": 70,
+        "path": "/l2/native-material-textures/5c188d029de6c937ed11d3dd563bf8f2b55e7b1e35d711a3d88d51b8490bcca8/texture.png",
+        "sha256": "5c188d029de6c937ed11d3dd563bf8f2b55e7b1e35d711a3d88d51b8490bcca8"
+      },
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VSize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bMasked",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bAlphaTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "MaxFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.TexOscillator0",
+      "image": {
+        "bytes": 70,
+        "path": "/l2/native-material-textures/6d549ce438420f6d82fb816f9044cffebb78f87371f7a82d07c8c8f88959dcd2/texture.png",
+        "sha256": "6d549ce438420f6d82fb816f9044cffebb78f87371f7a82d07c8c8f88959dcd2"
+      },
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VSize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bMasked",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bAlphaTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "MaxFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.base1",
+      "image": {
+        "bytes": 70,
+        "path": "/l2/native-material-textures/c8719093b0cfee144f6af7ce18fdc8a49893ad786498bbf03b2a2ce810383c1a/texture.png",
+        "sha256": "c8719093b0cfee144f6af7ce18fdc8a49893ad786498bbf03b2a2ce810383c1a"
+      },
+      "status": "reviewed"
+    }
+  ],
+  "root": "SyntheticWaterSwatch.Overwrite",
+  "schemaVersion": 1
+}

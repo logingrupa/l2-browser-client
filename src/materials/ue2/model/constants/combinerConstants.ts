@@ -1,43 +1,82 @@
 import type { ReferenceConstantRow } from "../../../../shared/referenceConstant";
-import { materialNotes } from "./materialNotes";
+import { combinerStageSemanticsReplay, materialNotes } from "./materialNotes";
+
+const combinerStageEvidence = `D3DDrv.dll 05622dde HandleCombinedMaterial 0x10014400, Mask=None branch 0x10014a24, colour switch 0x1001509a, alpha switch 0x100154b1, CO6 cap test 0x10015466; ${combinerStageSemanticsReplay}`;
+
+const operationForms = {
+  CO_Use_Color_From_Material1: "M1.rgb",
+  CO_Use_Color_From_Material2: "M2.rgb",
+  CO_Multiply: "M1.rgb * M2.rgb * k, k = 4 with Modulate4X, else 2 with Modulate2X, else 1",
+  CO_Add: "M1.rgb + M2.rgb",
+  CO_Subtract: "M2.rgb - M1.rgb",
+  AO_Use_Mask: "the routed mask alpha with a Mask, else F.a",
+  AO_Multiply: "M1.a * M2.a",
+  AO_Add: "M1.a + M2.a",
+  AO_Use_Alpha_From_Material1: "M1.a",
+  AO_Use_Alpha_From_Material2: "M2.a",
+} as const;
+
+const maskNamedOperations = {
+  CO_AlphaBlend_With_Mask: "M2.rgb * m + M1.rgb * (1 - m), m = the routed mask alpha with a Mask, else F.a",
+  CO_Add_With_Mask_Modulation: "M2.rgb + M2.a * M1.rgb with D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR, else M1.rgb + M2.rgb",
+  CO_Use_Color_From_Mask: "F.rgb, the builder has no colour case for it",
+} as const;
+
+const firstEmittedMaterialRule = "F = Material2 when Material1 resolves to a bitmap and Material2 does not, else Material1";
 
 export const COMBINER_CONSTANTS = {
   maskChannel: {
     id: "combiner.mask-channel",
-    value: "green",
-    provenance: `${materialNotes} combiner.mask-channel: green in lineage2js/src/materials/mesh-static-material/shader/shader-mesh-static.fs:653-660`,
-    status: "unknown",
+    value: "alpha",
+    provenance: `${materialNotes} Combiner operations: a Mask feeds only alpha arguments, its alpha or 1 - alpha with InvertMask; the reference green channel (lineage2js shader-mesh-static.fs:653-660) is refuted by DB-1 mask-routing`,
+    status: "corrected-interlude",
+    interludeEvidence: combinerStageEvidence,
+    runtimeDefault: "alpha",
+  },
+  operationForms: {
+    id: "combiner.operation-forms",
+    value: operationForms,
+    provenance: `${materialNotes} Combiner operations: forms in Material terms, the builder swaps stage arguments itself; DB-1 refutes the reference CO4 M1 - M2 and AO_Use_Mask 0 without a Mask`,
+    status: "corrected-interlude",
+    interludeEvidence: combinerStageEvidence,
+    runtimeDefault: operationForms,
+  },
+  maskNamedOperations: {
+    id: "combiner.mask-named-operations",
+    value: maskNamedOperations,
+    provenance: `${materialNotes} Combiner operations 5, 6 and 7; DB-1 refutes the CO5 orientation, CO6 c1 + c2 * m and CO7 mask.rgb taken from the names; Mask=None is accepted with no white or zero mask`,
+    status: "corrected-interlude",
+    interludeEvidence: combinerStageEvidence,
+    runtimeDefault: maskNamedOperations,
+  },
+  firstEmittedMaterial: {
+    id: "combiner.first-emitted-material",
+    value: firstEmittedMaterialRule,
+    provenance: `${materialNotes} Combiner operations: F is D3DTA_CURRENT, the child the builder emits first; a texture expression of the stage plan is the bitmap case (DB-1 builder-order)`,
+    status: "confirmed-interlude",
+    interludeEvidence: combinerStageEvidence,
+    runtimeDefault: firstEmittedMaterialRule,
+  },
+  modulateAlphaAddColourCap: {
+    id: "combiner.modulate-alpha-add-colour-cap",
+    value: true,
+    provenance: `${materialNotes} Combiner operations: CO6 tests D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR (TextureOpCaps 0x20000) at D3DDrv.dll 05622dde 0x10015466; the D3D9 hardware the client targets reports it, no live device caps are captured (DB-1 live-device-inputs unresolved)`,
+    status: "unconfirmed",
     interludeEvidence: null,
-    runtimeDefault: "green",
+    runtimeDefault: true,
   },
   resultClamp: {
     id: "combiner.result-clamp",
     value: [0, 1],
-    provenance: `${materialNotes} Combiner operations: clamp each result to [0, 1], an unconfirmed fixed-function assumption`,
+    provenance: `${materialNotes} Combiner operations: clamp each result to [0, 1], an unconfirmed fixed-function assumption; DB-1 gives arithmetic before device range handling and leaves gpu-clamp-and-precision unresolved`,
     status: "unconfirmed",
     interludeEvidence: null,
     runtimeDefault: [0, 1],
   },
-  maskNamedOperations: {
-    id: "combiner.mask-named-operations",
-    value: { CO_Add_With_Mask_Modulation: "c1 + c2 * m", CO_Use_Color_From_Mask: "mask.rgb" },
-    provenance: `${materialNotes} Combiner operations 6 and 7, taken from the operation names; lineage2js falls back to Material1 (un-material.ts:331-350), which is not followed`,
-    status: "unconfirmed",
-    interludeEvidence: null,
-    runtimeDefault: { CO_Add_With_Mask_Modulation: "c1 + c2 * m", CO_Use_Color_From_Mask: "mask.rgb" },
-  },
-  missingMaskAlpha: {
-    id: "combiner.missing-mask-alpha",
-    value: 0,
-    provenance: `${materialNotes} Combiner operations: AO_Use_Mask with no Mask gives alpha 0, as the flame owner writes for Default_Flame01 (src/scene/world/nativeMaterialGraph.ts); the rule is open`,
-    status: "unknown",
-    interludeEvidence: null,
-    runtimeDefault: 0,
-  },
   absentMaterial: {
     id: "combiner.absent-material",
     value: "white",
-    provenance: `${materialNotes} Combiner operations: c1, a1 come from Material1 and c2, a2 from Material2, white when absent`,
+    provenance: `${materialNotes} Combiner operations: c1, a1 come from Material1 and c2, a2 from Material2, white when absent; DB-1 leaves a null Material2 unresolved (arbitrary-tree-coverage)`,
     status: "unconfirmed",
     interludeEvidence: null,
     runtimeDefault: "white",

@@ -1,6 +1,6 @@
 import type { ReferenceConstantRow } from "../../../../shared/referenceConstant";
 import type { BlendFactor, BlendFactorPair } from "./blendFactorTypes";
-import { materialNotes } from "./materialNotes";
+import { combinerStageSemanticsReplay, materialNotes } from "./materialNotes";
 
 const pair = (source: BlendFactor, destination: BlendFactor): BlendFactorPair => ({ source, destination });
 
@@ -88,9 +88,9 @@ export const BLEND_CONSTANTS = {
   normalWithOpacityPair: {
     id: "blend.ob-normal-opacity",
     value: pair("source-alpha", "inverse-source-alpha"),
-    provenance: `${materialNotes} Blend table row 0: OB_Normal is ONE, ZERO, or SRCALPHA, INVSRCALPHA with Opacity`,
-    status: "unconfirmed",
-    interludeEvidence: null,
+    provenance: `${materialNotes} Blend table row 0: OB_Normal is ONE, ZERO, or SRCALPHA, INVSRCALPHA with Opacity; DB-1 shader-opacity-and-output also gives blend on, ZWrite off and the final alpha Opacity.a for that case`,
+    status: "confirmed-interlude",
+    interludeEvidence: `D3DDrv.dll 05622dde Shader pass builder FUN_1000ae10, OutputBlending and Opacity test 0x1000c7f7; ${combinerStageSemanticsReplay}`,
     runtimeDefault: pair("source-alpha", "inverse-source-alpha"),
   },
   particleDrawStylePairs: {
