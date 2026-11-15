@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { devSheetComboboxLoadingText, devSheetComboboxRowLimit } from "../../src/ui/devSheet/devSheetCombobox";
 import { sandboxPickerSections } from "../../src/ui/devSheet/sandboxPickerRegistry";
 import type { NativeTableNameIndexRead } from "../../src/ui/nativeTables/readNativeTableNameIndex";
+import { settleMicrotasks } from "./support/comboboxDriver";
 import { fire } from "./support/miniDom";
-import { converted, createPickerHarness, nameEntries, settle, type CatalogEntries } from "./support/sandboxPickerHarness";
+import { converted, createPickerHarness, nameEntries, type CatalogEntries } from "./support/sandboxPickerHarness";
 
 const harness = createPickerHarness();
 const mountPicker = harness.mountPicker;
@@ -70,7 +71,7 @@ describe("spawn picker", () => {
     input.click();
     expect(picker.rowTexts(spawnSearch)).toEqual([]);
     resolveRead(npcNameIndex);
-    await settle();
+    await settleMicrotasks();
     expect(picker.rowTexts(spawnSearch)).toHaveLength(4);
     input.blur();
     input.focus();
@@ -119,7 +120,7 @@ describe("spawn picker", () => {
     expect(picker.groupElement.children).toHaveLength(picker.childCountBefore);
     expect(form.isConnected).toBe(false);
     fire(form, "submit");
-    await settle();
+    await settleMicrotasks();
     expect(picker.fakeHost.dispatched).toEqual([]);
     expect(harness.document().listenerCount("keydown")).toBe(documentListenersBefore);
   });
@@ -133,7 +134,7 @@ describe("spawn picker", () => {
     controller.abort();
     rejectPendingRead(new DOMException("aborted", "AbortError"));
     await pendingType;
-    await settle();
+    await settleMicrotasks();
     expect(picker.byTestId(`${spawnSearch}-list`)!.hidden).toBe(true);
     expect(picker.rowTexts(spawnSearch)).toEqual([]);
     expect(picker.message(spawnSearch).textContent).toBe("npcname-e name index read stopped.");

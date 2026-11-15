@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { SandboxActionOutcome } from "../../src/ui/devSheet/sandboxPickerHost";
 import type { NativeTableNameIndexRead } from "../../src/ui/nativeTables/readNativeTableNameIndex";
 import { equipmentSlotForBodyPart, isEquipmentSlot } from "../../src/world/sandboxCommands";
-import { converted, createPickerHarness, nameEntries, settle, type CatalogEntries, type MountedPicker } from "./support/sandboxPickerHarness";
+import { settleMicrotasks } from "./support/comboboxDriver";
+import { fire } from "./support/miniDom";
+import { converted, createPickerHarness, nameEntries, type CatalogEntries, type MountedPicker } from "./support/sandboxPickerHarness";
 
 const { mountPicker } = createPickerHarness();
 const tileKeys = "sandbox-tile-keys";
@@ -172,6 +174,25 @@ describe("window picker", () => {
     expect(picker.rowTexts(windowKeys)).toEqual(["StatusWnd window:StatusWnd not in catalog"]);
   });
 
+  it("offers no typed row while a catalog window matches, so Enter on a partial name picks the catalog window", async () => {
+    const picker = mountPicker("window", { catalog: windowCatalog });
+    const input = await picker.type(windowKeys, "Status");
+    expect(picker.rowTexts(windowKeys)).toEqual(["StatusWnd window:StatusWnd converted"]);
+    expect(input.getAttribute("aria-activedescendant")).toBe(picker.byTestId(`${windowKeys}-option-0`)!.id);
+    fire(input, "keydown", { key: "Enter" });
+    picker.byTestId(`${windowKeys}-pick`)!.click();
+    await settleMicrotasks();
+    expect(picker.fakeHost.openedWindows).toEqual(["StatusWnd"]);
+  });
+
+  it("resolves a window id typed in another case to the catalog window", async () => {
+    const picker = mountPicker("window", { catalog: windowCatalog });
+    await picker.type(windowKeys, "statuswnd");
+    expect(picker.rowTexts(windowKeys)).toEqual(["StatusWnd window:StatusWnd converted"]);
+    await picker.pick(windowKeys, 0);
+    expect(picker.fakeHost.openedWindows).toEqual(["StatusWnd"]);
+  });
+
   it("opens a typed window id and reports a rejected open as a warning", async () => {
     const picker = mountPicker("window", { catalog: windowCatalog, windowOutcome: Promise.reject(new Error("manifest hash mismatch")) });
     await picker.type(windowKeys, "MissingWnd");
@@ -188,7 +209,7 @@ describe("window picker", () => {
     await picker.pick(windowKeys, 0);
     picker.release();
     resolveOpen({ tone: "info", text: "StatusWnd opened" });
-    await settle();
+    await settleMicrotasks();
     expect(picker.note("sandbox-window-note")).toBeNull();
     expect(picker.groupElement.children).toHaveLength(picker.childCountBefore);
   });

@@ -121,7 +121,7 @@ export function attachSandboxCatalogKeyCombobox(options: SandboxCatalogKeyCombob
   if (options.options.length === 0) group.note(options.emptyText, { tone: "warning", testId: `${options.testId}-empty` });
   const typedOption = (query: string): DevComboboxOption<string> | null => {
     const identifier = query.trim();
-    if (!options.identifierPattern.test(identifier) || options.options.some(option => option.value === identifier)) return null;
+    if (!options.identifierPattern.test(identifier)) return null;
     return catalogKeyOption(identifier, catalogIndex.lookup(options.catalogKeyOf(identifier)));
   };
   const combobox = attachPickableCombobox(group, options.lifetime, {

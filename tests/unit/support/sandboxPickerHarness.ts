@@ -20,8 +20,6 @@ export function nameEntries(rows: readonly (readonly [readonly number[], string]
   return rows.map(([identifiers, name], sourceOrder) => ({ identifiers, name, sourceOrder }));
 }
 
-export { settleMicrotasks as settle };
-
 function fakeCatalogIndex(entries: CatalogEntries): NativeCatalogIndex {
   return {
     lookup: key => entries[key] ?? { status: "not-in-catalog", key, reason: "not in catalog" },

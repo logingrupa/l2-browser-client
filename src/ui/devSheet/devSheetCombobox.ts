@@ -74,9 +74,9 @@ export function createDevCombobox<Value>(options: DevComboboxOptions<Value>): De
 
   const visibleOptions = (): VisibleOptions<Value> => {
     const tokens = queryTokens(input.value);
-    const typedOption = options.typedOption?.(input.value) ?? null;
     const matches = searchable.filter(item => matchesTokens(item.searchText, tokens)).map(item => item.option);
-    const all = typedOption ? [typedOption, ...matches] : matches;
+    const typedOption = matches.length === 0 ? options.typedOption?.(input.value) ?? null : null;
+    const all = typedOption ? [typedOption] : matches;
     return { shown: all.slice(0, devSheetComboboxRowLimit), hiddenCount: Math.max(0, all.length - devSheetComboboxRowLimit), matchCount: all.length };
   };
 
@@ -127,9 +127,17 @@ export function createDevCombobox<Value>(options: DevComboboxOptions<Value>): De
     const rows = visible.hiddenCount > 0 ? [...optionRows, overflowRow(visible.hiddenCount)] : optionRows;
     listbox.replaceChildren(...rows);
     listbox.hidden = rows.length === 0;
+    input.setAttribute("aria-expanded", String(!listbox.hidden));
     const text = statusText(visible.matchCount);
     status.textContent = text ?? ""; status.hidden = text === null;
-    setActive(enabledPositions()[0] ?? -1);
+    const pickedPosition = renderedOptions.findIndex(option => option === selectedOption);
+    setActive(pickedPosition >= 0 ? pickedPosition : enabledPositions()[0] ?? -1);
+  };
+
+  const showUnavailable = (message: string) => {
+    loadState = "unavailable";
+    unavailableMessage = message;
+    render();
   };
 
   const ensureLoaded = () => {
@@ -137,15 +145,15 @@ export function createDevCombobox<Value>(options: DevComboboxOptions<Value>): De
     loadState = "loading";
     render();
     void optionSource().then(load => {
-      if (load.status === "unavailable") { loadState = "unavailable"; unavailableMessage = load.message; }
-      else { loadState = "loaded"; searchable = searchableOptions(load.options); }
+      if (load.status === "unavailable") { showUnavailable(load.message); return; }
+      loadState = "loaded";
+      searchable = searchableOptions(load.options);
       render();
-    });
+    }, (failure: unknown) => showUnavailable(`Names failed to load: ${failure instanceof Error ? failure.message : String(failure)}`));
   };
 
   const setExpanded = (next: boolean) => {
     expanded = next;
-    input.setAttribute("aria-expanded", String(next));
     if (next) ensureLoaded();
     render();
   };
@@ -186,7 +194,11 @@ export function createDevCombobox<Value>(options: DevComboboxOptions<Value>): De
     }
     if (!expanded) return;
     if (key === "Home" || key === "End") { event.preventDefault(); stepActive(key); return; }
-    if (key === "Escape") { event.preventDefault(); setExpanded(false); return; }
+    if (key === "Escape") {
+      if (!listbox.hidden) event.preventDefault();
+      setExpanded(false);
+      return;
+    }
     if (key === "Tab") { setExpanded(false); return; }
     const activeOption = renderedOptions[activePosition];
     if (key === "Enter" && activeOption) { event.preventDefault(); pick(activeOption); }

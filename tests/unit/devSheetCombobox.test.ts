@@ -179,11 +179,61 @@ describe("developer sheet combobox", () => {
     expect(combobox.query()).toBe("Mortal");
   });
 
-  it("offers a typed option ahead of the matches", async () => {
+  it("offers a typed option only when no row matches the query", async () => {
     const typedOption = (query: string) => /^\d+$/.test(query.trim()) ? skillOption(Number(query), query.trim(), "not in catalog") : null;
     const { root } = mountCombobox({ typedOption });
     await typeIntoCombobox(root, testId, "5");
-    expect(comboboxRowTexts(root, testId)).toEqual(["5 skill:5:1 not in catalog", "Power Shot skill:56:1 not in catalog", "Mortal Blow skill:57:1 converted"]);
+    expect(comboboxRowTexts(root, testId)).toEqual(["Power Shot skill:56:1 not in catalog", "Mortal Blow skill:57:1 converted"]);
+    await typeIntoCombobox(root, testId, "9");
+    expect(comboboxRowTexts(root, testId)).toEqual(["9 skill:9:1 not in catalog"]);
+  });
+
+  it("starts on the picked row when the list reopens", async () => {
+    const twinOptions = [skillOption(3, "Power Strike"), skillOption(5, "Power Strike")];
+    const { root, input, press } = mountCombobox({ options: twinOptions });
+    input.focus();
+    press("ArrowDown");
+    press("ArrowDown");
+    press("Enter");
+    expect(input.value).toBe("Power Strike");
+    await openCombobox(root, testId);
+    const rows = comboboxRows(root, testId);
+    expect(rows.map(row => row.textContent)).toEqual(["Power Strike skill:3:1 converted", "Power Strike skill:5:1 converted"]);
+    expect(input.getAttribute("aria-activedescendant")).toBe(rows[1]!.id);
+  });
+
+  it("reports aria-expanded from the visible list: false while loading, with no matches and when names are unavailable", async () => {
+    let resolveLoad: (load: DevComboboxOptionLoad<number>) => void = () => undefined;
+    const loading = mountCombobox({ options: () => new Promise(resolve => { resolveLoad = resolve; }) });
+    await openCombobox(loading.root, testId);
+    expect(loading.input.getAttribute("aria-expanded")).toBe("false");
+    resolveLoad({ status: "loaded", options: skillOptions });
+    await settleMicrotasks();
+    expect(loading.input.getAttribute("aria-expanded")).toBe("true");
+    await typeIntoCombobox(loading.root, testId, "nothing like this");
+    expect(loading.input.getAttribute("aria-expanded")).toBe("false");
+    expect(loading.input.hasAttribute("aria-activedescendant")).toBe(false);
+    const unavailable = mountCombobox({ options: async () => ({ status: "unavailable", message: "no names" }) });
+    await openCombobox(unavailable.root, testId);
+    expect(unavailable.input.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("lets Escape reach the sheet while no list is visible", async () => {
+    const { sheet, root, input, press } = mountCombobox();
+    sheet.open();
+    await typeIntoCombobox(root, testId, "nothing like this");
+    const escape = press("Escape");
+    expect(escape.defaultPrevented).toBe(true);
+    expect(sheet.isOpen).toBe(false);
+    expect(input.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("shows a rejected load as unavailable with its message and no rows", async () => {
+    const { root, input, message } = mountCombobox({ options: () => Promise.reject(new Error("name index fetch refused")) });
+    await openCombobox(root, testId);
+    expect(message.textContent).toBe("Names failed to load: name index fetch refused");
+    expect(comboboxRows(root, testId)).toEqual([]);
+    expect(input.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("loads options once on first focus with a loading state, then filters them locally", async () => {
