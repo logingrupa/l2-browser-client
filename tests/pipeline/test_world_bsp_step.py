@@ -233,9 +233,9 @@ class SurfaceMaterialTests(unittest.TestCase):
         texture_declarations = [{'field': 'USize', 'declaredType': 'int', 'declaringClass': 'Engine.Texture', 'enumMembers': None,
                                  'classDefault': {'field': 'USize', 'value': None, 'provenance': 'ue-zero', 'declaringClass': 'Engine.Texture'}}]
         with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value={'Engine.Texture': texture_declarations}):
-            outcome = convert_surface_material('SyntheticUnported.TriggeredOscillator', map_sources, converter, store_root, None, store_root)
+            outcome = convert_surface_material('SyntheticUnported.UnportedGlow', map_sources, converter, store_root, None, store_root)
         self.assertIsNone(outcome.material.png)
-        self.assertIn('material-class-unported:Engine.TexOscillatorTriggered', outcome.gap_reasons)
+        self.assertIn('material-class-unported:Engine.GlowModifier', outcome.gap_reasons)
         self.assertTrue(outcome.material.program['directory'].startswith('native-materials/'))
 
     def test_only_the_depth_writing_shader_and_final_blend_members_are_opaque(self):

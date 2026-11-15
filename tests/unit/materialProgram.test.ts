@@ -80,7 +80,7 @@ describe("parseMaterialProgram", () => {
     expect(() => parsed(dangling)).toThrow(/references SyntheticSwatch\.Missing/);
     const unported = syntheticUnportedProgram();
     unported.nodes[0]!.gapReasons = [];
-    expect(() => parsed(unported)).toThrow(/unported without material-class-unported:Engine\.TexOscillatorTriggered/);
+    expect(() => parsed(unported)).toThrow(/unported without material-class-unported:Engine\.GlowModifier/);
   });
 
   it("decodes a raw Rotator struct as the converter writes it", () => {
@@ -133,8 +133,8 @@ describe("createNativeMaterial", () => {
 
   it("renders an unported class as the named magenta diagnostic", () => {
     const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(syntheticUnportedProgram()), testMaterialOptions);
-    expect(nativeMaterial.inspect()).toMatchObject({ status: "diagnostic", unportedClass: "Engine.TexOscillatorTriggered",
-      reasons: expect.arrayContaining(["material-class-unported:Engine.TexOscillatorTriggered"]) });
+    expect(nativeMaterial.inspect()).toMatchObject({ status: "diagnostic", unportedClass: "Engine.GlowModifier",
+      reasons: expect.arrayContaining(["material-class-unported:Engine.GlowModifier"]) });
   });
 
   it("renders a Modulate pair Babylon has no preset for as a named diagnostic", () => {

@@ -2,7 +2,7 @@ import { COMBINER_CONSTANTS } from "./constants/combinerConstants";
 import { blendFactorsForMaterial, type MaterialBlend, type ResolvedMaterialBlend } from "./blendTable";
 import { fieldIsUnported, readBooleanField, readEnumOrdinal, readNumberField, readReferenceField, type MaterialReference } from "./materialFieldValues";
 import { fadeColourGapReason } from "./modifiers";
-import { programNode, type MaterialProgram, type MaterialProgramNode, type MaterialTextureImage } from "./materialProgram";
+import { programNode, TEXTURE_COORDINATE_MODIFIER_CLASSES, type MaterialProgram, type MaterialProgramNode, type MaterialTextureImage } from "./materialProgram";
 
 export type ColourSourceKind = "constant-colour" | "fade-colour" | "color-modifier";
 
@@ -72,7 +72,7 @@ export interface DiagnosticMaterialStagePlan {
 
 export type MaterialStagePlan = CompiledMaterialStagePlan | DiagnosticMaterialStagePlan;
 
-const textureCoordinateModifierClasses = new Set(["Engine.TexPanner", "Engine.TexRotator", "Engine.TexOscillator", "Engine.TexScaler", "Engine.TexCoordSource", "Engine.TexEnvMap"]);
+const textureCoordinateModifierClasses = new Set<string>(TEXTURE_COORDINATE_MODIFIER_CLASSES);
 const clampModeOrdinal = 1;
 const maximumCompileDepth = 64;
 const maximumAnimationFrames = 256;

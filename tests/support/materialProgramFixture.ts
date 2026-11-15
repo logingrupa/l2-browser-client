@@ -146,8 +146,20 @@ export function syntheticSwatchProgram(image: FixtureTextureImage): FixtureProgr
   ]);
 }
 
+export function oceanSTriggeredOscillatorNode(id: string, material: string, overrides: FixtureProgramField[] = []): FixtureProgramNode {
+  const oceanSFields = [
+    field("Material", nodeReference(material)), field("StopAfterPeriod", Math.fround(0.05)), field("VOscillationRate", Math.fround(0.05)),
+    field("VOscillationPhase", Math.fround(0.3)), field("VOscillationAmplitude", Math.fround(0.05)), field("UOscillationType", enumValue(2, "OT_StretchRepeat")),
+    field("UOffset", 10), field("VOffset", 10), field("RetriggerAction", enumValue(3, "RTA_Retrigger"), "class-default"),
+    field("UOscillationRate", 0, "class-default"), field("UOscillationPhase", null, "ue-zero"), field("UOscillationAmplitude", 0, "class-default"),
+    field("VOscillationType", null, "ue-zero"), field("TriggeredTime", null, "ue-zero"), field("Reverse", null, "ue-zero"), field("Triggered", null, "ue-zero"),
+  ];
+  return reviewedNode(id, "Engine.TexOscillatorTriggered", [
+    ...oceanSFields.filter(oceanSField => !overrides.some(override => override.field === oceanSField.field)), ...overrides]);
+}
+
 export function syntheticUnportedProgram(): FixtureProgram {
-  return programOf("SyntheticSwatch.TriggeredOscillator", [unportedNode("SyntheticSwatch.TriggeredOscillator", "Engine.TexOscillatorTriggered")]);
+  return programOf("SyntheticSwatch.UnportedGlow", [unportedNode("SyntheticSwatch.UnportedGlow", "Engine.GlowModifier")]);
 }
 
 export const combinerSwatchInputRgba = {
@@ -242,7 +254,8 @@ function waterShaderSwatchNodes(): FixtureProgramNode[] {
     ]),
     waterCombiner("reflection", 6, 1, "TexOscillator0", "com"),
     waterCombiner("com", 3, 1, "ocn_s", "base1"),
-    waterCombiner("ocn_s", 2, 0, "oceanS", "TexOscillator0"),
+    waterCombiner("ocn_s", 2, 0, "ocean-s", "TexOscillator0"),
+    oceanSTriggeredOscillatorNode(waterShaderSwatchNodeId("ocean-s"), waterShaderSwatchNodeId("oceanS")),
     ...waterShaderSwatchInputs.map(input => swatchTextureNode(waterShaderSwatchNodeId(input), textureImageFor(solidInputPng(waterShaderSwatchInputRgba[input])), 1)),
   ];
 }

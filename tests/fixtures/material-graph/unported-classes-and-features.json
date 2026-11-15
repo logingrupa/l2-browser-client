@@ -4,11 +4,10 @@
   "licensee": 28,
   "exports": [
     {
-      "name": "TriggeredOscillator",
-      "class": "Engine.TexOscillatorTriggered",
+      "name": "UnportedGlow",
+      "class": "Engine.GlowModifier",
       "properties": [
-        {"name": "Material", "object": "PlainTexture"},
-        {"name": "RetriggerAction", "byte": 1}
+        {"name": "Material", "object": "PlainTexture"}
       ]
     },
     {
@@ -76,6 +75,15 @@
       "properties": [
         {"name": "Material1", "object": "LoopFrameA"},
         {"name": "Material2", "object": "CycleShader"}
+      ]
+    },
+    {
+      "name": "TriggeredOscillator",
+      "class": "Engine.TexOscillatorTriggered",
+      "properties": [
+        {"name": "Material", "object": "PlainTexture"},
+        {"name": "StopAfterPeriod", "float": 0.05},
+        {"name": "RetriggerAction", "byte": 1}
       ]
     }
   ]

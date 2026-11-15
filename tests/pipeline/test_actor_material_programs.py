@@ -127,7 +127,7 @@ class ActorMaterialProgramTests(unittest.TestCase):
         outcomes, _ = self.convert()
         self.assertEqual({outcome['key']: outcome['reason'] for outcome in outcomes},
                          {f'material-program:{MISSING_MATERIAL}': 'decode-failed:FormatError:material package missing or ambiguous',
-                          f'material-program:{UNPORTED_MATERIAL}': 'material-class-unported:Engine.TexOscillatorTriggered'})
+                          f'material-program:{UNPORTED_MATERIAL}': 'material-class-unported:Engine.GlowModifier'})
         listings = {self.listing_of(record)['sourceObject']: self.listing_of(record) for record in self.catalog()['materialPrograms']}
         self.assertEqual((listings[MISSING_MATERIAL]['program'], listings[MISSING_MATERIAL]['rootPorted']), (None, False))
         self.assertFalse(listings[UNPORTED_MATERIAL]['rootPorted'])

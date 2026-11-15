@@ -30,7 +30,7 @@ function loadedProgram(materialId: string, program: FixtureProgram): LoadedNativ
 const joins: Readonly<Record<string, ActorSlotProgramJoin>> = {
   [compiledObject]: { kind: "program", sourceObject: compiledObject, programMaterialId: compiledProgramId },
   [unportedObject]: { kind: "program", sourceObject: unportedObject, programMaterialId: unportedProgramId },
-  [gapObject]: { kind: "gap", sourceObject: gapObject, reasons: ["material-class-unported:Engine.TexOscillatorTriggered"] },
+  [gapObject]: { kind: "gap", sourceObject: gapObject, reasons: ["material-class-unported:Engine.GlowModifier"] },
 };
 
 const materialPrograms: ActorMaterialPrograms = {
@@ -98,7 +98,7 @@ describe("skeletal slot materials through the UE2 material library", () => {
     const before = f.meshes.map(mesh => mesh.material);
     const binding = await f.bind({ kind: "slots", sourceObjects: [gapObject, null] });
     expect(binding.slots.map(slot => [slot.status, slot.sourceObject, slot.reasons])).toEqual([
-      ["program-gap", gapObject, ["material-class-unported:Engine.TexOscillatorTriggered"]], ["program-gap", null, ["actor-slot-material-none"]]]);
+      ["program-gap", gapObject, ["material-class-unported:Engine.GlowModifier"]], ["program-gap", null, ["actor-slot-material-none"]]]);
     expect(f.meshes.map(mesh => mesh.material)).toEqual(before);
     const absent = await f.bind({ kind: "absent" });
     expect(absent.slots.map(slot => [slot.status, slot.reasons])).toEqual([["program-gap", ["actor-slot-provenance-absent"]], ["program-gap", ["actor-slot-provenance-absent"]]]);

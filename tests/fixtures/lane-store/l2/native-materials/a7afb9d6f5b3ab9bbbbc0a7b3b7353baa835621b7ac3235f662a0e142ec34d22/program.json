@@ -315,7 +315,7 @@
           "provenance": "authored",
           "status": "typed",
           "value": {
-            "node": "SyntheticWaterSwatch.oceanS"
+            "node": "SyntheticWaterSwatch.ocean-s"
           }
         },
         {
@@ -363,6 +363,150 @@
       ],
       "gapReasons": [],
       "id": "SyntheticWaterSwatch.ocn_s",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.TexOscillatorTriggered",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticWaterSwatch.oceanS"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "StopAfterPeriod",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 0.05000000074505806
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VOscillationRate",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 0.05000000074505806
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VOscillationPhase",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 0.30000001192092896
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VOscillationAmplitude",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 0.05000000074505806
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UOscillationType",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "OT_StretchRepeat",
+            "ordinal": 2
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UOffset",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 10
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VOffset",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 10
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "RetriggerAction",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "name": "RTA_Retrigger",
+            "ordinal": 3
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UOscillationRate",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": 0
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UOscillationPhase",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UOscillationAmplitude",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": 0
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VOscillationType",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "TriggeredTime",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Reverse",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Triggered",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticWaterSwatch.ocean-s",
       "status": "reviewed"
     },
     {

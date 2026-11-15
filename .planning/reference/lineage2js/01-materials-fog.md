@@ -119,16 +119,17 @@ Alpha ops: 0 Use_Mask `m`, or `F.a` with Mask=None; 1 Multiply `M1.a * M2.a`; 2 
 
 ### UV modifiers
 
-`t` is level seconds. Each sampler gets one 3x3 matrix per frame, the CPU product of its chain, outermost first as in the reference: `uv' = M_inner * ... * M_outer * uv`. A three-modifier fixture and an L2.exe swatch pin the order.
+`t` is level seconds. Each sampler gets one 3x3 matrix per frame, the CPU product of its chain, outermost first as in the reference: `uv' = M_inner * ... * M_outer * uv`. DB-2 confirms it on the CPU path: D3DDrv 0x10011ca0 stores `M_outer * M_inner` in row vectors (ocean-s * ocn_rot); the GL2Shader route is not traced.
 
 - TexPanner translates by `t * PanRate * (dir.x, dir.y)`, `dir` the PanDirection rotator as a unit vector.
 - TexRotator converts rotator units through `src/shared/math/rotator.ts`, for now exact `angle = units * pi / 32768`. Fixed uses Rotation, ConstantlyRotating `angle * t`, Oscillating adds `A * sin(2*pi*(frac(t * rate / 65535) + phase))`, about `(UOffset / USize, VOffset / VSize)`.
-- TexOscillator per axis: `o = A * sin(w * frac(t * rate) + 2*pi*phase)`, `w = 2*pi` for Pan and Stretch, `pi/2` for StretchRepeat. Pan adds `o`. Stretch and StretchRepeat use `u' = (u - k) * (1 + o) + k`, `k = UOffset / USize`. Jitter draws an offset of amplitude `A` per update from `tex-jitter`.
+- TexOscillator per axis: `o = A * sin(w * frac(t * rate) + 2*pi*phase)`, `w = 2*pi` for Pan and Stretch, `pi/2` for StretchRepeat. Pan adds `o`. Stretch and StretchRepeat use `u' = (u - k) * (1 + o) + k`, `k = UOffset / USize`. Jitter draws an offset of amplitude `A` per update from `tex-jitter`. DB-2 confirms Pan, `A * sin(2*pi*(frac(t * rate) + phase))`, and that an unset type is OT_Pan; Stretch, a nonzero StretchRepeat and Jitter stay unconfirmed.
+- TexOscillatorTriggered runs the TexOscillator matrix at `tau = TriggeredTime < 0 ? 0 : min(t - TriggeredTime, D)`, `D = StopAfterPeriod / max(UOscillationRate, VOscillationRate)` (DB-2). The client starts cold, TriggeredTime 0: ocean-s holds V +0.047552824 at t 0 and +0.040450849 from t 1. A level Reset gives TriggeredTime -1 and holds tau 0; whether a map resets it is open (`uv.triggered-oscillator-start-state`).
 - TexScaler has UScale, VScale, UOffset and VOffset, with no reference, so a swatch decides their order.
 - TexEnvMap: camera space `(View * R).xy * 0.5 + 0.5`, world space `R.xy * 0.5 + 0.5` (EnvMapType 0), cubemaps sample `R`. The reference flips camera-space cube lookups by `(-1, 1, -1)`.
 - TexCoordSource selects any UV channel the mesh has.
 
-The reference multiplies TexRotator and TexOscillator results by the serialized `M`, and uses identity for TexPanner, whose GetMatrix rebuilds `M`. Do not apply `M` on top without evidence.
+The reference multiplies TexRotator and TexOscillator results by the serialized `M`, and uses identity for TexPanner, whose GetMatrix rebuilds `M`. Do not apply `M` on top without evidence. DB-2 shows TexOscillator GetMatrix rebuilds `M` from identity.
 
 ### Colour sources and animated textures
 
@@ -216,7 +217,7 @@ The last pass applies `out = clamp((C + 0.5) * x^(1/G) + (B - C) * 32768 / 65535
 ### Edge cases
 
 - Lighting data stays in source units (about 1 cm, Z up), as `asset.json` records, and light math runs there. Presentation converts once through `src/world/sourceFrame.ts`: `world = (x, z, y) * 0.01`, `source = (X, Z, Y) * 100`, right-handed, Y up.
-- Triggered modifiers such as TexOscillatorTriggered (FX_E_T.utx) need a server Trigger (ARCH-01). They stay `material-class-unported:<class>` until a typed adapter record exists.
+- TexOscillatorTriggered (FX_E_T.utx) is reviewed and evaluated untriggered (261115-t7o). Trigger (RTA_Retrigger restarts the window) and Reset need a server or level trigger (ARCH-01) and are not ported. Combiner Trigger and Reset reach only FallbackMaterial, not Material1, Material2 or Mask (DB-2).
 
 ## Data inputs
 
@@ -279,7 +280,7 @@ The last pass applies `out = clamp((C + 0.5) * x^(1/G) + (B - C) * 32768 / 65535
 | terrain.sun-term | per Terrain layers and lighting | `terrain.ts:150-151,203-210` | unconfirmed | reference |
 | terrain.mask-uv | 20_20 mask rule in Terrain layers and lighting | `scripts/native_map_geometry.py:339,361` on native-world-slice; `un-terrain-sector.ts:305-306` | unconfirmed | as listed |
 | terrain.layer-matrix | serialized TextureMatrix, checked against TextureRotation, UScale, VScale, UPan, VPan, TextureMapAxis, LayerRotation | `lineage2js/src/assets/unreal/un-terrain-info.ts:525-592`; `scripts/native_map_geometry.py:405-424` | ue2-data | serialized matrix |
-| uv.modifiers | TexPanner, TexOscillator, TexEnvMap, FadeColor and AnimNext formulas | `shader-mesh-static.vs:407-444,752-796`; `un-material.ts:305-312,793-807`; `shader-mesh-static.fs:542-558`; `src/scene/world/nativeFlameMaterials.ts:75,91-108` on native-world-slice | unconfirmed | reference |
+| uv.modifiers | TexPanner, TexOscillator, TexEnvMap, FadeColor and AnimNext formulas | `shader-mesh-static.vs:407-444,752-796`; `un-material.ts:305-312,793-807`; `shader-mesh-static.fs:542-558`; `src/scene/world/nativeFlameMaterials.ts:75,91-108` on native-world-slice | unconfirmed; TexOscillator Pan, the chain order and the TexOscillatorTriggered window confirmed-interlude (DB-2) | reference |
 | uv.rotator-conversion | exact `units * pi / 32768` or the float32 sine table, one choice per use in `src/shared/math/rotator.ts` | `shader-mesh-static.vs:407-416` | unconfirmed | exact until the Core.dll SinTab re-derivation |
 | combiner.mask-channel | alpha (the reference reads green) | DB-1 mask-routing, D3DDrv.dll 05622dde | corrected-interlude | alpha |
 | colour.byte-order | B, G, R, A (reference, nativeMaterialGraph.ts:219) or R, G, B, A (native_sky.py:166) | `lineage2js/src/assets/unreal/un-color.ts:37-43`; `src/scene/world/nativeMaterialGraph.ts:219`; `scripts/native_sky.py:166` on native-world-slice | unknown | B, G, R, A until the R != B fixture |

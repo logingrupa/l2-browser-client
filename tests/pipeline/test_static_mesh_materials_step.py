@@ -31,7 +31,7 @@ SOURCE_IDENTITY = {'path': f'maps/{TILE_ID}.unr', 'sha256': hashlib.sha256(b'syn
 EVIDENCE = f'work/tile__{TILE_ID}/static-mesh-materials/receipt.json'
 TEXTURED_MATERIAL = 'SyntheticMaterials.SkyShader'
 TEXTURED_MATERIAL_TEXTURE = 'SyntheticMaterials.SkyTexture'
-UNPORTED_MATERIAL = 'SyntheticUnported.TriggeredOscillator'
+UNPORTED_MATERIAL = 'SyntheticUnported.UnportedGlow'
 MISSING_MATERIAL = 'Missing.Material'
 TEXTURED_PROGRAM_SHA256_BEFORE_THE_SHARED_MODULE = '41d9dfc981ca17f3d6d8608a7b8e353a35a383dcf2133c7cdfa17b9dc851ed0b'
 MESHES_FINGERPRINT = 'd' * 64
@@ -117,12 +117,12 @@ class StaticMeshMaterialsStepTests(unittest.TestCase):
         unported = next(entry for entry in self.listing_of(sealed)['materials'] if entry['sourceObject'] == UNPORTED_MATERIAL)
         self.assertFalse(unported['rootPorted'])
         self.assertTrue(unported['program']['directory'].startswith('native-materials/'))
-        self.assertIn('material-class-unported:Engine.TexOscillatorTriggered', unported['gapReasons'])
+        self.assertIn('material-class-unported:Engine.GlowModifier', unported['gapReasons'])
         missing = next(entry for entry in self.listing_of(sealed)['materials'] if entry['sourceObject'] == MISSING_MATERIAL)
         self.assertEqual((missing['program'], missing['rootPorted'], missing['gapReasons']),
                          (None, False, ['decode-failed:FormatError:material package missing or ambiguous']))
         rows = {(row['sourceIdentity'].get('object'), row['status'], row['reason']) for row in sealed['gapRows']}
-        self.assertIn((UNPORTED_MATERIAL, 'gap', 'material-class-unported:Engine.TexOscillatorTriggered'), rows)
+        self.assertIn((UNPORTED_MATERIAL, 'gap', 'material-class-unported:Engine.GlowModifier'), rows)
         self.assertIn((MISSING_MATERIAL, 'failed', 'decode-failed:FormatError:material package missing or ambiguous'), rows)
         patterns = load_gap_reason_patterns()
         for gap_row in sealed['gapRows']:

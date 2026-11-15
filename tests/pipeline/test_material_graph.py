@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 from pathlib import Path
+import struct
 import sys
 import unittest
 
@@ -30,6 +31,11 @@ SYNTHETIC_OUTPUT_BLENDING_MEMBERS = ['OB_Zero', 'OB_One', 'OB_Two', 'OB_Three']
 SYNTHETIC_FRAME_BUFFER_BLENDING_MEMBERS = ['FB_Overwrite', 'FB_Modulate', 'FB_AlphaBlend', 'FB_AlphaModulate_MightNotFogCorrectly',
                                            'FB_Translucent', 'FB_Darken', 'FB_Brighten', 'FB_Invisible', 'FB_Add']
 SYNTHETIC_TRIGGER_ACTION_MEMBERS = ['MSTA_Ignore', 'MSTA_Reset', 'MSTA_Pause', 'MSTA_Stop']
+RETRIGGER_ACTION_MEMBERS = ['RTA_Reverse', 'RTA_Reset', 'RTA_Ignore', 'RTA_Retrigger']
+OSCILLATION_TYPE_MEMBERS = ['OT_Pan', 'OT_Stretch', 'OT_StretchRepeat', 'OT_Jitter']
+TRIGGERED_OSCILLATOR = 'Engine.TexOscillatorTriggered'
+WATER_SHADER_ROOT = 'FX_E_T.WaterSurfaceShaderSet.WaterShader01'
+OCEAN_S = 'FX_E_T.WaterSurfaceShaderSet.ocean-s'
 
 
 def declaration(field, declared_type, declaring_class, provenance='ue-zero', value=None, value_declaring_class=None, enum_members=None):
@@ -80,7 +86,22 @@ SYNTHETIC_CLASS_DEFAULTS = {
         declaration('FrameBufferBlending', 'FinalBlend.EFrameBufferBlending', 'Engine.FinalBlend',
                     enum_members=SYNTHETIC_FRAME_BUFFER_BLENDING_MEMBERS),
     ],
+    TRIGGERED_OSCILLATOR: [
+        declaration('Material', 'editinlineuse Material', 'Engine.Modifier'),
+        declaration('VOscillationRate', 'float', 'Engine.TexOscillator', 'class-default', 0.5, TRIGGERED_OSCILLATOR),
+        declaration('VOscillationType', 'TexOscillator.ETexOscillationType', 'Engine.TexOscillator', enum_members=OSCILLATION_TYPE_MEMBERS),
+        declaration('RetriggerAction', 'TexOscillatorTriggered.ERetriggerAction', TRIGGERED_OSCILLATOR, 'class-default',
+                    {'symbol': 'RTA_Retrigger'}, enum_members=RETRIGGER_ACTION_MEMBERS),
+        declaration('StopAfterPeriod', 'float', TRIGGERED_OSCILLATOR, 'class-default', 0.5),
+        declaration('TriggeredTime', 'transient float', TRIGGERED_OSCILLATOR),
+        declaration('Reverse', 'transient bool', TRIGGERED_OSCILLATOR),
+        declaration('Triggered', 'transient bool', TRIGGERED_OSCILLATOR),
+    ],
 }
+
+
+def float32(value):
+    return struct.unpack('<f', struct.pack('<f', value))[0]
 
 
 def graph_of(fixture_name, root_name):
@@ -121,13 +142,13 @@ class MaterialGraphReaderTests(unittest.TestCase):
         self.assertEqual(json.loads(canonical_json_bytes(graph)), graph)
 
     def test_unreviewed_class_returns_its_reason_and_the_raw_graph_stays_whole(self):
-        package, graph = graph_of(UNPORTED_FIXTURE, 'TriggeredOscillator')
-        self.assertEqual(graph['gapReasons'], ['material-class-unported:Engine.TexOscillatorTriggered'])
+        package, graph = graph_of(UNPORTED_FIXTURE, 'UnportedGlow')
+        self.assertEqual(graph['gapReasons'], ['material-class-unported:Engine.GlowModifier'])
         self.assertEqual([(node['object'].split('.')[1], node['status'], node['gapReasons']) for node in graph['nodes']], [
-            ('TriggeredOscillator', 'unported', ['material-class-unported:Engine.TexOscillatorTriggered']),
+            ('UnportedGlow', 'unported', ['material-class-unported:Engine.GlowModifier']),
             ('PlainTexture', 'reviewed', []),
             ('PlainPalette', 'preserved-data', [])])
-        self.assertEqual(graph['nodes'][0]['propertyTags'], package.properties(synthetic_export(package, 'TriggeredOscillator'))[0])
+        self.assertEqual(graph['nodes'][0]['propertyTags'], package.properties(synthetic_export(package, 'UnportedGlow'))[0])
         self.assertEqual(graph['nodes'][2]['nativeTail']['bytes'], 4)
 
     def test_an_array_property_of_a_reviewed_class_returns_a_feature_reason(self):
@@ -163,8 +184,8 @@ class MaterialGraphReaderTests(unittest.TestCase):
     def test_the_reviewed_class_list_is_the_material_runtime_list(self):
         self.assertEqual(REVIEWED_MATERIAL_CLASSES, (
             'Engine.Shader', 'Engine.Combiner', 'Engine.FinalBlend', 'Engine.ColorModifier', 'Engine.FadeColor', 'Engine.ConstantColor',
-            'Engine.TexPanner', 'Engine.TexRotator', 'Engine.TexOscillator', 'Engine.TexScaler', 'Engine.TexEnvMap',
-            'Engine.TexCoordSource', 'Engine.MaterialSequence', 'Engine.Texture'))
+            'Engine.TexPanner', 'Engine.TexRotator', 'Engine.TexOscillator', 'Engine.TexOscillatorTriggered', 'Engine.TexScaler',
+            'Engine.TexEnvMap', 'Engine.TexCoordSource', 'Engine.MaterialSequence', 'Engine.Texture'))
 
 
 class MaterialProgramTests(unittest.TestCase):
@@ -199,13 +220,29 @@ class MaterialProgramTests(unittest.TestCase):
                 self.assertIn(field['provenance'], ('authored', 'class-default', 'ue-zero'))
 
     def test_an_unreviewed_class_has_no_typed_fields_and_keeps_its_reason(self):
+        _, graph = graph_of(UNPORTED_FIXTURE, 'UnportedGlow')
+        program = derive_material_program(graph, SYNTHETIC_CLASS_DEFAULTS)
+        glow = program['nodes'][0]
+        self.assertEqual((glow['status'], glow['fields'], glow['gapReasons']),
+                         ('unported', [], ['material-class-unported:Engine.GlowModifier']))
+        self.assertEqual(program['nodes'][2]['status'], 'preserved-data')
+        self.assertEqual(program['gapReasons'], ['material-class-unported:Engine.GlowModifier'])
+
+    def test_a_triggered_oscillator_is_reviewed_and_writes_every_declared_field_without_a_trigger_gap(self):
         _, graph = graph_of(UNPORTED_FIXTURE, 'TriggeredOscillator')
         program = derive_material_program(graph, SYNTHETIC_CLASS_DEFAULTS)
-        oscillator = program['nodes'][0]
-        self.assertEqual((oscillator['status'], oscillator['fields'], oscillator['gapReasons']),
-                         ('unported', [], ['material-class-unported:Engine.TexOscillatorTriggered']))
-        self.assertEqual(program['nodes'][2]['status'], 'preserved-data')
-        self.assertEqual(program['gapReasons'], ['material-class-unported:Engine.TexOscillatorTriggered'])
+        self.assertEqual(program['gapReasons'], [])
+        oscillator = fields_of(program, 'SyntheticUnported.TriggeredOscillator')
+        self.assertEqual({name: (field['provenance'], field['status'], field['value']) for name, field in oscillator.items()}, {
+            'Material': ('authored', 'typed', {'node': 'SyntheticUnported.PlainTexture'}),
+            'VOscillationRate': ('class-default', 'typed', 0.5),
+            'VOscillationType': ('ue-zero', 'typed', None),
+            'RetriggerAction': ('authored', 'typed', {'ordinal': 1, 'name': 'RTA_Reset'}),
+            'StopAfterPeriod': ('authored', 'typed', float32(0.05)),
+            'TriggeredTime': ('ue-zero', 'typed', None),
+            'Reverse': ('ue-zero', 'typed', None),
+            'Triggered': ('ue-zero', 'typed', None)})
+        self.assertEqual(oscillator['VOscillationRate']['valueDeclaringClass'], TRIGGERED_OSCILLATOR)
 
     def test_triggered_modifiers_and_undeclared_properties_stay_unported_without_evaluation(self):
         _, graph = graph_of(UNPORTED_FIXTURE, 'TriggeredSequence')
@@ -311,8 +348,36 @@ class ReferenceClientMaterialGraphTests(unittest.TestCase):
             provenances.update(field['provenance'] for node in program['nodes'] for field in node['fields'])
             self.assertFalse([field for node in program['nodes'] for field in node['fields'] if field['declaredType'] is None])
         self.assertEqual(len(roots), 46)
-        self.assertEqual(gap_reasons, {'material-class-unported:Engine.TexOscillatorTriggered'})
+        self.assertEqual(gap_reasons, set())
         self.assertEqual(provenances, {'authored', 'class-default', 'ue-zero'})
+
+    def test_ocean_s_writes_the_db2_declared_fields_defaults_and_authored_values(self):
+        client_access = require_reference_client(CONVERSION_CLIENT_ROOT)
+        package_path = client_access.require_equal_file('textures/FX_E_T.utx')
+        package = Package(package_path.read_bytes(), package_path.name)
+        root = next(item for item in package.exports if item['object'] == WATER_SHADER_ROOT)
+        graph = read_material_graph(package, root)
+        program = derive_material_program(graph, read_material_class_defaults(
+            graph, scratch_work_root(self, 'material-graph-ocean-s-'), ReferenceClientClassScripts(CONVERSION_CLIENT_ROOT)))
+        self.assertEqual(program['gapReasons'], [])
+        ocean = next(node for node in program['nodes'] if node['id'] == OCEAN_S)
+        self.assertEqual((ocean['class'], ocean['status'], ocean['gapReasons']), (TRIGGERED_OSCILLATOR, 'reviewed', []))
+        fields = fields_of(program, OCEAN_S)
+        self.assertEqual([name for name in fields if fields[name]['declaringClass'] == TRIGGERED_OSCILLATOR],
+                         ['RetriggerAction', 'StopAfterPeriod', 'TriggeredTime', 'Reverse', 'Triggered'])
+        self.assertEqual({name: (fields[name]['provenance'], fields[name]['value']) for name in
+                          ('RetriggerAction', 'TriggeredTime', 'Reverse', 'Triggered', 'UOscillationRate', 'UOscillationAmplitude')}, {
+            'RetriggerAction': ('class-default', {'ordinal': 3, 'name': 'RTA_Retrigger'}),
+            'TriggeredTime': ('ue-zero', None), 'Reverse': ('ue-zero', None), 'Triggered': ('ue-zero', None),
+            'UOscillationRate': ('class-default', 0.0), 'UOscillationAmplitude': ('class-default', 0.0)})
+        self.assertEqual({name: (fields[name]['provenance'], fields[name]['value']) for name in
+                          ('StopAfterPeriod', 'VOscillationRate', 'VOscillationPhase', 'VOscillationAmplitude', 'UOffset', 'VOffset')}, {
+            'StopAfterPeriod': ('authored', float32(0.05)), 'VOscillationRate': ('authored', float32(0.05)),
+            'VOscillationPhase': ('authored', float32(0.3)), 'VOscillationAmplitude': ('authored', float32(0.05)),
+            'UOffset': ('authored', 10.0), 'VOffset': ('authored', 10.0)})
+        self.assertEqual((fields['UOscillationType']['value'], fields['VOscillationType']['provenance']),
+                         ({'ordinal': 2, 'name': 'OT_StretchRepeat'}, 'ue-zero'))
+        self.assertEqual(fields['Material']['value'], {'node': 'FX_E_T.WaterSurfaceShaderSet.ocn_rot'})
 
 
 class MaterialGapReasonTests(unittest.TestCase):
@@ -323,7 +388,7 @@ class MaterialGapReasonTests(unittest.TestCase):
         self.assertIn('material-feature-unported:<property>', seed['reasons'])
         self.assertFalse([reason for reason in seed['reasons'] if reason.startswith('effect-class-unsupported')])
         patterns = load_gap_reason_patterns()
-        for reason in ('material-class-unported:Engine.TexOscillatorTriggered', 'material-feature-unported:FrameBufferBlending'):
+        for reason in ('material-class-unported:Engine.GlowModifier', 'material-feature-unported:FrameBufferBlending'):
             self.assertTrue(any(pattern.fullmatch(reason) for pattern in patterns.values()), reason)
         self.assertFalse(any(pattern.fullmatch('effect-class-unsupported:Engine.SpriteEmitter') for pattern in patterns.values()))
 

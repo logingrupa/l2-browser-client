@@ -38,8 +38,8 @@ function inspectedDiagnosticRecord(nativeMaterial: NativeMaterial) {
   return { root, unportedClass, reasons };
 }
 
-const secondUnportedProgram = () => programOf("SyntheticSwatch.AnotherTriggeredOscillator",
-  [unportedNode("SyntheticSwatch.AnotherTriggeredOscillator", "Engine.TexOscillatorTriggered")]);
+const secondUnportedProgram = () => programOf("SyntheticSwatch.AnotherUnportedGlow",
+  [unportedNode("SyntheticSwatch.AnotherUnportedGlow", "Engine.GlowModifier")]);
 
 afterEach(() => {
   for (const scene of scenes.splice(0)) {
@@ -56,8 +56,8 @@ describe("visibleDiagnosticMaterials", () => {
     expect(diagnostic.inspect().status).toBe("diagnostic");
     meshWith(scene, "visible diagnostic", diagnostic);
     expect(visibleDiagnosticMaterials(scene)).toEqual([inspectedDiagnosticRecord(diagnostic)]);
-    expect(visibleDiagnosticMaterials(scene)).toEqual([{ root: "SyntheticSwatch.TriggeredOscillator", unportedClass: "Engine.TexOscillatorTriggered",
-      reasons: expect.arrayContaining(["material-class-unported:Engine.TexOscillatorTriggered"]) }]);
+    expect(visibleDiagnosticMaterials(scene)).toEqual([{ root: "SyntheticSwatch.UnportedGlow", unportedClass: "Engine.GlowModifier",
+      reasons: expect.arrayContaining(["material-class-unported:Engine.GlowModifier"]) }]);
   });
 
   it("leaves out a disabled mesh, an invisible mesh and a mesh with a compiled material", () => {
@@ -78,7 +78,7 @@ describe("visibleDiagnosticMaterials", () => {
     meshWith(scene, "triggered first", triggered);
     meshWith(scene, "triggered second", triggered);
     meshWith(scene, "another triggered", anotherTriggered);
-    expect(visibleDiagnosticMaterials(scene).map(record => record.root)).toEqual(["SyntheticSwatch.AnotherTriggeredOscillator", "SyntheticSwatch.TriggeredOscillator"]);
+    expect(visibleDiagnosticMaterials(scene).map(record => record.root)).toEqual(["SyntheticSwatch.AnotherUnportedGlow", "SyntheticSwatch.UnportedGlow"]);
     expect(visibleDiagnosticMaterials(scene)).toEqual([inspectedDiagnosticRecord(anotherTriggered), inspectedDiagnosticRecord(triggered)]);
   });
 

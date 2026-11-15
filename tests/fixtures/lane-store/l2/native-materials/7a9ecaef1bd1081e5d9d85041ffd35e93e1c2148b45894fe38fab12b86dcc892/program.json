@@ -1,20 +1,20 @@
 {
   "gapReasons": [
-    "material-class-unported:Engine.TexOscillatorTriggered"
+    "material-class-unported:Engine.GlowModifier"
   ],
   "graphSha256": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
   "kind": "ue2-material-program",
   "nodes": [
     {
-      "class": "Engine.TexOscillatorTriggered",
+      "class": "Engine.GlowModifier",
       "fields": [],
       "gapReasons": [
-        "material-class-unported:Engine.TexOscillatorTriggered"
+        "material-class-unported:Engine.GlowModifier"
       ],
-      "id": "SyntheticSwatch.TriggeredOscillator",
+      "id": "SyntheticSwatch.UnportedGlow",
       "status": "unported"
     }
   ],
-  "root": "SyntheticSwatch.TriggeredOscillator",
+  "root": "SyntheticSwatch.UnportedGlow",
   "schemaVersion": 1
 }

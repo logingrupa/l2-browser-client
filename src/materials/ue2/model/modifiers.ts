@@ -22,6 +22,8 @@ export const IDENTITY_TEXTURE_COORDINATE_MATRIX: TextureCoordinateMatrix = [1, 0
 const fullTurn = 2 * Math.PI;
 const rotatorComponent = TEXTURE_COORDINATE_CONSTANTS.rotatorComponent.runtimeDefault;
 const rotatorOscillationUnitsPerTurn = TEXTURE_COORDINATE_CONSTANTS.rotatorOscillationUnitsPerTurn.runtimeDefault;
+const unsetOscillationType = TEXTURE_COORDINATE_CONSTANTS.oscillationTypeUnset.runtimeDefault;
+const triggeredOscillatorStartTriggeredTime = TEXTURE_COORDINATE_CONSTANTS.triggeredOscillatorStartState.runtimeDefault;
 
 export function multiplyTextureCoordinateMatrices(outer: TextureCoordinateMatrix, inner: TextureCoordinateMatrix): TextureCoordinateMatrix {
   const [a, b, c, d, e, f] = outer;
@@ -88,8 +90,7 @@ function oscillationOffset(node: MaterialProgramNode, axis: "U" | "V", oscillati
 }
 
 function oscillationAxis(node: MaterialProgramNode, axis: "U" | "V", centre: number, context: TextureCoordinateContext): readonly [number, number] | null {
-  const oscillationType = readEnumName(node, `${axis}OscillationType`);
-  if (oscillationType === null) return null;
+  const oscillationType = readEnumName(node, `${axis}OscillationType`) ?? unsetOscillationType;
   const offset = oscillationOffset(node, axis, oscillationType, context);
   if (offset === null) return null;
   if (oscillationType === "OT_Pan" || oscillationType === "OT_Jitter") return [1, offset];
@@ -103,6 +104,19 @@ export function texOscillatorMatrix(node: MaterialProgramNode, context: TextureC
   const vAxis = oscillationAxis(node, "V", centreV, context);
   if (vAxis === null) return { status: "unported", reason: "material-feature-unported:VOscillationType" };
   return { status: "evaluated", matrix: [uAxis[0], 0, uAxis[1], 0, vAxis[0], vAxis[1]] };
+}
+
+function texOscillatorTriggeredSeconds(node: MaterialProgramNode, levelSeconds: number, triggeredTime: number): number | null {
+  if (triggeredTime < 0) return 0;
+  const fastestRate = Math.max(readNumberField(node, "UOscillationRate"), readNumberField(node, "VOscillationRate"));
+  if (!(fastestRate > 0)) return null;
+  return Math.min(levelSeconds - triggeredTime, readNumberField(node, "StopAfterPeriod") / fastestRate);
+}
+
+function texOscillatorTriggeredMatrix(node: MaterialProgramNode, context: TextureCoordinateContext): TextureCoordinateEvaluation {
+  const triggeredSeconds = texOscillatorTriggeredSeconds(node, context.levelSeconds, triggeredOscillatorStartTriggeredTime);
+  if (triggeredSeconds === null) return { status: "unported", reason: "material-feature-unported:StopAfterPeriod" };
+  return texOscillatorMatrix(node, { ...context, levelSeconds: triggeredSeconds });
 }
 
 export function texScalerMatrix(node: MaterialProgramNode): TextureCoordinateMatrix {
@@ -120,6 +134,7 @@ export function textureCoordinateModifierMatrix(node: MaterialProgramNode, conte
     case "Engine.TexPanner": return { status: "evaluated", matrix: texPannerMatrix(node, context.levelSeconds) };
     case "Engine.TexRotator": return texRotatorMatrix(node, context);
     case "Engine.TexOscillator": return texOscillatorMatrix(node, context);
+    case "Engine.TexOscillatorTriggered": return texOscillatorTriggeredMatrix(node, context);
     case "Engine.TexScaler": return { status: "evaluated", matrix: texScalerMatrix(node) };
     case "Engine.TexCoordSource": return texCoordSourceMatrix(node);
     case "Engine.TexEnvMap": return { status: "unported", reason: "material-feature-unported:EnvMapType" };

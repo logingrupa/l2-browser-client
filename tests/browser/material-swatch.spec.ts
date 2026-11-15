@@ -78,7 +78,7 @@ test.describe("material swatch harness", () => {
     const context = await browser.newContext({ viewport: desktopViewport });
     const page = await context.newPage();
     const state = await renderedSwatch(page, fixture.unportedMaterialId);
-    await expect(page.locator("#material-swatch")).toHaveAttribute("data-unported-class", "Engine.TexOscillatorTriggered");
+    await expect(page.locator("#material-swatch")).toHaveAttribute("data-unported-class", "Engine.GlowModifier");
     expect(state.material?.status).toBe("diagnostic");
     expectPixelNear(state.centrePixel, [255, 0, 255]);
     await page.screenshot({ path: resolve(evidenceDirectory, "unported-desktop.png") });
