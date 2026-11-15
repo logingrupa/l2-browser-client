@@ -19,7 +19,7 @@ The UE2 material library builds Combiners by the DB-1 rules (D3DDrv.dll 05622dde
 
 ## What changed
 
-- `stagePlan.ts`: `material-combiner-mask-absent` is gone. A combiner expression carries `firstEmittedMaterial`: Material2 when Material1 is a texture expression and Material2 is not, else Material1.
+- `stagePlan.ts`: `material-combiner-mask-absent` is gone. A combiner expression carries `firstEmittedMaterial`: Material2 when Material1 is a texture expression and Material2 is not, or when both are textures with InvertMask and Mask identical to Material2, else Material1. Review fix: `maskAlphaComplemented` (InvertMask skips a ConstantColor or FadeColor Mask) and `alphaComplementedMaterial` (a Mask identical to F with InvertMask complements F alpha).
 - `combiner.ts`: `CombinerOperands` (Material1, Material2, F, routed mask alpha); `routedMaskAlpha` reads alpha; CO4 `M2 - M1`; CO5 `M2 * m + M1 * (1 - m)`, `m = F.a` with Mask=None; CO6 `M2.rgb + M2.a * M1.rgb` with the cap, else `M1 + M2`; CO7 `F.rgb`; AO0 the routed mask alpha, else `F.a`.
 - `fragmentChain.ts`: the same forms in GLSL.
 - Rows: `combiner.mask-channel` alpha, `combiner.operation-forms` (new) and `combiner.mask-named-operations` corrected-interlude; `combiner.first-emitted-material` (new) and `blend.ob-normal-opacity` confirmed-interlude; `combiner.modulate-alpha-add-colour-cap` (new, true, unconfirmed: no live device caps); `combiner.missing-mask-alpha` deleted; `combiner.result-clamp` and `combiner.absent-material` stay unconfirmed with DB-1 provenance.
@@ -45,4 +45,5 @@ Read only: 224 unique programs from `E:/l2b-speed-proof/present/artifacts/lane-s
 - Native rejection of two non-bitmap children and of AO1-AO4 with a Mask other than None, Material1 or Material2.
 - The Modulate2X compatibility path.
 - Alpha test GREATER 0 for OB_Normal with Opacity is not emitted; with SRCALPHA blending and ZWrite off a zero-alpha pixel changes nothing.
-- InvertMask with Mask identical to Material2 (DB-1 weak row) is not modelled.
+- InvertMask with a Mask identical to the appended bitmap that cannot be reordered, for AO1-AO4 (DB-1 weak row).
+- CO6 in the swapped order with a separate Mask (DB-1 colour-6, mask-routing).

@@ -38,24 +38,24 @@ function samplerTexelsOf(plan: CompiledMaterialStagePlan): ColourUnits[] {
 
 describe("Combiner colour operations", () => {
   it.each([
-    ["with a Mask", withMask, 0, [128, 64, 255]],
-    ["with a Mask", withMask, 1, [255, 128, 200]],
-    ["with a Mask", withMask, 3, [383, 192, 455]],
-    ["with a Mask", withMask, 4, [127, 64, -55]],
-    ["with a Mask", withMask, 5, blendBytes(maskAlpha)],
-    ["with a Mask", withMask, 6, material2AddMaterial2AlphaTimesMaterial1],
-    ["with a Mask", withMask, 7, [128, 64, 255]],
-    ["without a Mask", withoutMask, 0, [128, 64, 255]],
-    ["without a Mask", withoutMask, 1, [255, 128, 200]],
-    ["without a Mask", withoutMask, 3, [383, 192, 455]],
-    ["without a Mask", withoutMask, 4, [127, 64, -55]],
-    ["without a Mask", withoutMask, 5, blendBytes(material1[3])],
-    ["without a Mask", withoutMask, 6, material2AddMaterial2AlphaTimesMaterial1],
-    ["without a Mask", withoutMask, 7, [128, 64, 255]],
-    ["swapped without a Mask", swappedWithoutMask, 5, blendBytes(material2[3])],
-    ["swapped without a Mask", swappedWithoutMask, 6, material2AddMaterial2AlphaTimesMaterial1],
-    ["swapped without a Mask", swappedWithoutMask, 7, [255, 128, 200]],
-  ] as const)("%s, operation %i gives the DB-1 byte result", (_, operands, operation, expectedBytes) => {
+    ["with a Mask", 0, withMask, [128, 64, 255]],
+    ["with a Mask", 1, withMask, [255, 128, 200]],
+    ["with a Mask", 3, withMask, [383, 192, 455]],
+    ["with a Mask", 4, withMask, [127, 64, -55]],
+    ["with a Mask", 5, withMask, blendBytes(maskAlpha)],
+    ["with a Mask", 6, withMask, material2AddMaterial2AlphaTimesMaterial1],
+    ["with a Mask", 7, withMask, [128, 64, 255]],
+    ["without a Mask", 0, withoutMask, [128, 64, 255]],
+    ["without a Mask", 1, withoutMask, [255, 128, 200]],
+    ["without a Mask", 3, withoutMask, [383, 192, 455]],
+    ["without a Mask", 4, withoutMask, [127, 64, -55]],
+    ["without a Mask", 5, withoutMask, blendBytes(material1[3])],
+    ["without a Mask", 6, withoutMask, material2AddMaterial2AlphaTimesMaterial1],
+    ["without a Mask", 7, withoutMask, [128, 64, 255]],
+    ["swapped without a Mask", 5, swappedWithoutMask, blendBytes(material2[3])],
+    ["swapped without a Mask", 6, swappedWithoutMask, material2AddMaterial2AlphaTimesMaterial1],
+    ["swapped without a Mask", 7, swappedWithoutMask, [255, 128, 200]],
+  ] as const)("%s, operation %i gives the DB-1 byte result", (_, operation, operands, expectedBytes) => {
     expectColourBytes(combineColour(operation, operands, 1, withModulateAlphaAddColourCap), expectedBytes);
   });
 
@@ -93,13 +93,65 @@ describe("Combiner alpha operations", () => {
     expect(combineAlpha(0, operands)).toBeCloseTo(expected, 9);
   });
 
-  it.each([withMask, withoutMask, swappedWithoutMask].flatMap(operands => [
-    [operands, 1, (200 / 255) * (100 / 255)],
-    [operands, 2, 1],
-    [operands, 3, 200 / 255],
-    [operands, 4, 100 / 255],
-  ] as const))("operation %#: alpha operation %i reads Material1 and Material2 alpha", (operands, operation, expected) => {
+  it.each(([["with a Mask", withMask], ["without a Mask", withoutMask], ["swapped without a Mask", swappedWithoutMask]] as const).flatMap(([label, operands]) => [
+    [label, 1, operands, (200 / 255) * (100 / 255)],
+    [label, 2, operands, 1],
+    [label, 3, operands, 200 / 255],
+    [label, 4, operands, 100 / 255],
+  ] as const))("%s, alpha operation %i reads Material1 and Material2 alpha", (_, operation, operands, expected) => {
     expect(combineAlpha(operation, operands)).toBeCloseTo(expected, 9);
+  });
+});
+
+describe("Combiner InvertMask routing", () => {
+  const texture = (samplerIndex: number): ColourExpression => ({ kind: "texture", samplerIndex });
+  const twoTextureCombiner = (
+    colourOperation: number, alphaOperation: number, mask: ColourExpression | null,
+    routing: Pick<Extract<ColourExpression, { kind: "combiner" }>, "firstEmittedMaterial" | "alphaComplementedMaterial" | "maskAlphaComplemented">,
+    material1Expression: ColourExpression = texture(0), material2Expression: ColourExpression = texture(1),
+  ): Extract<ColourExpression, { kind: "combiner" }> => ({
+    kind: "combiner", colourOperation, alphaOperation, colourMultiplier: 1, material1: material1Expression, material2: material2Expression, mask, ...routing,
+  });
+  const constantMask = bytes(10, 20, 30, 64);
+  const inputs = { samplerTexels: [material1, material2], colourSourceValues: [constantMask], usesDiffuseAlpha: true };
+  const evaluate = (expression: ColourExpression) => evaluateColourExpression(expression, inputs);
+
+  it("keeps the alpha of a ConstantColor Mask uninverted for operation 5 and alpha operation 0", () => {
+    const result = evaluate(twoTextureCombiner(5, 0, { kind: "colour-source", colourSourceIndex: 0 }, { firstEmittedMaterial: "material1", alphaComplementedMaterial: null, maskAlphaComplemented: false }));
+    expectColourBytes(result.slice(0, 3), blendBytes(64 / 255));
+    expect(result[3]).toBeCloseTo(64 / 255, 9);
+  });
+
+  it("passes the complement into Material1 when the Mask aliases it, for alpha operations 1 to 4", () => {
+    const material1Expression = texture(0);
+    const routing = { firstEmittedMaterial: "material1", alphaComplementedMaterial: "material1", maskAlphaComplemented: true } as const;
+    const alphaOf = (alphaOperation: number) => evaluate(twoTextureCombiner(0, alphaOperation, material1Expression, routing, material1Expression))[3];
+    expect(alphaOf(1)).toBeCloseTo((100 / 255) * (1 - 200 / 255), 9);
+    expect(alphaOf(2)).toBeCloseTo(100 / 255 + 1 - 200 / 255, 9);
+    expect(alphaOf(3)).toBeCloseTo(1 - 200 / 255, 9);
+    expect(alphaOf(4)).toBeCloseTo(100 / 255, 9);
+    expect(alphaOf(0)).toBeCloseTo(1 - 200 / 255, 9);
+  });
+
+  it("emits Material2 first with its complemented alpha when two textures have InvertMask and Mask = Material2", () => {
+    const material2Expression = texture(1);
+    const routing = { firstEmittedMaterial: "material2", alphaComplementedMaterial: "material2", maskAlphaComplemented: true } as const;
+    const swapped = (colourOperation: number, alphaOperation: number) => evaluate(twoTextureCombiner(colourOperation, alphaOperation, material2Expression, routing, texture(0), material2Expression));
+    expectColourBytes(swapped(7, 4).slice(0, 3), [255, 128, 200]);
+    expectColourBytes(swapped(6, 4).slice(0, 3), [0, 1, 2].map(channel => combinerSwatchInputRgba.material2[channel]! + (1 - material2[3]) * combinerSwatchInputRgba.material1[channel]!));
+    expect(swapped(7, 4)[3]).toBeCloseTo(1 - 100 / 255, 9);
+    expect(swapped(7, 3)[3]).toBeCloseTo(200 / 255, 9);
+  });
+
+  it("writes the complemented child alpha into the fragment chain", () => {
+    const material1Expression = texture(0);
+    const swatchPlan = compiledPlan(syntheticCombinerSwatchProgram(combinerSwatchCases[0]!));
+    const fragmentSourceOf = (alphaComplementedMaterial: "material1" | null) => buildFragmentChain({
+      ...swatchPlan,
+      expression: twoTextureCombiner(0, 3, material1Expression, { firstEmittedMaterial: "material1", alphaComplementedMaterial, maskAlphaComplemented: true }, material1Expression),
+    }, "unlit").fragmentSource;
+    expect(fragmentSourceOf("material1")).toMatch(/vec4 ue2Value\d+ = vec4\(ue2Value0\.rgb, 1\.0 - ue2Value0\.a\);/);
+    expect(fragmentSourceOf(null)).not.toMatch(/1\.0 - ue2Value0\.a\);/);
   });
 });
 
@@ -181,7 +233,7 @@ describe("evaluateColourExpression", () => {
     const constant = bytes(255, 128, 64, 255);
     const result = evaluateColourExpression({
       kind: "shader",
-      diffuse: { kind: "combiner", colourOperation: 2, alphaOperation: 3, colourMultiplier: 2, invertMask: false, firstEmittedMaterial: "material2",
+      diffuse: { kind: "combiner", colourOperation: 2, alphaOperation: 3, colourMultiplier: 2, firstEmittedMaterial: "material2", alphaComplementedMaterial: null, maskAlphaComplemented: false,
         material1: { kind: "texture", samplerIndex: 0 }, material2: { kind: "colour-source", colourSourceIndex: 0 }, mask: null },
       opacity: null, specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null, modulateSpecular2X: false,
     }, { samplerTexels: [texel], colourSourceValues: [constant], usesDiffuseAlpha: true });

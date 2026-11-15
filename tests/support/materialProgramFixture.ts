@@ -163,7 +163,7 @@ export const waterShaderSwatchInputRgba = {
 } as const;
 
 export type CombinerSwatchInput = keyof typeof combinerSwatchInputRgba;
-export type WaterShaderSwatchInput = keyof typeof waterShaderSwatchInputRgba;
+type WaterShaderSwatchInput = keyof typeof waterShaderSwatchInputRgba;
 
 export interface CombinerSwatchCase {
   readonly colourOperation: number;
@@ -194,7 +194,7 @@ const combinerSwatchCasesWithoutMask: readonly CombinerSwatchCase[] = maskReadin
 
 export const combinerSwatchCases: readonly CombinerSwatchCase[] = [...combinerSwatchCasesWithMaskTexture, ...combinerSwatchCasesWithoutMask];
 
-export function combinerSwatchCaseName(swatchCase: CombinerSwatchCase): string {
+function combinerSwatchCaseName(swatchCase: CombinerSwatchCase): string {
   return `colour-${swatchCase.colourOperation}-alpha-${swatchCase.alphaOperation}-mask-${swatchCase.mask}-material2-${swatchCase.material2}`;
 }
 

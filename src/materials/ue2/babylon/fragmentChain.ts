@@ -40,9 +40,13 @@ function declare(builder: ChainBuilder, expression: string): string {
   return name;
 }
 
-function routedMaskAlpha(mask: string, invertMask: boolean): string {
+function routedMaskAlpha(mask: string, maskAlphaComplemented: boolean): string {
   const channel = maskChannelSwizzle[COMBINER_CONSTANTS.maskChannel.runtimeDefault];
-  return invertMask ? `(1.0 - ${mask}.${channel})` : `${mask}.${channel}`;
+  return maskAlphaComplemented ? `(1.0 - ${mask}.${channel})` : `${mask}.${channel}`;
+}
+
+function declareComplementedAlpha(builder: ChainBuilder, material: string): string {
+  return declare(builder, `vec4(${material}.rgb, 1.0 - ${material}.a)`);
 }
 
 interface EmittedCombiner {
@@ -83,8 +87,10 @@ function combinerAlpha(combiner: EmittedCombiner): string {
 }
 
 function emitCombiner(builder: ChainBuilder, expression: Extract<ColourExpression, { kind: "combiner" }>): string {
-  const material1 = emitExpression(builder, expression.material1, true);
-  const material2 = emitExpression(builder, expression.material2, true);
+  const material1Value = emitExpression(builder, expression.material1, true);
+  const material2Value = emitExpression(builder, expression.material2, true);
+  const material1 = expression.alphaComplementedMaterial === "material1" ? declareComplementedAlpha(builder, material1Value) : material1Value;
+  const material2 = expression.alphaComplementedMaterial === "material2" ? declareComplementedAlpha(builder, material2Value) : material2Value;
   const firstEmitted = expression.firstEmittedMaterial === "material2" ? material2 : material1;
   const mask = expression.mask ? emitExpression(builder, expression.mask, true) : null;
   const combiner: EmittedCombiner = {
@@ -93,7 +99,7 @@ function emitCombiner(builder: ChainBuilder, expression: Extract<ColourExpressio
     material1,
     material2,
     firstEmitted,
-    preparedAlpha: mask === null ? `${firstEmitted}.a` : routedMaskAlpha(mask, expression.invertMask),
+    preparedAlpha: mask === null ? `${firstEmitted}.a` : routedMaskAlpha(mask, expression.maskAlphaComplemented),
     modulateMultiplier: expression.colourMultiplier,
   };
   const [resultMinimum, resultMaximum] = COMBINER_CONSTANTS.resultClamp.runtimeDefault;

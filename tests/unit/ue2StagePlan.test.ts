@@ -18,10 +18,11 @@ function referenceField(name: string, nodeId: string | undefined): FixtureProgra
   return nodeId === undefined ? field(name, null, "ue-zero") : field(name, nodeReference(nodeId));
 }
 
-function combinerNode(id: string, colourOperation: number, inputs: { material1?: string; material2?: string; mask?: string }) {
+function combinerNode(id: string, colourOperation: number, inputs: { material1?: string; material2?: string; mask?: string; invertMask?: boolean }) {
   return reviewedNode(id, "Engine.Combiner", [
     field("CombineOperation", enumValue(colourOperation, `CO_${colourOperation}`)), field("AlphaOperation", enumValue(3, "AO_Use_Alpha_From_Material1")),
     referenceField("Material1", inputs.material1), referenceField("Material2", inputs.material2), referenceField("Mask", inputs.mask),
+    field("InvertMask", inputs.invertMask ?? false),
   ]);
 }
 
@@ -107,6 +108,19 @@ describe("compileMaterialStagePlan Combiner inputs", () => {
   ])("emits %s first as %s", (_, material1, material2, firstEmittedMaterial) => {
     const plan = stagePlanOf("Synthetic.Combiner", [combinerNode("Synthetic.Combiner", 7, { material1, material2 }), ...inputNodes]);
     expect(plan.status === "compiled" && plan.expression).toMatchObject({ kind: "combiner", firstEmittedMaterial });
+  });
+
+  it.each([
+    ["two textures with Mask = Material2 and InvertMask", { material1: textureId, material2: secondTextureId, mask: secondTextureId, invertMask: true }, "material2", "material2", true],
+    ["two textures with Mask = Material2 without InvertMask", { material1: textureId, material2: secondTextureId, mask: secondTextureId, invertMask: false }, "material1", null, false],
+    ["two textures with Mask = Material1 and InvertMask", { material1: textureId, material2: secondTextureId, mask: textureId, invertMask: true }, "material1", "material1", true],
+    ["a texture Material1, a Combiner Material2 and Mask = Material2 with InvertMask", { material1: textureId, material2: nestedId, mask: nestedId, invertMask: true }, "material2", "material2", true],
+    ["a Combiner Material1, an appended texture Material2 and Mask = Material2 with InvertMask", { material1: nestedId, material2: textureId, mask: textureId, invertMask: true }, "material1", null, true],
+    ["two textures with a ConstantColor Mask and InvertMask", { material1: textureId, material2: secondTextureId, mask: constantId, invertMask: true }, "material1", null, false],
+    ["a texture Material1, a Combiner Material2 and a separate texture Mask with InvertMask", { material1: textureId, material2: nestedId, mask: secondTextureId, invertMask: true }, "material2", null, true],
+  ] as const)("compiles %s to the DB-1 emit order and InvertMask routing", (_, inputs, firstEmittedMaterial, alphaComplementedMaterial, maskAlphaComplemented) => {
+    const plan = stagePlanOf("Synthetic.Combiner", [combinerNode("Synthetic.Combiner", 5, inputs), ...inputNodes]);
+    expect(plan.status === "compiled" && plan.expression).toMatchObject({ kind: "combiner", firstEmittedMaterial, alphaComplementedMaterial, maskAlphaComplemented });
   });
 
   it("keeps a texture Mask as an expression of its own", () => {

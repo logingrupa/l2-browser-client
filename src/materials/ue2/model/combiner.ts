@@ -33,9 +33,13 @@ function perChannel(left: ColourChannels, right: ColourChannels, operation: (lef
   return [operation(left[0], right[0]), operation(left[1], right[1]), operation(left[2], right[2])];
 }
 
-export function routedMaskAlpha(mask: ColourUnits, invertMask: boolean): number {
+export function routedMaskAlpha(mask: ColourUnits, maskAlphaComplemented: boolean): number {
   const value = mask[maskChannelIndex[COMBINER_CONSTANTS.maskChannel.runtimeDefault]]!;
-  return invertMask ? 1 - value : value;
+  return maskAlphaComplemented ? 1 - value : value;
+}
+
+function withComplementedAlpha(colour: ColourUnits): ColourUnits {
+  return [colour[0], colour[1], colour[2], 1 - colour[3]];
 }
 
 function preparedAlpha(operands: CombinerOperands): number {
@@ -115,11 +119,13 @@ export function evaluateColourExpression(expression: ColourExpression, inputs: C
     }
     case "combiner": {
       const nested = { ...inputs, usesDiffuseAlpha: true };
-      const material1 = evaluateColourExpression(expression.material1, nested);
-      const material2 = evaluateColourExpression(expression.material2, nested);
+      const material1Value = evaluateColourExpression(expression.material1, nested);
+      const material2Value = evaluateColourExpression(expression.material2, nested);
+      const material1 = expression.alphaComplementedMaterial === "material1" ? withComplementedAlpha(material1Value) : material1Value;
+      const material2 = expression.alphaComplementedMaterial === "material2" ? withComplementedAlpha(material2Value) : material2Value;
       const operands: CombinerOperands = {
         material1, material2, firstEmitted: expression.firstEmittedMaterial === "material2" ? material2 : material1,
-        routedMaskAlpha: expression.mask ? routedMaskAlpha(evaluateColourExpression(expression.mask, nested), expression.invertMask) : null,
+        routedMaskAlpha: expression.mask ? routedMaskAlpha(evaluateColourExpression(expression.mask, nested), expression.maskAlphaComplemented) : null,
       };
       const colour = combineColour(expression.colourOperation, operands, expression.colourMultiplier, COMBINER_CONSTANTS.modulateAlphaAddColourCap.runtimeDefault);
       return [colour[0], colour[1], colour[2], combineAlpha(expression.alphaOperation, operands)];

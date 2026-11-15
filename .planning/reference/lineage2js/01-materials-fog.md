@@ -98,7 +98,7 @@ Both Modulates fog toward 127/255, neutral under `2 * src * dst`. AlphaModulate,
 
 ### Combiner operations
 
-Interlude rules from DB-1 (D3DDrv.dll 05622dde, `combiner-stage-semantics` cb9b11ac, replayed 2026-11-15). Forms are in Material terms; the builder swaps stage arguments itself. `M1`, `M2` come from Material1 and Material2, white when absent (null Material2 is open). `F` is the child emitted first: Material2 when Material1 is a bitmap and Material2 is not, else Material1. `m` is the Mask alpha, `1 - alpha` with InvertMask; a Mask feeds only alpha arguments.
+Interlude rules from DB-1 (D3DDrv.dll 05622dde, `combiner-stage-semantics` cb9b11ac, replayed 2026-11-15). Forms are in Material terms; the builder swaps stage arguments itself. `M1`, `M2` come from Material1 and Material2, white when absent (null Material2 is open). `F` is the child emitted first: Material2 when Material1 is a bitmap and Material2 is not, or when both are bitmaps with InvertMask and Mask identical to Material2, else Material1. `m` is the Mask alpha, `1 - alpha` with InvertMask on a bitmap or child-alias Mask, never on a ConstantColor or FadeColor Mask; a Mask feeds only alpha arguments. A Mask identical to `F` with InvertMask complements `F.a` wherever `M1.a` or `M2.a` is read.
 
 | Op | Colour |
 |---|---|
@@ -114,7 +114,7 @@ Interlude rules from DB-1 (D3DDrv.dll 05622dde, `combiner-stage-semantics` cb9b1
 Alpha ops: 0 Use_Mask `m`, or `F.a` with Mask=None; 1 Multiply `M1.a * M2.a`; 2 Add `M1.a + M2.a`; 3 From1 `M1.a`; 4 From2 `M2.a`. The reference implements only 3 and 4.
 - Mask=None is accepted by every operation (0x10014a24); no white or zero mask is substituted.
 - Clamp each result to [0, 1]: unconfirmed, DB-1 leaves gpu-clamp-and-precision open.
-- Open: native rejection of two non-bitmap children and of AO1-AO4 with a separate Mask, the Modulate2X compatibility path.
+- Open: native rejection of two non-bitmap children and of AO1-AO4 with a separate Mask, the Modulate2X compatibility path, InvertMask with a Mask identical to the appended bitmap that cannot be reordered (AO1-AO4), and CO6 in the swapped order with a separate Mask.
 - A Combiner is a full node anywhere, root included.
 
 ### UV modifiers

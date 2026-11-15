@@ -6,7 +6,7 @@ import { programNode, type MaterialProgram, type MaterialProgramNode, type Mater
 
 export type ColourSourceKind = "constant-colour" | "fade-colour" | "color-modifier";
 
-export type CombinerMaterialSlot = "material1" | "material2";
+type CombinerMaterialSlot = "material1" | "material2";
 
 export type ColourExpression =
   | { readonly kind: "texture"; readonly samplerIndex: number }
@@ -18,8 +18,9 @@ export type ColourExpression =
       readonly colourOperation: number;
       readonly alphaOperation: number;
       readonly colourMultiplier: 1 | 2 | 4;
-      readonly invertMask: boolean;
       readonly firstEmittedMaterial: CombinerMaterialSlot;
+      readonly alphaComplementedMaterial: CombinerMaterialSlot | null;
+      readonly maskAlphaComplemented: boolean;
       readonly material1: ColourExpression;
       readonly material2: ColourExpression;
       readonly mask: ColourExpression | null;
@@ -160,6 +161,25 @@ const combinerColourOperationCount = 8;
 const combinerAlphaOperationCount = 5;
 const absentCombinerMaterial: ColourExpression = { kind: COMBINER_CONSTANTS.absentMaterial.runtimeDefault };
 
+function maskAliasedMaterial(node: MaterialProgramNode): CombinerMaterialSlot | null {
+  const mask = readReferenceField(node, "Mask");
+  if (mask.kind !== "node") return null;
+  const maskIsField = (fieldName: string) => {
+    const material = readReferenceField(node, fieldName);
+    return material.kind === "node" && material.nodeId === mask.nodeId;
+  };
+  if (maskIsField("Material1")) return "material1";
+  if (maskIsField("Material2")) return "material2";
+  return null;
+}
+
+function firstEmittedMaterial(material1: ColourExpression, material2: ColourExpression, invertMask: boolean, maskAlias: CombinerMaterialSlot | null): CombinerMaterialSlot {
+  const material1IsBitmap = material1.kind === "texture", material2IsBitmap = material2.kind === "texture";
+  if (material1IsBitmap && !material2IsBitmap) return "material2";
+  if (material1IsBitmap && material2IsBitmap && invertMask && maskAlias === "material2") return "material2";
+  return "material1";
+}
+
 function compileCombiner(state: CompileState, node: MaterialProgramNode, modifiers: readonly string[], depth: number): ColourExpression {
   const colourOperation = readEnumOrdinal(node, "CombineOperation");
   const alphaOperation = readEnumOrdinal(node, "AlphaOperation");
@@ -167,16 +187,21 @@ function compileCombiner(state: CompileState, node: MaterialProgramNode, modifie
   if (alphaOperation >= combinerAlphaOperationCount) return fail(state, `material-combiner-operation-unknown:AlphaOperation=${alphaOperation}`);
   const material1 = compileReference(state, node, "Material1", modifiers, depth) ?? absentCombinerMaterial;
   const material2 = compileReference(state, node, "Material2", modifiers, depth) ?? absentCombinerMaterial;
+  const mask = compileReference(state, node, "Mask", modifiers, depth);
+  const invertMask = readBooleanField(node, "InvertMask");
+  const maskAlias = maskAliasedMaterial(node);
+  const firstEmitted = firstEmittedMaterial(material1, material2, invertMask, maskAlias);
   return {
     kind: "combiner",
     colourOperation,
     alphaOperation,
     colourMultiplier: readBooleanField(node, "Modulate4X") ? 4 : readBooleanField(node, "Modulate2X") ? 2 : 1,
-    invertMask: readBooleanField(node, "InvertMask"),
-    firstEmittedMaterial: material1.kind === "texture" && material2.kind !== "texture" ? "material2" : "material1",
+    firstEmittedMaterial: firstEmitted,
+    alphaComplementedMaterial: invertMask && maskAlias === firstEmitted ? firstEmitted : null,
+    maskAlphaComplemented: invertMask && mask !== null && (maskAlias !== null || mask.kind !== "colour-source"),
     material1,
     material2,
-    mask: compileReference(state, node, "Mask", modifiers, depth),
+    mask,
   };
 }
 
