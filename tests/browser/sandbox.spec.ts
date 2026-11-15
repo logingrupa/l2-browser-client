@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { pickComboboxRow } from "./support/devSheetComboboxDriver";
 
 const staged = existsSync(resolve("public/l2/catalog.json"));
 
@@ -23,7 +24,7 @@ async function zoomCameraOut(page: Page) {
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-test("sandbox pickers spawn, equip and open by ID and mark missing assets without a stand-in", async ({ page }) => {
+test("sandbox pickers spawn and equip by ID, open a typed window and mark missing assets without a stand-in", async ({ page }) => {
   test.skip(!staged, "The native store must be staged at public/l2/catalog.json.");
   test.setTimeout(300_000);
   const errors: string[] = [];
@@ -60,7 +61,7 @@ test("sandbox pickers spawn, equip and open by ID and mark missing assets withou
   await expect(page.getByTestId("sandbox-equip-note")).toHaveAttribute("data-tone", "info");
   await submitIdEntry(page, "sandbox-equip-item", { itemId: "999999" });
   await expect(page.getByTestId("sandbox-equip-note")).toHaveText("item:999999 not in catalog");
-  await submitIdEntry(page, "sandbox-window", { window: "StatusWnd" });
+  await pickComboboxRow(page, "sandbox-window-keys", "StatusWnd", "window:StatusWnd");
   await expect(page.getByTestId("sandbox-window-note")).toHaveText("window:StatusWnd not in catalog: window:StatusWnd has no windows record in the served catalog");
   await expect(page.locator('[data-native-window="StatusWnd"]')).toHaveCount(0);
 

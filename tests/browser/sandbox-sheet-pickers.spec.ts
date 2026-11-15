@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { desktopViewport, landscapePhone } from "./browserViewports";
+import { pickComboboxRow } from "./support/devSheetComboboxDriver";
 
 const windowLaneName = "data-ui";
 const worldLaneName = "world";
@@ -40,8 +41,7 @@ async function openSandboxSection(page: Page, search = ""): Promise<void> {
 }
 
 async function pickWindow(page: Page, windowId: string): Promise<void> {
-  await page.getByTestId("sandbox-window-keys").locator("select").selectOption(`window:${windowId}`);
-  await page.getByTestId("sandbox-window-keys-pick").click();
+  await pickComboboxRow(page, "sandbox-window-keys", windowId, `window:${windowId}`);
 }
 
 async function openStatusWindowOnce(page: Page): Promise<void> {
@@ -164,8 +164,7 @@ test.describe("tile picker on a loaded tile", () => {
     const pageErrors = collectPageErrors(page);
     await openSandboxSection(page, `?map=${currentTileId}`);
     const urlBefore = page.url();
-    await page.getByTestId("sandbox-tile-tile").fill(currentTileId);
-    await page.getByTestId("sandbox-tile-submit").click();
+    await pickComboboxRow(page, "sandbox-tile-keys", currentTileId, `tile:${currentTileId}`);
     await expect(page.getByTestId("sandbox-tile-note")).toHaveText(`tile ${currentTileId} already loaded`);
     expect(page.url()).toBe(urlBefore);
     expect(pageErrors).toEqual([]);
