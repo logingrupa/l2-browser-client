@@ -3,7 +3,7 @@ import { equipmentSlotForBodyPart, isEquipmentSlot } from "../../world/sandboxCo
 import type { EquipmentSlot } from "../../world/worldTypes";
 import type { NativeTableNameEntry } from "../nativeTables/readNativeTableNameIndex";
 import {
-  attachSandboxNameSearch, createSandboxResultNote, lastLookupVariable, outcomeOfLookup, startPickerLifetime, submittedInteger,
+  attachSandboxNameCombobox, createSandboxResultNote, lastLookupVariable, outcomeOfLookup, startPickerLifetime, submittedInteger,
 } from "./sandboxPickerControls";
 import type { SandboxPickerFactory } from "./sandboxPickerRegistry";
 
@@ -29,7 +29,7 @@ export const equipPicker: SandboxPickerFactory = {
     const bodyPartEntry = group.idEntry({
       label: "Body part slot", testId: "sandbox-equip-body-part", submitText: "Use slot",
       hint: "Builds the slot for a decoded body_part value through equipmentSlotForBodyPart. The meaning of each body_part value is not decoded.",
-      fields: [{ name: "bodyPart", label: "body_part value", kind: "integer", minimum: 0 }],
+      fields: [{ name: "bodyPart", label: "body_part value", minimum: 0 }],
       onSubmit: values => {
         if (!lifetime.active()) return;
         const bodyPart = submittedInteger(values, "bodyPart");
@@ -45,9 +45,10 @@ export const equipPicker: SandboxPickerFactory = {
       context.host.dispatch({ type: "equip-item", slot, itemId });
       result.show(outcomeOfLookup(context.catalogIndex.lookup(itemCatalogKey(itemId))));
     };
-    const hint = "Dispatches equip-item for the local player through the sandbox host into the chosen slot. Each item shows its catalog status.";
-    const search = attachSandboxNameSearch({
-      group, context, lifetime, tableId: itemNameTable, variablePrefix: "sandbox.equip", label: "Find item", testId: "sandbox-equip-search",
+    const hint = "Dispatches equip-item for the local player through the sandbox host into the chosen slot. Each item shows its catalog status; "
+      + "gap rows are not pickable.";
+    const nameCombobox = attachSandboxNameCombobox({
+      group, context, lifetime, tableId: itemNameTable, variablePrefix: "sandbox.equip", label: "Item", testId: "sandbox-equip-search",
       hint, pickText: "Equip selected item", catalogKeyValues: "item:<id> | none",
       catalogKeyOf: entry => { const itemId = itemIdOfEntry(entry); return itemId === null ? null : itemCatalogKey(itemId); },
       onPick: entry => { const itemId = itemIdOfEntry(entry); if (itemId !== null) equipItem(itemId); },
@@ -58,8 +59,8 @@ export const equipPicker: SandboxPickerFactory = {
       ],
     });
     group.idEntry({
-      label: "Equip item by ID", testId: "sandbox-equip-item", submitText: "Equip", hint, variables: search.variables,
-      fields: [{ name: "itemId", label: "Item ID", kind: "integer", minimum: 0 }],
+      label: "Equip item by ID", testId: "sandbox-equip-item", submitText: "Equip", hint, variables: nameCombobox.variables,
+      fields: [{ name: "itemId", label: "Item ID", minimum: 0 }],
       onSubmit: values => { if (lifetime.active()) equipItem(submittedInteger(values, "itemId")); },
     });
     return lifetime.release;

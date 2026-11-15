@@ -8,6 +8,7 @@ import { createSandboxRuntimeActions, type SandboxTileLocation } from "../../../
 import type { SpawnedActorSounds } from "../../../src/runtime/spawnedActorSoundWiring";
 import type { NativeWindowLayer, NativeWindowOpenResult } from "../../../src/ui/nativeWindows/nativeWindowLayer";
 import type { WorldCommand, WorldEvent } from "../../../src/world/worldTypes";
+import { pickTypedComboboxRow, settleMicrotasks } from "./comboboxDriver";
 import { fakeMedia, fire, type FakeElement, type MiniDom } from "./miniDom";
 
 export function fakeCatalogIndexOver(lookups: ReadonlyMap<string, NativeCatalogLookup>): NativeCatalogIndex {
@@ -82,8 +83,9 @@ export function attachSandboxSheetWithFakes(dom: MiniDom, options: SandboxSheetF
     const form = panel.querySelector(`[data-testid="${testId}"]`)!;
     for (const [name, value] of Object.entries(values)) form.querySelector(`[data-testid="${testId}-${name}"]`)!.value = value;
     fire(form, "submit");
-    for (let turn = 0; turn < 5; turn += 1) await Promise.resolve();
+    await settleMicrotasks();
   };
+  const pickTyped = (testId: string, text: string) => pickTypedComboboxRow(panel, testId, text);
   const note = (testId: string) => panel.querySelectorAll(`[data-testid="${testId}"]`);
-  return { sheet, section, adapter, dispatched, listeners, emit, assignedLocations, openedWindowIds, skillCast, release, submit, note, panel };
+  return { sheet, section, adapter, dispatched, listeners, emit, assignedLocations, openedWindowIds, skillCast, release, submit, pickTyped, note, panel };
 }

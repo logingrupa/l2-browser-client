@@ -1,10 +1,12 @@
 import type { DescribeOptions } from "./hoverCards";
 import { createInfoButton } from "./hoverCards";
+import { createDevCombobox } from "./devSheetCombobox";
 import { createDevIdEntry } from "./devSheetIdEntry";
 import { iconMarkup, isDevIconName } from "./icons";
 import type {
-  DevButtonOptions, DevChoice, DevChoiceOption, DevChoiceOptions, DevControlInfo, DevGroupOptions, DevIconName, DevIdEntry, DevIdEntryOptions, DevInfo,
-  DevNoteOptions, DevReadout, DevReadoutOptions, DevSectionOptions, DevSlider, DevSliderOptions, DevToggle, DevToggleOptions,
+  DevButtonOptions, DevChoice, DevChoiceOption, DevChoiceOptions, DevCombobox, DevComboboxOptions, DevControlInfo, DevGroupOptions, DevIconName,
+  DevIdEntry, DevIdEntryOptions, DevInfo, DevNoteOptions, DevReadout, DevReadoutOptions, DevSectionOptions, DevSlider, DevSliderOptions, DevToggle,
+  DevToggleOptions,
 } from "./types";
 
 export interface DevSheetParent {
@@ -275,6 +277,11 @@ export class DevGroup {
     readout.refresh();
     this.parent.registerReadout(readout);
     return readout;
+  }
+
+  combobox<Value>(options: DevComboboxOptions<Value>): DevCombobox<Value> {
+    const { control, ...combobox } = createDevCombobox(options);
+    return { element: this.row(options, control, "stacked", combobox.input), ...combobox };
   }
 
   idEntry(options: DevIdEntryOptions): DevIdEntry {

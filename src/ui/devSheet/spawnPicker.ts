@@ -3,7 +3,7 @@ import {
 } from "../../assets/native/nativeCatalogIndex";
 import type { NativeTableNameEntry } from "../nativeTables/readNativeTableNameIndex";
 import {
-  attachSandboxNameSearch, createSandboxResultNote, lastLookupVariable, outcomeOfLookup, sandboxCatalogIndexSource, startPickerLifetime, submittedInteger,
+  attachSandboxNameCombobox, createSandboxResultNote, lastLookupVariable, outcomeOfLookup, sandboxCatalogIndexSource, startPickerLifetime, submittedInteger,
 } from "./sandboxPickerControls";
 import type { SandboxPickerFactory } from "./sandboxPickerRegistry";
 
@@ -31,9 +31,10 @@ export const spawnPicker: SandboxPickerFactory = {
       context.host.dispatch({ type: "spawn-npc", npcId });
       result.show(outcomeOfLookup(context.catalogIndex.lookup(npcCatalogKey(npcId))));
     };
-    const hint = "Dispatches spawn-npc through the sandbox host. Each match shows its catalog status; an NPC without a converted model still spawns as a marker.";
-    const search = attachSandboxNameSearch({
-      group, context, lifetime, tableId: npcNameTable, variablePrefix: "sandbox.spawn", label: "Find NPC", testId: "sandbox-spawn-search",
+    const hint = "Dispatches spawn-npc through the sandbox host. Each row shows its catalog status; gap rows are not pickable. "
+      + "An NPC without a converted model still spawns as a marker, also by ID.";
+    const nameCombobox = attachSandboxNameCombobox({
+      group, context, lifetime, tableId: npcNameTable, variablePrefix: "sandbox.spawn", label: "NPC", testId: "sandbox-spawn-search",
       hint, pickText: "Spawn selected NPC", catalogKeyValues: "npc:<id> | none",
       catalogKeyOf: entry => { const npcId = npcIdOfEntry(entry); return npcId === null ? null : npcCatalogKey(npcId); },
       onPick: entry => { const npcId = npcIdOfEntry(entry); if (npcId !== null) spawnNpc(npcId); },
@@ -44,14 +45,14 @@ export const spawnPicker: SandboxPickerFactory = {
       ],
     });
     group.idEntry({
-      label: "Spawn NPC by ID", testId: "sandbox-spawn-npc", submitText: "Spawn", hint, variables: search.variables,
-      fields: [{ name: "npcId", label: "NPC ID", kind: "integer", minimum: 0 }],
+      label: "Spawn NPC by ID", testId: "sandbox-spawn-npc", submitText: "Spawn", hint, variables: nameCombobox.variables,
+      fields: [{ name: "npcId", label: "NPC ID", minimum: 0 }],
       onSubmit: values => { if (lifetime.active()) spawnNpc(submittedInteger(values, "npcId")); },
     });
     const characterEntry = group.idEntry({
-      label: "Spawn character", testId: "sandbox-spawn-character", submitText: "Spawn", variables: search.variables,
+      label: "Spawn character", testId: "sandbox-spawn-character", submitText: "Spawn", variables: nameCombobox.variables,
       hint: "Dispatches spawn-character with a chargrp template index. A converted table:chargrp bounds the index by its record count.",
-      fields: [{ name: "characterTemplateIndex", label: "Chargrp index", kind: "integer", minimum: 0 }],
+      fields: [{ name: "characterTemplateIndex", label: "Chargrp index", minimum: 0 }],
       onSubmit: values => {
         if (!lifetime.active()) return;
         const characterTemplateIndex = submittedInteger(values, "characterTemplateIndex");

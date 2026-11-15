@@ -73,14 +73,39 @@ export interface DevReadoutOptions extends DevControlInfo {
 export interface DevIdEntryField {
   name: string;
   label: string;
-  kind: "integer" | "search" | "tile" | "window";
   minimum?: number;
 }
 
 export interface DevIdEntryOptions extends DevControlInfo {
   fields: DevIdEntryField[];
   submitText: string;
-  onSubmit: (values: Readonly<Record<string, number | string>>) => void;
+  onSubmit: (values: Readonly<Record<string, number>>) => void;
+}
+
+export interface DevComboboxOption<Value> {
+  readonly value: Value;
+  readonly name: string;
+  readonly identifier: string;
+  readonly status: string;
+  readonly disabled: boolean;
+}
+
+export type DevComboboxOptionLoad<Value> =
+  | { readonly status: "loaded"; readonly options: readonly DevComboboxOption<Value>[] }
+  | { readonly status: "unavailable"; readonly message: string };
+
+export interface DevComboboxOptions<Value> extends DevControlInfo {
+  options: readonly DevComboboxOption<Value>[] | (() => Promise<DevComboboxOptionLoad<Value>>);
+  placeholder: string;
+  typedOption?: (query: string) => DevComboboxOption<Value> | null;
+  onSelect: (option: DevComboboxOption<Value> | null) => void;
+}
+
+export interface DevCombobox<Value> {
+  readonly element: HTMLElement;
+  readonly input: HTMLInputElement;
+  selected(): DevComboboxOption<Value> | null;
+  query(): string;
 }
 
 export interface DevIdEntry {

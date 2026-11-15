@@ -1,7 +1,7 @@
 import { skillCatalogKey } from "../../assets/native/nativeCatalogIndex";
 import type { NativeTableNameEntry } from "../nativeTables/readNativeTableNameIndex";
 import {
-  attachSandboxNameSearch, createSandboxResultNote, lastLookupVariable, outcomeOfLookup, startPickerLifetime, submittedInteger,
+  attachSandboxNameCombobox, createSandboxResultNote, lastLookupVariable, outcomeOfLookup, startPickerLifetime, submittedInteger,
 } from "./sandboxPickerControls";
 import type { SandboxPickerFactory } from "./sandboxPickerRegistry";
 
@@ -27,9 +27,10 @@ export const castPicker: SandboxPickerFactory = {
       context.host.dispatch({ type: "cast-skill", skillId, level, ...(targetId === null ? {} : { targetId }) });
       result.show(outcomeOfLookup(context.catalogIndex.lookup(skillCatalogKey(skillId, level))));
     };
-    const hint = "Dispatches cast-skill through the sandbox host on the selected entity. Each skill row is one id and level with its catalog status.";
-    const search = attachSandboxNameSearch({
-      group, context, lifetime, tableId: skillNameTable, variablePrefix: "sandbox.cast", label: "Find skill", testId: "sandbox-cast-search",
+    const hint = "Dispatches cast-skill through the sandbox host on the selected entity. Each skill row is one id and level with its catalog status; "
+      + "gap rows are not pickable.";
+    const nameCombobox = attachSandboxNameCombobox({
+      group, context, lifetime, tableId: skillNameTable, variablePrefix: "sandbox.cast", label: "Skill", testId: "sandbox-cast-search",
       hint, pickText: "Cast selected skill", catalogKeyValues: "skill:<id>:<level> | none",
       catalogKeyOf: entry => { const skill = skillOfEntry(entry); return skill === null ? null : skillCatalogKey(skill.skillId, skill.level); },
       onPick: entry => { const skill = skillOfEntry(entry); if (skill !== null) castSkill(skill); },
@@ -40,8 +41,8 @@ export const castPicker: SandboxPickerFactory = {
       ],
     });
     group.idEntry({
-      label: "Cast skill by ID", testId: "sandbox-cast-skill", submitText: "Cast", hint, variables: search.variables,
-      fields: [{ name: "skillId", label: "Skill ID", kind: "integer", minimum: 0 }, { name: "level", label: "Level", kind: "integer", minimum: minimumSkillLevel }],
+      label: "Cast skill by ID", testId: "sandbox-cast-skill", submitText: "Cast", hint, variables: nameCombobox.variables,
+      fields: [{ name: "skillId", label: "Skill ID", minimum: 0 }, { name: "level", label: "Level", minimum: minimumSkillLevel }],
       onSubmit: values => { if (lifetime.active()) castSkill({ skillId: submittedInteger(values, "skillId"), level: submittedInteger(values, "level") }); },
     });
     return lifetime.release;

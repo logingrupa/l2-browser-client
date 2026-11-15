@@ -1,26 +1,14 @@
-import { tileIdPattern, windowIdPattern } from "../../assets/native/nativeCatalogRecords";
 import type { DevIdEntry, DevIdEntryField, DevIdEntryOptions } from "./types";
 
 const integerInputPattern = /^\d{1,9}$/;
-const maximumSearchTextLength = 64;
 
 let idEntrySequence = 0;
 
-type FieldReading = { readonly value: number | string } | { readonly rejection: string };
+type FieldReading = { readonly value: number } | { readonly rejection: string };
 
 function readIdEntryField(field: DevIdEntryField, rawText: string): FieldReading {
   const text = rawText.trim();
-  if (field.kind === "search") {
-    return text.length <= maximumSearchTextLength ? { value: text } : { rejection: `${field.label} must be at most ${maximumSearchTextLength} characters.` };
-  }
   if (!text) return { rejection: `${field.label} is required.` };
-  if (field.kind === "tile") {
-    return tileIdPattern.test(text) ? { value: text } : { rejection: `${field.label} must be two two-digit numbers joined by an underscore (XX_YY).` };
-  }
-  if (field.kind === "window") {
-    return windowIdPattern.test(text) ? { value: text }
-      : { rejection: `${field.label} must start with a letter and use only letters, digits and underscores, at most 64 characters, optionally followed by #<ordinal>.` };
-  }
   if (!integerInputPattern.test(text)) return { rejection: `${field.label} must be a whole number of at most 9 digits.` };
   const value = Number(text);
   if (!Number.isSafeInteger(value)) return { rejection: `${field.label} must be a safe whole number.` };
@@ -40,8 +28,7 @@ export function createDevIdEntry(options: DevIdEntryOptions, infoButton: HTMLEle
     const row = document.createElement("div"); row.className = "dev-row"; row.dataset.layout = "inline";
     const input = document.createElement("input");
     input.type = "text"; input.name = field.name; input.id = `dev-id-entry-${sequence}-${field.name}`;
-    input.autocomplete = "off"; input.spellcheck = false;
-    if (field.kind === "integer") input.inputMode = "numeric";
+    input.autocomplete = "off"; input.spellcheck = false; input.inputMode = "numeric";
     if (options.testId) input.dataset.testid = `${options.testId}-${field.name}`;
     const label = document.createElement("label"); label.className = "dev-row-label"; label.htmlFor = input.id; label.textContent = field.label;
     const cell = document.createElement("div"); cell.className = "dev-row-control"; cell.append(input);
@@ -61,7 +48,7 @@ export function createDevIdEntry(options: DevIdEntryOptions, infoButton: HTMLEle
   const setMessage = (text: string | null) => { message.textContent = text ?? ""; message.hidden = text === null; };
   form.addEventListener("submit", event => {
     event.preventDefault();
-    const values: Record<string, number | string> = {};
+    const values: Record<string, number> = {};
     for (const { field, input } of inputs) {
       const reading = readIdEntryField(field, input.value);
       if ("rejection" in reading) { setMessage(reading.rejection); return; }
