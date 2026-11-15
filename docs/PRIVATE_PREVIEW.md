@@ -5,6 +5,7 @@ https://l2.kingdom.lv serves the `dist` build from DATABASE-PC behind an invitat
 ## Now
 
 - `pnpm preview:private start|stop|status` runs the nginx origin on `127.0.0.1:8189`, serving only `dist`. `pwsh -NoProfile -File scripts/private-preview-tunnel.ps1 -Action Start|Stop|Status` runs the `l2-browser-client-preview` tunnel; `Start` also starts the origin, `Stop` stops only the connector.
+- Dev mode: with a dev server already listening on `127.0.0.1:5173`, `pnpm preview:private start dev` (or the tunnel helper with `-Mode dev`) makes the same gated origin proxy to it, hot reload websocket included, instead of serving `dist`. It also exposes source files to anyone holding the key. Stop and start again to switch between `static` and `dev`; the origin refuses to start in a different mode while running. The proxy sets the upstream Host to `127.0.0.1:5173`, so no Vite host setting changes.
 - Anonymous requests get 403. The invitation sets a Secure, HttpOnly, SameSite=Lax cookie and redirects to `/?authored=1`. Responses are `private, no-store`, `noindex`, `no-referrer`.
 - Open it with the "L2 Browser Preview" desktop shortcut on IMPORTA-PC or DATABASE-PC, or on DATABASE-PC with `pwsh -NoProfile -File scripts/open-private-preview.ps1 -InviteFile .assets/private-preview/private-invite.txt`. A 403 means that browser has not opened the invitation.
 - The invitation and key are bearer secrets in ignored `.assets/private-preview/`. Never put them in chat, screenshots, tracked files, traces or HAR; sanitize logs.
