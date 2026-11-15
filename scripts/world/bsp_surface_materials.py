@@ -3,6 +3,7 @@ import struct
 import tempfile
 from typing import NamedTuple
 
+from native_assets_lib.texture_source_reader import INTEGER_PROPERTY_TYPE, integer_property
 from native_catalog.ue2 import FormatError
 from world.bsp_chunk_geometry import BspSurfaceMaterial
 from world.static_mesh_step import conversion_failure_reason
@@ -16,6 +17,8 @@ OPAQUE_BLEND_MEMBERS_OF_CLASS = {SHADER_CLASS: ('OutputBlending', frozenset({'OB
                                  'Engine.FinalBlend': ('FrameBufferBlending', frozenset({'FB_Overwrite'}))}
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 PNG_DIMENSIONS_OFFSET = 16
+TEXTURE_SIZE_PROPERTIES = ('USize', 'VSize')
+UNKNOWN_TEXTURE_SIZE = (None, None)
 
 
 class SurfaceMaterialOutcome(NamedTuple):
@@ -58,22 +61,39 @@ def program_blend_is_translucent(program):
     return value['name'] not in opaque_members
 
 
-def unbound_surface_material(identity, program_record, gap_reasons, store_outputs):
-    return SurfaceMaterialOutcome(BspSurfaceMaterial(identity, None, None, None, False, program_record), gap_reasons, store_outputs)
+def source_texture_size(converter, identity):
+    try:
+        package, texture_item, _ = converter.material_texture_export(identity)
+        tags, _ = package.properties(texture_item)
+        return tuple(integer_property(tags, name, INTEGER_PROPERTY_TYPE, True) for name in TEXTURE_SIZE_PROPERTIES)
+    except MATERIAL_CONVERSION_ERRORS:
+        return UNKNOWN_TEXTURE_SIZE
+
+
+def require_baked_png_matches_source_size(png, width, height):
+    baked_size = png_dimensions(png)
+    if baked_size != (width, height):
+        raise FormatError(f'baked PNG is {baked_size[0]}x{baked_size[1]}, the source texture USize x VSize is {width}x{height}')
+
+
+def unbound_surface_material(identity, texture_size, program_record, gap_reasons, store_outputs):
+    width, height = texture_size
+    return SurfaceMaterialOutcome(BspSurfaceMaterial(identity, None, width, height, False, program_record), gap_reasons, store_outputs)
 
 
 def convert_surface_material(identity, map_sources, converter, class_work_root, class_scripts, store_root):
     outcome = material_program_outcome(identity, map_sources, converter, class_work_root, class_scripts, store_root)
     if outcome.program is None:
-        return unbound_surface_material(identity, None, outcome.gap_reasons, [])
+        return unbound_surface_material(identity, UNKNOWN_TEXTURE_SIZE, None, outcome.gap_reasons, [])
+    texture_size = source_texture_size(converter, identity)
     if not program_root_is_ported(outcome.program):
-        return unbound_surface_material(identity, outcome.program_record, outcome.gap_reasons, outcome.store_outputs)
+        return unbound_surface_material(identity, texture_size, outcome.program_record, outcome.gap_reasons, outcome.store_outputs)
     try:
         with tempfile.TemporaryDirectory(dir=converter.output) as work:
             png, _, _, _ = converter.material_texture(Path(work), identity)
-        width, height = png_dimensions(png)
+        require_baked_png_matches_source_size(png, *texture_size)
     except MATERIAL_CONVERSION_ERRORS as error:
-        return unbound_surface_material(identity, outcome.program_record, [*outcome.gap_reasons, conversion_failure_reason(error)],
+        return unbound_surface_material(identity, texture_size, outcome.program_record, [*outcome.gap_reasons, conversion_failure_reason(error)],
                                         outcome.store_outputs)
-    material = BspSurfaceMaterial(identity, png, width, height, program_blend_is_translucent(outcome.program), outcome.program_record)
+    material = BspSurfaceMaterial(identity, png, *texture_size, program_blend_is_translucent(outcome.program), outcome.program_record)
     return SurfaceMaterialOutcome(material, outcome.gap_reasons, outcome.store_outputs)

@@ -12,7 +12,7 @@ from native_store.store_paths import ConverterOutputRefusedError, StorePathError
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
-from test_material_program_images import synthetic_png_bytes
+from test_material_program_images import SYNTHETIC_PNG_SIDE, synthetic_png_bytes, texture_export_of_size
 from world import bsp_step, material_texture_images, sky_step, surface_material_programs
 from world.bsp_step import BSP_STEP_NAME, bsp_ledger, run_bsp_step
 from world.bsp_surface_materials import convert_surface_material
@@ -41,7 +41,8 @@ class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
         self.map_sources = SimpleNamespace(paths={'syntheticmaterials': ['textures/SyntheticMaterials.utx']}, get=lambda relative: package)
         self.converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'),
                                          texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
-                                         material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
+                                         material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []),
+                                         material_texture_export=texture_export_of_size(SYNTHETIC_PNG_SIDE, SYNTHETIC_PNG_SIDE))
         self.start_patch(surface_material_programs, 'kept_material_class_defaults', mock.Mock(return_value=SYNTHETIC_CLASS_DEFAULTS))
 
     def start_patch(self, owner, name, replacement):

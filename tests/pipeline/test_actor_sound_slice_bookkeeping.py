@@ -38,7 +38,7 @@ STALE_SILENT_COMBAT_AUDIO_RECORD = {**STALE_GREMLIN_COMBAT_AUDIO_RECORD, 'id': '
 NPCGRP_ROLES = ('attackItem', 'attackVoice', 'defense', 'damage')
 ALAUDIO_LOCK_REFUSAL = 'synthetic lock holds no system/ALAudio.int'
 ACTOR_SOUND_CENSUS_RELATIVE_PATH = 'docs/parts/audio/actor-sound-census.json'
-FIRST_SOUND_UNIT_FINGERPRINT_UNDER_THE_CONVERTER_OUTPUT_VERSION = 'e0b0b5e96ef673a264fa6dae580904668576043953e59b538e35f2c8ac20c13c'
+FIRST_SOUND_UNIT_FINGERPRINT_UNDER_THE_CONVERTER_OUTPUT_VERSION = 'dfe67003f60d67e57646594358d56fa0537e12ac53645effca40f8e369caab46'
 LOCKED_SOUND_PACKAGE_RECORD = {'path': 'Sounds/MonSound.uax', 'sha256': '8' * 64}
 SOUND_PACKAGE_RECORD = {'path': 'Sounds/MonSound.uax', 'package': SimpleNamespace(source_hash='7' * 64)}
 NO_REFERENCES = {'exactIdentity': 0, 'uniquePackageLeafCandidate': 0, 'unresolved': 0, 'empty': 0}

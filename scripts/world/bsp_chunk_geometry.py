@@ -54,6 +54,10 @@ class BspSurfaceMaterial(NamedTuple):
     translucent: bool
     program: object
 
+    @property
+    def has_source_texture_size(self):
+        return self.width is not None and self.height is not None
+
 
 def load_bsp_poly_flags(path=BSP_POLY_FLAGS_PATH):
     document = json.loads(Path(path).read_text(encoding='utf-8'))
@@ -177,7 +181,7 @@ def section_geometry(model, section, material, primitive, node_ranges):
         for point in points:
             positions.append(source_point_to_scene(point))
             normals.append([f32(node.plane[axis]) for axis in SOURCE_FRAME_AXIS_ORDER])
-            if material.png is not None:
+            if material.has_source_texture_size:
                 uvs.append(source_texture_uv(model, surface, point, material))
         node_ranges.append({'node': node_index, 'primitive': primitive, 'firstIndex': first_index, 'indexCount': len(indices) - first_index})
     return positions, normals, uvs, indices
@@ -212,7 +216,7 @@ def chunk_bsp_glb(model, chunk_id, sections, materials_by_identity):
             gltf_materials.append(gltf_material_record(builder, material, section.key.unlit, image_of_identity))
         positions, normals, uvs, indices = section_geometry(model, section, material, primitive, node_ranges)
         attributes = {'POSITION': builder.accessor(positions, len(positions), 'VEC3'), 'NORMAL': builder.accessor(normals, len(normals), 'VEC3')}
-        if uvs:
+        if material.has_source_texture_size:
             attributes['TEXCOORD_0'] = builder.accessor(uvs, len(uvs), 'VEC2')
         index_accessor = builder.accessor(indices, len(indices), 'SCALAR', 5125)
         meshes.append({'name': f'{chunk_id}.section-{primitive}', 'primitives': [{'attributes': attributes, 'indices': index_accessor,

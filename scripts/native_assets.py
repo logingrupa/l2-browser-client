@@ -34,7 +34,7 @@ CONVERTER_DESCRIPTION = 'Convert native Interlude client objects into reproducib
 
 UMODEL = Path('C:/laragon/www/l2-browser-client/.assets/native-tools/umodel/umodel.exe')
 UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
-CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE = 'c4bf8e6cf5f61bddf65a35e6fb65f6af34199e0589b978930aeb92d2f15a2bd8'
+CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE = 'ecbc0590945ecadd368804c0177430941b152af1c8063210e39f6f326512db07'
 SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1]
 MAX_ARCHIVE = 128 * 1024 * 1024
 MAX_PAYLOAD = 96 * 1024 * 1024
@@ -270,16 +270,15 @@ class Converter:
         properties, _ = package.properties(item)
         return payload, {prop['name']: prop.get('value', {'rawHex': prop['payloadHex']}) for prop in properties}, item['object']
 
-    def material_texture(self, work, reference, visited=None):
+    def material_texture_export(self, reference, visited=None):
         visited = set() if visited is None else visited
-        path, package = self.package(reference.split('.')[0])
+        _, package = self.package(reference.split('.')[0])
         item = self.select(package, reference)
         if item['object'] in visited or len(visited) > 16:
             raise ValueError('Cyclic or excessive native material graph')
         visited.add(item['object'])
         if item['className'] == 'Texture':
-            payload, properties, qualified = self.texture(work, item['object'])
-            return payload, properties, qualified, []
+            return package, item, []
         if item['className'] not in ('Shader', 'FinalBlend'):
             raise UnsupportedMaterialAdapter(item['className'], item['object'])
         records, reader = package.properties(item)
@@ -287,9 +286,14 @@ class Converter:
         link = properties.get('Diffuse' if item['className'] == 'Shader' else 'Material')
         if not isinstance(link, dict) or not link.get('object'):
             raise ValueError(f'Native material has no explicit diffuse/material reference: {item["object"]}')
-        payload, texture_properties, qualified, graph = self.material_texture(work, link['object'], visited)
+        texture_package, texture_item, graph = self.material_texture_export(link['object'], visited)
         graph.insert(0, {'object': item['object'], 'class': item['className'], 'properties': records, 'trailingHex': reader.take(reader.end - reader.position).hex()})
-        return payload, texture_properties, qualified, graph
+        return texture_package, texture_item, graph
+
+    def material_texture(self, work, reference):
+        _, texture_item, graph = self.material_texture_export(reference)
+        payload, properties, qualified = self.texture(work, texture_item['object'])
+        return payload, properties, qualified, graph
 
     def sound(self, work, package, item):
         _, reader = package.properties(item)
