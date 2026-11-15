@@ -70,10 +70,14 @@ export function createDevCombobox<Value>(options: DevComboboxOptions<Value>): De
   let optionRows: HTMLElement[] = [];
   let activePosition = -1;
 
+  const initialOption = searchable.find(item => item.option.identifier === options.initialIdentifier && !item.option.disabled)?.option ?? null;
+  if (initialOption) { selectedOption = initialOption; input.value = initialOption.name; }
+
   const optionRowId = (position: number) => `${listboxId}-option-${position}`;
 
   const visibleOptions = (): VisibleOptions<Value> => {
-    const tokens = queryTokens(input.value);
+    const showsSelection = selectedOption !== null && input.value === selectedOption.name;
+    const tokens = showsSelection ? [] : queryTokens(input.value);
     const matches = searchable.filter(item => matchesTokens(item.searchText, tokens)).map(item => item.option);
     const typedOption = matches.length === 0 ? options.typedOption?.(input.value) ?? null : null;
     const all = typedOption ? [typedOption] : matches;

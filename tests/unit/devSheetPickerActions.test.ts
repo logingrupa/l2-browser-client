@@ -17,7 +17,7 @@ const tileCatalog: CatalogEntries = {
 
 describe("tile picker", () => {
   it("lists the catalog tiles with status and reason, refuses a gap tile and reloads only on the Reload button", async () => {
-    const picker = mountPicker("tile", { catalog: tileCatalog, currentTileId: "20_20" });
+    const picker = mountPicker("tile", { catalog: tileCatalog, currentTileId: "20_21" });
     await picker.open(tileKeys);
     expect(picker.rowTexts(tileKeys)).toEqual(["20_20 tile:20_20 converted", "20_21 tile:20_21 gap: terrain heightmap missing"]);
     expect(picker.byTestId(`${tileKeys}-option-1`)!.getAttribute("aria-disabled")).toBe("true");
@@ -29,10 +29,29 @@ describe("tile picker", () => {
     expect(picker.fakeHost.reloadedTiles).toEqual(["20_20"]);
     expect(picker.note("sandbox-tile-note")).toBe("tile:20_20 reloaded");
     const variables = Object.fromEntries(picker.variables(tileKeys).map(variable => [variable.name, variable]));
-    expect(variables["sandbox.tile.current"]?.value()).toBe("20_20");
+    expect(variables["sandbox.tile.current"]?.value()).toBe("20_21");
     expect(variables["sandbox.tile.selected"]?.value()).toBe("tile:20_20");
     expect(variables["sandbox.tile.lookup"]?.value()).toBe("tile:20_20 converted");
     expect(variables["sandbox.tile.walk"]?.source).toMatch(/existing tap-to-move/);
+  });
+
+  it("starts on the loaded tile with Reload ready and still lists every catalog tile when opened", async () => {
+    const picker = mountPicker("tile", { catalog: tileCatalog, currentTileId: "20_20" });
+    expect(picker.byTestId(`${tileKeys}-input`)!.value).toBe("20_20");
+    expect(picker.byTestId(`${tileKeys}-pick`)!.disabled).toBe(false);
+    const variables = Object.fromEntries(picker.variables(tileKeys).map(variable => [variable.name, variable]));
+    expect(variables["sandbox.tile.selected"]?.value()).toBe("tile:20_20");
+    await picker.open(tileKeys);
+    expect(picker.rowTexts(tileKeys)).toEqual(["20_20 tile:20_20 converted", "20_21 tile:20_21 gap: terrain heightmap missing"]);
+    expect(picker.byTestId(`${tileKeys}-input`)!.getAttribute("aria-activedescendant")).toBe(picker.byTestId(`${tileKeys}-option-0`)!.id);
+  });
+
+  it("starts empty when the loaded tile is a gap tile or not in the catalog", () => {
+    for (const currentTileId of ["20_21", "15_22"]) {
+      const picker = mountPicker("tile", { catalog: tileCatalog, currentTileId });
+      expect(picker.byTestId(`${tileKeys}-input`)!.value).toBe("");
+      expect(picker.byTestId(`${tileKeys}-pick`)!.disabled).toBe(true);
+    }
   });
 
   it("offers a typed XX_YY tile that is not in the catalog, shows the host outcome and offers no other spelling", async () => {

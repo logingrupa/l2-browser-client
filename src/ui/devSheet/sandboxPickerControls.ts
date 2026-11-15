@@ -86,7 +86,7 @@ function attachPickableCombobox<Value>(group: DevGroup, lifetime: SandboxPickerL
   const { pickText, onPick, ...comboboxOptions } = options;
   const combobox = group.combobox({ ...comboboxOptions, onSelect: option => { pickButton.disabled = option === null; } });
   const pickButton = group.button({
-    label: pickText, testId: `${options.testId}-pick`, disabled: true,
+    label: pickText, testId: `${options.testId}-pick`, disabled: combobox.selected() === null,
     onClick: () => {
       const option = combobox.selected();
       if (option && lifetime.active()) onPick(option.value);
@@ -108,6 +108,7 @@ export interface SandboxCatalogKeyComboboxOptions {
   readonly testId: string;
   readonly hint: string;
   readonly pickText: string;
+  readonly initialIdentifier: string | null;
   readonly variables: () => VariableInfo[];
   readonly onPick: (identifier: string) => void;
 }
@@ -126,7 +127,7 @@ export function attachSandboxCatalogKeyCombobox(options: SandboxCatalogKeyCombob
   };
   const combobox = attachPickableCombobox(group, options.lifetime, {
     label: options.label, testId: options.testId, hint: options.hint, variables: options.variables, placeholder: options.placeholder,
-    options: options.options, typedOption, pickText: options.pickText, onPick: options.onPick,
+    options: options.options, typedOption, initialIdentifier: options.initialIdentifier, pickText: options.pickText, onPick: options.onPick,
   });
   return { selectedKey: () => combobox.selected()?.identifier ?? "none" };
 }

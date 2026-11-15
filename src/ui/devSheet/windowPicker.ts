@@ -29,7 +29,7 @@ export const windowPicker: SandboxPickerFactory = {
       { name: "sandbox.window.outcome", value: () => result.current(), values: "the open outcome text | none", source: "SandboxPickerHost.openWindow", status: "native" },
     ];
     const windowCombobox = attachSandboxCatalogKeyCombobox({
-      group, lifetime, catalogIndex: context.catalogIndex,
+      group, lifetime, catalogIndex: context.catalogIndex, initialIdentifier: null,
       options: buildNativeWindowRegistry(context.catalogIndex).map(entry => catalogKeyOption(entry.windowId, context.catalogIndex.lookup(entry.key))),
       identifierPattern: windowIdPattern, catalogKeyOf: windowCatalogKey, emptyText: noWindowsConvertedText,
       label: "Window", placeholder: "Window name, or a status word", testId: "sandbox-window-keys", pickText: "Open selected window", variables,

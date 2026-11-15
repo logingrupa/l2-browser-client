@@ -98,6 +98,7 @@ export interface DevComboboxOptions<Value> extends DevControlInfo {
   options: readonly DevComboboxOption<Value>[] | (() => Promise<DevComboboxOptionLoad<Value>>);
   placeholder: string;
   typedOption?: (query: string) => DevComboboxOption<Value> | null;
+  initialIdentifier?: string | null;
   onSelect: (option: DevComboboxOption<Value> | null) => void;
 }
 
