@@ -6,7 +6,7 @@ import { createNativeMaterial, FOG_DISABLED, type LoadedNativeMaterial, type Nat
 import { bindSkyEnvironmentColours, type SkyEnvironmentColourInspection, type SkyEnvironmentColourSurface, type SkyEnvironmentColourWriter } from "./skyEnvironmentColours";
 import type { SkyEnvironmentColour } from "./worldTimeOfDay";
 
-export type SkySurfaceProgramStatus = "program-unconverted" | "library-environment-clock-unwired" | "library-compiled" | "library-diagnostic";
+export type SkySurfaceProgramStatus = "program-unconverted" | "library-material-uniforms-absent" | "library-compiled" | "library-diagnostic";
 
 export interface SkySurfaceProgramInspection {
   readonly mesh: string;
@@ -55,7 +55,7 @@ export async function bindSkyMaterialPrograms(settings: SkyMaterialProgramSettin
       const programMaterialId = readNativeMaterialProgramPin(mesh.material);
       const surface = (status: SkySurfaceProgramStatus, reasons: readonly string[]) => surfaces.push({ mesh: mesh.name, programMaterialId, status, reasons });
       if (programMaterialId === null) { surface("program-unconverted", []); continue; }
-      if (materialUniforms === null) { surface("library-environment-clock-unwired", []); continue; }
+      if (materialUniforms === null) { surface("library-material-uniforms-absent", []); continue; }
       const loaded = await settings.loadProgram(programMaterialId, signal);
       signal.throwIfAborted();
       const nativeMaterial = createNativeMaterial(scene, loaded, { sessionSeed: settings.sessionSeed, lighting: "unlit" });

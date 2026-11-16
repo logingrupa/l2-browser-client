@@ -80,11 +80,11 @@ describe("tile sky surfaces through the UE2 material library", () => {
     expect(sky.scene.materials.includes(bound!)).toBe(false);
   });
 
-  it("reports a pinned program without a tile clock as unwired and loads nothing", async () => {
+  it("reports a pinned program without tile material uniforms as absent and loads nothing", async () => {
     const sky = skyMeshes([compiledProgramSha256]);
     const binding = await bindSkyMaterialPrograms({ scene: sky.scene, meshes: sky.meshes, sessionSeed: 7, materialUniforms: null, environmentColours: null,
       loadProgram: sky.loadProgram, signal: new AbortController().signal });
-    expect(binding.surfaces).toEqual([{ mesh: "sky part 0", programMaterialId: compiledProgramSha256, status: "library-environment-clock-unwired", reasons: [] }]);
+    expect(binding.surfaces).toEqual([{ mesh: "sky part 0", programMaterialId: compiledProgramSha256, status: "library-material-uniforms-absent", reasons: [] }]);
     expect(sky.loadProgram).not.toHaveBeenCalled();
     expect(sky.meshes[0]!.material).toBeInstanceOf(PBRMaterial);
   });
