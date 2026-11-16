@@ -9,6 +9,7 @@ import { applyNativeTerrainPreview, packNativePreviewMasks } from "../../src/sce
 import { syntheticPngBytes } from "../support/syntheticPngBytes";
 
 const signal = () => new AbortController().signal;
+const ownedTextureIdPrefix = "map-20-20-textures:";
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("native terrain mask byte packing", () => {
@@ -26,13 +27,13 @@ describe("native terrain mask byte packing", () => {
 describe("optional native terrain material ownership", () => {
   const layers = Array.from({ length: 9 }, (_, index) => ({ index, texture: `Texture.Diffuse${index}`, alphaMap: `Texture.Mask${index}`,
     worldToTextureRowMajor: [[1 / 128, 0, 0, 0], [0, 1 / 128, 0, 0], [0, 0, 1, 0], [0, -.03125, 0, 1]] }));
-  const encodedLayerImages: { bytes: Uint8Array<ArrayBuffer>; texture: { assetId: string; image: string; imageBytes: number; imageSha256: string; archiveSha256: string } }[] = [];
+  const encodedLayerImages: { bytes: Uint8Array<ArrayBuffer>; texture: { id: string; assetId: string; image: string; imageBytes: number; imageSha256: string; archiveSha256: string } }[] = [];
   beforeAll(async () => {
     for (const layer of layers) for (const kind of ["texture", "alphaMap"] as const) {
       const size = kind === "texture" || layer.index === 0 ? 256 : layer.index === 6 ? 512 : 1024;
       const pixels = new Uint8Array(size * size * 4).fill(kind === "texture" ? 141 : layer.index === 0 ? 255 : layer.index * 13);
       const bytes = syntheticPngBytes(size, size, 4, pixels), hash = await sha256(bytes), archive = `${kind === "texture" ? "a" : "b"}${layer.index}`.padEnd(64, "0");
-      encodedLayerImages.push({ bytes, texture: { assetId: `interlude:${layer[kind]}`, image: `/l2/${archive}/image.png`, imageBytes: bytes.length, imageSha256: hash, archiveSha256: archive } });
+      encodedLayerImages.push({ bytes, texture: { id: `${ownedTextureIdPrefix}${encodedLayerImages.length}`, assetId: `interlude:${layer[kind]}`, image: `/l2/${archive}/image.png`, imageBytes: bytes.length, imageSha256: hash, archiveSha256: archive } });
     }
   });
   async function fixture() {
@@ -51,7 +52,7 @@ describe("optional native terrain material ownership", () => {
     const value = await fixture();
     try {
       const positions = value.mesh.getVerticesData("position")!.slice(), originalTextures = value.scene.textures.length;
-      const preview = await applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, signal());
+      const preview = await applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, ownedTextureIdPrefix, signal());
       expect(preview.samplerCount).toBe(12); expect(preview.status).toBe("candidate-source-textures");
       expect(value.mesh.material).toBeInstanceOf(ShaderMaterial); expect(value.scene.textures.length - originalTextures).toBe(12);
       expect(value.mesh.getVerticesData("position")).toEqual(positions);
@@ -66,7 +67,7 @@ describe("optional native terrain material ownership", () => {
     try {
       vi.mocked(ShaderMaterial.prototype.forceCompilationAsync).mockRejectedValueOnce(new Error("shader failure"));
       const before = [value.scene.materials.length, value.scene.textures.length];
-      await expect(applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, signal())).rejects.toThrow("shader failure");
+      await expect(applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, ownedTextureIdPrefix, signal())).rejects.toThrow("shader failure");
       expect(value.mesh.material).toBe(value.neutral); expect([value.scene.materials.length, value.scene.textures.length]).toEqual(before);
     } finally { value.dispose(); }
   });
@@ -75,7 +76,7 @@ describe("optional native terrain material ownership", () => {
     const value = await fixture();
     try {
       value.responses.set(value.catalog.textures[0]!.image, new Uint8Array([1, 2, 3]));
-      await expect(applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, signal())).rejects.toThrow("hash/length differs");
+      await expect(applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, ownedTextureIdPrefix, signal())).rejects.toThrow("hash/length differs");
       expect(value.mesh.material).toBe(value.neutral); expect(value.scene.textures).toHaveLength(0);
       expect(ShaderMaterial.prototype.forceCompilationAsync).not.toHaveBeenCalled();
     } finally { value.dispose(); }
@@ -87,11 +88,55 @@ describe("optional native terrain material ownership", () => {
       let started!: () => void, finish!: () => void;
       const ready = new Promise<void>(resolve => { started = resolve; });
       vi.mocked(ShaderMaterial.prototype.forceCompilationAsync).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; started(); }));
-      const pending = applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, controller.signal);
+      const pending = applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, ownedTextureIdPrefix, controller.signal);
       await ready; controller.abort();
       await expect(pending).rejects.toHaveProperty("name", "AbortError");
       expect(value.mesh.material).toBe(value.neutral); expect(value.scene.textures).toHaveLength(0);
       finish();
+    } finally { value.dispose(); }
+  });
+
+  it("ignores UI texture records that share one assetId under several interface spellings", async () => {
+    const value = await fixture();
+    try {
+      const owned = value.catalog.textures[0]!;
+      for (const id of ["ui-texture:L2UI_CH3.BUTTON.BTN1_normal", "ui-texture:L2UI_CH3.Button.Btn1_normal"]) {
+        value.catalog.textures.push({ ...owned, id, assetId: "interlude:L2UI_CH3.Button.Btn1_normal" });
+      }
+      const preview = await applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, ownedTextureIdPrefix, signal());
+      expect(preview.samplerCount).toBe(12); expect(value.mesh.material).toBeInstanceOf(ShaderMaterial);
+      preview.dispose();
+    } finally { value.dispose(); }
+  });
+
+  it("still refuses a duplicate assetId inside the section's own records", async () => {
+    const value = await fixture();
+    try {
+      value.catalog.textures.push({ ...value.catalog.textures[0]!, id: `${ownedTextureIdPrefix}99` });
+      await expect(applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, ownedTextureIdPrefix, signal()))
+        .rejects.toThrow("Native preview texture catalog identity/hash/path is invalid.");
+      expect(value.mesh.material).toBe(value.neutral);
+    } finally { value.dispose(); }
+  });
+
+  it("reports a section with no owned texture records as unstaged instead of reading other owners", async () => {
+    const value = await fixture();
+    try {
+      for (const texture of value.catalog.textures) texture.id = `ui-texture:${texture.assetId}`;
+      await expect(applyNativeTerrainPreview(value.scene, [value.mesh], value.catalog, ownedTextureIdPrefix, signal()))
+        .rejects.toThrow("Native preview texture is unstaged");
+      expect(value.mesh.material).toBe(value.neutral);
+    } finally { value.dispose(); }
+  });
+
+  it("refuses a texture record without a string id", async () => {
+    const value = await fixture();
+    try {
+      const withoutId: Record<string, unknown> = { ...value.catalog.textures[0]! };
+      delete withoutId.id;
+      const catalog = { ...value.catalog, textures: [...value.catalog.textures, withoutId] };
+      await expect(applyNativeTerrainPreview(value.scene, [value.mesh], catalog, ownedTextureIdPrefix, signal()))
+        .rejects.toThrow("Native preview texture catalog identity/hash/path is invalid.");
     } finally { value.dispose(); }
   });
 });

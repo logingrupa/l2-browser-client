@@ -9,7 +9,7 @@ import { terrainMaterialBindingKey } from "./nativeTerrainPatch";
 import { decodeNativeStorePng, type NativeStorePngPixels } from "../../assets/native/decodeNativeStorePng";
 
 interface Layer { index: number; texture: string; alphaMap: string; worldToTextureRowMajor: number[][]; }
-interface TextureRecord { assetId: string; image: string; imageSha256: string; imageBytes: number; archiveSha256: string; }
+interface TextureRecord { id: string; assetId: string; image: string; imageSha256: string; imageBytes: number; archiveSha256: string; }
 export interface NativeTerrainPreview {
   readonly status: "candidate-source-textures";
   readonly samplerCount: number;
@@ -51,11 +51,13 @@ function layersFor(mesh: AbstractMesh): Layer[] {
   return layers as Layer[];
 }
 
-function textureRecords(catalog: unknown): Map<string, TextureRecord> {
+function ownedTextureRecords(catalog: unknown, ownedTextureIdPrefix: string): Map<string, TextureRecord> {
   if (!isObject(catalog) || catalog.schemaVersion !== 1 || !Array.isArray(catalog.textures)) throw new Error("Native preview textures are not staged.");
   const records = new Map<string, TextureRecord>();
   for (const record of catalog.textures as unknown[]) {
-    if (!isObject(record) || typeof record.assetId !== "string" || !record.assetId.startsWith("interlude:") ||
+    if (!isObject(record) || typeof record.id !== "string") throw new Error("Native preview texture catalog identity/hash/path is invalid.");
+    if (!record.id.startsWith(ownedTextureIdPrefix)) continue;
+    if (typeof record.assetId !== "string" || !record.assetId.startsWith("interlude:") ||
       typeof record.archiveSha256 !== "string" || !HASH.test(record.archiveSha256) || typeof record.imageSha256 !== "string" || !HASH.test(record.imageSha256) ||
       typeof record.image !== "string" || !new RegExp(`^/l2/${record.archiveSha256}/[A-Za-z0-9._-]+\\.png$`).test(record.image) ||
       !Number.isSafeInteger(record.imageBytes) || typeof record.imageBytes !== "number" || record.imageBytes <= 0 || record.imageBytes > 32 * 1024 * 1024 ||
@@ -65,13 +67,13 @@ function textureRecords(catalog: unknown): Map<string, TextureRecord> {
   return records;
 }
 
-export async function applyNativeTerrainPreview(scene: Scene, meshes: readonly AbstractMesh[], catalog: unknown, signal: AbortSignal): Promise<NativeTerrainPreview> {
+export async function applyNativeTerrainPreview(scene: Scene, meshes: readonly AbstractMesh[], catalog: unknown, ownedTextureIdPrefix: string, signal: AbortSignal): Promise<NativeTerrainPreview> {
   signal.throwIfAborted();
   if (!meshes.length || scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native preview requires live right-handed terrain.");
   const layers = layersFor(meshes[0]!);
   if (meshes.some(mesh => terrainMaterialBindingKey(layersFor(mesh)) !== terrainMaterialBindingKey(layers))) throw new Error("Native preview terrain layer bindings differ between meshes.");
   if (scene.getEngine().getCaps().maxTexturesImageUnits < 12) throw new Error("Native preview requires 12 fragment texture samplers.");
-  const records = textureRecords(catalog), textures: RawTexture[] = [], original = meshes.map(mesh => ({ mesh, material: mesh.material }));
+  const records = ownedTextureRecords(catalog, ownedTextureIdPrefix), textures: RawTexture[] = [], original = meshes.map(mesh => ({ mesh, material: mesh.material }));
   const lifetime = new AbortController();
   let material: ShaderMaterial | undefined, disposed = false, committed = false;
   const dispose = () => {

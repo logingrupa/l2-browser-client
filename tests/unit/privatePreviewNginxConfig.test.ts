@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPrivatePreviewNginxConfig, devServerPort } from "../../scripts/private-preview-nginx-config.mjs";
-import { privatePreviewDevWorldPath, privatePreviewWorldPath } from "../../scripts/private-preview-targets.mjs";
+import { privatePreviewWorldPath } from "../../scripts/private-preview-targets.mjs";
 
 const accessKey = "a".repeat(64);
 const configurationInputs = {
@@ -44,9 +44,9 @@ describe("private preview nginx config", () => {
 		expect(configuration).toContain(`${configurationInputs.cookieName}=${accessKey}`);
 	});
 
-	it("redirects a valid invite to the code-built world in static mode and to the dev tile route in dev mode", () => {
-		expect(buildPrivatePreviewNginxConfig({ ...configurationInputs, mode: "static" })).toContain(`return 303 "${privatePreviewWorldPath}";`);
-		expect(buildPrivatePreviewNginxConfig({ ...configurationInputs, mode: "dev" })).toContain(`return 303 "${privatePreviewDevWorldPath}";`);
+	it.each(["static", "dev"] as const)("redirects a valid invite to the code-built world in %s mode", (mode) => {
+		expect(privatePreviewWorldPath).toBe("/");
+		expect(buildPrivatePreviewNginxConfig({ ...configurationInputs, mode })).toContain(`return 303 "${privatePreviewWorldPath}";`);
 	});
 
 	it("refuses an unknown mode", () => {

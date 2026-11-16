@@ -1,9 +1,8 @@
 import path from 'node:path';
-import { privatePreviewDevWorldPath, privatePreviewWorldPath } from './private-preview-targets.mjs';
+import { privatePreviewWorldPath } from './private-preview-targets.mjs';
 
 export const devServerPort = 5173;
 export const privatePreviewModes = ['static', 'dev'];
-export const privatePreviewRedirectPathByMode = { static: privatePreviewWorldPath, dev: privatePreviewDevWorldPath };
 export const slash = (value) => value.replaceAll('\\', '/');
 
 const windowsNginxSelectConnectionLimit = 1024;
@@ -73,7 +72,7 @@ http {
       if ($preview_key_ok = 0) { return 403; }
       add_header Set-Cookie $preview_set_cookie always;
       ${responseHeaders}
-      return 303 "${privatePreviewRedirectPathByMode[mode]}";
+      return 303 "${privatePreviewWorldPath}";
     }
     ${isDevMode ? devProxyLocation : staticContentLocations}
   }

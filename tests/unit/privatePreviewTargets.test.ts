@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { privatePreviewRedirectPathByMode } from "../../scripts/private-preview-nginx-config.mjs";
-import { nativeSectionManifestPath, nativeSectionResourcePaths, privatePreviewCatalogPath, privatePreviewDevWorldPath, privatePreviewOrigin, privatePreviewWorldPath } from "../../scripts/private-preview-targets.mjs";
+import { nativeSectionManifestPath, nativeSectionResourcePaths, privatePreviewCatalogPath, privatePreviewOrigin, privatePreviewWorldPath } from "../../scripts/private-preview-targets.mjs";
 
 const privatePreviewScriptPaths = [
   "scripts/private-preview.mjs",
@@ -19,7 +18,6 @@ const sectionRecord = { manifest: `${sectionBase}map-section-runtime/manifest.js
 describe("private preview targets", () => {
   it("opens the native sandbox world through the code-built route", () => {
     expect(privatePreviewWorldPath).toBe("/");
-    expect(privatePreviewDevWorldPath).toBe("/?map=20_20");
     expect(privatePreviewCatalogPath).toBe("/l2/catalog.json");
     expect(privatePreviewOrigin).toBe("https://l2.kingdom.lv");
   });
@@ -39,10 +37,6 @@ describe("private preview targets", () => {
 
   it("reports the native sandbox world URL from the tunnel connector", () => {
     expect(readFileSync("scripts/private-preview-tunnel.ps1", "utf8")).toContain(`url='${privatePreviewOrigin}${privatePreviewWorldPath}'`);
-  });
-
-  it("redirects a valid invite to the native sandbox world in static mode and the dev tile route in dev mode", () => {
-    expect(privatePreviewRedirectPathByMode).toEqual({ static: privatePreviewWorldPath, dev: privatePreviewDevWorldPath });
   });
 
   it("lists the hash-addressed section manifest, terrain, patches, models and BSP once each", () => {

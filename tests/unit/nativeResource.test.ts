@@ -74,8 +74,8 @@ describe("native public resources in browser and Editor Play", () => {
       mesh.metadata = { gltf: { extras: { nativeLayers: Array.from({ length: 9 }, (_, index) => ({ index,
         texture: "Texture.Diffuse", alphaMap: "Texture.Mask", worldToTextureRowMajor: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
       })) } } };
-      const catalog = { schemaVersion: 1, textures: [{ assetId: "interlude:Texture.Diffuse", image, imageBytes: 10, imageSha256: hash, archiveSha256: hash }] };
-      await expect(applyNativeTerrainPreview(scene, [mesh], catalog, new AbortController().signal)).rejects.toThrow("hash/length differs");
+      const catalog = { schemaVersion: 1, textures: [{ id: "map-20-20-textures:0", assetId: "interlude:Texture.Diffuse", image, imageBytes: 10, imageSha256: hash, archiveSha256: hash }] };
+      await expect(applyNativeTerrainPreview(scene, [mesh], catalog, "map-20-20-textures:", new AbortController().signal)).rejects.toThrow("hash/length differs");
       expect(fetcher).toHaveBeenCalledOnce(); expect(fetcher).toHaveBeenCalledWith(`l2/${hash}/image.png`, expect.objectContaining({ signal: expect.any(AbortSignal) }));
       expect(mesh.material).toBe(neutral); expect(scene.textures).toHaveLength(0);
     } finally { scene.dispose(); engine.dispose(); }

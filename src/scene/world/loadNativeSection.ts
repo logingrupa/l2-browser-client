@@ -67,6 +67,8 @@ export interface NativeSection {
 }
 
 const HASH = /^[a-f0-9]{64}$/;
+const nativeSectionIdentity = "map-20-20-section";
+const nativeSectionTextureIdPrefix = "map-20-20-textures:";
 const object = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const finiteArray = (value: unknown, length: number): value is number[] => Array.isArray(value) && value.length === length && value.every(item => typeof item === "number" && Number.isFinite(item));
 function resource(value: unknown, expression: RegExp): value is Resource {
@@ -280,7 +282,7 @@ function bindMeshExtrasByGltfPrimitivePointer(container: AssetContainer, documen
   }
 }
 
-export async function loadNativeSection(scene: Scene, signal: AbortSignal, identity = "map-20-20-section"): Promise<NativeSection | null> {
+export async function loadNativeSection(scene: Scene, signal: AbortSignal): Promise<NativeSection | null> {
   signal.throwIfAborted();
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native section requires a live right-handed scene.");
   const selectedTileId = selectedNativeTileIdentity(globalThis.location);
@@ -309,7 +311,7 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     containers.push(container); return container;
   }
   try {
-    const staged = await stagedSection(lifetime.signal, identity);
+    const staged = await stagedSection(lifetime.signal, nativeSectionIdentity);
     if (!staged) { dispose(); return null; }
     const { record, catalog } = staged;
     const manifest = parseNativeSection(JSON.parse(new TextDecoder().decode(await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, lifetime.signal))));
@@ -330,7 +332,7 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     }
     try {
       if (catalog.textures.length) {
-        preview = await applyNativeTerrainPreview(scene, terrainMeshes, catalog, lifetime.signal);
+        preview = await applyNativeTerrainPreview(scene, terrainMeshes, catalog, nativeSectionTextureIdPrefix, lifetime.signal);
       }
     } catch (error) {
       lifetime.signal.throwIfAborted();

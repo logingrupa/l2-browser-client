@@ -2,7 +2,6 @@ export type PrivatePreviewMode = "static" | "dev";
 
 export declare const devServerPort: number;
 export declare const privatePreviewModes: readonly PrivatePreviewMode[];
-export declare const privatePreviewRedirectPathByMode: Readonly<Record<PrivatePreviewMode, string>>;
 export declare function slash(value: string): string;
 
 export interface PrivatePreviewNginxConfigInputs {
