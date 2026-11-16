@@ -265,10 +265,10 @@ def write_decompiled_script(work_root, class_object, script_text, recorded_sha25
 
 
 class DeclaredPropertyTypeTests(unittest.TestCase):
-    def declared_types(self, holder_script=SCRIPT_WITH_STRUCTS, recorded_sha256=None):
+    def declared_types(self, holder_script=SCRIPT_WITH_STRUCTS, recorded_sha256=None, imports_by_package=None):
         work_root = scratch_work_root(self, 'declared-types-')
         class_scripts = RefusingSyntheticClassScripts({OWNER_CLASS: ('Core.Object', holder_script), 'Core.Object': (None, OBJECT_SCRIPT),
-                                                        'Core.Texture': ('Core.Object', 'class Texture extends Object;')})
+                                                        'Core.Texture': ('Core.Object', 'class Texture extends Object;')}, imports_by_package)
         class_scripts.client_root = work_root
         write_decompiled_script(work_root, OWNER_CLASS, holder_script, recorded_sha256)
         write_decompiled_script(work_root, 'Core.Object', OBJECT_SCRIPT)
@@ -289,6 +289,15 @@ class DeclaredPropertyTypeTests(unittest.TestCase):
         self.assertTrue(types.is_struct(holder, 'Vector') and types.is_enum(holder, 'EMode') and types.is_enum(holder, 'Object.EMode'))
         self.assertFalse(types.is_struct(holder, 'Mystery') or types.is_enum(holder, 'Holder.EMode'))
         self.assertEqual([types.is_object_class(holder, name) for name in ('Texture', 'class<Actor>', 'Mystery')], [True, True, False])
+
+    def test_an_intrinsic_class_resolves_only_through_a_core_class_import_of_a_chain_package(self):
+        imports = {'Synthetic': [{'object': object_name, 'classPackage': class_package, 'className': class_name}
+                                 for object_name, class_package, class_name in (('Synthetic.Sound', 'Core', 'Class'), ('Synthetic.Brush', 'Core', 'Package'),
+                                                                                ('Other.Model', 'Core', 'Class'), ('Synthetic.Mesh', 'Engine', 'Class'))]}
+        types = self.declared_types(imports_by_package=imports)
+        holder = PropertyScope(OWNER_CLASS, None)
+        self.assertEqual([types.is_object_class(holder, name) for name in ('Sound', 'Synthetic.Sound', 'Brush', 'Model', 'Mesh', 'Other.Model')],
+                         [True, True, False, False, False, True])
 
     def test_a_script_that_differs_from_its_defaults_json_sha256_is_refused(self):
         types = self.declared_types(recorded_sha256='0' * 64)

@@ -15,6 +15,7 @@ DECOMPILE_DEFAULTS_NAME = 'defaults.json'
 STRUCT_HEADER_PATTERN = re.compile(r'struct\s+(?:\w+\s+)*?(\w+)(?:\s+extends\s+([\w.]+))?', re.IGNORECASE)
 BASE_TYPE_PATTERN = re.compile(r'((?:array|class)\s*<[^<>]*(?:<[^<>]*>)?[^<>]*>|[\w.]+)\s*$', re.IGNORECASE)
 CONTAINER_TYPE_PATTERN = re.compile(r'(array|class)\s*<\s*(.+?)\s*>', re.IGNORECASE)
+INTRINSIC_CLASS_IMPORT = ('Core', 'Class')
 
 
 class DeclaredPropertyTypeError(FormatError):
@@ -182,20 +183,31 @@ class DeclaredPropertyTypes:
             self.object_classes[key] = self.resolves_class(scope.class_name, type_name)
         return self.object_classes[key]
 
+    def chain_package_imports_class(self, package_name, class_object):
+        try:
+            _, package = self.class_defaults.class_scripts.packages.get(package_name)
+        except FormatError:
+            return False
+        return any(item['object'].casefold() == class_object.casefold() and (item['classPackage'], item['className']) == INTRINSIC_CLASS_IMPORT
+                   for item in package.imports)
+
+    def class_script_resolves(self, class_object):
+        try:
+            self.class_defaults.class_scripts.class_identity(class_object)
+        except (ClassDefaultError, FormatError):
+            return False
+        return True
+
     def resolves_class(self, class_name, type_name):
         try:
             chain = self.class_chain(class_name)
         except ClassDefaultError:
             return False
-        candidates = [type_name] if '.' in type_name else list(dict.fromkeys(
-            f'{definition["identity"]["object"].split(".", 1)[0]}.{type_name}' for definition in chain))
-        for candidate in candidates:
-            try:
-                self.class_defaults.class_scripts.class_identity(candidate)
-            except (ClassDefaultError, FormatError):
-                continue
-            return True
-        return False
+        chain_packages = list(dict.fromkeys(definition['identity']['object'].split('.', 1)[0] for definition in chain))
+        candidates = [type_name] if '.' in type_name else [f'{package_name}.{type_name}' for package_name in chain_packages]
+        return any(self.class_script_resolves(candidate) or
+                   any(self.chain_package_imports_class(package_name, candidate) for package_name in chain_packages)
+                   for candidate in candidates)
 
 
 @functools.cache

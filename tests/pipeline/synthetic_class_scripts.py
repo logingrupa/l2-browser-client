@@ -3,15 +3,29 @@ from __future__ import annotations
 from pathlib import Path
 import shutil
 import tempfile
+from types import SimpleNamespace
+
+from native_catalog.ue2 import FormatError
 
 TEST_SCRATCH_ROOT = Path(__file__).resolve().parents[2] / 'artifacts' / 'test-scratch'
 
 
+class SyntheticSourcePackages:
+    def __init__(self, imports_by_package):
+        self.imports_by_package = {name.casefold(): imports for name, imports in imports_by_package.items()}
+
+    def get(self, package_name):
+        if package_name.casefold() not in self.imports_by_package:
+            raise FormatError('Native package missing/ambiguous: ' + package_name)
+        return None, SimpleNamespace(imports=self.imports_by_package[package_name.casefold()])
+
+
 class SyntheticClassScripts:
-    def __init__(self, scripts_by_class):
+    def __init__(self, scripts_by_class, imports_by_package=None):
         self.scripts_by_class = dict(scripts_by_class)
         self.decompiled_classes = []
         self.package_sha256 = 'a' * 64
+        self.packages = SyntheticSourcePackages(imports_by_package or {})
 
     def class_identity(self, class_object):
         super_class, _ = self.scripts_by_class[class_object]
