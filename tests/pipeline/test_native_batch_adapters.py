@@ -27,6 +27,9 @@ def write(root, name, data):
     return path
 
 
+ENVIRONMENT_SETUP_PAYLOAD = b'[EnvSetup]\r\nHAZERING=HazeRing_Final\r\nNumCloudColor=0\r\nTimeEnvFileName0=timeenv0.int\r\n'
+
+
 def envelope(payload):
     body = HEADER + bytes(value ^ 0xac for value in payload)
     return body + struct.pack('<5I', 0, 1, 32, zlib.crc32(body), 0)
@@ -76,14 +79,13 @@ class AdapterTests(unittest.TestCase):
         write(self.root, 'recipes/request.json', [request])
         return target, index, manifest
 
-    def environment(self, payload=None):
-        payload = payload or b'[SkyBoxColor]\r\nNUM=1\r\nCOLOR1=(T=12,R=66,G=124,B=176)\r\n'
-        original = envelope(payload)
-        products = build_products({'test.int': original})
+    def environment(self, type_payload=b'[SkyBoxColor]\r\nNUM=1\r\nCOLOR1=(T=12,R=66,G=124,B=176)\r\n'):
+        originals = {'Env.int': envelope(ENVIRONMENT_SETUP_PAYLOAD), 'timeenv0.int': envelope(type_payload)}
+        products = build_products(originals)
         for name, data in products.items(): write(self.output, name, data)
         write(self.lock.parent, self.lock.name, {'schemaVersion': 1, 'files': [
-            {'relativePath': 'test.int', 'bytes': len(original), 'sha256': sha(original)}]})
-        return self.job('environment', files=['test.int'])
+            {'relativePath': name, 'bytes': len(original), 'sha256': sha(original)} for name, original in originals.items()]})
+        return self.job('environment', files=list(originals))
 
     def audio(self, unsupported=False):
         from native_audio import decode_native_audio
@@ -269,27 +271,27 @@ class AdapterTests(unittest.TestCase):
         before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in self.output.rglob('*') if p.is_file()}
         result = adapters.collect(job, self.output, self.lock, self.root)
         self.assertEqual(result['status'], 'converted')
-        self.assertEqual(result['counts']['physicalColorRows'], 1)
-        self.assertEqual(len(result['products']), 6)
+        self.assertEqual((result['counts']['environmentTypes'], result['counts']['tables'], result['counts']['rows']), (1, 17, 1))
+        self.assertEqual(len(result['products']), 9)
         self.assertEqual(before, {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in self.output.rglob('*') if p.is_file()})
 
-    def test_environment_count_anomaly_is_preserved_not_dropped(self):
+    def test_environment_rows_past_num_are_not_loaded(self):
         job = self.environment(b'[SkyBoxColor]\nNUM=1\nCOLOR1=(T=0,R=1,G=2,B=3)\nCOLOR2=(T=12,R=66,G=124,B=176)\n')
         result = adapters.collect(job, self.output, self.lock, self.root)
         self.assertEqual(result['status'], 'converted')
-        self.assertEqual(result['counts']['physicalColorRows'], 2)
-        self.assertGreater(result['counts']['anomalies'], 0)
+        self.assertEqual(result['counts']['rows'], 1)
 
-    def test_environment_unsupported_syntax_is_partial_not_success(self):
-        job = self.environment(b'[SkyBoxColor]\nNUM=1\nCOLOR1=(invalid)\n')
+    def test_environment_unresolved_field_is_partial_not_success(self):
+        job = self.environment(b'[SkyBoxColor]\nNUM=1\nCOLOR1=(T=0,R=invalid)\n')
         result = adapters.collect(job, self.output, self.lock, self.root)
         self.assertEqual(result['status'], 'partial')
-        self.assertTrue(result['unsupported'])
+        self.assertEqual(result['unsupported'], [{'status': 'time-tables-unresolved',
+                                                  'reasons': ['time-table-field-unparsed:timeenv0.int:SkyBoxColor:COLOR1:R']}])
 
     def test_environment_derived_table_or_implementation_tamper_fails(self):
         job = self.environment()
-        path = self.output / 'sky-tables.json'
-        value = json.loads(path.read_bytes()); value['physicalColorRows'] = 999; path.write_bytes(json_bytes(value))
+        path = self.output / 'time-tables.json'
+        value = json.loads(path.read_bytes()); value['rowCount'] = 999; path.write_bytes(json_bytes(value))
         with self.assertRaisesRegex(ValueError, 'reconstructed product differs'):
             adapters.collect(job, self.output, self.lock, self.root)
 
@@ -320,6 +322,8 @@ class AdapterTests(unittest.TestCase):
         pins = adapters.adapter_pins('environment')
         self.assertEqual(pins['scripts/native_environment.py'], sha((ROOT / 'scripts/native_environment.py').read_bytes()))
         self.assertIn('scripts/export-native-environment.py', pins)
+        self.assertEqual(pins['scripts/world/environment_time_tables.py'], sha((ROOT / 'scripts/world/environment_time_tables.py').read_bytes()))
+        self.assertIn('recipes/world/environment-native-rules.json', pins)
 
     def test_case_colliding_source_lock_fails_before_collector(self):
         self.asset()

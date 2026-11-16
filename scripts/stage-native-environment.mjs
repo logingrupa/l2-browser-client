@@ -1,6 +1,3 @@
-/** Stage exact converted environment tables for an explicitly selected browser
- * comparison. No environment, time, interpolation or material policy is chosen.
- * Source inputs and existing destinations are never overwritten. */
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -25,7 +22,6 @@ function safeRelative(value) {
   return value;
 }
 
-/** Check every existing ancestor, including a non-existing output's parents. */
 async function checkedPath(value, directory = false) {
   require(typeof value === "string" && value.length > 0, "explicit input/output path required");
   const absolute = resolve(value), chain = [];
@@ -73,7 +69,7 @@ function parse(bytes, label) {
 
 function descriptor(bytes, file) { return { file, bytes: bytes.length, sha256: hash(bytes) }; }
 
-function verifySources(manifest, payloads, records, tables) {
+function verifySources(manifest, payloads, records) {
   require(records.schemaVersion === 1 && records.kind === "native-environment-ordered-records" &&
     Array.isArray(records.files) && records.files.length === manifest.inputs.length && records.sourceFileCount === records.files.length,
   "unsupported or inconsistent source records");
@@ -107,47 +103,72 @@ function verifySources(manifest, payloads, records, tables) {
   }
   require(records.propertyRecords === records.files.reduce((sum, file) => sum + file.records.filter(row => row.kind === "property").length, 0),
     "property record count mismatch");
-  require(tables.schemaVersion === 1 && tables.kind === "native-environment-source-tables" && Array.isArray(tables.tables) &&
-    tables.tableCount === tables.tables.length && integer(tables.physicalColorRows) && Array.isArray(tables.envSetupDeclarations) &&
-    Array.isArray(tables.duplicateSectionHeaders) && Array.isArray(tables.anomalies) && object(tables.selection) &&
-    Object.values(tables.selection).every(value => value === null), "unsupported tables or selected native policy");
-  const identities = new Set();
-  for (const table of tables.tables) {
-    const source = sources.get(table.file), identity = `${table.file}:${table.sectionIndex}`;
-    require(source && !identities.has(identity) && table.originalSha256 === source.originalSha256 && table.decodedSha256 === source.decodedSha256 &&
-      integer(table.sectionIndex) && Array.isArray(table.rows) && table.physicalColorRows === table.rows.length && table.runtimeConsumedRows === null,
-    "invalid table source identity or row count");
-    identities.add(identity);
-    const header = source.records[table.sectionIndex];
-    require(header?.kind === "section" && header.name === table.section && header.line === table.headerLine && header.sourceOffset === table.headerSourceOffset,
-      `table header does not join source: ${identity}`);
-    const indices = new Set();
-    for (const row of table.rows) {
-      const raw = source.records[row.recordIndex];
-      require(integer(row.recordIndex) && !indices.has(row.recordIndex) && raw?.kind === "property" && raw.sectionIndex === table.sectionIndex &&
-        raw.key === row.key && raw.line === row.line && raw.sourceOffset === row.sourceOffset && raw.decodedOffset === row.decodedOffset &&
-        raw.valueSourceOffset === row.valueSourceOffset && raw.valueAscii === row.rawValue,
-      `table color row does not join source: ${identity}:${row.recordIndex}`);
-      indices.add(row.recordIndex);
-      if (row.typed) {
-        const literal = /^\(\s*T\s*=\s*(\d+)\s*,\s*R\s*=\s*(\d+)\s*,\s*G\s*=\s*(\d+)\s*,\s*B\s*=\s*(\d+)\s*\)$/.exec(row.rawValue);
-        const values = literal?.slice(1).map(Number);
-        require(values && values[0] === row.tLiteral && Array.isArray(row.rgb) && row.rgb.length === 3 &&
-          row.rgb.every((channel, index) => Number.isInteger(channel) && channel >= 0 && channel <= 255 && channel === values[index + 1]),
-        `typed color differs from retained literal: ${identity}:${row.recordIndex}`);
-      }
-    }
-    const expectedRows = source.records.filter(row => row.kind === "property" && row.sectionIndex === table.sectionIndex && /^COLOR\d+$/.test(row.key));
-    require(isDeepStrictEqual(expectedRows.map(row => row.recordIndex), table.rows.map(row => row.recordIndex)), "table rows omitted or reordered");
-    const declarations = source.records.filter(row => row.kind === "property" && row.sectionIndex === table.sectionIndex && row.key === "NUM");
-    require(isDeepStrictEqual(declarations, table.numDeclarations), "NUM declarations differ from source");
-  }
-  require(tables.physicalColorRows === tables.tables.reduce((sum, table) => sum + table.rows.length, 0), "physical color total mismatch");
-  const setup = records.files.flatMap(source => source.records.filter(row => row.kind === "property" && row.section === "EnvSetup").map(row => ({ file: source.name, ...row })));
-  require(isDeepStrictEqual(setup, tables.envSetupDeclarations), "environment material/setup declarations differ from source");
+  return sources;
 }
 
-/** Read and pin all inputs and existing output; this function writes nothing. */
+const folded = value => typeof value === "string" ? value.toLowerCase() : value;
+
+function joinedProperty(source, recordIndex, section, label) {
+  const record = integer(recordIndex) ? source.records[recordIndex] : undefined;
+  require(record?.kind === "property" && folded(record.section) === folded(section), `${label} does not join a source property`);
+  return record;
+}
+
+function verifySetting(source, section, setting, label) {
+  require(object(setting) && typeof setting.key === "string" && ["file", "native-default", "unresolved"].includes(setting.source), `${label} is not a setting`);
+  if (setting.recordIndex === null) {
+    require(setting.source !== "file" && setting.valueSourceOffset === null && setting.raw === null, `${label} claims a value without a source record`);
+    return;
+  }
+  const record = joinedProperty(source, setting.recordIndex, section, label);
+  require(folded(record.key) === folded(setting.key) && record.valueSourceOffset === setting.valueSourceOffset && record.valueAscii === setting.raw,
+    `${label} differs from its source record`);
+}
+
+function verifySetup(sources, setup) {
+  if (setup === null) return;
+  const source = object(setup) ? [...sources.values()].find(entry => folded(entry.name) === folded(setup.file)) : undefined;
+  require(source && object(setup.values) && object(setup.bindings) && Array.isArray(setup.bindings.CLOUD) && Array.isArray(setup.timeEnvironmentFiles),
+    "time tables setup does not join its source");
+  const settings = [...Object.values(setup.values), setup.bindings.SKYBOX, setup.bindings.HAZERING, setup.bindings.NumCloudColor,
+    ...setup.bindings.CLOUD, ...setup.timeEnvironmentFiles];
+  settings.forEach((setting, index) => verifySetting(source, setup.section, setting, `setup setting ${index}`));
+}
+
+function verifyTimeTable(source, table, label) {
+  require(object(table) && typeof table.section === "string" && Array.isArray(table.rows) && Array.isArray(table.unresolved), `${label} is not a table`);
+  if (table.numRecordIndex !== null) {
+    const record = joinedProperty(source, table.numRecordIndex, table.section, `${label} Num`);
+    require(record.valueSourceOffset === table.numSourceOffset, `${label} Num offset differs from its source record`);
+  }
+  const keyNumbers = table.rows.map(row => row.keyNumber);
+  require(keyNumbers.every((number, index) => Number.isSafeInteger(number) && number >= 1 && number <= table.num && (index === 0 || number > keyNumbers[index - 1])),
+    `${label} rows are not ascending key numbers 1..Num`);
+  for (const row of table.rows) {
+    const record = joinedProperty(source, row.recordIndex, table.section, `${label} ${row.key}`);
+    require(folded(record.key) === folded(row.key) && record.line === row.line && record.sourceOffset === row.sourceOffset &&
+      record.valueSourceOffset === row.valueSourceOffset && record.valueAscii === row.raw && object(row.values),
+    `${label} ${row.key} differs from its source record`);
+  }
+}
+
+function verifyTimeTables(sources, tables) {
+  require(tables.schemaVersion === 1 && tables.kind === "native-environment-time-tables" && Array.isArray(tables.environmentTypes) &&
+    Array.isArray(tables.unresolved) && tables.unresolved.every(reason => typeof reason === "string") &&
+    tables.typedComplete === (tables.unresolved.length === 0), "unsupported time tables");
+  verifySetup(sources, tables.setup);
+  let tableCount = 0, rowCount = 0;
+  for (const entry of tables.environmentTypes) {
+    const source = object(entry) ? sources.get(entry.file) : undefined;
+    require(source && entry.originalSha256 === source.originalSha256 && entry.decodedSha256 === source.decodedSha256 && Array.isArray(entry.tables),
+      `environment type file does not join its source: ${entry?.file}`);
+    entry.tables.forEach((table, index) => verifyTimeTable(source, table, `${entry.file} table ${index}`));
+    tableCount += entry.tables.length;
+    rowCount += entry.tables.reduce((sum, table) => sum + table.rows.length, 0);
+  }
+  require(tables.tableCount === tableCount && tables.rowCount === rowCount, "time table counts differ from their tables");
+}
+
 export async function planNativeEnvironmentStage(options = {}) {
   const input = (await checkedPath(options.inputDir, true)).absolute;
   const output = (await checkedPath(options.outputDir)).absolute;
@@ -175,19 +196,20 @@ export async function planNativeEnvironmentStage(options = {}) {
     total += bytes.length; require(total <= 128 * 1024 * 1024, "conversion exceeds supported total size");
     payloads.set(name, bytes);
   }
-  require(payloads.has("environment-records.json") && payloads.has("sky-tables.json"), "source records or tables missing");
-  const records = parse(payloads.get("environment-records.json"), "environment-records.json"), tables = parse(payloads.get("sky-tables.json"), "sky-tables.json");
-  verifySources(manifest, payloads, records, tables);
+  require(payloads.has("environment-records.json") && payloads.has("time-tables.json"), "source records or time tables missing");
+  const records = parse(payloads.get("environment-records.json"), "environment-records.json"), tables = parse(payloads.get("time-tables.json"), "time-tables.json");
+  verifyTimeTables(verifySources(manifest, payloads, records), tables);
   const browserManifest = {
     schemaVersion: 1, kind: "native-environment-browser-source",
     conversionManifest: descriptor(manifestBytes, "conversion-manifest.json"),
-    tables: descriptor(payloads.get("sky-tables.json"), "sky-tables.json"),
-    sources: manifest.inputs, tableCount: tables.tableCount, physicalColorRows: tables.physicalColorRows,
+    tables: descriptor(payloads.get("time-tables.json"), "time-tables.json"),
+    sources: manifest.inputs, tableCount: tables.tableCount, rowCount: tables.rowCount, unresolved: tables.unresolved,
     sourceVerification: { conversionProductsVerifiedOffline: names.length, originalSourcePinsVerifiedOffline: manifest.inputs.length,
       sourceRecordAndTableJoinsVerifiedOffline: true, originalFilesStaged: false, decodedFilesStaged: false },
-    selection: tables.selection, runtimePolicy: "unselected; literal source data only", nativeRenderingParity: "unverified",
+    runtimePolicy: "effective native time tables; clock, environment type selection and colour writes are runtime work",
+    nativeRenderingParity: "unverified",
   };
-  const staged = new Map([["manifest.json", encode(browserManifest)], ["conversion-manifest.json", manifestBytes], ["sky-tables.json", payloads.get("sky-tables.json")]]);
+  const staged = new Map([["manifest.json", encode(browserManifest)], ["conversion-manifest.json", manifestBytes], ["time-tables.json", payloads.get("time-tables.json")]]);
   const target = join(output, conversionSha256);
   const targetState = await checkedPath(target);
   if (targetState.stat) {
@@ -197,7 +219,7 @@ export async function planNativeEnvironmentStage(options = {}) {
   }
   const summary = { schemaVersion: 1, kind: "native-environment-stage-receipt", status: targetState.stat ? "preserved" : "planned",
     inputDir: input, outputDir: target, conversionManifestSha256: conversionSha256, browserManifestSha256: hash(staged.get("manifest.json")),
-    sourceProductsVerified: names.length, sourceFilesVerified: manifest.inputs.length, tableCount: tables.tableCount, physicalColorRows: tables.physicalColorRows,
+    sourceProductsVerified: names.length, sourceFilesVerified: manifest.inputs.length, tableCount: tables.tableCount, rowCount: tables.rowCount,
     originalFilesStaged: false, files: [...staged].map(([name, bytes]) => descriptor(bytes, name)), writes: targetState.stat ? 0 : staged.size };
   const plan = { summary: structuredClone(summary) };
   plans.set(plan, { input, output, target, listing, payloads, staged, existing: !!targetState.stat, summary });
@@ -218,9 +240,6 @@ export async function applyNativeEnvironmentStage(plan, options = {}) {
   } else {
     require(!options.verifyOnly, "verify-only requires a complete existing staged bundle");
     await fs.mkdir(output, { recursive: true }); await checkedPath(output, true);
-    // Exclusive directory creation and exclusive file writes never overwrite an
-    // existing destination. An I/O failure retains an explicitly partial bundle;
-    // the next invocation rejects it rather than filling/overwriting unknown work.
     await fs.mkdir(target);
     for (const [name, bytes] of staged) await fs.writeFile(join(target, name), bytes, { flag: "wx" });
   }

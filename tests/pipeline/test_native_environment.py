@@ -43,7 +43,6 @@ class EnvironmentEnvelopeTests(unittest.TestCase):
                     ('encoding', envelope(b'\xef\xbb\xbf' + SAMPLE))]
         for message, data in variants:
             with self.subTest(message=message, size=len(data)):
-                # Removing one byte can fail the footer allowlist before the CRC.
                 if data == original[:-1]:
                     with self.assertRaises(FormatError): decode_environment(data)
                 else:
@@ -62,51 +61,6 @@ class EnvironmentEnvelopeTests(unittest.TestCase):
         self.assertEqual(color['valueSourceOffset'], color['valueDecodedOffset'] + 28)
         self.assertEqual(color['sourceOffset'], color['decodedOffset'] + 28)
         self.assertEqual(records[0]['kind'], 'comment')
-
-
-class EnvironmentRecordsTests(unittest.TestCase):
-    def tables(self, payload):
-        return json.loads(build_products({'test.int': envelope(payload)})['sky-tables.json'])
-
-    def test_count_mismatch_keeps_every_physical_row_and_no_runtime_selection(self):
-        result = self.tables(SAMPLE)
-        table = result['tables'][0]
-        self.assertEqual(table['declaredNum'], 1)
-        self.assertEqual(table['physicalColorRows'], 2)
-        self.assertFalse(table['declaredNumMatchesPhysicalRows'])
-        self.assertEqual(table['rows'][1]['rgb'], [66, 124, 176])
-        self.assertIsNone(table['runtimeConsumedRows'])
-        self.assertTrue(all(value is None for value in result['selection'].values()))
-        self.assertTrue(result['typedComplete'])
-        self.assertEqual(result['anomalies'][0]['kind'], 'declared-count-mismatch')
-
-    def test_duplicate_sections_properties_and_color_keys_never_collapse(self):
-        payload = SAMPLE + b'[HSVTerrainLight]\nNUM=1\nValue=first\n[HSVTerrainLight]\nNUM=1\nValue=last\n' + SAMPLE
-        products = build_products({'test.int': envelope(payload)})
-        data, tables = json.loads(products['environment-records.json']), json.loads(products['sky-tables.json'])
-        self.assertEqual(len(tables['tables']), 2)
-        self.assertNotEqual(tables['tables'][0]['sectionIndex'], tables['tables'][1]['sectionIndex'])
-        values = [row['valueAscii'] for row in data['files'][0]['records'] if row.get('key') == 'Value']
-        self.assertEqual(values, ['first', 'last'])
-        self.assertEqual(len([row for row in tables['duplicateSectionHeaders'] if row['section'] == 'HSVTerrainLight']), 2)
-        duplicate = self.tables(SAMPLE.replace(b'COLOR2=', b'COLOR1='))
-        self.assertEqual(len(duplicate['tables'][0]['rows']), 2)
-        self.assertIn('duplicate-color-key', [row['kind'] for row in duplicate['anomalies']])
-
-    def test_duplicate_num_is_retained_without_selecting_precedence(self):
-        result = self.tables(SAMPLE.replace(b'NUM=1', b'NUM=1\nNUM=2'))
-        self.assertEqual(len(result['tables'][0]['numDeclarations']), 2)
-        self.assertIsNone(result['tables'][0]['declaredNum'])
-        self.assertFalse(result['typedComplete'])
-
-    def test_unknown_line_and_bad_color_stay_visible_in_records_and_partial_result(self):
-        payload = SAMPLE.replace(b'R=66', b'R=256') + b'not a property\n'
-        products = build_products({'test.int': envelope(payload)})
-        tables, records = json.loads(products['sky-tables.json']), json.loads(products['environment-records.json'])
-        self.assertFalse(tables['typedComplete'])
-        self.assertIsNone(tables['tables'][0]['rows'][1]['rgb'])
-        self.assertEqual(records['files'][0]['records'][-1]['kind'], 'unparsed')
-        self.assertEqual(tables['physicalColorRows'], 2)
 
 
 class EnvironmentOutputTests(unittest.TestCase):
@@ -140,7 +94,7 @@ class EnvironmentOutputTests(unittest.TestCase):
 
     def test_differing_or_unowned_output_refused_without_partial_mutation(self):
         convert(self.inputs, self.output, ['test.int'])
-        (self.output / 'sky-tables.json').write_bytes(b'authored unrelated bytes')
+        (self.output / 'time-tables.json').write_bytes(b'authored unrelated bytes')
         before = self.snapshot(self.output)
         with self.assertRaisesRegex(FormatError, 'differs'): convert(self.inputs, self.output, ['test.int'])
         self.assertEqual(self.snapshot(self.output), before)

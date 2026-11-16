@@ -1,12 +1,5 @@
-"""Offline Interlude environment records; no environment/time/sky policy.
-
-Envelope evidence: sky-environment-source-20261107/NATIVE_EVIDENCE.md. This
-separate reader admits three observed footer forms with CRC32 and size guards;
-it does not broaden the existing localization decoder or assign footer meanings.
-"""
 from __future__ import annotations
 
-from collections import Counter
 import hashlib
 import json
 from pathlib import Path
@@ -16,14 +9,15 @@ import struct
 import zlib
 
 from native_catalog.ue2 import FormatError
+from world.environment_time_tables import time_tables_document
 
 
 HEADER = 'Lineage2Ver111'.encode('utf-16le')
 MAX_SOURCE_BYTES = 8 * 1024 * 1024
 FOOTER_FORMS = frozenset(((0, 7, 90, 0), (0, 1, 32, 0), (0, 1, 71, 0)))
 DEFAULT_FILES = ('Env.int', 'timeenv0.int', 'timeenv1.int', 'timeenv2.int', 'timeenv3.int')
-SKY_SECTIONS = ('SkyBoxColor', 'HazeringColor', 'CloudColor1', 'CloudColor2', 'CloudColor3')
-COLOR = re.compile(r'\(\s*T\s*=\s*(\d+)\s*,\s*R\s*=\s*(\d+)\s*,\s*G\s*=\s*(\d+)\s*,\s*B\s*=\s*(\d+)\s*\)')
+IMPLEMENTATION_FILES = ('native_environment.py', 'export-native-environment.py', 'world/environment_config_cache.py',
+                        'world/environment_program.py', 'world/environment_time_tables.py')
 XOR = bytes(value ^ 0xac for value in range(256))
 
 
@@ -58,7 +52,6 @@ def decode_environment(data):
 
 
 def parse_records(payload):
-    """Retain every physical line; section occurrences never collapse to keys."""
     records, section, section_index, offset = [], None, None, 0
     for line_number, line in enumerate(payload.splitlines(keepends=True), 1):
         body = line.rstrip(b'\r\n')
@@ -88,69 +81,7 @@ def parse_records(payload):
     return records
 
 
-def derive_tables(files):
-    tables, duplicates, anomalies, setup = [], [], [], []
-    for file in files:
-        records, name = file['records'], file['name']
-        headers = [row for row in records if row['kind'] == 'section']
-        header_counts = Counter(row['name'] for row in headers)
-        duplicates.extend({'file': name, 'section': row['name'], 'sectionIndex': row['sectionIndex'],
-                           'line': row['line'], 'sourceOffset': row['sourceOffset']}
-                          for row in headers if header_counts[row['name']] > 1)
-        properties = [row for row in records if row['kind'] == 'property']
-        setup.extend({'file': name, **row} for row in properties if row['section'] == 'EnvSetup')
-        env_types = [row for row in properties if row['section'] == 'EnvType']
-        anomalies.extend({'file': name, 'kind': 'unparsed-line', 'recordIndex': row['recordIndex']}
-                         for row in records if row['kind'] == 'unparsed')
-        for header in headers:
-            if header['name'] not in SKY_SECTIONS:
-                continue
-            selected = [row for row in properties if row['sectionIndex'] == header['sectionIndex']]
-            declared = [row for row in selected if row['key'] == 'NUM']
-            colors, other, issues = [], [], []
-            for row in selected:
-                if row['key'] == 'NUM':
-                    continue
-                if not re.fullmatch(r'COLOR\d+', row['key']):
-                    other.append(row)
-                    issues.append('unsupported-table-property')
-                    continue
-                match = COLOR.fullmatch(row['valueAscii'] or '')
-                values = list(map(int, match.groups())) if match else None
-                valid = values is not None and all(0 <= value <= 255 for value in values[1:])
-                colors.append({'key': row['key'], 'tLiteral': values[0] if valid else None,
-                               'rgb': values[1:] if valid else None, 'typed': valid,
-                               'line': row['line'], 'sourceOffset': row['sourceOffset'],
-                               'decodedOffset': row['decodedOffset'], 'valueSourceOffset': row['valueSourceOffset'],
-                               'rawValue': row['valueAscii'], 'recordIndex': row['recordIndex']})
-                if not valid:
-                    issues.append('unsupported-color-tuple')
-            number = int(declared[0]['valueAscii']) if len(declared) == 1 and re.fullmatch(r'\d+', declared[0]['valueAscii'] or '') else None
-            if number is None:
-                issues.append('missing-ambiguous-or-unsupported-NUM')
-            count_matches = number == len(colors) if number is not None else None
-            if count_matches is False:
-                anomalies.append({'file': name, 'kind': 'declared-count-mismatch', 'sectionIndex': header['sectionIndex'],
-                                  'declaredNum': number, 'physicalColorRows': len(colors)})
-            if len({row['key'] for row in colors}) != len(colors):
-                anomalies.append({'file': name, 'kind': 'duplicate-color-key', 'sectionIndex': header['sectionIndex']})
-            anomalies.extend({'file': name, 'kind': issue, 'sectionIndex': header['sectionIndex']} for issue in sorted(set(issues)))
-            tables.append({'file': name, 'originalSha256': file['originalSha256'], 'decodedSha256': file['decodedSha256'],
-                           'section': header['name'], 'sectionIndex': header['sectionIndex'], 'headerLine': header['line'],
-                           'headerSourceOffset': header['sourceOffset'], 'envTypeDeclarations': env_types,
-                           'declaredNum': number, 'numDeclarations': declared, 'physicalColorRows': len(colors),
-                           'declaredNumMatchesPhysicalRows': count_matches, 'rows': colors, 'otherProperties': other,
-                           'typedComplete': not issues, 'runtimeConsumedRows': None})
-    return {'schemaVersion': 1, 'kind': 'native-environment-source-tables', 'tableCount': len(tables),
-            'physicalColorRows': sum(len(table['rows']) for table in tables), 'tables': tables,
-            'envSetupDeclarations': setup, 'duplicateSectionHeaders': duplicates, 'anomalies': anomalies,
-            'typedComplete': all(table['typedComplete'] for table in tables),
-            'selection': {'nativeEnvironmentType': None, 'nativeTime': None, 'interpolation': None,
-                          'numConsumption': None, 'duplicateSectionPrecedence': None, 'liveColorWriter': None}}
-
-
 def build_products(sources):
-    """Build deterministic products from named bytes; no filesystem writes."""
     require(bool(sources), 'No environment sources selected')
     require(len({name.casefold() for name in sources}) == len(sources), 'Duplicate environment source names')
     files, products = [], {}
@@ -160,7 +91,6 @@ def build_products(sources):
         payload, framing = decode_environment(data)
         products[f'original/{name}'] = data
         products[f'decoded/{name}.bin'] = payload
-        # This is only a readable, lossless byte mapping, not a Korean/locale claim.
         products[f'decoded/{name}.txt'] = payload.decode('latin-1').encode('utf-8')
         files.append({'name': name, 'originalBytes': len(data), 'originalSha256': sha(data),
                       'decodedBytes': len(payload), 'decodedSha256': sha(payload), 'framing': framing,
@@ -170,10 +100,9 @@ def build_products(sources):
                'propertyRecords': sum(row['kind'] == 'property' for file in files for row in file['records']),
                'offsetSpace': 'source=original encrypted file; decoded=exact XOR payload; no section precedence', 'files': files}
     products['environment-records.json'] = encoded_json(records)
-    products['sky-tables.json'] = encoded_json(derive_tables(files))
+    products['time-tables.json'] = encoded_json(time_tables_document(files))
     manifest = {'schemaVersion': 1, 'kind': 'native-environment-conversion',
-                'implementation': {name: sha((Path(__file__).parent / name).read_bytes())
-                                   for name in ('native_environment.py', 'export-native-environment.py')},
+                'implementation': {name: sha((Path(__file__).parent / name).read_bytes()) for name in IMPLEMENTATION_FILES},
                 'inputs': [{key: file[key] for key in ('name', 'originalBytes', 'originalSha256')} for file in files],
                 'products': {name: {'bytes': len(data), 'sha256': sha(data)} for name, data in sorted(products.items())},
                 'runtimeIntegration': False, 'nativeRenderingParity': 'unverified'}
@@ -223,10 +152,10 @@ def convert(input_dir, output_dir, names=DEFAULT_FILES, verify_only=False):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 with path.open('xb') as stream:
                     stream.write(data)
-    tables = json.loads(products['sky-tables.json'])
+    tables = json.loads(products['time-tables.json'])
     records = json.loads(products['environment-records.json'])
-    return {'sourceFiles': len(sources), 'propertyRecords': records['propertyRecords'], 'tables': tables['tableCount'],
-            'physicalColorRows': tables['physicalColorRows'], 'typedComplete': tables['typedComplete'],
-            'anomalies': tables['anomalies'], 'products': len(products), 'existingVerified': len(existing),
+    return {'sourceFiles': len(sources), 'propertyRecords': records['propertyRecords'], 'environmentTypes': len(tables['environmentTypes']),
+            'tables': tables['tableCount'], 'rows': tables['rowCount'], 'typedComplete': tables['typedComplete'],
+            'unresolved': tables['unresolved'], 'products': len(products), 'existingVerified': len(existing),
             'written': 0 if verify_only else len(products) - len(existing), 'verifyOnly': verify_only,
             'manifestSha256': sha(products['manifest.json'])}

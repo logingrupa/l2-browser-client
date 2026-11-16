@@ -132,7 +132,9 @@ def adapter_pins(name):
     elif name == 'sounds':
         files.update('scripts/' + item for item in _sounds_module().implementation()['files'])
     elif name == 'environment':
-        files.update('scripts/' + item for item in ('native_environment.py', 'export-native-environment.py', 'native_catalog/ue2.py'))
+        from native_environment import IMPLEMENTATION_FILES
+        files.update('scripts/' + item for item in (*IMPLEMENTATION_FILES, 'native_catalog/ue2.py'))
+        files.add('recipes/world/environment-native-rules.json')
     result.update({name: digest(child(ROOT, name).read_bytes()) for name in sorted(files)})
     return dict(sorted(result.items()))
 
@@ -264,15 +266,14 @@ def _environment(job, output, pins):
     for row in manifest['inputs']:
         _dependencies({row['name']: row['originalSha256']}, pins, dependencies)
         require(row['originalBytes'] == pins[row['name']]['bytes'], 'Environment source length differs')
-    tables = read_json(child(output, 'sky-tables.json'))
+    tables = read_json(child(output, 'time-tables.json'))
     records = read_json(child(output, 'environment-records.json'))
-    unsupported = [row for row in tables.get('anomalies', []) if row.get('kind') == 'unsupported-color-syntax']
-    if not tables['typedComplete'] and not unsupported:
-        unsupported = [{'status': 'typed-table-coverage-incomplete', 'anomalies': tables.get('anomalies', [])}]
+    unsupported = [] if tables['typedComplete'] else [{'status': 'time-tables-unresolved', 'reasons': tables['unresolved']}]
     return _result('converted' if tables['typedComplete'] else 'partial',
-        {'sourceFiles': len(sources), 'propertyRecords': records['propertyRecords'], 'tables': tables['tableCount'],
-         'physicalColorRows': tables['physicalColorRows'], 'anomalies': len(tables.get('anomalies', []))},
-        expected.keys(), dependencies, unsupported, ['Source tables do not select native file/type/time/interpolation or runtime colors.'])
+        {'sourceFiles': len(sources), 'propertyRecords': records['propertyRecords'], 'environmentTypes': len(tables['environmentTypes']),
+         'tables': tables['tableCount'], 'rows': tables['rowCount'], 'unresolved': len(tables['unresolved'])},
+        expected.keys(), dependencies, unsupported,
+        ['Time tables follow the DB-4 native load rules; the clock, environment type selection and sky colour writes are runtime work.'])
 
 
 def _migration(job, output, pins, source_lock, project_root):

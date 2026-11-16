@@ -20,7 +20,6 @@ import reference_client_guard
 from reference_client_guard import REFERENCE_CLIENT_LOCK_FILE_FIELDS, ReferenceClientLockError
 from world import convert_tile_batch
 from world.eligible_tile_selection import PASS_STATUS, locked_tile_source_identity
-from world.environment_program import environment_lock_input_records
 from world.minimap_sources import lock_equal_minimap_source_paths, locked_tile_ids
 from world.raw_map_step import RAW_STEP_NAME, RawMapStepError, read_map_lock_record, read_tile_map_lock_record, tile_map_path
 from world.terrain_seam_strip import neighbour_tile_id, seam_neighbour_inputs
@@ -36,8 +35,6 @@ COLUMN_NEIGHBOUR_TILE_ID, ROW_NEIGHBOUR_TILE_ID, CORNER_NEIGHBOUR_TILE_ID = (nei
 OWNER_MAP_PATH, COLUMN_NEIGHBOUR_MAP_PATH, ROW_NEIGHBOUR_MAP_PATH, CORNER_NEIGHBOUR_MAP_PATH = (
     tile_map_path(tile_id) for tile_id in (OWNER_TILE_ID, COLUMN_NEIGHBOUR_TILE_ID, ROW_NEIGHBOUR_TILE_ID, CORNER_NEIGHBOUR_TILE_ID))
 FIRST_MAP_SHA256, SECOND_MAP_SHA256, THIRD_MAP_SHA256 = 'c' * 64, 'd' * 64, 'e' * 64
-ENVIRONMENT_SETUP_PATH = 'system/Env.int'
-ENVIRONMENT_TYPE_PATH = 'system/TimeEnv0.int'
 ZONE_NAME_PACKAGE_PATH = 'systextures/l2zonename.utx'
 
 
@@ -109,14 +106,11 @@ class LockParseReuseTests(unittest.TestCase):
                                  [*expected_inputs[:2], {**expected_inputs[2], 'mapSha256': THIRD_MAP_SHA256}])
         self.assertEqual(lock_parses.counts(), (2, 0, 2))
 
-    def test_the_environment_and_minimap_lock_readers_parse_the_lock_once_and_again_after_the_file_is_replaced(self):
-        locked_sources = {ENVIRONMENT_SETUP_PATH: FIRST_MAP_SHA256, ENVIRONMENT_TYPE_PATH: SECOND_MAP_SHA256,
-                          ZONE_NAME_PACKAGE_PATH: THIRD_MAP_SHA256, OWNER_MAP_PATH: FIRST_MAP_SHA256}
+    def test_the_minimap_lock_readers_parse_the_lock_once_and_again_after_the_file_is_replaced(self):
+        locked_sources = {ZONE_NAME_PACKAGE_PATH: THIRD_MAP_SHA256, OWNER_MAP_PATH: FIRST_MAP_SHA256}
         self.write_lock(locked_sources)
         with counted_lock_parses() as lock_parses:
             for _ in range(5):
-                self.assertEqual(environment_lock_input_records(self.lock_path),
-                                 [{'path': ENVIRONMENT_SETUP_PATH, 'sha256': FIRST_MAP_SHA256}, {'path': ENVIRONMENT_TYPE_PATH, 'sha256': SECOND_MAP_SHA256}])
                 self.assertEqual(lock_equal_minimap_source_paths(self.lock_path), [ZONE_NAME_PACKAGE_PATH])
                 self.assertEqual(locked_tile_ids(self.lock_path), [OWNER_TILE_ID])
             self.assertEqual(lock_parses.counts(), (1, 0, 1))
@@ -124,7 +118,6 @@ class LockParseReuseTests(unittest.TestCase):
             for _ in range(5):
                 self.assertEqual(locked_tile_ids(self.lock_path), [OWNER_TILE_ID, ROW_NEIGHBOUR_TILE_ID])
                 self.assertEqual(lock_equal_minimap_source_paths(self.lock_path), [ZONE_NAME_PACKAGE_PATH])
-                self.assertEqual(len(environment_lock_input_records(self.lock_path)), 2)
         self.assertEqual(lock_parses.counts(), (2, 0, 2))
 
     def test_a_missing_lock_is_refused_by_read_map_lock_record_on_every_call(self):

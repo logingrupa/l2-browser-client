@@ -1,126 +1,77 @@
 import hashlib
-import re
+import json
+from pathlib import Path
 
 from native_catalog.ue2 import FormatError
-from native_environment import decode_environment, parse_records
-from native_store.unit_ledger import locked_input_records, process_reference_client_lock
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLockError
+from native_store.canonical_json import canonical_json_bytes
+from world.environment_config_cache import float32, typed_setting_value
 
-ENVIRONMENT_PROGRAM_SCHEMA_VERSION = 1
-ENVIRONMENT_PROGRAM_KIND = 'native-environment-program'
-ENVIRONMENT_SYSTEM_FOLDER = 'system'
-ENVIRONMENT_SETUP_FILE = 'Env.int'
-ENVIRONMENT_SETUP_SECTION = 'EnvSetup'
-ENVIRONMENT_TYPE_FILE_KEY = 'TimeEnvFileName{}'
-ENVIRONMENT_TYPE_SECTION = 'EnvType'
-ENVIRONMENT_TYPES = (0, 1, 2, 3)
-PROGRAM_SETUP_KEYS = ('TimeRatio', 'StartTime', 'TimeEnvFileNum')
-ENVIRONMENT_PROGRAM_UNRESOLVED_REASON_PREFIX = 'environment-program-unresolved:'
-INTEGER_TEXT = re.compile(r'-?\d+')
-NUMBER_TEXT = re.compile(r'-?\d+\.\d+')
-TUPLE_FIELD_TEXT = r'\s*[A-Za-z][A-Za-z0-9]*\s*=\s*-?\d+(?:\.\d+)?\s*'
-TUPLE_TEXT = re.compile(rf'\(({TUPLE_FIELD_TEXT}(?:,{TUPLE_FIELD_TEXT})*)\)')
-BOOLEAN_TEXT = {'true': True, 'false': False}
-ENVIRONMENT_LOCK_PATH_PATTERN = re.compile(r'system/(?:env|timeenv\d+)\.int', re.IGNORECASE)
-LOCK_EQUAL_CLASS = 'equal'
+ENVIRONMENT_NATIVE_RULES_PATH = Path(__file__).resolve().parents[2] / 'recipes' / 'world' / 'environment-native-rules.json'
+ENVIRONMENT_NATIVE_RULES_RELATIVE_PATH = 'recipes/world/environment-native-rules.json'
+REQUIRED_RULE_IDS = ('setup.section', 'setup.IsClock', 'setup.TimeRatio', 'setup.StartTime', 'setup.ShadowTick', 'setup.SlopeSunAngle',
+                     'setup.TimeEnvFileNum', 'setup.TimeEnvFileName', 'binding.SKYBOX', 'binding.HAZERING', 'binding.NumCloudColor',
+                     'binding.CLOUD', 'table.environmentType', 'table.countKey', 'table.kind.rgb', 'table.kind.hsv', 'table.kind.scale',
+                     'table.sections')
+SETUP_VALUE_RULE_IDS = ('setup.IsClock', 'setup.TimeRatio', 'setup.StartTime', 'setup.ShadowTick', 'setup.SlopeSunAngle', 'setup.TimeEnvFileNum')
+SETTING_FROM_FILE = 'file'
+SETTING_FROM_NATIVE_DEFAULT = 'native-default'
+SETTING_UNRESOLVED = 'unresolved'
 
 
-def environment_program_unresolved_reason(file_name):
-    return f'{ENVIRONMENT_PROGRAM_UNRESOLVED_REASON_PREFIX}{file_name}'
+def load_environment_native_rules(path=ENVIRONMENT_NATIVE_RULES_PATH):
+    document = json.loads(Path(path).read_text(encoding='utf-8'))
+    if not (isinstance(document, dict) and document.get('schemaVersion') == 1 and isinstance(document.get('rows'), list)):
+        raise FormatError(f'{ENVIRONMENT_NATIVE_RULES_RELATIVE_PATH} must be schema 1 with a rows list')
+    rules = {row['id']: row['value'] for row in document['rows']}
+    missing = [rule_id for rule_id in REQUIRED_RULE_IDS if rule_id not in rules]
+    if missing or len(rules) != len(document['rows']):
+        raise FormatError(f'{ENVIRONMENT_NATIVE_RULES_RELATIVE_PATH} misses rule rows {missing} or repeats an id')
+    return rules, hashlib.sha256(canonical_json_bytes(document)).hexdigest()
 
 
-def typed_number(text):
-    return int(text) if INTEGER_TEXT.fullmatch(text) else float(text)
+def typed_rule_default(rule):
+    default = rule['default']
+    return float32(default) if default is not None and rule['type'] == 'float32' else default
 
 
-def typed_environment_value(text):
-    if text is None:
-        return {'kind': 'unparsed'}
-    stripped = text.strip()
-    if stripped.casefold() in BOOLEAN_TEXT:
-        return {'kind': 'boolean', 'value': BOOLEAN_TEXT[stripped.casefold()]}
-    if INTEGER_TEXT.fullmatch(stripped):
-        return {'kind': 'integer', 'value': int(stripped)}
-    if NUMBER_TEXT.fullmatch(stripped):
-        return {'kind': 'number', 'value': float(stripped)}
-    match = TUPLE_TEXT.fullmatch(stripped)
-    if match:
-        fields = [part.split('=') for part in match.group(1).split(',')]
-        return {'kind': 'tuple', 'fields': [[key.strip(), typed_number(value.strip())] for key, value in fields]}
-    return {'kind': 'text', 'value': stripped}
+def setting_record(config_file, section, key, rule):
+    record = config_file.property(section, key)
+    if record is None:
+        default = typed_rule_default(rule)
+        if default is None:
+            return {'key': key, 'value': None, 'source': SETTING_UNRESOLVED, 'recordIndex': None, 'valueSourceOffset': None, 'raw': None,
+                    'unresolved': f'environment-setup-value-missing:{key}'}
+        return {'key': key, 'value': default, 'source': SETTING_FROM_NATIVE_DEFAULT, 'recordIndex': None, 'valueSourceOffset': None,
+                'raw': None, 'unresolved': None}
+    value = typed_setting_value(record['valueAscii'], rule['type'])
+    located = {'key': key, 'recordIndex': record['recordIndex'], 'valueSourceOffset': record['valueSourceOffset'], 'raw': record['valueAscii']}
+    if value is None:
+        return {**located, 'value': None, 'source': SETTING_UNRESOLVED, 'unresolved': f'environment-setup-value-unparsed:{key}'}
+    return {**located, 'value': value, 'source': SETTING_FROM_FILE, 'unresolved': None}
 
 
-def typed_sections(records):
-    sections, occurrences = [], {}
-    for row in records:
-        if row['kind'] == 'section':
-            occurrences[row['name']] = occurrences.get(row['name'], 0) + 1
-            sections.append({'section': row['name'], 'occurrence': occurrences[row['name']] - 1, 'line': row['line'], 'properties': []})
-        elif row['kind'] == 'property' and sections and row['sectionIndex'] is not None:
-            sections[-1]['properties'].append({'key': row['key'], 'line': row['line'], 'valueSourceOffset': row['valueSourceOffset'],
-                                               'raw': row['valueAscii'], **typed_environment_value(row['valueAscii'])})
-        elif row['kind'] == 'unparsed':
-            raise FormatError(f'environment line {row["line"]} is neither a section, a property nor a comment')
-    return sections
+def indexed_setting_records(config_file, section, rule, count):
+    return [{'index': index, **setting_record(config_file, section, rule['keyPattern'].format(index=index), rule)}
+            for index in range(rule['firstIndex'], rule['firstIndex'] + max(count, 0))]
 
 
-def section_properties(sections, name):
-    return [prop for section in sections if section['section'] == name for prop in section['properties']]
+def environment_setup(file_name, config_file, rules):
+    section = rules['setup.section']
+    values = {rules[rule_id]['key']: setting_record(config_file, section, rules[rule_id]['key'], rules[rule_id]) for rule_id in SETUP_VALUE_RULE_IDS}
+    cloud_count = setting_record(config_file, section, rules['binding.NumCloudColor']['key'], rules['binding.NumCloudColor'])
+    bindings = {'SKYBOX': setting_record(config_file, section, rules['binding.SKYBOX']['key'], rules['binding.SKYBOX']),
+                'HAZERING': setting_record(config_file, section, rules['binding.HAZERING']['key'], rules['binding.HAZERING']),
+                'NumCloudColor': cloud_count,
+                'CLOUD': indexed_setting_records(config_file, section, rules['binding.CLOUD'], cloud_count['value'] or 0)}
+    time_environment_files = indexed_setting_records(config_file, section, rules['setup.TimeEnvFileName'], values['TimeEnvFileNum']['value'] or 0)
+    return {'file': file_name, 'section': section, 'values': values, 'bindings': bindings, 'timeEnvironmentFiles': time_environment_files}
 
 
-def section_value(sections, section_name, key):
-    matches = [prop for prop in section_properties(sections, section_name) if prop['key'].casefold() == key.casefold()]
-    if len(matches) != 1:
-        return None
-    return matches[0]
+def environment_setup_settings(setup):
+    bindings = setup['bindings']
+    return [*setup['values'].values(), bindings['SKYBOX'], bindings['HAZERING'], bindings['NumCloudColor'], *bindings['CLOUD'],
+            *setup['timeEnvironmentFiles']]
 
 
-def read_environment_file(client_access, file_name):
-    relative_path = f'{ENVIRONMENT_SYSTEM_FOLDER}/{file_name}'
-    try:
-        data = client_access.require_equal_file(relative_path).read_bytes()
-    except (ReferenceClientLockError, OSError):
-        return None
-    payload, _ = decode_environment(data)
-    return {'file': file_name, 'path': relative_path, 'sha256': hashlib.sha256(data).hexdigest(), 'sections': typed_sections(parse_records(payload))}
-
-
-def unresolved_environment_type(environment_type, file_name, reason):
-    return {'environmentType': environment_type, 'file': file_name, 'path': None, 'sha256': None, 'declaredEnvType': None, 'sections': [],
-            'unresolved': reason}
-
-
-def environment_type_entry(client_access, setup, environment_type):
-    if setup is None:
-        return unresolved_environment_type(environment_type, None, environment_program_unresolved_reason(ENVIRONMENT_SETUP_FILE))
-    declared_file = section_value(setup['sections'], ENVIRONMENT_SETUP_SECTION, ENVIRONMENT_TYPE_FILE_KEY.format(environment_type))
-    if declared_file is None or declared_file['kind'] != 'text':
-        return unresolved_environment_type(environment_type, None, environment_program_unresolved_reason(ENVIRONMENT_SETUP_FILE))
-    environment_file = read_environment_file(client_access, declared_file['value'])
-    if environment_file is None:
-        return unresolved_environment_type(environment_type, declared_file['value'], environment_program_unresolved_reason(declared_file['value']))
-    declared_type = section_value(environment_file['sections'], ENVIRONMENT_TYPE_SECTION, ENVIRONMENT_TYPE_SECTION)
-    return {'environmentType': environment_type, **environment_file, 'declaredEnvType': declared_type, 'unresolved': None}
-
-
-def program_setup_values(setup):
-    if setup is None:
-        return {key: None for key in PROGRAM_SETUP_KEYS}
-    return {key: section_value(setup['sections'], ENVIRONMENT_SETUP_SECTION, key) for key in PROGRAM_SETUP_KEYS}
-
-
-def read_environment_program(client_access):
-    setup = read_environment_file(client_access, ENVIRONMENT_SETUP_FILE)
-    types = [environment_type_entry(client_access, setup, environment_type) for environment_type in ENVIRONMENT_TYPES]
-    unresolved = sorted({entry['unresolved'] for entry in types if entry['unresolved']}
-                        | ({environment_program_unresolved_reason(ENVIRONMENT_SETUP_FILE)} if setup is None else set()))
-    return {'schemaVersion': ENVIRONMENT_PROGRAM_SCHEMA_VERSION, 'kind': ENVIRONMENT_PROGRAM_KIND, 'setupValues': program_setup_values(setup),
-            'setup': setup if setup is not None else {'file': ENVIRONMENT_SETUP_FILE, 'path': None, 'sha256': None, 'sections': []},
-            'environmentTypes': types, 'unresolved': unresolved}
-
-
-def environment_lock_input_records(lock_path=REFERENCE_CLIENT_LOCK_PATH):
-    lock = process_reference_client_lock(lock_path)
-    paths = sorted(path for path, record in lock.records_by_path.items()
-                   if ENVIRONMENT_LOCK_PATH_PATTERN.fullmatch(path) and record['class'] == LOCK_EQUAL_CLASS)
-    return locked_input_records(paths, lock_path)
+def environment_setup_unresolved_reasons(setup):
+    return sorted({setting['unresolved'] for setting in environment_setup_settings(setup) if setting['unresolved']})
