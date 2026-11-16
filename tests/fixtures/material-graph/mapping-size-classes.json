@@ -1,0 +1,29 @@
+{
+  "file": "SyntheticMapping.utx",
+  "packageVersion": 123,
+  "licensee": 28,
+  "exports": [
+    {"name": "WideTexture", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 64}, {"name": "VSize", "int": 32}, {"name": "LossDetail", "int": 1}]},
+    {"name": "TallTexture", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 16}, {"name": "VSize", "int": 128}]},
+    {"name": "MaskTexture", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 1024}, {"name": "VSize", "int": 1024}]},
+    {"name": "MaskedShiftTexture", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 8}, {"name": "VSize", "int": 4}, {"name": "LossDetail", "int": 33}]},
+    {"name": "OverflowTexture", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 1073741824}, {"name": "VSize", "int": 1}, {"name": "LossDetail", "int": 1}]},
+    {"name": "WrapTexture", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 2}, {"name": "VSize", "int": 2}, {"name": "LossDetail", "int": 31}]},
+    {"name": "SizelessTexture", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 256}]},
+    {"name": "PairCombiner", "class": "Engine.Combiner", "properties": [{"name": "Material1", "object": "TallTexture"}, {"name": "Material2", "object": "WideTexture"}, {"name": "Mask", "object": "MaskTexture"}]},
+    {"name": "NegativeCombiner", "class": "Engine.Combiner", "properties": [{"name": "Material1", "object": "OverflowTexture"}]},
+    {"name": "DiffuseShader", "class": "Engine.Shader", "properties": [{"name": "Diffuse", "object": "TallTexture"}, {"name": "SelfIllumination", "object": "WideTexture"}]},
+    {"name": "SelfIlluminatedShader", "class": "Engine.Shader", "properties": [{"name": "SelfIllumination", "object": "WideTexture"}]},
+    {"name": "ZeroDiffuseShader", "class": "Engine.Shader", "properties": [{"name": "Diffuse", "object": "SolidColor"}, {"name": "SelfIllumination", "object": "WideTexture"}]},
+    {"name": "EmptyShader", "class": "Engine.Shader", "properties": []},
+    {"name": "BumpedShader", "class": "Engine.BumpShader", "properties": [{"name": "Diffuse", "object": "WideTexture"}]},
+    {"name": "ShadedBlend", "class": "Engine.FinalBlend", "properties": [{"name": "Material", "object": "DiffuseShader"}]},
+    {"name": "TintedWide", "class": "Engine.L2ColorModifier", "properties": [{"name": "Material", "object": "WideTexture"}]},
+    {"name": "EmptyPanner", "class": "Engine.TexPanner", "properties": []},
+    {"name": "SolidColor", "class": "Engine.ConstantColor", "properties": []},
+    {"name": "FadingColor", "class": "Engine.FadeColor", "properties": []},
+    {"name": "UnruledPalette", "class": "Engine.Palette", "properties": []},
+    {"name": "CyclePanner", "class": "Engine.TexPanner", "properties": [{"name": "Material", "object": "CycleRotator"}]},
+    {"name": "CycleRotator", "class": "Engine.TexRotator", "properties": [{"name": "Material", "object": "CyclePanner"}]}
+  ]
+}

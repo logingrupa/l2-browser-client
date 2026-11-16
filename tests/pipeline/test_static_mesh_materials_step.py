@@ -17,7 +17,8 @@ from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
-from test_material_program_images import SYNTHETIC_PNG_SIDE, synthetic_png_bytes, texture_export_of_size
+from support.mapping_size_class_defaults import use_synthetic_mapping_class_defaults
+from test_material_program_images import synthetic_png_bytes
 from world import locked_input_receipt, material_texture_images, static_mesh_materials_step, surface_material_programs
 from world.bsp_surface_materials import convert_surface_material
 from world.static_mesh_materials_step import (STATIC_MESH_MATERIALS_STEP_NAME, run_static_mesh_materials_step, sealed_static_mesh_materials,
@@ -179,9 +180,9 @@ class SharedProgramPathTests(unittest.TestCase):
         self.addCleanup(material_texture_images.stored_texture_images_by_store_root.clear)
         map_sources = synthetic_map_sources()
         converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-bytes-'), texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
-                                    material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []),
-                                    material_texture_export=texture_export_of_size(SYNTHETIC_PNG_SIDE, SYNTHETIC_PNG_SIDE))
+                                    material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
         store_root = scratch_work_root(self, 'bsp-bytes-store-') / 'l2'
+        use_synthetic_mapping_class_defaults(self)
         with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
             outcome = convert_surface_material(TEXTURED_MATERIAL, map_sources, converter, store_root, None, store_root)
         self.assertEqual(outcome.material.program['programSha256'], TEXTURED_PROGRAM_SHA256_BEFORE_THE_SHARED_MODULE)

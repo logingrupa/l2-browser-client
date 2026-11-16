@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 from typing import NamedTuple
 
@@ -49,14 +50,9 @@ class BspSection(NamedTuple):
 class BspSurfaceMaterial(NamedTuple):
     identity: str
     png: object
-    width: object
-    height: object
+    mapping_size: object
     translucent: bool
     program: object
-
-    @property
-    def has_source_texture_size(self):
-        return self.width is not None and self.height is not None
 
 
 def load_bsp_poly_flags(path=BSP_POLY_FLAGS_PATH):
@@ -133,10 +129,6 @@ def build_chunk_sections(model, node_indices, material_of_surface, flags, lightm
     return [BspSection(key, nodes_by_key[key]) for key in sorted(nodes_by_key, key=section_order)]
 
 
-def difference(first, second):
-    return [first[axis] - second[axis] for axis in range(3)]
-
-
 def dot(first, second):
     return sum(first[axis]*second[axis] for axis in range(3))
 
@@ -164,25 +156,48 @@ def source_point_to_scene(point):
     return [f32(point[axis] * SOURCE_FRAME_UNITS_TO_METRES) for axis in SOURCE_FRAME_AXIS_ORDER]
 
 
-def source_texture_uv(model, surface, point, material):
-    relative = difference(point, model.points[surface.p_base])
-    return [f32(dot(relative, model.vectors[surface.v_texture_u]) / material.width),
-            f32(dot(relative, model.vectors[surface.v_texture_v]) / material.height)]
+def texture_projection_origin_term(base, axis):
+    return f32((-base[1] * axis[1] + -base[0] * axis[0]) + -base[2] * axis[2])
+
+
+def texture_projection(point, axis, origin_term):
+    return f32(((point[1] * axis[1] + point[0] * axis[0]) + point[2] * axis[2]) + origin_term)
+
+
+def round_half_up_by_floor(value):
+    return math.floor(value + 0.5)
+
+
+def recentred_by_rounded_mean(coordinates):
+    total = 0.0
+    for coordinate in coordinates:
+        total = f32(total + coordinate)
+    shift = round_half_up_by_floor(f32(total / len(coordinates)))
+    return [f32(coordinate - shift) for coordinate in coordinates]
+
+
+def node_texture_coordinates(model, surface, points, mapping_size):
+    base = model.points[surface.p_base]
+    coordinates_by_axis = []
+    for vector_index, divisor in ((surface.v_texture_u, mapping_size.u), (surface.v_texture_v, mapping_size.v)):
+        axis = model.vectors[vector_index]
+        origin_term = texture_projection_origin_term(base, axis)
+        coordinates_by_axis.append(recentred_by_rounded_mean([f32(texture_projection(point, axis, origin_term) / divisor) for point in points]))
+    return [list(pair) for pair in zip(*coordinates_by_axis)]
 
 
 def section_geometry(model, section, material, primitive, node_ranges):
     positions, normals, uvs, indices = [], [], [], []
     for node_index in section.nodes:
         node = model.nodes[node_index]
-        surface = model.surfs[node.i_surf]
         points = node_source_polygon(model, node)
         first_vertex, first_index = len(positions), len(indices)
         indices.extend(fan_triangle_indices(points, node.plane[:3], first_vertex, node_index))
         for point in points:
             positions.append(source_point_to_scene(point))
             normals.append([f32(node.plane[axis]) for axis in SOURCE_FRAME_AXIS_ORDER])
-            if material.has_source_texture_size:
-                uvs.append(source_texture_uv(model, surface, point, material))
+        if material.mapping_size is not None:
+            uvs.extend(node_texture_coordinates(model, model.surfs[node.i_surf], points, material.mapping_size))
         node_ranges.append({'node': node_index, 'primitive': primitive, 'firstIndex': first_index, 'indexCount': len(indices) - first_index})
     return positions, normals, uvs, indices
 
@@ -216,7 +231,7 @@ def chunk_bsp_glb(model, chunk_id, sections, materials_by_identity):
             gltf_materials.append(gltf_material_record(builder, material, section.key.unlit, image_of_identity))
         positions, normals, uvs, indices = section_geometry(model, section, material, primitive, node_ranges)
         attributes = {'POSITION': builder.accessor(positions, len(positions), 'VEC3'), 'NORMAL': builder.accessor(normals, len(normals), 'VEC3')}
-        if material.has_source_texture_size:
+        if material.mapping_size is not None:
             attributes['TEXCOORD_0'] = builder.accessor(uvs, len(uvs), 'VEC2')
         index_accessor = builder.accessor(indices, len(indices), 'SCALAR', 5125)
         meshes.append({'name': f'{chunk_id}.section-{primitive}', 'primitives': [{'attributes': attributes, 'indices': index_accessor,

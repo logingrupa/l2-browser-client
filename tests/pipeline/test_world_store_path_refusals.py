@@ -12,8 +12,10 @@ from native_store.store_paths import ConverterOutputRefusedError, StorePathError
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
-from test_material_program_images import SYNTHETIC_PNG_SIDE, synthetic_png_bytes, texture_export_of_size
+from support.mapping_size_class_defaults import use_synthetic_mapping_class_defaults
+from test_material_program_images import synthetic_png_bytes
 from world import bsp_step, material_texture_images, sky_step, surface_material_programs
+from world.bsp_material_mapping_size import MAPPING_SIZE_ZERO_REASON
 from world.bsp_step import BSP_STEP_NAME, bsp_ledger, run_bsp_step
 from world.bsp_surface_materials import convert_surface_material
 from world.sky_step import SkyRootConversion
@@ -38,12 +40,13 @@ PATH_ESCAPES_ITS_ROOT_ROW_REASON = 'decode-failed:StorePathError:Path escapes it
 class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
     def setUp(self):
         package = build_synthetic_material_package(TEXTURED_MATERIAL_FIXTURE)
-        self.map_sources = SimpleNamespace(paths={'syntheticmaterials': ['textures/SyntheticMaterials.utx']}, get=lambda relative: package)
+        self.map_sources = SimpleNamespace(paths={'syntheticmaterials': ['textures/SyntheticMaterials.utx']}, get=lambda relative: package,
+                                           dependencies={})
         self.converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'),
                                          texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
-                                         material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []),
-                                         material_texture_export=texture_export_of_size(SYNTHETIC_PNG_SIDE, SYNTHETIC_PNG_SIDE))
+                                         material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
         self.start_patch(surface_material_programs, 'kept_material_class_defaults', mock.Mock(return_value=SYNTHETIC_CLASS_DEFAULTS))
+        use_synthetic_mapping_class_defaults(self)
 
     def start_patch(self, owner, name, replacement):
         patcher = mock.patch.object(owner, name, replacement)
@@ -96,12 +99,14 @@ class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
         self.assertIsNone(ledger.sealed_receipt(TILE_UNIT_KEY))
         self.assertFalse(ledger.unit_step_directory(TILE_UNIT_KEY).exists())
 
-    def test_the_same_bsp_step_seals_without_a_gap_row_when_the_publish_is_not_refused(self):
+    def test_the_same_bsp_step_seals_when_the_publish_is_not_refused_with_only_the_zero_mapping_size_gap_of_its_sizeless_texture(self):
         project_root = scratch_work_root(self, 'bsp-project-')
         self.read_one_synthetic_bsp_node_instead_of_a_map(project_root)
         row = run_bsp_step(project_root, project_root / 'client', TILE_ID)
-        self.assertEqual((row['status'], row['reason']), ('pass', None))
-        self.assertEqual(bsp_ledger(project_root).sealed_receipt(TILE_UNIT_KEY)['gapRows'], [])
+        self.assertEqual((row['status'], row['reason']), ('gap', MAPPING_SIZE_ZERO_REASON))
+        self.assertEqual([(gap_row['status'], gap_row['reason'], gap_row['sourceIdentity']['object'])
+                          for gap_row in bsp_ledger(project_root).sealed_receipt(TILE_UNIT_KEY)['gapRows']],
+                         [('gap', MAPPING_SIZE_ZERO_REASON, TEXTURED_MATERIAL)])
 
     def test_a_conversion_refusal_that_is_no_store_path_refusal_stays_a_gap_reason(self):
         store_root = scratch_work_root(self, 'bsp-store-') / 'l2'

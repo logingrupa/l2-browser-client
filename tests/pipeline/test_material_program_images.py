@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 import struct
 import sys
-from types import SimpleNamespace
 import unittest
 import zlib
 
@@ -25,15 +24,6 @@ PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 SYNTHETIC_PNG_SIDE = 2
 SYNTHETIC_PNG_RGBA = bytes((40, 80, 120, 255))
 STORED_DEFLATE_LEVEL = 0
-
-
-def source_size_tag(name, value):
-    return {'name': name, 'type': 2, 'value': value, 'arrayIndex': None, 'status': 'decoded'}
-
-
-def texture_export_of_size(width, height):
-    package = SimpleNamespace(properties=lambda item: ([source_size_tag('USize', width), source_size_tag('VSize', height)], None))
-    return lambda identity: (package, {'object': TEXTURE_NODE}, [])
 
 
 def png_chunk(chunk_type, data):

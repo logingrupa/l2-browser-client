@@ -11,17 +11,18 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from material_graph_fixture import build_synthetic_material_package
-from native_catalog.ue2 import FormatError
 from native_store.pinned_store_verification import verify_pinned_store_files
 from native_store.tile_manifest_validation import validate_tile_chunk_manifest
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
+from support.mapping_size_class_defaults import use_synthetic_mapping_class_defaults
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
-from test_material_program_images import SYNTHETIC_PNG_SIDE, synthetic_png_bytes, texture_export_of_size
+from test_material_program_images import synthetic_png_bytes
 from test_tile_manifest_step import synthetic_tile
-from world import surface_material_programs
+from world import bsp_surface_materials, surface_material_programs
 from world.bsp_chunk_geometry import (BspPolyFlags, BspSurfaceMaterial, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb,
                                       drawn_node_indices, load_bsp_poly_flags)
+from world.bsp_material_mapping_size import MAPPING_SIZE_ZERO_REASON, MaterialMappingSize
 from world.bsp_step import BSP_STEP_ALGORITHM_VERSION, BspGapRows, chunk_grid_nodes, drawable_chunk_nodes, sealed_bsp_chunks
 from world.bsp_surface_materials import convert_surface_material, program_blend_is_translucent
 from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model, require_level_model_ranges
@@ -48,7 +49,7 @@ SERVED_STORE = ROOT / 'public' / 'l2'
 
 def textured(identity, translucent=False):
     png = b'\x89PNG\r\n\x1a\n' + struct.pack('>I4sII', 13, b'IHDR', 64, 32) + bytes(5)
-    return BspSurfaceMaterial(identity, png, 64, 32, translucent, None)
+    return BspSurfaceMaterial(identity, png, MaterialMappingSize(64, 32), translucent, None)
 
 
 def blend_root_program(class_name, field_name, members, ordinal):
@@ -145,17 +146,18 @@ class BspSectionTests(unittest.TestCase):
     def test_an_unconverted_material_is_a_magenta_diagnostic(self):
         model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100))])
         sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {}, frozenset())
-        glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: BspSurfaceMaterial(MATERIAL, None, None, None, False, None)})
+        glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: BspSurfaceMaterial(MATERIAL, None, None, False, None)})
         document = glb_document(glb)
         self.assertEqual(document['materials'][0]['pbrMetallicRoughness']['baseColorFactor'], [1, 0, 1, 1])
         self.assertEqual(document['materials'][0]['extras']['unboundSourceMaterial'], MATERIAL)
         self.assertNotIn('TEXCOORD_0', document['meshes'][0]['primitives'][0]['attributes'])
         self.assertNotIn('images', document)
 
-    def test_an_unbaked_material_with_a_known_source_texture_size_still_writes_its_texture_coordinates(self):
+    def test_an_unbaked_material_with_a_mapping_size_still_writes_its_texture_coordinates(self):
         model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100))])
         sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {}, frozenset())
-        glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: BspSurfaceMaterial(MATERIAL, None, 64, 32, False, None)})
+        glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections,
+                                     {MATERIAL: BspSurfaceMaterial(MATERIAL, None, MaterialMappingSize(64, 32), False, None)})
         document = glb_document(glb)
         attributes = document['meshes'][0]['primitives'][0]['attributes']
         self.assertEqual(document['accessors'][attributes['TEXCOORD_0']]['count'], 4)
@@ -201,9 +203,9 @@ class SurfaceMaterialTests(unittest.TestCase):
             converted_references.append(reference)
             return convert_texture(reference), {}, reference
 
-        converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'), texture=texture, material_texture=bake_material_texture,
-                                    material_texture_export=texture_export_of_size(SYNTHETIC_PNG_SIDE, SYNTHETIC_PNG_SIDE))
+        converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'), texture=texture, material_texture=bake_material_texture)
         store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
+        use_synthetic_mapping_class_defaults(self)
         with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
             outcome = convert_surface_material(TEXTURED_MATERIAL, map_sources, converter, store_root, None, store_root)
         program_path = store_root / outcome.material.program['directory'] / 'program.json'
@@ -221,24 +223,20 @@ class SurfaceMaterialTests(unittest.TestCase):
         self.assertEqual(sorted(record['path'] for record in outcome.store_outputs),
                          sorted([f'{outcome.material.program["directory"]}/graph.json', f'{outcome.material.program["directory"]}/program.json',
                                  image['path'].removeprefix('/l2/')]))
-        self.assertEqual((outcome.material.png, outcome.material.width, outcome.material.height), (png, SYNTHETIC_PNG_SIDE, SYNTHETIC_PNG_SIDE))
+        self.assertEqual((outcome.material.png, outcome.material.mapping_size), (png, None))
+        self.assertIn(MAPPING_SIZE_ZERO_REASON, outcome.gap_reasons)
 
-    def test_a_failed_bake_keeps_the_source_texture_size_and_names_its_conversion_gap(self):
+    def test_a_failed_bake_keeps_the_mapping_size_and_names_its_conversion_gap(self):
         failure = ValueError('UModel failed or reported an error; inspect export.log')
 
         def refuse_bake(work, identity):
             raise failure
 
-        outcome, _, _, _ = self.textured_surface_outcome(lambda reference: synthetic_png_bytes(), refuse_bake)
-        self.assertEqual((outcome.material.png, outcome.material.width, outcome.material.height), (None, SYNTHETIC_PNG_SIDE, SYNTHETIC_PNG_SIDE))
+        mapping_size = MaterialMappingSize(256, 256)
+        with patch.object(bsp_surface_materials, 'mapping_size_outcome', return_value=(mapping_size, [])):
+            outcome, _, _, _ = self.textured_surface_outcome(lambda reference: synthetic_png_bytes(), refuse_bake)
+        self.assertEqual((outcome.material.png, outcome.material.mapping_size), (None, mapping_size))
         self.assertIn(conversion_failure_reason(failure), outcome.gap_reasons)
-        self.assertTrue(outcome.material.has_source_texture_size)
-
-    def test_a_baked_png_whose_size_differs_from_the_source_texture_is_a_conversion_gap(self):
-        larger_png = lambda work, identity: (synthetic_png_bytes()[:16] + struct.pack('>II', 4, 4) + synthetic_png_bytes()[24:], {}, identity, [])
-        outcome, _, _, _ = self.textured_surface_outcome(lambda reference: synthetic_png_bytes(), larger_png)
-        self.assertIsNone(outcome.material.png)
-        self.assertIn(conversion_failure_reason(FormatError('baked PNG is 4x4, the source texture USize x VSize is 2x2')), outcome.gap_reasons)
 
     def test_a_texture_that_fails_conversion_keeps_a_null_image_and_its_conversion_gap_reason(self):
         failure = ValueError('UModel failed or reported an error; inspect export.log')
@@ -256,15 +254,16 @@ class SurfaceMaterialTests(unittest.TestCase):
         map_sources = SimpleNamespace(paths={'syntheticunported': ['textures/SyntheticUnported.utx']}, get=lambda relative: package)
         converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'),
                                     texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
-                                    material_texture=lambda *arguments: self.fail('an unported root must not be textured'),
-                                    material_texture_export=texture_export_of_size(64, 32))
+                                    material_texture=lambda *arguments: self.fail('an unported root must not be textured'))
         store_root = scratch_work_root(self, 'bsp-store-')
+        use_synthetic_mapping_class_defaults(self)
         texture_declarations = [{'field': 'USize', 'declaredType': 'int', 'declaringClass': 'Engine.Texture', 'enumMembers': None,
                                  'classDefault': {'field': 'USize', 'value': None, 'provenance': 'ue-zero', 'declaringClass': 'Engine.Texture'}}]
         with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value={'Engine.Texture': texture_declarations}):
             outcome = convert_surface_material('SyntheticUnported.UnportedGlow', map_sources, converter, store_root, None, store_root)
-        self.assertEqual((outcome.material.png, outcome.material.width, outcome.material.height), (None, 64, 32))
+        self.assertEqual((outcome.material.png, outcome.material.mapping_size), (None, None))
         self.assertIn('material-class-unported:Engine.GlowModifier', outcome.gap_reasons)
+        self.assertIn(MAPPING_SIZE_ZERO_REASON, outcome.gap_reasons)
         self.assertTrue(outcome.material.program['directory'].startswith('native-materials/'))
 
     def test_only_the_depth_writing_shader_and_final_blend_members_are_opaque(self):

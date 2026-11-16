@@ -1,0 +1,16 @@
+{
+  "file": "FX_E_T.utx",
+  "packageVersion": 123,
+  "licensee": 28,
+  "exports": [
+    {"name": "ocean011", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 256}, {"name": "VSize", "int": 256}]},
+    {"name": "base1", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 8}, {"name": "VSize", "int": 8}]},
+    {"name": "TexOscillator0", "class": "Engine.TexOscillator", "properties": [{"name": "Material", "object": "ocean011"}]},
+    {"name": "ocn_rot", "class": "Engine.TexRotator", "properties": [{"name": "Material", "object": "ocean011"}]},
+    {"name": "ocean-s", "class": "Engine.TexOscillatorTriggered", "properties": [{"name": "Material", "object": "ocn_rot"}]},
+    {"name": "ocn_s", "class": "Engine.Combiner", "properties": [{"name": "Material1", "object": "ocean-s"}, {"name": "Material2", "object": "TexOscillator0"}]},
+    {"name": "com", "class": "Engine.Combiner", "properties": [{"name": "Material1", "object": "ocn_s"}, {"name": "Material2", "object": "base1"}]},
+    {"name": "reflection", "class": "Engine.Combiner", "properties": [{"name": "Material1", "object": "TexOscillator0"}, {"name": "Material2", "object": "com"}]},
+    {"name": "WaterShader01", "class": "Engine.Shader", "properties": [{"name": "Diffuse", "object": "reflection"}]}
+  ]
+}

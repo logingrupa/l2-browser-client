@@ -22,7 +22,7 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles
-from world.surface_material_programs import material_package_paths, world_material_sources
+from world.surface_material_programs import world_material_sources
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
@@ -129,10 +129,9 @@ def drawable_chunk_nodes(model, package, nodes_by_chunk, gaps):
     return kept
 
 
-def surface_materials(identities, client, project_root):
-    sources = world_material_sources(client, project_root)
+def surface_materials(identities, sources):
     return {identity: convert_surface_material(identity, *sources)
-            for identity in sorted(identities, key=lambda identity: (identity.casefold(), identity))}, sources.map_sources
+            for identity in sorted(identities, key=lambda identity: (identity.casefold(), identity))}
 
 
 def write_chunk_glbs(project_root, chunk_glbs):
@@ -187,11 +186,13 @@ def run_bsp_step(project_root, client_root, tile_id):
                             receipt_evidence)
     client = Path(client_root).resolve()
     package = read_locked_map_package(client, tile_id, lock_record)
+    sources = world_material_sources(client, project_root)
     try:
         level = read_level_model(package)
         rectangles = chunk_rectangles(chunk_plan, native_terrain(package))
         zones = read_level_zones(package, level.model, ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client)))
         lightmap_textures = lightmap_texture_of_record(read_bsp_lightmaps(package, level.model), level.model)
+        identities = surface_material_identities(package, level.model, sources.class_work_root, sources.class_scripts)
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, BSP_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except ValueError as error:
@@ -201,16 +202,16 @@ def run_bsp_step(project_root, client_root, tile_id):
     drawn = drawn_node_indices(level.model, flags, sky_zones)
     nodes_by_chunk = chunk_grid_nodes(level.model, package, drawn, rectangles, gaps)
     kept_nodes = drawable_chunk_nodes(level.model, package, nodes_by_chunk, gaps)
-    identities = surface_material_identities(package, level.model)
     used_identities = {identities[level.model.nodes[index].i_surf] for indices in kept_nodes.values() for index in indices}
-    outcomes, map_sources = surface_materials(used_identities, client, project_root)
-    inputs = locked_input_records(sorted({tile_map_path(tile_id), *material_package_paths(map_sources, used_identities)}))
+    outcomes = surface_materials(used_identities, sources)
+    inputs = locked_input_records(sorted({tile_map_path(tile_id), *sources.map_sources.dependencies}))
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     records, glbs = chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps)
     gap_rows, material_files = gaps.rows(), surface_material_files(outcomes)
     product = {'tileId': tile_id, 'levelModel': level.binding['model'], 'nodeCount': len(level.model.nodes), 'drawnNodeCount': len(drawn),
                'outdoorZones': sorted(outdoor_zones), 'skyZones': sorted(sky_zones), 'chunks': records,
                'materials': [{'identity': identity, 'program': outcome.material.program, 'textured': outcome.material.png is not None,
+                              'mappingSize': None if outcome.material.mapping_size is None else list(outcome.material.mapping_size),
                               'translucent': outcome.material.translucent, 'gapReasons': outcome.gap_reasons}
                              for identity, outcome in sorted(outcomes.items())],
                'materialFiles': material_files, 'gapRows': gap_rows}
