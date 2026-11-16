@@ -49,13 +49,13 @@ for (const textWindowCase of textWindowCases) {
       await expect(windowRoot.locator('[data-native-text="drawn"]').first()).toBeVisible();
       expect(await windowRoot.locator("[data-native-glyph]").count()).toBeGreaterThan(0);
       expect(fetchedPaths.has(atlasImagePath!)).toBe(true);
-      const firstGlyphStyle = await windowRoot.locator("[data-native-glyph]").first().evaluate(glyph => {
-        const style = getComputedStyle(glyph);
-        return { backgroundImage: style.backgroundImage, maskImage: style.maskImage, blendMode: style.backgroundBlendMode };
+      const firstGlyph = await windowRoot.locator("[data-native-glyph]").first().evaluate(glyph => {
+        const canvas = glyph as HTMLCanvasElement;
+        const pixels = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+        return { tagName: canvas.tagName, coveredPixels: pixels.filter((_, index) => index % 4 === 3 && pixels[index]! > 0).length };
       });
-      expect(firstGlyphStyle.backgroundImage).toMatch(/^url\("blob:/);
-      expect(firstGlyphStyle.maskImage).toMatch(/^url\("blob:/);
-      expect(firstGlyphStyle.blendMode).toBe("multiply");
+      expect(firstGlyph.tagName).toBe("CANVAS");
+      expect(firstGlyph.coveredPixels).toBeGreaterThan(0);
       mkdirSync(evidenceDirectory, { recursive: true });
       await page.screenshot({ path: resolve(evidenceDirectory, `03-32-${textWindowCase.windowId}-desktop.png`) });
     } finally {

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 3,
+  "listVersion": 4,
   "reasons": [
     "texture-reference-unresolved",
     "texture-not-in-catalog",
@@ -9,7 +9,7 @@
     "textbox-text-undefined-sentinel",
     "textbox-tail-unresolved",
     "textbox-colour-unresolved",
-    "font-unresolved:<fontType>",
+    "ui-font-unresolved:<fontType>",
     "font-gdi-face-unconverted:<fontType>",
     "font-bitmap-branch-unconfirmed",
     "font-glyph-table-unreadable"

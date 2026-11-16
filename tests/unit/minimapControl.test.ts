@@ -22,7 +22,7 @@ const syntheticBitmapFont: NativeWindowFont = {
   manifest: parseNativeWindowFontManifest({ kind: "native-ui-font", schemaVersion: 1, fontType: 0, route: "bitmap-glyph-table",
     atlas: { width: 512, height: 8, image: `/l2/${"e".repeat(64)}/texture.png`, imageSha256: "e".repeat(64), imageBytes: 100 },
     glyphs: printableCodeUnits.map((codeUnit, index) => ({ codeUnit, x: index * 4, y: 0, width: 4, height: 8 })) }, 0),
-  imageUrl: "blob:synthetic/small-font",
+  atlasPixels: { width: 512, height: 8, rgba: new Uint8ClampedArray(512 * 8 * 4) },
 };
 
 function minimapElement(container: FakeElement): FakeElement {

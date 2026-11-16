@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { layoutNativeWindowText, parseNativeWindowFontManifest, type NativeWindowFont } from "../../src/ui/nativeWindows/nativeWindowFonts";
 import { parseNativeWindowManifest, type NativeWindowManifest, type NativeWindowNode } from "../../src/ui/nativeWindows/nativeWindowLayoutTree";
 import { renderNativeWindow } from "../../src/ui/nativeWindows/nativeWindowRenderer";
-import { nativeWindowFontRoutes, planTextBoxText } from "../../src/ui/nativeWindows/nativeWindowTextBox";
-import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
+import { nativeWindowFontRoutes, planTextBoxText, tintedGlyphPixels } from "../../src/ui/nativeWindows/nativeWindowTextBox";
+import { installMiniDom, type FakeCanvasContext, type FakeElement, type MiniDom } from "./support/miniDom";
 import { emptyMinimapSource } from "./support/tileMinimapFixtures";
 
 const syntheticManifests = JSON.parse(readFileSync("tests/fixtures/xdat/synthetic-window-layout.json", "utf8")) as Record<string, unknown>[];
@@ -17,12 +17,18 @@ function fontManifestDocument(overrides: Record<string, unknown>): Record<string
     digitCells: { cellWidth: 8, cellHeight: 8, slotCharacters: digitSlots }, ...overrides };
 }
 
-const digitFont: NativeWindowFont = { manifest: parseNativeWindowFontManifest(fontManifestDocument({}), 10), imageUrl: "blob:synthetic/number" };
+function syntheticAtlasPixels(width: number, height: number) {
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  for (let pixel = 0; pixel < width * height; pixel += 1) rgba.set([255, 128, (pixel % width) % 256, pixel % width === 0 ? 0 : 255], pixel * 4);
+  return { width, height, rgba };
+}
+
+const digitFont: NativeWindowFont = { manifest: parseNativeWindowFontManifest(fontManifestDocument({}), 10), atlasPixels: syntheticAtlasPixels(256, 8) };
 const bitmapFont: NativeWindowFont = {
   manifest: parseNativeWindowFontManifest(fontManifestDocument({ fontType: 0, route: "bitmap-glyph-table", digitCells: undefined,
     atlas: { width: 64, height: 16, image: atlasImage, imageSha256: "e".repeat(64), imageBytes: 100 },
     glyphs: [{ codeUnit: 65, x: 0, y: 0, width: 5, height: 12 }, { codeUnit: 66, x: 5, y: 2, width: 7, height: 11 }] }), 0),
-  imageUrl: "blob:synthetic/small",
+  atlasPixels: syntheticAtlasPixels(64, 16),
 };
 const fonts: ReadonlyMap<number, NativeWindowFont> = new Map([[10, digitFont], [0, bitmapFont]]);
 
@@ -69,8 +75,8 @@ describe("TextBox text plan", () => {
     expect(reasons(textBoxNode(layout("undefined", 0)))).toEqual(["textbox-text-undefined-sentinel"]);
     expect(reasons(textBoxNode(undefined))).toEqual(["textbox-tail-unresolved"]);
     expect(reasons(textBoxNode(layout("HP", 6)))).toEqual(["font-gdi-face-unconverted:6"]);
-    expect(reasons(textBoxNode(layout("Big", 1)))).toEqual(["font-unresolved:1"]);
-    expect(reasons(textBoxNode(layout("Odd", 3)))).toEqual(["font-unresolved:3"]);
+    expect(reasons(textBoxNode(layout("Big", 1)))).toEqual(["ui-font-unresolved:1"]);
+    expect(reasons(textBoxNode(layout("Odd", 3)))).toEqual(["ui-font-unresolved:3"]);
     expect(reasons(withoutColour(textBoxNode(layout("CP", 10))))).toEqual(["textbox-colour-unresolved"]);
     expect(reasons(textBoxNode(layout("", 10)), "12")).toEqual([]);
   });
@@ -78,6 +84,17 @@ describe("TextBox text plan", () => {
   it("reads every stored fontType route from recipes/data/ui-fonts.json", () => {
     expect([...nativeWindowFontRoutes.entries()].sort(([left], [right]) => left - right)).toEqual([
       [0, "bitmap-glyph-table"], [1, "bitmap-glyph-table"], [4, "system-face"], [6, "system-face"], [7, "system-face"], [10, "digit-atlas"], [11, "digit-atlas"]]);
+  });
+});
+
+describe("TextBox glyph pixels", () => {
+  it("multiplies each atlas texel by the decoded colour channels over 255 and keeps the atlas alpha", () => {
+    const atlas = { width: 3, height: 2, rgba: new Uint8ClampedArray([
+      0, 0, 0, 0, 255, 255, 255, 255, 100, 200, 50, 128,
+      10, 20, 30, 40, 255, 0, 255, 255, 0, 255, 0, 7]) };
+    expect([...tintedGlyphPixels(atlas, { x: 1, y: 0, width: 2, height: 2 }, { red: 220, green: 110, blue: 0 })]).toEqual([
+      220, 110, 0, 255, 86, 86, 0, 128,
+      220, 0, 0, 255, 0, 110, 0, 7]);
   });
 });
 
@@ -124,8 +141,10 @@ describe("TextBox drawing in a rendered window", () => {
     const text = container.querySelector('[data-native-control="SyntheticCpName"] > [data-native-text]');
     expect(text?.getAttribute("data-native-text")).toBe("drawn");
     expect([text?.style.left, text?.style.top, text?.style.width, text?.style.height]).toEqual(["0px", "0px", "16px", "8px"]);
-    expect(glyphs().map(glyph => [glyph.style.left, glyph.style.backgroundPosition, glyph.style.backgroundColor, glyph.style.backgroundImage]))
-      .toEqual([["0px", "-128px 0px", "#DCDCDC", 'url("blob:synthetic/number")'], ["8px", "-96px 0px", "#DCDCDC", 'url("blob:synthetic/number")']]);
+    expect(glyphs().map(glyph => [glyph.tagName, glyph.style.left, glyph.width, glyph.height])).toEqual([["CANVAS", "0px", 8, 8], ["CANVAS", "8px", 8, 8]]);
+    const firstGlyphImage = (glyphs()[0]!.getContext("2d") as FakeCanvasContext).putImage!;
+    expect([...firstGlyphImage.data]).toEqual([...tintedGlyphPixels(digitFont.atlasPixels, { x: 128, y: 0, width: 8, height: 8 }, { red: 220, green: 220, blue: 220 })]);
+    expect([...firstGlyphImage.data.slice(0, 8)]).toEqual([220, 110, 110, 255, 220, 110, 111, 255]);
     expect(rendered.gaps.filter(gap => gap.controlName === "SyntheticCpName")).toEqual([]);
     expect(container.textContent).not.toContain("CP");
   });

@@ -1,8 +1,3 @@
-/** A deliberately small DOM for vitest (no jsdom/happy-dom is installed).
- * Supports what the developer sheet and HUD use: element trees, attributes,
- * dataset/classList/style, innerHTML parsing of simple markup, a selector
- * subset (tag, #id, .class, [attr], [attr="v"], descendant and `>`), event
- * capture/target/bubble with AbortSignal listeners, focus and click. */
 import { vi } from "vitest";
 
 interface Listener { callback: EventListenerOrEventListenerObject; capture: boolean; once: boolean }
@@ -131,7 +126,6 @@ export class FakeNode extends FakeEventTarget {
     return found;
   }
   querySelector(selector: string): FakeElement | null { return this.querySelectorAll(selector)[0] ?? null; }
-  /** Element events propagate through ancestors, the document and window. */
   override dispatchEvent(event: FakeEvent | Event): boolean {
     if (!(event instanceof FakeEvent)) return super.dispatchEvent(event);
     event.target = this;
@@ -157,7 +151,6 @@ const kebabToCamel = (value: string) => value.replace(/-([a-z])/g, (_, letter: s
 
 class FakeStyle {
   [key: string]: unknown;
-  // Unset longhands read as "" like CSSStyleDeclaration.
   width = ""; height = ""; left = ""; top = ""; inset = ""; visibility = ""; clipPath = "";
   private readonly properties = new Map<string, string>();
   setProperty(name: string, value: string): void { this.properties.set(name, value); }
@@ -165,10 +158,21 @@ class FakeStyle {
   removeProperty(name: string): string { const value = this.getPropertyValue(name); this.properties.delete(name); return value; }
 }
 
+export interface FakeImageData { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray }
+
+export class FakeCanvasContext {
+  putImage: FakeImageData | null = null;
+  createImageData(width: number, height: number): FakeImageData { return { width, height, data: new Uint8ClampedArray(width * height * 4) }; }
+  putImageData(image: FakeImageData): void { this.putImage = image; }
+}
+
 export class FakeElement extends FakeNode {
   readonly tagName: string;
   readonly attributes = new Map<string, string>();
   readonly style = new FakeStyle();
+  width = 0;
+  height = 0;
+  private canvasContext: FakeCanvasContext | undefined;
   scrollTop = 0;
   rect = { left: 0, top: 0, width: 0, height: 0 };
   private valueState: string | undefined;
@@ -258,9 +262,14 @@ export class FakeElement extends FakeNode {
   focus(): void { this.ownerDocument?.focusElement(this); }
   blur(): void { if (this.ownerDocument?.activeElement === this) this.ownerDocument.focusElement(this.ownerDocument.body); }
   click(): void { if (!this.disabled) this.dispatchEvent(new FakeEvent("click")); }
-  setPointerCapture(): void { /* no-op */ }
-  releasePointerCapture(): void { /* no-op */ }
-  scrollIntoView(): void { /* no-op */ }
+  setPointerCapture(): void { return; }
+  releasePointerCapture(): void { return; }
+  scrollIntoView(): void { return; }
+  getContext(kind: string): FakeCanvasContext | null {
+    if (this.tagName !== "CANVAS" || kind !== "2d") return null;
+    this.canvasContext ??= new FakeCanvasContext();
+    return this.canvasContext;
+  }
 }
 
 export class FakeDocument extends FakeNode {
@@ -295,7 +304,6 @@ export class FakeWindow extends FakeEventTarget {
   override dispatchEvent(event: FakeEvent | Event): boolean { if (event.type === "resize") this.resizeEvents++; return super.dispatchEvent(event); }
 }
 
-// ---------------------------------------------------------------- selectors
 interface Compound { tag: string | null; id: string | null; classes: string[]; attributes: { name: string; value: string | null }[] }
 interface Complex { parts: { compound: Compound; combinator: " " | ">" | null }[] }
 
@@ -355,7 +363,6 @@ function matchesComplex(element: FakeElement, complex: Complex, scope: FakeNode 
   return match(element, complex.parts.length - 1);
 }
 
-// ------------------------------------------------------------------ markup
 const voidTags = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
 const decode = (text: string) => text.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|#39|nbsp);/gi, (_, entity: string) => {
   const named: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: "\"", "#39": "'", nbsp: " " };
@@ -398,7 +405,6 @@ function parseMarkup(markup: string, parent: FakeElement, document: FakeDocument
   }
 }
 
-// ----------------------------------------------------------------- install
 export interface MiniDom { document: FakeDocument; window: FakeWindow; restore(): void }
 
 export function installMiniDom(): MiniDom {
@@ -414,7 +420,6 @@ export function installMiniDom(): MiniDom {
   return { document, window, restore: () => vi.unstubAllGlobals() };
 }
 
-/** Media query lists whose matches can be flipped by tests. */
 export function fakeMedia(initial: Partial<Record<"narrow" | "coarse" | "shortLandscape", boolean>> = {}) {
   const lists = new Map<string, FakeEventTarget & { matches: boolean; media: string }>();
   const keyFor = (query: string) => query.includes("pointer") ? "coarse" : query.includes("orientation") ? "shortLandscape" : "narrow";

@@ -20,9 +20,11 @@ export interface NativeWindowFontManifest {
   readonly digitCells: NativeWindowDigitCells | null;
 }
 
+export interface NativeWindowFontAtlasPixels { readonly width: number; readonly height: number; readonly rgba: Uint8ClampedArray }
+
 export interface NativeWindowFont {
   readonly manifest: NativeWindowFontManifest;
-  readonly imageUrl: string;
+  readonly atlasPixels: NativeWindowFontAtlasPixels;
 }
 
 export interface NativeWindowPlacedGlyph { readonly left: number; readonly glyph: NativeWindowGlyph }
@@ -122,24 +124,28 @@ function decodeManifestText(bytes: Uint8Array): unknown {
   catch { return refuse("is not UTF-8 JSON"); }
 }
 
-export async function loadNativeWindowFonts(catalog: Pick<NativeCatalog, "fonts">, signal: AbortSignal): Promise<ReadonlyMap<number, NativeWindowFont>> {
-  const fonts = new Map<number, NativeWindowFont>();
+async function decodeAtlasPixels(imageBytes: Uint8Array, atlas: NativeWindowFontAtlas): Promise<NativeWindowFontAtlasPixels> {
+  const bitmap = await createImageBitmap(new Blob([imageBytes.slice()], { type: pngMimeType }), { premultiplyAlpha: "none", colorSpaceConversion: "none" });
   try {
-    for (const value of catalog.fonts) {
-      const record = readFontCatalogRecord(value);
-      if (fonts.has(record.fontType)) throw new Error(`Native catalog fonts lists ui-font:${record.fontType} twice.`);
-      const manifestBytes = await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, signal, record.manifestBytes);
-      const manifest = parseNativeWindowFontManifest(decodeManifestText(manifestBytes), record.fontType);
-      const imageBytes = await fetchVerifiedNativeResource(manifest.atlas.image, manifest.atlas.imageSha256, signal, manifest.atlas.imageBytes);
-      fonts.set(record.fontType, { manifest, imageUrl: URL.createObjectURL(new Blob([imageBytes.slice()], { type: pngMimeType })) });
-    }
-  } catch (error) {
-    revokeNativeWindowFonts(fonts);
-    throw error;
+    if (bitmap.width !== atlas.width || bitmap.height !== atlas.height) refuse(`atlas image is ${bitmap.width} x ${bitmap.height}, not ${atlas.width} x ${atlas.height}`);
+    const context = new OffscreenCanvas(atlas.width, atlas.height).getContext("2d", { willReadFrequently: true });
+    if (context === null) throw new Error("Native UI font atlas decoding needs a 2D canvas context.");
+    context.drawImage(bitmap, 0, 0);
+    return { width: atlas.width, height: atlas.height, rgba: context.getImageData(0, 0, atlas.width, atlas.height).data };
+  } finally {
+    bitmap.close();
   }
-  return fonts;
 }
 
-export function revokeNativeWindowFonts(fonts: ReadonlyMap<number, NativeWindowFont>): void {
-  for (const font of fonts.values()) URL.revokeObjectURL(font.imageUrl);
+export async function loadNativeWindowFonts(catalog: Pick<NativeCatalog, "fonts">, signal: AbortSignal): Promise<ReadonlyMap<number, NativeWindowFont>> {
+  const fonts = new Map<number, NativeWindowFont>();
+  for (const value of catalog.fonts) {
+    const record = readFontCatalogRecord(value);
+    if (fonts.has(record.fontType)) throw new Error(`Native catalog fonts lists ui-font:${record.fontType} twice.`);
+    const manifestBytes = await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, signal, record.manifestBytes);
+    const manifest = parseNativeWindowFontManifest(decodeManifestText(manifestBytes), record.fontType);
+    const imageBytes = await fetchVerifiedNativeResource(manifest.atlas.image, manifest.atlas.imageSha256, signal, manifest.atlas.imageBytes);
+    fonts.set(record.fontType, { manifest, atlasPixels: await decodeAtlasPixels(imageBytes, manifest.atlas) });
+  }
+  return fonts;
 }

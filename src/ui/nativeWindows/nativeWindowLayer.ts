@@ -1,7 +1,7 @@
 import type { WorldEntity } from "../../world/worldTypes";
 import type { NativeWindowScreen } from "./nativeWindowAnchors";
 import { readNativeWindowFieldBindings, type NativeWindowFieldBinding } from "./nativeWindowFieldBindings";
-import { loadNativeWindowFonts, revokeNativeWindowFonts, type NativeWindowFont } from "./nativeWindowFonts";
+import { loadNativeWindowFonts, type NativeWindowFont } from "./nativeWindowFonts";
 import { loadNativeWindowManifest, nativeWindowMinimapSource, resolveNativeWindowTextures, revokeNativeWindowTextures, type NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
 import { renderNativeWindow, type RenderedNativeWindow } from "./nativeWindowRenderer";
 
@@ -101,7 +101,6 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
         revokeNativeWindowTextures(openWindow.textures);
       }
       openWindows.clear();
-      void fontsLoad?.then(revokeNativeWindowFonts, () => undefined);
     },
   };
 }

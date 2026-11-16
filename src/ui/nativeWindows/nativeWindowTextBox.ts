@@ -1,6 +1,7 @@
 import uiFontRecipeText from "../../../recipes/data/ui-fonts.json?raw";
 import type { NativeWindowRectangle } from "./nativeWindowAnchors";
-import { layoutNativeWindowText, type NativeWindowFont, type NativeWindowTextLayout } from "./nativeWindowFonts";
+import { layoutNativeWindowText, type NativeWindowFont, type NativeWindowFontAtlasPixels, type NativeWindowGlyph, type NativeWindowPlacedGlyph,
+  type NativeWindowTextLayout } from "./nativeWindowFonts";
 import type { NativeWindowNode } from "./nativeWindowLayoutTree";
 import { placeNativeWindowElement } from "./nativeWindowPlacement";
 
@@ -21,11 +22,13 @@ export const textBoxTextUndefinedSentinelReason = "textbox-text-undefined-sentin
 export const textBoxTailUnresolvedReason = "textbox-tail-unresolved";
 export const textBoxColourUnresolvedReason = "textbox-colour-unresolved";
 export const fontBitmapBranchUnconfirmedReason = "font-bitmap-branch-unconfirmed";
-export const fontUnresolvedPrefix = "font-unresolved:";
+export const uiFontUnresolvedPrefix = "ui-font-unresolved:";
 export const fontGdiFaceUnconvertedPrefix = "font-gdi-face-unconverted:";
 const undefinedTextSentinel = "undefined";
 const textPlacementPresentation = "left, centre or right inside the control width by its decoded align, from the left without one; presentation";
-const glyphColourPresentation = "atlas texel times the decoded colour by CSS multiply under the atlas alpha mask; presentation";
+const glyphColourPresentation = "atlas texel channels times the decoded colour channels over 255, atlas alpha kept; presentation";
+const channelMaximum = 255;
+const rgbaChannels = 4;
 const fontRoutes: readonly NativeWindowFontRoute[] = ["bitmap-glyph-table", "digit-atlas", "system-face"];
 
 function readFontRoutes(recipeText: string): ReadonlyMap<number, NativeWindowFontRoute> {
@@ -58,7 +61,7 @@ export function planTextBoxText(node: NativeWindowNode, text: string | null, fon
   const route = routes.get(fontType);
   if (route === "system-face") return { status: "gap", gaps: [fontGdiFaceUnconvertedPrefix + fontType] };
   const font = fonts.get(fontType);
-  if (route === undefined || font === undefined) return { status: "gap", gaps: [fontUnresolvedPrefix + fontType] };
+  if (route === undefined || font === undefined) return { status: "gap", gaps: [uiFontUnresolvedPrefix + fontType] };
   if (node.color === undefined) return { status: "gap", gaps: [textBoxColourUnresolvedReason] };
   return { status: "drawn", font, layout: layoutNativeWindowText(font.manifest, shownText), color: node.color,
     gaps: route === "bitmap-glyph-table" ? [fontBitmapBranchUnconfirmedReason] : [] };
@@ -70,22 +73,41 @@ function textLeft(node: NativeWindowNode, controlWidth: number, textWidth: numbe
   return 0;
 }
 
-function glyphElement(font: NativeWindowFont, color: string, left: number, glyph: NativeWindowTextLayout["glyphs"][number]["glyph"]): HTMLElement {
-  const element = document.createElement("div");
-  element.setAttribute("data-native-glyph", "");
-  placeNativeWindowElement(element, left, 0, glyph.width, glyph.height);
-  const imageUrl = `url("${font.imageUrl}")`;
-  const offset = `${-glyph.x}px ${-glyph.y}px`;
-  element.style.backgroundImage = imageUrl;
-  element.style.backgroundPosition = offset;
-  element.style.backgroundRepeat = "no-repeat";
-  element.style.backgroundColor = color;
-  element.style.backgroundBlendMode = "multiply";
-  element.style.maskImage = imageUrl;
-  element.style.maskPosition = offset;
-  element.style.maskRepeat = "no-repeat";
-  element.style.imageRendering = "pixelated";
-  return element;
+export interface DecodedColourChannels { readonly red: number; readonly green: number; readonly blue: number }
+
+export function decodedColourChannels(decodedColour: string): DecodedColourChannels {
+  const channel = (start: number): number => Number.parseInt(decodedColour.slice(start, start + 2), 16);
+  return { red: channel(1), green: channel(3), blue: channel(5) };
+}
+
+export function tintedGlyphPixels(atlas: NativeWindowFontAtlasPixels, glyph: NativeWindowGlyph, colour: DecodedColourChannels): Uint8ClampedArray {
+  const pixels = new Uint8ClampedArray(glyph.width * glyph.height * rgbaChannels);
+  for (let row = 0; row < glyph.height; row += 1) {
+    for (let column = 0; column < glyph.width; column += 1) {
+      const source = ((glyph.y + row) * atlas.width + glyph.x + column) * rgbaChannels;
+      const target = (row * glyph.width + column) * rgbaChannels;
+      pixels[target] = atlas.rgba[source]! * colour.red / channelMaximum;
+      pixels[target + 1] = atlas.rgba[source + 1]! * colour.green / channelMaximum;
+      pixels[target + 2] = atlas.rgba[source + 2]! * colour.blue / channelMaximum;
+      pixels[target + 3] = atlas.rgba[source + 3]!;
+    }
+  }
+  return pixels;
+}
+
+function glyphCanvas(font: NativeWindowFont, colour: DecodedColourChannels, placed: NativeWindowPlacedGlyph): HTMLCanvasElement {
+  const { glyph } = placed;
+  const canvas = document.createElement("canvas");
+  canvas.setAttribute("data-native-glyph", "");
+  canvas.width = glyph.width;
+  canvas.height = glyph.height;
+  placeNativeWindowElement(canvas, placed.left, 0, glyph.width, glyph.height);
+  const context = canvas.getContext("2d");
+  if (context === null) throw new Error("A native TextBox glyph needs a 2D canvas context.");
+  const image = context.createImageData(glyph.width, glyph.height);
+  image.data.set(tintedGlyphPixels(font.atlasPixels, glyph, colour));
+  context.putImageData(image, 0, 0);
+  return canvas;
 }
 
 export function renderTextBox(controlElement: HTMLElement, node: NativeWindowNode, fonts: ReadonlyMap<number, NativeWindowFont>): RenderedTextBox {
@@ -102,8 +124,9 @@ export function renderTextBox(controlElement: HTMLElement, node: NativeWindowNod
       return;
     }
     const drawn = plan;
+    const colour = decodedColourChannels(drawn.color);
     textElement.setAttribute("data-native-text", drawn.layout.glyphs.length === 0 ? "" : "drawn");
-    textElement.append(...drawn.layout.glyphs.map(placed => glyphElement(drawn.font, drawn.color, placed.left, placed.glyph)));
+    textElement.append(...drawn.layout.glyphs.map(placed => glyphCanvas(drawn.font, colour, placed)));
     if (rectangle !== null) {
       placeNativeWindowElement(textElement, textLeft(node, rectangle.width, drawn.layout.width), 0, drawn.layout.width, drawn.layout.height);
     }
