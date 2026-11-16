@@ -10,3 +10,4 @@ tests/fixtures/lane-store/** -text
 tests/fixtures/typed-payload/** -text
 scripts/vendor/** -text
 tests/fixtures/material-programs/** -text
+tests/fixtures/environment/** -text
