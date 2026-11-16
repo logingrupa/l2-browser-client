@@ -97,13 +97,14 @@ describe("tile sky surfaces through the UE2 material library", () => {
     const binding = await bindSkyMaterialPrograms({ scene: sky.scene, meshes: sky.meshes, sessionSeed: 7,
       materialUniforms: () => ({ levelSeconds: 0, hour: 12, environmentType: 0, fog: FOG_DISABLED }), environmentColours,
       loadProgram: sky.loadProgram, signal: new AbortController().signal });
-    expect(binding.environmentColours()[0]).toEqual({ ...shippedSkyBindings[0], materialNode: "L2_Skies.Shaders.SkybackgroundColor", writtenRgb: [66, 124, 176], reason: null });
+    expect(binding.environmentColours()[0]).toEqual({ ...shippedSkyBindings[0], materialNode: "L2_Skies.Shaders.SkybackgroundColor", writtenRgb: [66, 124, 176],
+      materialColourSource: "environment-write", reason: null });
     expect(binding.environmentColours().slice(1).map(entry => entry.reason)).toEqual(Array(4).fill("sky-environment-material-absent"));
     const callsBeforeFrame = environmentColours.mock.calls.length;
     skyBoxColour = { status: "unresolved", reason: "env-color-transition-unresolved" };
     sky.scene.onBeforeRenderObservable.notifyObservers(sky.scene);
     expect(environmentColours.mock.calls.length).toBe(callsBeforeFrame + 1);
-    expect(binding.environmentColours()[0]).toMatchObject({ writtenRgb: null, reason: "env-color-transition-unresolved" });
+    expect(binding.environmentColours()[0]).toMatchObject({ writtenRgb: [66, 124, 176], materialColourSource: "held-environment-write", reason: "env-color-transition-unresolved" });
     binding.dispose();
   });
 

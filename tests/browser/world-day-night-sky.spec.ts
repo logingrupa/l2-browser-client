@@ -9,16 +9,23 @@ import { captureStoreName, captureStoreRequirement, captureTileId, captureTileRe
 
 interface SkyColourEntry { readonly setupKey: string; readonly objectName: string; readonly section: string }
 interface ResolvedColourEntry extends SkyColourEntry { readonly colour: { readonly status: string; readonly value?: readonly number[]; readonly reason?: string } }
-interface WrittenColourEntry extends SkyColourEntry { readonly materialNode: string | null; readonly writtenRgb: readonly number[] | null; readonly reason: string | null }
+interface WrittenColourEntry extends SkyColourEntry {
+  readonly materialNode: string | null;
+  readonly writtenRgb: readonly number[] | null;
+  readonly materialColourSource: string;
+  readonly reason: string | null;
+}
 interface TimeOfDayReading {
   readonly status: string;
   readonly reason?: string;
   readonly snapshot?: { readonly clock: { readonly hour: number; readonly hourSource: string }; readonly oldType: number; readonly targetType: number };
+  readonly environmentTypes?: readonly number[];
   readonly skyEnvironmentColours?: readonly ResolvedColourEntry[];
 }
 
 const serverGameMinutes = [0, 360, 720, 1080];
 const minutesPerHour = 60;
+const transitionGameMinutes = 720;
 const timeTablesProduct = "time-tables.json";
 const environmentDirectory = `l2/environments/${nativeEnvironmentSource.conversionManifestSha256}/conversion-manifest.json`;
 const conversionManifestPath = [resolve("artifacts/lane-store", captureStoreName, environmentDirectory), resolve("public", environmentDirectory)].find(path => existsSync(path)) ?? null;
@@ -87,6 +94,32 @@ test.describe("desktop", () => {
     }
     await openTimeOfDayGroup(page, "click");
     await page.screenshot({ path: "test-results/world-day-night-sky-desktop.png" });
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe("desktop transition", () => {
+  test.use({ viewport: desktopViewport });
+  test("holds the last written sky colours during an SSQ transition instead of showing the authored ColorModifier colour", async ({ page }) => {
+    test.setTimeout(360_000);
+    const errors = collectBrowserErrors(page);
+    await openCaptureTile(page);
+    const settled = await sendServerTimeAndReadTimeOfDay(page, transitionGameMinutes);
+    if (settled.status !== "running") throw new Error(`Tile ${captureTileId} has no world time of day: ${settled.reason}.`);
+    const beforeTransition = await readAfterNextFrames(page);
+    const writtenBefore = beforeTransition.written.filter(entry => entry.materialNode !== null);
+    expect(writtenBefore.length, `tile ${captureTileId} binds at least one Env.int sky object`).toBeGreaterThan(0);
+    for (const entry of writtenBefore) expect(entry.materialColourSource, `${entry.objectName} before the transition`).toBe("environment-write");
+    const transitionType = settled.environmentTypes!.find(environmentType => environmentType !== 0);
+    if (transitionType === undefined) throw new Error("The staged time tables load no environment type besides 0.");
+    await page.evaluate(first => { window.__nativeSlice!.dispatch({ type: "set-environment-ssq-info", first, second: 0 }); }, transitionType);
+    const duringTransition = await readAfterNextFrames(page);
+    expect(duringTransition.timeOfDay.snapshot).toMatchObject({ oldType: 0, targetType: transitionType });
+    for (const before of writtenBefore) {
+      const during = duringTransition.written.find(entry => entry.setupKey === before.setupKey)!;
+      expect({ writtenRgb: during.writtenRgb, source: during.materialColourSource, reason: during.reason }, `${before.objectName} during the transition`)
+        .toEqual({ writtenRgb: before.writtenRgb, source: "held-environment-write", reason: "env-color-transition-unresolved" });
+    }
     expect(errors).toEqual([]);
   });
 });

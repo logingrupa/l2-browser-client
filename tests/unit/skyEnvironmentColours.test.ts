@@ -24,16 +24,16 @@ describe("bindSkyEnvironmentColours", () => {
     writer.write();
     expect(sky.overrideColourSourceRgb).toHaveBeenCalledExactlyOnceWith("L2_Skies.Shaders.SkybackgroundColor", [66 / 255, 124 / 255, 176 / 255]);
     expect(haze.overrideColourSourceRgb).toHaveBeenCalledExactlyOnceWith("L2_Skies.Shaders.hazering_final", [51 / 255, 102 / 255, 1]);
-    expect(writer.inspection().map(entry => [entry.setupKey, entry.materialNode, entry.writtenRgb, entry.reason])).toEqual([
-      ["SKYBOX", "L2_Skies.Shaders.SkybackgroundColor", [66, 124, 176], null],
-      ["HAZERING", "L2_Skies.Shaders.hazering_final", [51, 102, 255], null],
-      ["CLOUD1", null, null, "sky-environment-material-absent"],
-      ["CLOUD2", null, null, "sky-environment-material-absent"],
-      ["CLOUD3", null, null, "sky-environment-material-absent"],
+    expect(writer.inspection().map(entry => [entry.setupKey, entry.materialNode, entry.writtenRgb, entry.materialColourSource, entry.reason])).toEqual([
+      ["SKYBOX", "L2_Skies.Shaders.SkybackgroundColor", [66, 124, 176], "environment-write", null],
+      ["HAZERING", "L2_Skies.Shaders.hazering_final", [51, 102, 255], "environment-write", null],
+      ["CLOUD1", null, null, "authored-colour", "sky-environment-material-absent"],
+      ["CLOUD2", null, null, "authored-colour", "sky-environment-material-absent"],
+      ["CLOUD3", null, null, "authored-colour", "sky-environment-material-absent"],
     ]);
   });
 
-  it("clears the override and names the gap when the colour is unresolved, and writes every surface that shares the object", () => {
+  it("holds the last written colour and names the gap while the colour is unresolved, on every surface that shares the object", () => {
     const first = fakeSurface(["L2_Skies.Shaders.Cloud_Final"]);
     const second = fakeSurface(["L2_Skies.Shaders.Cloud_Final"]);
     let cloud: SkyEnvironmentColourResult = { status: "resolved", value: [10, 20, 30] };
@@ -41,10 +41,25 @@ describe("bindSkyEnvironmentColours", () => {
     writer.write();
     cloud = { status: "unresolved", reason: "env-color-transition-unresolved" };
     writer.write();
+    writer.write();
     for (const surface of [first, second]) {
-      expect(surface.overrideColourSourceRgb.mock.calls).toEqual([["L2_Skies.Shaders.Cloud_Final", [10 / 255, 20 / 255, 30 / 255]], ["L2_Skies.Shaders.Cloud_Final", null]]);
+      expect(surface.overrideColourSourceRgb.mock.calls).toEqual([["L2_Skies.Shaders.Cloud_Final", [10 / 255, 20 / 255, 30 / 255]]]);
     }
-    expect(writer.inspection().find(entry => entry.setupKey === "CLOUD1")).toMatchObject({ writtenRgb: null, reason: "env-color-transition-unresolved" });
+    expect(writer.inspection().find(entry => entry.setupKey === "CLOUD1"))
+      .toMatchObject({ writtenRgb: [10, 20, 30], materialColourSource: "held-environment-write", reason: "env-color-transition-unresolved" });
+    cloud = { status: "resolved", value: [40, 50, 60] };
+    writer.write();
+    expect(first.overrideColourSourceRgb).toHaveBeenLastCalledWith("L2_Skies.Shaders.Cloud_Final", [40 / 255, 50 / 255, 60 / 255]);
+    expect(writer.inspection().find(entry => entry.setupKey === "CLOUD1"))
+      .toMatchObject({ writtenRgb: [40, 50, 60], materialColourSource: "environment-write", reason: null });
+  });
+
+  it("leaves the authored colour and names the gap when the first colour is already unresolved", () => {
+    const sky = fakeSurface(["L2_Skies.Shaders.SkybackgroundColor"]);
+    const writer = bindSkyEnvironmentColours([sky.surface], coloursOf({ SKYBOX: { status: "unresolved", reason: "sky-layer-start-colour-unresolved" } }));
+    writer.write();
+    expect(sky.overrideColourSourceRgb).not.toHaveBeenCalled();
+    expect(writer.inspection()[0]).toMatchObject({ writtenRgb: null, materialColourSource: "authored-colour", reason: "sky-layer-start-colour-unresolved" });
   });
 
   it("refuses an Env.int object name that matches two different ColorModifier objects", () => {

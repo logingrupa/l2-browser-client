@@ -159,7 +159,7 @@ describe("createNativeMaterial", () => {
     expect(fog.fogEnd).toBe(900);
   });
 
-  it("overrides only the RGB of a ColorModifier colour source on each update and keeps its authored alpha", () => {
+  it("overrides only the RGB of a ColorModifier colour source, keeps it on later updates and keeps its authored alpha", () => {
     const colorModifierNode = "SyntheticSky.SkybackgroundColor";
     const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(syntheticColorModifierProgram(swatchImage, colorModifierNode)), testMaterialOptions);
     const uniforms = { levelSeconds: 0, hour: 12, environmentType: 0, fog: FOG_DISABLED };
@@ -169,9 +169,8 @@ describe("createNativeMaterial", () => {
     nativeMaterial.overrideColourSourceRgb(colorModifierNode, [66 / 255, 124 / 255, 176 / 255]);
     nativeMaterial.update(uniforms);
     expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[66 / 255, 124 / 255, 176 / 255, 1]]);
-    nativeMaterial.overrideColourSourceRgb(colorModifierNode, null);
     nativeMaterial.update(uniforms);
-    expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[0, 150 / 255, 206 / 255, 1]]);
+    expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[66 / 255, 124 / 255, 176 / 255, 1]]);
     expect(() => nativeMaterial.overrideColourSourceRgb("SyntheticSky.Other", [0, 0, 0])).toThrow(/has no ColorModifier colour source SyntheticSky.Other/);
     const diagnostic = createNativeMaterial(nullScene(), loadedMaterial(syntheticUnportedProgram()), testMaterialOptions);
     expect(() => diagnostic.overrideColourSourceRgb(colorModifierNode, [0, 0, 0])).toThrow(/diagnostic material/);

@@ -17,6 +17,7 @@ export interface TimeOfDayGroupContext {
 const dayNightReport = "DB-4 day-night-cycle.json fe5de165";
 const environmentTypeValues = "EnvType 0..3 (type names unresolved; never dusk or dawn)";
 const minutesPerHour = 60;
+const authoredSkyChannelOrderGap = "authored-sky-channel-order-unresolved";
 const immediateOptions = [
   { value: "0", label: "0 (blend)", hint: "ChangeEnv starts a 0.02 h window from the current hour." },
   { value: "1", label: "1 (immediate)", hint: "ChangeEnv switches the old and target types at once." },
@@ -50,10 +51,12 @@ interface SkyColourReading { readonly text: string; readonly status: "native" | 
 
 function readSkyColour(binding: SkyEnvironmentBinding, context: TimeOfDayGroupContext, timeOfDay: RunningWorldTimeOfDay): SkyColourReading {
   const written = context.skyEnvironmentColours?.().find(entry => entry.setupKey === binding.setupKey) ?? null;
-  if (written?.writtenRgb) return { text: rgbText(written.writtenRgb), status: "native" };
+  if (written?.writtenRgb && written.materialColourSource === "environment-write") return { text: rgbText(written.writtenRgb), status: "native" };
+  if (written?.writtenRgb) return { text: `${rgbText(written.writtenRgb)} held from an earlier frame (${written.reason})`, status: "unverified" };
   const model = timeOfDay.skyEnvironmentColours().find(entry => entry.setupKey === binding.setupKey)?.colour ?? null;
   const reason = written === null ? context.skyAbsentReason : written.reason ?? (model?.status === "unresolved" ? model.reason : "sky-environment-colour-unwritten");
-  return { text: `not written (${reason})${model?.status === "resolved" ? `; model ${rgbText(model.value)}` : ""}`, status: "unverified" };
+  const authoredColour = written?.materialNode ? `; authored colour shown (${authoredSkyChannelOrderGap})` : "";
+  return { text: `not written (${reason})${authoredColour}${model?.status === "resolved" ? `; model ${rgbText(model.value)}` : ""}`, status: "unverified" };
 }
 
 function skyColourVariable(binding: SkyEnvironmentBinding, context: TimeOfDayGroupContext, timeOfDay: RunningWorldTimeOfDay): VariableInfo {

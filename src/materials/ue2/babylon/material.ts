@@ -65,7 +65,7 @@ export interface NativeMaterialInspection {
 export interface NativeMaterial {
   readonly material: ShaderMaterial;
   update(uniforms: NativeMaterialUniforms): void;
-  overrideColourSourceRgb(colorModifierNode: string, rgb: ColourUnitsRgb | null): void;
+  overrideColourSourceRgb(colorModifierNode: string, rgb: ColourUnitsRgb): void;
   setLightmap(lightmap: BaseTexture): void;
   inspect(): NativeMaterialInspection;
   dispose(): void;
@@ -213,10 +213,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
     overrideColourSourceRgb: (colorModifierNode, rgb) => {
       const indices = colorModifierColourSourceIndices(plan, colorModifierNode);
       if (indices.length === 0) throw new Error(`UE2 material ${plan.root} has no ColorModifier colour source ${colorModifierNode}.`);
-      for (const index of indices) {
-        if (rgb === null) rgbByColourSourceIndex.delete(index);
-        else rgbByColourSourceIndex.set(index, rgb);
-      }
+      for (const index of indices) rgbByColourSourceIndex.set(index, rgb);
     },
     setLightmap: lightmap => {
       if (lighting !== "lightmap") throw new Error(`UE2 material ${plan.root} was built ${lighting} and takes no lightmap.`);

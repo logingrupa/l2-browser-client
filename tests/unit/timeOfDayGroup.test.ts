@@ -116,7 +116,7 @@ describe("time of day developer sheet group", () => {
       .toMatchObject({ value: `not written (sky-not-staged); model ${fixtureColour("SkyBoxColor", 12).join(", ")}`, status: "unverified" });
     const writtenSky: SkyEnvironmentColourInspection[] = shippedSkyBindings.map((binding, index) => ({ ...binding,
       materialNode: index === 0 ? `SkyBox.${binding.objectName}` : null, writtenRgb: index === 0 ? [66, 124, 176] : null,
-      reason: index === 0 ? null : "sky-environment-material-absent" }));
+      materialColourSource: index === 0 ? "environment-write" : "authored-colour", reason: index === 0 ? null : "sky-environment-material-absent" }));
     const staged = attachGroup(timeOfDay, { skyEnvironmentColours: () => writtenSky });
     expect(variable(timeOfDay, staged.context, "env.sky.SkybackgroundColor")).toMatchObject({ value: "66, 124, 176", status: "native" });
     expect(variable(timeOfDay, staged.context, "env.sky.HazeRing_Final"))
@@ -126,12 +126,22 @@ describe("time of day developer sheet group", () => {
   it("names a pending transition before the first write as the unresolved GetEnvColor branch", () => {
     const timeOfDay = stoppedTimeOfDay();
     const boundBeforeFirstWrite: SkyEnvironmentColourInspection[] = shippedSkyBindings.map(binding => ({ ...binding,
-      materialNode: `SkyBox.${binding.objectName}`, writtenRgb: null, reason: null }));
+      materialNode: `SkyBox.${binding.objectName}`, writtenRgb: null, materialColourSource: "authored-colour", reason: null }));
     const { context } = attachGroup(timeOfDay, { skyEnvironmentColours: () => boundBeforeFirstWrite });
     timeOfDay.manager.receiveRedSky(30);
-    expect(variable(timeOfDay, context, "env.sky.Cloud_Final")).toMatchObject({ value: "not written (env-color-transition-unresolved)", status: "unverified" });
+    expect(variable(timeOfDay, context, "env.sky.Cloud_Final")).toMatchObject({
+      value: "not written (env-color-transition-unresolved); authored colour shown (authored-sky-channel-order-unresolved)", status: "unverified" });
     expect(variable(timeOfDay, context, "env.targetType").value).toBe("EnvType 3");
     expect(variable(timeOfDay, context, "env.timeout").value).toBe("30");
+  });
+
+  it("shows a colour held through an unresolved frame as unverified with the reason", () => {
+    const timeOfDay = stoppedTimeOfDay();
+    const heldSky: SkyEnvironmentColourInspection[] = shippedSkyBindings.map(binding => ({ ...binding, materialNode: `SkyBox.${binding.objectName}`,
+      writtenRgb: [66, 124, 176], materialColourSource: "held-environment-write", reason: "env-color-transition-unresolved" }));
+    const { context } = attachGroup(timeOfDay, { skyEnvironmentColours: () => heldSky });
+    expect(variable(timeOfDay, context, "env.sky.SkybackgroundColor"))
+      .toMatchObject({ value: "66, 124, 176 held from an earlier frame (env-color-transition-unresolved)", status: "unverified" });
   });
 
   it("sends server time as whole game minutes through the adapter and refuses a clock outside the day", () => {

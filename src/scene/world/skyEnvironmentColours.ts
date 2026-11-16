@@ -8,9 +8,12 @@ export interface SkyEnvironmentColourSurface {
   readonly colorModifierNodes: readonly string[];
 }
 
+export type SkyMaterialColourSource = "environment-write" | "held-environment-write" | "authored-colour";
+
 export interface SkyEnvironmentColourInspection extends SkyEnvironmentBinding {
   readonly materialNode: string | null;
   readonly writtenRgb: RgbBytes | null;
+  readonly materialColourSource: SkyMaterialColourSource;
   readonly reason: string | null;
 }
 
@@ -47,14 +50,25 @@ function resolveTarget(surfaces: readonly SkyEnvironmentColourSurface[], binding
   return { binding, materialNode: matches[0]?.node ?? null, surfaces: matches };
 }
 
-function inspectionOf(target: SkyEnvironmentColourTarget, writtenRgb: RgbBytes | null, reason: string | null): SkyEnvironmentColourInspection {
-  return { ...target.binding, materialNode: target.materialNode, writtenRgb, reason };
+function inspectionOf(target: SkyEnvironmentColourTarget, writtenRgb: RgbBytes | null, materialColourSource: SkyMaterialColourSource,
+  reason: string | null): SkyEnvironmentColourInspection {
+  return { ...target.binding, materialNode: target.materialNode, writtenRgb, materialColourSource, reason };
+}
+
+function writeResolvedColour(target: SkyEnvironmentColourTarget, rgb: RgbBytes): void {
+  const rgbUnits = [rgb[0] / byteMaximum, rgb[1] / byteMaximum, rgb[2] / byteMaximum] as const;
+  for (const { surface, node } of target.surfaces) surface.nativeMaterial.overrideColourSourceRgb(node, rgbUnits);
+}
+
+function heldInspection(target: SkyEnvironmentColourTarget, previous: SkyEnvironmentColourInspection, reason: string): SkyEnvironmentColourInspection {
+  if (previous.writtenRgb === null) return inspectionOf(target, null, "authored-colour", reason);
+  return inspectionOf(target, previous.writtenRgb, "held-environment-write", reason);
 }
 
 export function bindSkyEnvironmentColours(surfaces: readonly SkyEnvironmentColourSurface[],
   readColours: () => readonly SkyEnvironmentColour[]): SkyEnvironmentColourWriter {
   const targets = readColours().map(({ colour: _colour, ...binding }) => resolveTarget(surfaces, binding));
-  let inspections = targets.map(target => inspectionOf(target, null, target.materialNode === null ? skyEnvironmentMaterialAbsentReason : null));
+  let inspections = targets.map(target => inspectionOf(target, null, "authored-colour", target.materialNode === null ? skyEnvironmentMaterialAbsentReason : null));
   return {
     write() {
       const colours = readColours();
@@ -63,11 +77,10 @@ export function bindSkyEnvironmentColours(surfaces: readonly SkyEnvironmentColou
       }
       inspections = colours.map((entry, index) => {
         const target = targets[index]!;
-        if (target.materialNode === null) return inspectionOf(target, null, skyEnvironmentMaterialAbsentReason);
-        const writtenRgb = entry.colour.status === "resolved" ? entry.colour.value : null;
-        const rgbUnits = writtenRgb === null ? null : [writtenRgb[0] / byteMaximum, writtenRgb[1] / byteMaximum, writtenRgb[2] / byteMaximum] as const;
-        for (const { surface, node } of target.surfaces) surface.nativeMaterial.overrideColourSourceRgb(node, rgbUnits);
-        return inspectionOf(target, writtenRgb, entry.colour.status === "resolved" ? null : entry.colour.reason);
+        if (target.materialNode === null) return inspectionOf(target, null, "authored-colour", skyEnvironmentMaterialAbsentReason);
+        if (entry.colour.status !== "resolved") return heldInspection(target, inspections[index]!, entry.colour.reason);
+        writeResolvedColour(target, entry.colour.value);
+        return inspectionOf(target, entry.colour.value, "environment-write", null);
       });
     },
     inspection: () => inspections,
