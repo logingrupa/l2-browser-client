@@ -133,7 +133,7 @@ class ConvertedRootEmitterFeatureTests(unittest.TestCase):
         self.assertEqual((outcome['status'], outcome['reason'], outcome['converted']), ('gap', 'emitter-feature-unported:UseMeshBlendMode', True))
 
     def test_every_unported_feature_of_every_component_is_listed_and_the_first_names_the_root(self):
-        components = [staged_component('fx.a.SpriteEmitter0', 'Engine.SpriteEmitter', {'assetId': 't'}, {'WeatherEffect': True, 'UseDirectionAs': 1}),
+        components = [staged_component('fx.a.SpriteEmitter0', 'Engine.SpriteEmitter', {'assetId': 't'}, {'WeatherEffect': True, 'UseDirectionAs': 1, 'SpinParticles': True}),
                       staged_component('fx.a.MeshEmitter1', 'Engine.MeshEmitter', None, {'CoordinateSystem': 3, 'UseMeshBlendMode': True}, BOUND_MESH)]
         outcome = self.root_outcomes_of(components)[VISUAL_ROOT]
         self.assertEqual(outcome['reason'], 'emitter-feature-unported:WeatherEffect')
@@ -150,10 +150,16 @@ class EmitterFeatureRuleTests(unittest.TestCase):
         self.assertEqual(sprite_feature_reasons({**blending, 'TextureUSubdivisions': 1, 'TextureVSubdivisions': 0}), [])
         self.assertEqual(sprite_feature_reasons({**blending, 'UseRandomSubdivision': True, 'TextureUSubdivisions': 4}), [])
 
-    def test_camera_facing_direction_usages_and_a_negative_spawn_source_are_ported(self):
-        self.assertEqual(sprite_feature_reasons({'UseDirectionAs': 7, 'SpawnFromOtherEmitter': -1}), [])
-        self.assertEqual(sprite_feature_reasons({'UseDirectionAs': 4, 'SpawnFromOtherEmitter': 0}),
-                         ['emitter-feature-unported:SpawnFromOtherEmitter', 'emitter-feature-unported:UseDirectionAs'])
+    def test_every_direction_usage_and_a_negative_spawn_source_are_ported(self):
+        for direction_usage in range(8):
+            self.assertEqual(sprite_feature_reasons({'UseDirectionAs': direction_usage, 'SpinParticles': False, 'SpawnFromOtherEmitter': -1}), [])
+        self.assertEqual(sprite_feature_reasons({'UseDirectionAs': 4, 'SpawnFromOtherEmitter': 0}), ['emitter-feature-unported:SpawnFromOtherEmitter'])
+
+    def test_spinning_oriented_axes_and_an_owner_turned_projection_normal_stay_unported(self):
+        self.assertEqual(sprite_feature_reasons({'UseDirectionAs': 7, 'SpinParticles': True}), [])
+        self.assertEqual(sprite_feature_reasons({'UseDirectionAs': 1, 'SpinParticles': True}), ['emitter-feature-unported:UseDirectionAs'])
+        self.assertEqual(sprite_feature_reasons({'UseDirectionAs': 4, 'UseRotationFrom': 1}), ['emitter-feature-unported:UseDirectionAs'])
+        self.assertEqual(sprite_feature_reasons({'UseDirectionAs': 5, 'UseRotationFrom': 1}), [])
 
     def test_sprite_only_features_do_not_apply_to_a_mesh_emitter(self):
         mesh = staged_component('fx.a.MeshEmitter1', 'Engine.MeshEmitter', None,

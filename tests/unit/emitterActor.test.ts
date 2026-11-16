@@ -172,7 +172,7 @@ describe("Power Strike real-client traces", () => {
       featureGaps.push(...actor.featureGaps.map(gap => `${gap.emitter} ${gap.reason}`));
       regeneratedTraces[effect.object] = actorTraceRows(actor, stepLimit);
     }
-    expect(featureGaps).toEqual(["lineageeffect.p_u004_a.SpriteEmitter9 emitter-feature-unported:UseDirectionAs"]);
+    expect(featureGaps).toEqual([]);
     const traceSha256ByActor = Object.fromEntries(Object.entries(regeneratedTraces)
       .map(([object, rows]) => [object, createHash("sha256").update(JSON.stringify(rows)).digest("hex")]));
     const regenerated: PowerStrikeHashes = { effectSourceSha256, seed, stepSeconds, stepLimit, simulatorVersion: PARTICLE_SIMULATOR_VERSION, traceSha256ByActor };

@@ -17,6 +17,14 @@ export function rotateByAxes(vector: Vector3, axes: RotatorAxes): Vector3 {
   };
 }
 
+export function rotateByTransposedAxes(vector: Vector3, axes: RotatorAxes): Vector3 {
+  return {
+    x: vector.x * axes.forward.x + vector.y * axes.forward.y + vector.z * axes.forward.z,
+    y: vector.x * axes.right.x + vector.y * axes.right.y + vector.z * axes.right.z,
+    z: vector.x * axes.up.x + vector.y * axes.up.y + vector.z * axes.up.z,
+  };
+}
+
 export function rotateByRotators(vector: Vector3, outerRotator: Rotator, innerRotator: Rotator): Vector3 {
   return rotateByAxes(rotateByAxes(vector, rotatorAxes(innerRotator)), rotatorAxes(outerRotator));
 }

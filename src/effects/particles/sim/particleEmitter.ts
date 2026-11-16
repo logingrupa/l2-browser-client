@@ -7,6 +7,7 @@ import {
   type EmitterClassOverrides, type EmitterCounters, type EmitterRuntime, type EmitterStepContext, type ParticleColumns,
 } from "./particleState";
 import { updateParticles } from "./particleUpdate";
+import { spriteFacesCamera } from "./spriteOrientation";
 
 export type EmitterStepOutcome = "disabled" | "delayed" | "running" | "dead";
 export type ParticleStorageSpace = "world" | "owner";
@@ -43,14 +44,14 @@ export interface EmitterFeatureCheck {
 
 const featureCheck = (property: string, value: boolean | number, isUnported: boolean): EmitterFeatureCheck => ({ property, value, isUnported });
 
-export const CAMERA_FACING_DIRECTION_USAGES: readonly number[] = [DIRECTION_USAGE.none, DIRECTION_USAGE.scale];
-
 function listSpriteFeatureChecks(record: ParticleEmitterRecord): EmitterFeatureCheck[] {
   if (record.emitterClass !== "Engine.SpriteEmitter") return [];
   const atlasCellCount = Math.max(1, record.TextureUSubdivisions) * Math.max(1, record.TextureVSubdivisions);
   const ageDrivenAtlasBlends = record.BlendBetweenSubdivisions && !record.UseRandomSubdivision && atlasCellCount > 1;
+  const normalTurnsWithOwner = record.UseDirectionAs === DIRECTION_USAGE.normal && record.UseRotationFrom === ROTATION_SOURCE.actor;
+  const orientedAxesSpin = record.SpinParticles && !spriteFacesCamera(record.UseDirectionAs);
   return [
-    featureCheck("UseDirectionAs", record.UseDirectionAs, !CAMERA_FACING_DIRECTION_USAGES.includes(record.UseDirectionAs)),
+    featureCheck("UseDirectionAs", record.UseDirectionAs, normalTurnsWithOwner || orientedAxesSpin),
     featureCheck("BlendBetweenSubdivisions", record.BlendBetweenSubdivisions, ageDrivenAtlasBlends),
   ];
 }

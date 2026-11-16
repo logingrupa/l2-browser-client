@@ -65,13 +65,14 @@ describe("particle material binding through the UE2 material library", () => {
     binding.dispose(); expect(scene.materials).not.toContain(binding.material);
   });
 
-  it("draws sprites two-sided with the camera-facing vertex stage and the class-default depth test", () => {
-    const { scene, texture, mesh } = sceneWithTexture();
-    const binding = drawnBinding(scene, mesh, { record: parseEmitterRecord(spriteSource), emitterOrdinal: 0, texture });
-    expect(binding.material.backFaceCulling).toBe(false);
-    expect(binding.material.options.defines).toEqual(["PARTICLE_SPRITE"]);
-    expect(binding.material).toMatchObject({ depthFunction: Constants.LEQUAL, disableDepthWrite: true });
-  });
+  it.each([[0, ["PARTICLE_SPRITE"]], [7, ["PARTICLE_SPRITE"]], [1, []], [4, []]] as const)(
+    "draws a UseDirectionAs %s sprite two-sided with the vertex stage %j and the class-default depth test", (directionUsage, defines) => {
+      const { scene, texture, mesh } = sceneWithTexture();
+      const binding = drawnBinding(scene, mesh, { record: parseEmitterRecord(withOverrides(spriteSource, { UseDirectionAs: directionUsage })), emitterOrdinal: 0, texture });
+      expect(binding.material.backFaceCulling).toBe(false);
+      expect(binding.material.options.defines).toEqual(defines);
+      expect(binding.material).toMatchObject({ depthFunction: Constants.LEQUAL, disableDepthWrite: true });
+    });
 
   it("leaves a mesh emitter that keeps its static mesh materials not drawn with the UseMeshBlendMode feature gap", () => {
     const { scene, texture, mesh } = sceneWithTexture();
@@ -105,8 +106,8 @@ describe("particle instance buffers from simulator state", () => {
     expect(Array.from(buffers.colours.subarray(0, 4))).toEqual(Array.from(emitter.columns.color.subarray(slot * 4, slot * 4 + 4)));
   });
 
-  it("writes sprite half extents in metres, roll and the column-major atlas cell", () => {
-    const emitter = steppedEmitter(spriteSource, 20);
+  it("writes camera-facing sprite half extents in metres, roll and the column-major atlas cell", () => {
+    const emitter = steppedEmitter(withOverrides(spriteSource, { UseDirectionAs: 7 }), 20);
     if (emitter.kind !== "sprite") throw new Error("the synthetic sprite fixture is not a sprite emitter");
     const buffers = createParticleInstanceBuffers(emitter.columns.capacity), count = writeParticleInstances(emitter, buffers);
     expect(count).toBeGreaterThan(0);
@@ -119,7 +120,7 @@ describe("particle instance buffers from simulator state", () => {
 
   it("applies a colour and atlas override and refuses more live particles than instances", () => {
     const emitter = steppedEmitter(meshSource, 30), buffers = createParticleInstanceBuffers(emitter.columns.capacity);
-    writeParticleInstances(emitter, buffers, { emitterRotation: { pitch: 0, yaw: 0, roll: 0 }, colourOverride: [1, 0, 0, 1], atlasOverride: [.5, .5, .5, 0] });
+    writeParticleInstances(emitter, buffers, { emitterRotation: { pitch: 0, yaw: 0, roll: 0 }, cameraSourceLocation: null, colourOverride: [1, 0, 0, 1], atlasOverride: [.5, .5, .5, 0] });
     expect(Array.from(buffers.colours.subarray(0, 4))).toEqual([1, 0, 0, 1]);
     expect(Array.from(buffers.atlasRectangles.subarray(0, 4))).toEqual([.5, .5, .5, 0]);
     expect(() => writeParticleInstances(emitter, createParticleInstanceBuffers(1))).toThrow("live particles for 1 instances");

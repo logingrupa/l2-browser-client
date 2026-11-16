@@ -16,7 +16,10 @@ import type { EffectBundle, EffectComponent, EffectResource } from "../../src/ef
 import { loadEmitterActorPlayback } from "../../src/effects/particles/render/emitterActorPlayback";
 import { createEmitterSimulation } from "../../src/effects/particles/sim/emitterActor";
 import { parseEmitterRecord } from "../../src/effects/particles/sim/emitterRecords";
+import { orientedSpriteHalfAxes, realProjectionNormal } from "../../src/effects/particles/sim/spriteOrientation";
+import { readSlotVector } from "../../src/effects/particles/sim/particleState";
 import { createRandomStream, deriveStreamSeed } from "../../src/shared/random";
+import { sourcePositionToWorld, worldPositionToSource } from "../../src/world/sourceFrame";
 
 const classDefaults = JSON.parse(readFileSync("tests/fixtures/particles/synthetic-class-defaults.json", "utf8")) as Record<string, Record<string, unknown>>;
 
@@ -71,7 +74,7 @@ function glb(image: Uint8Array, options: { primitives?: number; skin?: boolean; 
 const releases: (() => void)[] = [], operations: Promise<unknown>[] = [], cleanups: (() => void)[] = [];
 afterEach(async () => { for (const release of releases.splice(0)) release(); await Promise.allSettled(operations.splice(0));
   for (const cleanup of cleanups.splice(0).reverse()) cleanup(); gate.next = undefined; vi.restoreAllMocks(); });
-async function fixture(options: Parameters<typeof glb>[1] & { sprite?: boolean; atlas?: boolean; animatedTexture?: boolean } = {}) {
+async function fixture(options: Parameters<typeof glb>[1] & { sprite?: boolean; atlas?: boolean; animatedTexture?: boolean; effectiveOverrides?: Record<string, unknown> } = {}) {
   const engine = new NullEngine(), scene = new Scene(engine); cleanups.push(() => { scene.dispose(); engine.dispose(); });
   new FreeCamera("camera", new Vector3(0, 0, -10), scene);
   const data = new Map<string, Uint8Array<ArrayBuffer>>(), resources: Record<string, EffectResource> = {}, readObjects: string[] = [];
@@ -91,6 +94,7 @@ async function fixture(options: Parameters<typeof glb>[1] & { sprite?: boolean; 
       DrawStyle: 3, UseMeshBlendMode: false, RenderTwoSided: true, StartLocationRange: { X: { Min: 100, Max: 100 }, Y: { Min: 200, Max: 200 }, Z: { Min: 300, Max: 300 } },
       Texture: { object: options.sprite ? texture.object : inheritedTexture.object },
       ...options.atlas ? { TextureUSubdivisions: 2, TextureVSubdivisions: 2, SubdivisionStart: 2, SubdivisionEnd: 3 } : {},
+      ...options.effectiveOverrides,
     }, bindings: { mesh: options.sprite ? null : model, texture: options.sprite ? texture : inheritedTexture,
       primitiveMaterials: options.sprite ? [] : Array.from({ length: options.primitives ?? 1 }, (_, primitiveIndex) => ({ meshIndex: 0, primitiveIndex,
         materialIndex: primitiveIndex, nativeSourceReference: texture.object, textureResourceKey: texture.assetId })) } };
@@ -167,6 +171,32 @@ describe("simulator-driven effect component", () => {
     expect(owner.meshes[0]!.billboardMode).toBe(Mesh.BILLBOARDMODE_NONE);
     expect(owner.render(steppedEmitter(value.component, 1), presentation)).toBe(4);
     expect(value.readObjects).toEqual(["Textures.Original"]); owner.dispose();
+  });
+
+  it("hands an oriented sprite the camera location in its own mesh frame under a turned and moved effect root", async () => {
+    const value = await fixture({ sprite: true, effectiveOverrides: { UseDirectionAs: 1, StartVelocityRange: { X: { Min: 50, Max: 50 }, Y: { Min: 0, Max: 0 }, Z: { Min: 0, Max: 0 } } } });
+    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal);
+    const turnedRoot = new TransformNode("turned effect root", value.scene);
+    turnedRoot.position.set(3, 1, -2); turnedRoot.rotationQuaternion = Quaternion.FromEulerAngles(0, 1.1, .2);
+    owner.root.parent = turnedRoot;
+    const emitter = steppedEmitter(value.component, 2), mesh = owner.meshes[0]!;
+    expect(owner.render(emitter, presentation)).toBe(4);
+    const cameraWorld = value.scene.activeCamera!.globalPosition;
+    const cameraInMesh = worldPositionToSource(Vector3.TransformCoordinates(cameraWorld, Matrix.Invert(mesh.computeWorldMatrix(true))));
+    expect(Math.abs(cameraInMesh.x - worldPositionToSource(cameraWorld).x)).toBeGreaterThan(1);
+    const slot = emitter.liveSlots()[0]!, record = parseEmitterRecord(value.component);
+    if (record.emitterClass !== "Engine.SpriteEmitter") throw new Error("the oriented fixture is not a sprite emitter");
+    const halfAxes = orientedSpriteHalfAxes({
+      directionUsage: 1, location: readSlotVector(emitter.columns.location, slot), oldLocation: readSlotVector(emitter.columns.oldLocation, slot),
+      size: readSlotVector(emitter.columns.size, slot), cameraLocation: cameraInMesh,
+      realProjectionNormal: realProjectionNormal(record.ProjectionNormal), workingProjectionNormal: realProjectionNormal(record.ProjectionNormal),
+    });
+    const instance = mesh.thinInstanceGetWorldMatrices()[0]!.m;
+    const right = sourcePositionToWorld(halfAxes.right), up = sourcePositionToWorld(halfAxes.up);
+    close([instance[0]!, instance[1]!, instance[2]!, instance[4]!, instance[5]!, instance[6]!], [right.x, right.y, right.z, up.x, up.y, up.z]);
+    expect(Math.hypot(right.x, right.y, right.z)).toBeGreaterThan(0);
+    expect(owner.materials[0]!.material.options.defines).toEqual([]);
+    owner.dispose();
   });
 
   it.each(["skin", "animation", "external", "wrongSource", "invalidTextureIndex"] as const)("rejects unsupported %s without leaving resources", async field => {

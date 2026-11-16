@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "listVersion": 1,
-  "source": "src/effects/particles/sim/particleEmitter.ts listEmitterFeatureChecks, with constants from src/effects/particles/sim/emitterConstants.ts and CAMERA_FACING_DIRECTION_USAGES",
+  "listVersion": 2,
+  "source": "src/effects/particles/sim/particleEmitter.ts listEmitterFeatureChecks, with constants from src/effects/particles/sim/emitterConstants.ts and CAMERA_FACING_DIRECTION_USAGES from src/effects/particles/sim/spriteOrientation.ts",
   "features": [
     { "property": "UseCollision", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
       "when": { "test": "is-true", "property": "UseCollision", "classDefault": false } },
@@ -22,7 +22,16 @@
     { "property": "WeatherEffect", "emitterClasses": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
       "when": { "test": "is-true", "property": "WeatherEffect", "classDefault": false } },
     { "property": "UseDirectionAs", "emitterClasses": ["Engine.SpriteEmitter"],
-      "when": { "test": "not-in", "property": "UseDirectionAs", "classDefault": false, "values": [0, 7], "constant": "CAMERA_FACING_DIRECTION_USAGES" } },
+      "when": { "test": "any-of", "conditions": [
+        { "test": "all-of", "conditions": [
+          { "test": "equals", "property": "UseDirectionAs", "classDefault": false, "value": 4, "constant": "DIRECTION_USAGE.normal" },
+          { "test": "equals", "property": "UseRotationFrom", "classDefault": false, "value": 1, "constant": "ROTATION_SOURCE.actor" }
+        ] },
+        { "test": "all-of", "conditions": [
+          { "test": "is-true", "property": "SpinParticles", "classDefault": false },
+          { "test": "not-in", "property": "UseDirectionAs", "classDefault": false, "values": [0, 7], "constant": "CAMERA_FACING_DIRECTION_USAGES" }
+        ] }
+      ] } },
     { "property": "BlendBetweenSubdivisions", "emitterClasses": ["Engine.SpriteEmitter"],
       "when": { "test": "all-of", "conditions": [
         { "test": "is-true", "property": "BlendBetweenSubdivisions", "classDefault": false },

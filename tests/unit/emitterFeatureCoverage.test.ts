@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { COORDINATE_SYSTEM, DIRECTION_USAGE, ROTATION_SOURCE } from "../../src/effects/particles/sim/emitterConstants";
 import { parseEmitterRecord, type EmitterSourceRecord, type ParticleEmitterRecord } from "../../src/effects/particles/sim/emitterRecords";
-import { CAMERA_FACING_DIRECTION_USAGES, listEmitterFeatureChecks, listUnportedEmitterFeatures } from "../../src/effects/particles/sim/particleEmitter";
+import { listEmitterFeatureChecks, listUnportedEmitterFeatures } from "../../src/effects/particles/sim/particleEmitter";
+import { CAMERA_FACING_DIRECTION_USAGES } from "../../src/effects/particles/sim/spriteOrientation";
 import { readSyntheticParticleFixture } from "./support/particleFixtures";
 
 type LeafTest = "is-true" | "is-false" | "is-nonzero" | "at-least" | "equals" | "not-in";
@@ -134,9 +135,10 @@ describe("emitter feature coverage recipe mirrors listEmitterFeatureChecks", () 
   it("gives the runtime verdict for a record with every feature unported at once", () => {
     for (const fixture of classFixtures) {
       const everyFeatureOn = recipe.features.filter(feature => feature.emitterClasses.includes(fixture.class!)).reduce<Record<string, unknown>>((overrides, feature) => {
-        const unported = overrideCombinations(leafConditions(feature.when)).find(candidate => recipeConditionHolds({ ...fixture.effectiveProperties, ...overrides, ...candidate }, feature.when)
-          && parsedOrNull(withOverrides(fixture, { ...overrides, ...candidate })) !== null);
-        return { ...overrides, ...unported };
+        const keepingEarlierFeaturesOn = (candidate: Record<string, unknown>) => ({ ...candidate, ...overrides });
+        const unported = overrideCombinations(leafConditions(feature.when)).find(candidate => recipeConditionHolds({ ...fixture.effectiveProperties, ...keepingEarlierFeaturesOn(candidate) }, feature.when)
+          && parsedOrNull(withOverrides(fixture, keepingEarlierFeaturesOn(candidate))) !== null);
+        return unported ? keepingEarlierFeaturesOn(unported) : overrides;
       }, {});
       const source = withOverrides(fixture, everyFeatureOn);
       const runtimeProperties = listUnportedEmitterFeatures(parseEmitterRecord(source)).map(unported => unported.property);

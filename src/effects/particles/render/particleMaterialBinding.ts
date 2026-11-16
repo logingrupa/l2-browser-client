@@ -11,6 +11,7 @@ import { PARTICLE_CONSTANTS } from "../sim/emitterConstants";
 import type { ParticleEmitterRecord } from "../sim/emitterRecords";
 import { meshMaterialRoute } from "../sim/meshEmitter";
 import { emitterFeatureGapReason, type EmitterFeatureGapReason } from "../sim/particleEmitter";
+import { spriteFacesCamera } from "../sim/spriteOrientation";
 import { PARTICLE_INSTANCE_ATTRIBUTES } from "./particleInstances";
 
 export interface ParticleMaterialBindingInput {
@@ -54,7 +55,7 @@ export interface NativeEmitterMeshMetadata {
 
 const samplerName = "particleTexture";
 const alphaTestUniform = "particleAlphaTest";
-const spriteDefine = "PARTICLE_SPRITE";
+const cameraFacingSpriteDefine = "PARTICLE_SPRITE";
 const alphaTestDiscardLimit = PARTICLE_CONSTANTS.particleAlphaTest.runtimeDefault;
 
 function particleVertexSource(scene: Scene): string {
@@ -89,7 +90,7 @@ function particleVertexSource(scene: Scene): string {
     "  vec4 instanceAtlas = vec4(1.0, 1.0, 0.0, 0.0);",
     "  vec4 instanceSprite = vec4(1.0, 1.0, 0.0, 0.0);",
     "#endif",
-    `#ifdef ${spriteDefine}`,
+    `#ifdef ${cameraFacingSpriteDefine}`,
     "  vec3 spriteCentre = (particleWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;",
     "  vec3 cameraRight = vec3(view[0][0], view[1][0], view[2][0]);",
     "  vec3 cameraUp = vec3(view[0][1], view[1][1], view[2][1]);",
@@ -138,13 +139,13 @@ export function bindParticleMaterial(scene: Scene, mesh: Mesh, input: ParticleMa
   if (!Number.isSafeInteger(emitterOrdinal) || emitterOrdinal < 0) throw new RangeError(`Emitter ordinal ${emitterOrdinal} must be a non-negative integer.`);
   const route = particleMaterialRoute(record);
   if (!route.drawn) return route;
-  const sprite = record.emitterClass === "Engine.SpriteEmitter";
+  const cameraFacingSprite = record.emitterClass === "Engine.SpriteEmitter" && spriteFacesCamera(record.UseDirectionAs);
   const chain = particleFragmentChain(record.DrawStyle);
   const material = new ShaderMaterial(`UE2 particle material: ${record.object}`, scene, { vertexSource: particleVertexSource(scene), fragmentSource: fragmentSource(chain) }, {
     attributes: ["position", "uv", ...Object.values(PARTICLE_INSTANCE_ATTRIBUTES)],
     uniforms: ["world", "view", "viewProjection", alphaTestUniform, ...chain.uniforms],
     samplers: [samplerName],
-    defines: sprite ? [spriteDefine] : [],
+    defines: cameraFacingSprite ? [cameraFacingSpriteDefine] : [],
     needAlphaBlending: chain.babylonBlend.alphaMode !== Constants.ALPHA_DISABLE,
     needAlphaTesting: record.AlphaTest,
   });

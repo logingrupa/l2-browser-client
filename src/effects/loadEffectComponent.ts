@@ -1,7 +1,7 @@
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import type { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
-import { Matrix } from "@babylonjs/core/Maths/math.vector";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { CreatePlaneVertexData } from "@babylonjs/core/Meshes/Builders/planeBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
@@ -15,8 +15,10 @@ import { parseEmitterRecord, type ParticleEmitterRecord, type Rotator } from "./
 import type { EmitterFeatureGapReason } from "./particles/sim/particleEmitter";
 import { attachParticleInstanceBuffers, createParticleInstanceBuffers, uploadParticleInstances, writeParticleInstances, type ParticleInstanceBuffers } from "./particles/render/particleInstances";
 import { bindParticleMaterial, type ParticleMaterialBinding } from "./particles/render/particleMaterialBinding";
+import { spriteFacesCamera } from "./particles/sim/spriteOrientation";
 import { effectFrames, effectObject, type EffectBundle, type EffectComponent, type EffectFrame, type EffectPrimitive, type EffectResource } from "./nativeEffectComponents";
 import { createNativeEffectTexture } from "./nativeEffectTexture";
+import { worldPositionToSource, type SourcePosition } from "../world/sourceFrame";
 
 export interface EffectComponentPresentation {
   readonly levelSeconds: number;
@@ -49,6 +51,12 @@ interface PrimitiveDraw {
 
 function requireValue(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`Effect component geometry: ${message}`);
+}
+
+function cameraSourceLocationInMeshFrame(scene: Scene, mesh: Mesh): SourcePosition {
+  const camera = scene.activeCamera;
+  requireValue(camera, "an oriented sprite builds its axes from the camera location, and the scene has no active camera.");
+  return worldPositionToSource(Vector3.TransformCoordinates(camera.globalPosition, Matrix.Invert(mesh.computeWorldMatrix(true))));
 }
 
 function pointers(node: TransformNode): string[] {
@@ -179,6 +187,7 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
   const record = parseEmitterRecord(component);
   if (record.emitterClass === "Engine.RibbonEmitter") throw new Error(`Effect component ${component.object}: ribbon-texture-unstaged, the bundle binds no RibbonEmitter texture to draw its point strip with.`);
   const sprite = record.emitterClass === "Engine.SpriteEmitter";
+  const orientedSprite = sprite && !spriteFacesCamera(record.UseDirectionAs);
   const root = new TransformNode(`Effect component: ${component.object}`, scene);
   root.id = `native-effect-component:${root.uniqueId}`; root.doNotSerialize = true; root.setEnabled(false);
   const draws: PrimitiveDraw[] = [], textures = new Map<string, RawTexture>(), ownedMeshes: Mesh[] = [];
@@ -272,6 +281,7 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
         const pinned = presentation.pinnedFrame;
         liveInstances = writeParticleInstances(emitter, target, {
           emitterRotation: presentation.emitterRotation, colourOverride: presentation.colourOverride,
+          cameraSourceLocation: orientedSprite && emitter.liveSlots().length > 0 ? cameraSourceLocationInMeshFrame(scene, draws[0]!.mesh) : null,
           atlasOverride: pinned ? [...pinned.uvScale, ...pinned.uvOffset] : null,
         });
         for (const draw of draws) {

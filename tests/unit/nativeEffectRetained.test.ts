@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Scene } from "@babylonjs/core/scene";
 import { SceneSerializer } from "@babylonjs/core/Misc/sceneSerializer";
 import "@babylonjs/core/Materials/standardMaterial";
@@ -22,6 +24,7 @@ const alphaModeByDrawStyle: Readonly<Record<number, string>> = { 3: "ALPHA_ONEON
 describe("retained Power Strike components render through the simulator and the UE2 particle material", () => {
   it.each(manifest.components)("plays $object without mutating source records", async component => {
     const engine = new NullEngine(), scene = new Scene(engine), signal = new AbortController().signal;
+    new FreeCamera("retained effect view", new Vector3(0, 1, -5), scene);
     const before = JSON.stringify(manifest);
     try {
       const loaded = await loadEffectComponent(scene, bundle, component, signal);

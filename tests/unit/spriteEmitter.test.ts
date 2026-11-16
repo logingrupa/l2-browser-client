@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DIRECTION_USAGE, PARTICLE_CONSTANTS } from "../../src/effects/particles/sim/emitterConstants";
+import { DIRECTION_USAGE, PARTICLE_CONSTANTS, ROTATION_SOURCE } from "../../src/effects/particles/sim/emitterConstants";
 import { EmitterRecordError, parseEmitterRecord, type SpriteEmitterRecord } from "../../src/effects/particles/sim/emitterRecords";
 import { createEmitterRandomStream } from "../../src/effects/particles/sim/particleEmitter";
 import { readSlotVector } from "../../src/effects/particles/sim/particleState";
@@ -66,16 +66,19 @@ describe("SpriteEmitter simulation", () => {
     expect(startSize.z).toBe(startSize.x);
   });
 
-  it("reports every UseDirectionAs basis except None and Scale as an unported feature, because sprites draw camera-facing", () => {
-    const directionGapsFor = (useDirectionAs: number) => createSpriteEmitterSimulation(parseEmitterRecord({
-      ...spriteSource, effectiveProperties: { ...spriteSource.effectiveProperties, UseDirectionAs: useDirectionAs, BlendBetweenSubdivisions: false },
+  it("ports every UseDirectionAs basis and reports only spinning oriented axes and an owner-turned PTDU_Normal normal", () => {
+    const directionGapsFor = (overrides: Record<string, unknown>) => createSpriteEmitterSimulation(parseEmitterRecord({
+      ...spriteSource, effectiveProperties: { ...spriteSource.effectiveProperties, BlendBetweenSubdivisions: false, ...overrides },
     }) as SpriteEmitterRecord, createEmitterRandomStream(1, 0, 0)).unportedFeatures.filter(feature => feature.property === "UseDirectionAs");
-    expect(directionGapsFor(DIRECTION_USAGE.none)).toEqual([]);
-    expect(directionGapsFor(DIRECTION_USAGE.scale)).toEqual([]);
-    for (const useDirectionAs of [DIRECTION_USAGE.up, DIRECTION_USAGE.right, DIRECTION_USAGE.forward, DIRECTION_USAGE.normal,
-      DIRECTION_USAGE.upAndNormal, DIRECTION_USAGE.rightAndNormal]) {
-      expect(directionGapsFor(useDirectionAs)).toEqual([{ reason: "emitter-feature-unported:UseDirectionAs", property: "UseDirectionAs", value: useDirectionAs }]);
+    const directionGap = (useDirectionAs: number) => [{ reason: "emitter-feature-unported:UseDirectionAs", property: "UseDirectionAs", value: useDirectionAs }];
+    for (const useDirectionAs of Object.values(DIRECTION_USAGE)) {
+      expect(directionGapsFor({ UseDirectionAs: useDirectionAs, SpinParticles: false })).toEqual([]);
+      const spinsOrientedAxes = useDirectionAs !== DIRECTION_USAGE.none && useDirectionAs !== DIRECTION_USAGE.scale;
+      expect(directionGapsFor({ UseDirectionAs: useDirectionAs, SpinParticles: true })).toEqual(spinsOrientedAxes ? directionGap(useDirectionAs) : []);
     }
+    expect(directionGapsFor({ UseDirectionAs: DIRECTION_USAGE.normal, SpinParticles: false, UseRotationFrom: ROTATION_SOURCE.actor })).toEqual(directionGap(DIRECTION_USAGE.normal));
+    expect(directionGapsFor({ UseDirectionAs: DIRECTION_USAGE.upAndNormal, SpinParticles: false, UseRotationFrom: ROTATION_SOURCE.actor })).toEqual([]);
+    expect(directionGapsFor({ UseDirectionAs: DIRECTION_USAGE.normal, SpinParticles: false, UseRotationFrom: ROTATION_SOURCE.offset })).toEqual([]);
   });
 
   it("reports an age-driven BlendBetweenSubdivisions atlas as an unported feature, because the renderer samples one cell", () => {
