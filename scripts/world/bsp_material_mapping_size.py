@@ -89,8 +89,11 @@ MAPPING_SIZE_RULE_OF_CLASS = {
 }
 
 
+NULL_OBJECT_REFERENCE = {'index': 0, 'object': None}
+
+
 def reference_object_name(value, owner):
-    if value is None:
+    if value is None or value == NULL_OBJECT_REFERENCE:
         return None
     if not (isinstance(value, dict) and isinstance(value.get('object'), str) and value['object']):
         raise FormatError(f'{owner} is not an object reference: {value!r}')
@@ -147,6 +150,14 @@ def default_material_identity(class_default_value):
     if identity is None:
         raise FormatError(f'the class default {owner} names no material')
     return identity
+
+
+def surface_material_identities(package, model, class_work_root, class_scripts):
+    identities = [package.object_name(surface.material) for surface in model.surfs]
+    if None not in identities:
+        return identities
+    default_identity = default_material_identity(reference_client_class_default_value(class_work_root, class_scripts))
+    return [default_identity if identity is None else identity for identity in identities]
 
 
 def mapping_size_outcome(identity, map_sources, class_default_value):

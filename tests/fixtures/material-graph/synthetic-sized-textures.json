@@ -1,0 +1,8 @@
+{
+  "file": "SyntheticSizedTextures.utx",
+  "packageVersion": 123,
+  "licensee": 28,
+  "exports": [
+    {"name": "Wide", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 256}, {"name": "VSize", "int": 32}]}
+  ]
+}

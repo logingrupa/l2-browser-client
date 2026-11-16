@@ -203,10 +203,11 @@ def section_geometry(model, section, material, primitive, node_ranges):
 
 
 def gltf_material_record(builder, material, unlit, image_of_identity):
+    mapped = material.mapping_size is not None
     record = {'name': material.identity, 'pbrMetallicRoughness': {'metallicFactor': 0, 'roughnessFactor': 1},
-              'extras': {'nativeSourceReference': material.identity, NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD: material.program,
+              'extras': {'nativeSourceReference': material.identity, NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD: material.program if mapped else None,
                          'translucent': material.translucent}}
-    if material.png is None:
+    if material.png is None or not mapped:
         record['pbrMetallicRoughness']['baseColorFactor'] = list(UNBOUND_MATERIAL_COLOUR)
         record['extras']['unboundSourceMaterial'] = material.identity
     else:

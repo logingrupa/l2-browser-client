@@ -3,7 +3,7 @@ import tempfile
 from typing import NamedTuple
 
 from world.bsp_chunk_geometry import BspSurfaceMaterial
-from world.bsp_material_mapping_size import default_material_identity, mapping_size_outcome, reference_client_class_default_value
+from world.bsp_material_mapping_size import mapping_size_outcome, reference_client_class_default_value
 from world.static_mesh_step import conversion_failure_reason
 from world.surface_material_programs import MATERIAL_CONVERSION_ERRORS, material_program_outcome, program_root_is_ported, root_program_node
 
@@ -19,14 +19,6 @@ class SurfaceMaterialOutcome(NamedTuple):
     material: BspSurfaceMaterial
     gap_reasons: list
     store_outputs: list
-
-
-def surface_material_identities(package, model, class_work_root, class_scripts):
-    identities = [package.object_name(surface.material) for surface in model.surfs]
-    if None not in identities:
-        return identities
-    default_identity = default_material_identity(reference_client_class_default_value(class_work_root, class_scripts))
-    return [default_identity if identity is None else identity for identity in identities]
 
 
 def root_field_value(root, field_name):
@@ -64,7 +56,7 @@ def convert_surface_material(identity, map_sources, converter, class_work_root, 
     mapping_size, mapping_gap_reasons = mapping_size_outcome(identity, map_sources,
                                                              reference_client_class_default_value(class_work_root, class_scripts))
     gap_reasons = [*outcome.gap_reasons, *mapping_gap_reasons]
-    if not program_root_is_ported(outcome.program):
+    if mapping_size is None or not program_root_is_ported(outcome.program):
         return unbound_surface_material(identity, mapping_size, outcome.program_record, gap_reasons, outcome.store_outputs)
     try:
         with tempfile.TemporaryDirectory(dir=converter.output) as work:

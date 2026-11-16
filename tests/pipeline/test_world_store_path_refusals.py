@@ -9,28 +9,23 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from material_graph_fixture import build_synthetic_material_package
 from native_store.store_paths import ConverterOutputRefusedError, StorePathError
-from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
+from support.mapping_size_class_defaults import use_synthetic_mapping_class_defaults
+from support.synthetic_bsp_step_run import SOURCE_IDENTITY, TILE_ID, TILE_UNIT_KEY, read_one_synthetic_bsp_node_instead_of_a_map, start_patch
+from support.synthetic_map_sources import SyntheticMapSources
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
-from support.mapping_size_class_defaults import use_synthetic_mapping_class_defaults
 from test_material_program_images import synthetic_png_bytes
-from world import bsp_step, material_texture_images, sky_step, surface_material_programs
+from world import material_texture_images, sky_step, surface_material_programs
 from world.bsp_material_mapping_size import MAPPING_SIZE_ZERO_REASON
 from world.bsp_step import BSP_STEP_NAME, bsp_ledger, run_bsp_step
 from world.bsp_surface_materials import convert_surface_material
 from world.sky_step import SkyRootConversion
-from world.static_placement_plan import ChunkRectangle
 from world.tile_step_current_seals import TILE_STEP_SEAL_CHECKS
 from world.tile_step_workers import TileStepRun
 
 TEXTURED_MATERIAL_FIXTURE = 'shader-combiner-panner-texture.json'
 TEXTURED_MATERIAL = 'SyntheticMaterials.SkyShader'
 SKY_MATERIAL = 'Sky_T.Shaders.Haze'
-TILE_ID = '00_00'
-TILE_UNIT_KEY = f'tile:{TILE_ID}'
-SOURCE_IDENTITY = {'path': f'maps/{TILE_ID}.unr', 'sha256': 'a' * 64}
-CHUNK_ID = 'chunk-0-0'
-SURFACE_MATERIAL_REFERENCE, BRUSH_ACTOR_REFERENCE = 1, 2
 PATH_ESCAPES_ITS_ROOT = StorePathError('Path escapes its root: native-materials/textures/synthetic/texture.png')
 STORE_ROOT_REFUSED = ConverterOutputRefusedError('converter output must be a dedicated folder under artifacts: synthetic')
 PUBLISH_REFUSALS = (('write_material_texture_images', PATH_ESCAPES_ITS_ROOT), ('write_material_program_record', STORE_ROOT_REFUSED))
@@ -39,42 +34,15 @@ PATH_ESCAPES_ITS_ROOT_ROW_REASON = 'decode-failed:StorePathError:Path escapes it
 
 class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
     def setUp(self):
-        package = build_synthetic_material_package(TEXTURED_MATERIAL_FIXTURE)
-        self.map_sources = SimpleNamespace(paths={'syntheticmaterials': ['textures/SyntheticMaterials.utx']}, get=lambda relative: package,
-                                           dependencies={})
+        self.map_sources = SyntheticMapSources(build_synthetic_material_package(TEXTURED_MATERIAL_FIXTURE))
         self.converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'),
                                          texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
                                          material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
-        self.start_patch(surface_material_programs, 'kept_material_class_defaults', mock.Mock(return_value=SYNTHETIC_CLASS_DEFAULTS))
+        start_patch(self, surface_material_programs, 'kept_material_class_defaults', mock.Mock(return_value=SYNTHETIC_CLASS_DEFAULTS))
         use_synthetic_mapping_class_defaults(self)
 
-    def start_patch(self, owner, name, replacement):
-        patcher = mock.patch.object(owner, name, replacement)
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
     def read_one_synthetic_bsp_node_instead_of_a_map(self, project_root):
-        model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100), material=SURFACE_MATERIAL_REFERENCE,
-                                                               actor=BRUSH_ACTOR_REFERENCE)])
-        map_package = SimpleNamespace(object_name={SURFACE_MATERIAL_REFERENCE: TEXTURED_MATERIAL, BRUSH_ACTOR_REFERENCE: f'{TILE_ID}.Brush7'}.get)
-        chunk_plan = {'chunks': [{'chunkId': CHUNK_ID}]}
-        replacements = {
-            'read_tile_map_lock_record': mock.Mock(return_value={'eSha256': SOURCE_IDENTITY['sha256']}),
-            'sealed_chunk_plan': mock.Mock(return_value=('b' * 64, project_root / 'raw-products', chunk_plan)),
-            'tile_level_model_layout': mock.Mock(return_value='synthetic-layout'), 'implementation_hash': mock.Mock(return_value='c' * 64),
-            'read_locked_map_package': mock.Mock(return_value=map_package),
-            'read_level_model': mock.Mock(return_value=SimpleNamespace(model=model, binding={'model': {'qualified': f'{TILE_ID}.Model1'}})),
-            'native_terrain': mock.Mock(), 'chunk_rectangles': mock.Mock(return_value=[ChunkRectangle(CHUNK_ID, (0.0, 0.0), (1024.0, 1024.0))]),
-            'read_level_zones': mock.Mock(), 'sky_zone_indices': mock.Mock(return_value=frozenset()),
-            'outdoor_zone_indices': mock.Mock(return_value=frozenset()), 'ClassDefaults': mock.Mock(), 'ReferenceClientClassScripts': mock.Mock(),
-            'read_bsp_lightmaps': mock.Mock(), 'lightmap_texture_of_record': mock.Mock(return_value={}),
-            'locked_input_records': mock.Mock(return_value=[SOURCE_IDENTITY])}
-        for name, replacement in replacements.items():
-            self.start_patch(bsp_step, name, replacement)
-        material_source_replacements = {'Converter': mock.Mock(return_value=self.converter), 'MapSources': mock.Mock(return_value=self.map_sources),
-                                        'ReferenceClientClassScripts': mock.Mock()}
-        for name, replacement in material_source_replacements.items():
-            self.start_patch(surface_material_programs, name, replacement)
+        read_one_synthetic_bsp_node_instead_of_a_map(self, project_root, TEXTURED_MATERIAL, self.map_sources, self.converter)
 
     def test_a_store_path_refusal_while_a_surface_material_is_published_is_raised_and_is_no_gap_reason(self):
         store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
@@ -87,7 +55,7 @@ class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
     def test_a_store_path_refusal_while_a_surface_material_is_published_fails_the_bsp_step_instead_of_sealing_a_gap_row(self):
         project_root = scratch_work_root(self, 'bsp-project-')
         self.read_one_synthetic_bsp_node_instead_of_a_map(project_root)
-        self.start_patch(material_texture_images, 'publish_store_files', mock.Mock(side_effect=PATH_ESCAPES_ITS_ROOT))
+        start_patch(self, material_texture_images, 'publish_store_files', mock.Mock(side_effect=PATH_ESCAPES_ITS_ROOT))
         with self.assertRaises(StorePathError) as raised:
             run_bsp_step(project_root, project_root / 'client', TILE_ID)
         self.assertIs(raised.exception, PATH_ESCAPES_ITS_ROOT)

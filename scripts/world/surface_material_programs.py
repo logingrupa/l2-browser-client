@@ -15,9 +15,12 @@ from world.map_sources import MapSources
 from world.material_texture_images import (material_texture_image_pins, reviewed_texture_nodes, stored_material_texture_images,
                                            write_material_texture_images)
 from world.static_mesh_step import STATIC_MESH_CONVERTER_FOLDER, conversion_failure_reason
+from world.static_placement_plan import FAILED_STATUS
 from world.tile_census import WORLD_LANE_NAME
+from world.tile_census_validation import GAP_STATUS
 
 UNPORTED_NODE_STATUS = 'unported'
+MATERIAL_GAP_REASON_PREFIX = 'material-'
 MATERIAL_CONVERSION_ERRORS = (ValueError, subprocess.TimeoutExpired)
 
 
@@ -55,6 +58,10 @@ def resolve_material_export(map_sources, identity):
     if len(matches) != 1:
         raise FormatError(f'material export missing or ambiguous: {identity}')
     return package, matches[0]
+
+
+def material_gap_row_status(reason):
+    return GAP_STATUS if reason.startswith(MATERIAL_GAP_REASON_PREFIX) else FAILED_STATUS
 
 
 def root_program_node(program):
