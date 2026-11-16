@@ -42,7 +42,7 @@ def licensee30_header():
 
 
 def fixture(fmt=3, omit_format=False, dimensions=(4,4), levels=None, palette=False,
-            palette_alpha=193, version=(123,28), extra=b'', count=None, palette_count=256,
+            palette_alpha=193, version=(123,28), extra=b'', count=None, palette_count=256, palette_colors=None,
             material_header=None):
     if levels is None:
         levels = [(4,4,b'\x00\xffnative'), (2,2,b'original'), (1,1,b'lastmip!')] if fmt == 3 else [(2,2,b'\0\x01\x7f\xff')]
@@ -68,7 +68,8 @@ def fixture(fmt=3, omit_format=False, dimensions=(4,4), levels=None, palette=Fal
         tail += struct.pack('<i',payload_start+len(payload))+length+payload
         tail += struct.pack('<iiBB',width,height,width.bit_length()-1,height.bit_length()-1)
     texture = bytes(tags+tail+extra)
-    colors = bytes(value for index in range(256) for value in (index,(index+5)%256,(index+19)%256,palette_alpha if index==0 else index))
+    colors = palette_colors if palette_colors is not None else bytes(
+        value for index in range(256) for value in (index,(index+5)%256,(index+19)%256,palette_alpha if index==0 else index))
     palette_bytes = b'\0'+compact(palette_count)+colors
     data = b'P'*start+texture+palette_bytes
     package = Package.__new__(Package)
