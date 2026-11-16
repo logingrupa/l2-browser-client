@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-32-PLAN.md
-last_updated: "2026-11-16T17:48:31.343Z"
+stopped_at: Completed 03-37-PLAN.md
+last_updated: "2026-11-16T21:00:32.701Z"
 last_activity: 2026-11-14
 last_activity_desc: "Phase 03 plan 03-25 complete (shared skeletal material programs: 3,381 material-program units in the materialPrograms slice; skinned slots draw through the UE2 library with bone influences)"
-state_head: 18b87c0b3b7ff71ea80cc607c1e735f1cb951ad1
+state_head: 80aef8738f0568a72b8235bd687de0bbbc1c784b
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 152
-  completed_plans: 131
+  total_plans: 153
+  completed_plans: 132
   percent: 0
 ---
 
@@ -177,6 +177,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 3 P36 | 2h 48m | 3 tasks | 40 files |
 | Phase 03 P27 | 81min | 3 tasks | 15 files |
 | Phase 03 P32 | 60min | 3 tasks | 22 files |
+| Phase 03 P37 | 80min | 3 tasks | 30 files |
 
 ## Accumulated Context
 
@@ -479,6 +480,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 03]: 03-27: no client character route on idle alone; the sandbox keeps each key's gap marker (row 1219)
 - [Phase 03]: 03-32: TextBoxes whose default text is the XDAT sentinel 'undefined' draw nothing and carry textbox-text-undefined-sentinel (row 1220)
 - [Phase 03]: 03-32: fontType 0 and 1 draw with the L2Font-e bitmap fonts and list font-bitmap-branch-unconfirmed while GIsTrueFontUse stays open (row 1221)
+- [Phase 03]: 03-37: one character animation family recipe from RM-7 (row 1225)
+- [Phase 03]: 03-37: RM-9 answered; a unique ASCII case-insensitive clip match binds as case-only (row 1227)
+- [Phase 03]: 03-37: player profiles face [1,0,0]; the face shows on character:0 (row 1229)
+- [Phase 03]: 03-37: the R2 retirement of the hand-staged human profiles moves to follow-up plan 03-38 (row 1230)
 
 ### Pending Todos
 
@@ -629,6 +634,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-16T17:48:30.417Z
-Stopped at: Completed 03-32-PLAN.md
+Last session: 2026-11-16T21:00:31.708Z
+Stopped at: Completed 03-37-PLAN.md
 Resume file: None
