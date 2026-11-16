@@ -41,7 +41,7 @@ describe("renderMinimapControl", () => {
 
   function render(localPlayer: WorldEntity | null, minimapSource: NativeWindowMinimapSource) {
     return renderNativeWindow(container as unknown as HTMLElement, syntheticMinimapWindowManifest(controlWidth, controlHeight),
-      { localPlayer, textures: new Map(), fieldBindings: [], screen, minimapSource });
+      { localPlayer, textures: new Map(), fonts: new Map(), fieldBindings: [], screen, minimapSource });
   }
 
   async function readyMinimap(): Promise<FakeElement> {
@@ -145,7 +145,7 @@ describe("renderMinimapControl", () => {
 
     function renderRadarWindow(localPlayer: WorldEntity) {
       return renderNativeWindow(container as unknown as HTMLElement, syntheticMinimapWindowManifest(controlWidth, controlHeight,
-        radarTextureMapBinding.windowId, [radarTextureMapBinding.controlName]), { localPlayer, textures: new Map(), fieldBindings: [], screen,
+        radarTextureMapBinding.windowId, [radarTextureMapBinding.controlName]), { localPlayer, textures: new Map(), fonts: new Map(), fieldBindings: [], screen,
         minimapSource: zoneSource() });
     }
 

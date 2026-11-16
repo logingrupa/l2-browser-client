@@ -1,10 +1,18 @@
 {
   "schemaVersion": 1,
-  "listVersion": 1,
+  "listVersion": 2,
   "reasons": [
     "texture-reference-unresolved",
     "texture-not-in-catalog",
     "anchor-unresolved:<reason>",
-    "label-unresolved"
+    "label-unresolved",
+    "textbox-text-set-at-runtime",
+    "textbox-text-undefined-sentinel",
+    "textbox-tail-unresolved",
+    "textbox-colour-unresolved",
+    "font-unresolved:<fontType>",
+    "font-gdi-face-unconverted:<fontType>",
+    "font-bitmap-branch-unconfirmed",
+    "font-glyph-table-unreadable"
   ]
 }

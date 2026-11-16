@@ -247,10 +247,12 @@ class ConvertWindowTexturesTests(unittest.TestCase):
 
 
 class DataUiGapReasonListTests(unittest.TestCase):
-    def test_lists_the_four_data_ui_reasons(self):
+    def test_lists_the_data_ui_texture_window_and_text_box_reasons(self):
         document = read_gap_reason_list(ROOT / 'recipes' / 'data' / 'gap-reasons.json')
-        self.assertEqual((document['listVersion'], document['reasons']),
-                         (1, ['texture-reference-unresolved', 'texture-not-in-catalog', 'anchor-unresolved:<reason>', 'label-unresolved']))
+        self.assertEqual((document['listVersion'], document['reasons']), (2, [
+            'texture-reference-unresolved', 'texture-not-in-catalog', 'anchor-unresolved:<reason>', 'label-unresolved', 'textbox-text-set-at-runtime',
+            'textbox-text-undefined-sentinel', 'textbox-tail-unresolved', 'textbox-colour-unresolved', 'font-unresolved:<fontType>',
+            'font-gdi-face-unconverted:<fontType>', 'font-bitmap-branch-unconfirmed', 'font-glyph-table-unreadable']))
 
 
 if __name__ == '__main__':

@@ -1,17 +1,20 @@
 import type { WorldEntity } from "../../world/worldTypes";
 import { resolveNativeWindowRectangles, type NativeWindowRectangle, type NativeWindowScreen } from "./nativeWindowAnchors";
 import type { NativeWindowFieldBinding } from "./nativeWindowFieldBindings";
+import type { NativeWindowFont } from "./nativeWindowFonts";
 import type { NativeWindowManifest, NativeWindowNode } from "./nativeWindowLayoutTree";
 import type { NativeWindowMinimapSource, NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
 import { minimapControlType, renderMinimapControl, type RenderedMinimapControl } from "./minimapControl";
 import { radarTextureMapBinding } from "./minimapRadarRouteRecipe";
 import { placeNativeWindowElement } from "./nativeWindowPlacement";
+import { renderTextBox, type RenderedTextBox } from "./nativeWindowTextBox";
 
 export const nativeWindowRenderedControlTypes: readonly string[] = ["Window", "Texture", "Button", "TextBox", minimapControlType];
 
 export interface NativeWindowRenderInputs {
   readonly localPlayer: WorldEntity | null;
   readonly textures: ReadonlyMap<string, NativeWindowTextureResolution>;
+  readonly fonts: ReadonlyMap<number, NativeWindowFont>;
   readonly fieldBindings: readonly NativeWindowFieldBinding[];
   readonly screen: NativeWindowScreen;
   readonly minimapSource: NativeWindowMinimapSource;
@@ -27,7 +30,6 @@ export interface RenderedNativeWindow {
   dispose(): void;
 }
 
-const labelUnresolvedReason = "label-unresolved";
 const textureNotInCatalogReason = "texture-not-in-catalog";
 const textBoxControlType = "TextBox";
 const controlTypeUnsupportedPrefix = "control-type-unsupported:";
@@ -44,6 +46,7 @@ interface RenderedControl {
   readonly staticGaps: readonly string[];
   readonly gauge: RenderedGauge | null;
   minimap: RenderedMinimapControl | null;
+  readonly textBox: RenderedTextBox | null;
 }
 
 interface RenderedGauge {
@@ -103,7 +106,6 @@ function gaugeFor(binding: NativeWindowFieldBinding,
 function staticControlGaps(node: NativeWindowNode, anchorGaps: readonly string[]): string[] {
   const gaps = [...anchorGaps];
   if (!nativeWindowRenderedControlTypes.includes(node.type)) gaps.push(controlTypeUnsupportedPrefix + node.type);
-  if (node.type === textBoxControlType) gaps.push(labelUnresolvedReason);
   return gaps;
 }
 
@@ -117,6 +119,7 @@ function placeControl(control: RenderedControl, rectangle: NativeWindowRectangle
     if (control.gauge.fillImage !== null) placeNativeWindowElement(control.gauge.fillImage, 0, 0, 0, rectangle.height);
   }
   control.minimap?.resize(rectangle);
+  control.textBox?.place(rectangle);
 }
 
 function refreshGauge(control: RenderedControl, gauge: RenderedGauge, localPlayer: WorldEntity | null): void {
@@ -135,7 +138,8 @@ function refreshGauge(control: RenderedControl, gauge: RenderedGauge, localPlaye
 }
 
 function controlGapReasons(control: RenderedControl): readonly string[] {
-  return [...new Set([...control.staticGaps, ...(control.gauge?.liveGap ? [control.gauge.liveGap] : []), ...(control.minimap?.gaps ?? [])])];
+  return [...new Set([...control.staticGaps, ...(control.gauge?.liveGap ? [control.gauge.liveGap] : []), ...(control.minimap?.gaps ?? []),
+    ...(control.textBox?.gaps ?? [])])];
 }
 
 function markControlGaps(control: RenderedControl): void {
@@ -161,7 +165,8 @@ export function renderNativeWindow(container: HTMLElement, windowManifest: Nativ
     const nodeAnchorGaps = anchorGaps.filter(gap => gap.node === node).map(gap => gap.reason);
     const staticGaps = [...staticControlGaps(node, nodeAnchorGaps), ...(texture.gap === null ? [] : [texture.gap]), ...bound.gaps,
       ...(node === windowManifest.root ? unplacedBindingGaps : [])];
-    controls.push({ node, parent, element, rectangle, textureImage: texture.image, staticGaps, gauge: bound.gauge, minimap: null });
+    const textBox = node.type === textBoxControlType ? renderTextBox(element, node, renderInputs.fonts) : null;
+    controls.push({ node, parent, element, rectangle, textureImage: texture.image, staticGaps, gauge: bound.gauge, minimap: null, textBox });
     node.children.forEach(child => element.append(renderNode(child, node)));
     return element;
   };

@@ -24,6 +24,8 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, lock
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module, resolve_elbera_path
 import reference_client_guard
 from reference_client_guard import require_reference_client
+from ui_font_step import (FONTS_STEP, UI_FONT_ALGORITHM_VERSION, convert_font_unit, converted_font_entries, read_ui_font_recipe,
+                          selected_font_entries)
 from ui_texture_step import (FAILED_STATUS, TEXTURES_STEP, UI_TEXTURE_ALGORITHM_VERSION, convert_window_textures, ui_texture_recipe_bytes,
                              ui_texture_requests)
 from window_control_gaps import CONTROLS_ALGORITHM_VERSION, CONTROLS_STEP, convert_window_controls, read_rendered_control_types
@@ -39,7 +41,9 @@ INTERFACE_WINDOW_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'ui' / 'inte
 TEXTURE_PACKAGE_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'ui' / 'texture-package-census.json'
 UI_TEXTURE_RECIPE_PATH = REPOSITORY_ROOT / 'recipes' / 'data' / 'ui-textures.json'
 WINDOW_FIELD_BINDINGS_PATH = REPOSITORY_ROOT / 'recipes' / 'data' / 'window-field-bindings.json'
+UI_FONT_RECIPE_PATH = REPOSITORY_ROOT / 'recipes' / 'data' / 'ui-fonts.json'
 UI_TEXTURE_CONVERTER_FOLDER = 'ui-texture-converter'
+FONTS_BATCH = 'fonts'
 
 
 class ConvertUiError(ValueError):
@@ -166,6 +170,17 @@ def convert_textures_step(client, client_access, output_root, requested_window_i
             for window_id in selected_decoded_window_ids(manifests, requested_window_ids, limit)]
 
 
+def convert_fonts_step(client, client_access, output_root, requested_font_types, limit):
+    recipe = read_ui_font_recipe(UI_FONT_RECIPE_PATH)
+    work_root = lane_work_root(REPOSITORY_ROOT, LANE_NAME)
+    converter = Converter(client, work_root / UI_TEXTURE_CONVERTER_FOLDER, UMODEL)
+    converter_identity = {'implementation': implementation_hash(), 'umodel': UMODEL_SHA256}
+    ledger = UnitLedger(work_root, FONTS_STEP, UI_FONT_ALGORITHM_VERSION)
+    capacity = len(converted_font_entries(recipe))
+    return [convert_font_unit(entry, client_access, converter, ledger, output_root, converter_identity=converter_identity, capacity=capacity)
+            for entry in selected_font_entries(recipe, requested_font_types, limit)]
+
+
 def convert_controls_step(output_root, requested_window_ids, limit):
     manifests_with_records = decoded_window_manifests_with_records(output_root)
     manifest_and_record_by_window_id = {manifest['windowId']: (manifest, record) for manifest, record in manifests_with_records}
@@ -190,16 +205,21 @@ def convert_layout_step_from_client(client_access, output_root, elbera_root, req
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Convert the Interlude interface into the data-ui lane store, one sealed unit per root window.')
-    parser.add_argument('--step', choices=(LAYOUT_STEP, CONTROLS_STEP, TEXTURES_STEP), required=True)
+    parser.add_argument('--step', choices=(LAYOUT_STEP, CONTROLS_STEP, TEXTURES_STEP, FONTS_STEP), required=True)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--elbera-root', type=Path, default=ELBERA_ROOT)
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument('--window', action='append')
-    selection.add_argument('--batch', choices=(WINDOWS_CATALOG_SLICE,))
+    selection.add_argument('--font-type', type=int, action='append')
+    selection.add_argument('--batch', choices=(WINDOWS_CATALOG_SLICE, FONTS_BATCH))
     parser.add_argument('--limit', type=int)
     arguments = parser.parse_args(argv)
     if arguments.batch and not (arguments.limit and arguments.limit > 0):
-        parser.error('--batch windows needs --limit with a positive unit count')
+        parser.error('--batch needs --limit with a positive unit count')
+    if arguments.step == FONTS_STEP and (arguments.window is not None or arguments.batch == WINDOWS_CATALOG_SLICE):
+        parser.error('--step fonts selects with --font-type or --batch fonts')
+    if arguments.step != FONTS_STEP and (arguments.font_type is not None or arguments.batch == FONTS_BATCH):
+        parser.error('--font-type and --batch fonts belong to --step fonts')
     try:
         client_access = require_reference_client(arguments.client)
         output_root = lane_store_root(REPOSITORY_ROOT, LANE_NAME)
@@ -208,7 +228,10 @@ def main(argv=None):
         requested_window_ids = list(dict.fromkeys(arguments.window)) if arguments.window else None
         limit = arguments.limit or sys.maxsize
         with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
-            if arguments.step == TEXTURES_STEP:
+            if arguments.step == FONTS_STEP:
+                requested_font_types = list(dict.fromkeys(arguments.font_type)) if arguments.font_type else None
+                results = convert_fonts_step(arguments.client, client_access, output_root, requested_font_types, limit)
+            elif arguments.step == TEXTURES_STEP:
                 results = convert_textures_step(arguments.client, client_access, output_root, requested_window_ids, limit)
             elif arguments.step == CONTROLS_STEP:
                 results = convert_controls_step(output_root, requested_window_ids, limit)

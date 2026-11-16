@@ -80,7 +80,7 @@ describe("renderNativeWindow", () => {
 
   function render(bindings: readonly NativeWindowFieldBinding[], localPlayer: WorldEntity | null = localPlayerWithHealth(100),
     textures: ReadonlyMap<string, NativeWindowTextureResolution> = resolvedTextures) {
-    return renderNativeWindow(container as unknown as HTMLElement, syntheticStatusManifest(), { localPlayer, textures, fieldBindings: bindings, screen,
+    return renderNativeWindow(container as unknown as HTMLElement, syntheticStatusManifest(), { localPlayer, textures, fonts: new Map(), fieldBindings: bindings, screen,
       minimapSource: emptyMinimapSource });
   }
 
@@ -119,15 +119,15 @@ describe("renderNativeWindow", () => {
     expect(control(container, "SyntheticGaugeBar").querySelector("[data-native-gauge-fill]")?.style.width).toBe("45px");
   });
 
-  it("marks a text box label-unresolved, an unsupported type and a missing texture, and writes no manifest text", () => {
+  it("marks a text box in a GDI face font, an unsupported type and a missing texture, and writes no manifest text", () => {
     const rendered = render([]);
     const label = control(container, "SyntheticLevelText");
-    expect(label.getAttribute("data-native-gap")).toBe("label-unresolved");
+    expect(label.getAttribute("data-native-gap")).toBe("font-gdi-face-unconverted:6");
     expect(label.textContent).toBe("");
     expect(control(container, "SyntheticGaugeBar").getAttribute("data-native-gap")).toBe("control-type-unsupported:BarCtrl");
     expect(rendered.gaps).toEqual([
       { controlName: "SyntheticGaugeBar", reason: "control-type-unsupported:BarCtrl" },
-      { controlName: "SyntheticLevelText", reason: "label-unresolved" },
+      { controlName: "SyntheticLevelText", reason: "font-gdi-face-unconverted:6" },
     ]);
     expect(renderedTextAndAttributes(container).join("\n")).not.toContain("Greeting");
     container.replaceChildren();
@@ -150,7 +150,7 @@ describe("renderNativeWindow", () => {
 
   it("marks the window root with a gap for a field binding whose control is missing or ambiguous and draws no gauge for it", () => {
     const rendered = renderNativeWindow(container as unknown as HTMLElement, syntheticStatusManifest(2), { localPlayer: localPlayerWithHealth(100),
-      textures: resolvedTextures, fieldBindings: [healthBinding("SyntheticRenamedBar", null), healthBinding("SyntheticLevelText", null)], screen,
+      textures: resolvedTextures, fonts: new Map(), fieldBindings: [healthBinding("SyntheticRenamedBar", null), healthBinding("SyntheticLevelText", null)], screen,
       minimapSource: emptyMinimapSource });
     expect(rendered.element.getAttribute("data-native-gap"))
       .toBe("binding-control-missing:SyntheticRenamedBar binding-control-ambiguous:SyntheticLevelText");
@@ -163,7 +163,7 @@ describe("renderNativeWindow", () => {
 
   it("renders an empty positioned box for a control without textures and the root box only for an empty window", () => {
     const plain = parseNativeWindowManifest(syntheticManifests.find(manifest => manifest.windowId === "SyntheticPlainWnd"));
-    const rendered = renderNativeWindow(container as unknown as HTMLElement, plain, { localPlayer: null, textures: new Map(), fieldBindings: [], screen,
+    const rendered = renderNativeWindow(container as unknown as HTMLElement, plain, { localPlayer: null, textures: new Map(), fonts: new Map(), fieldBindings: [], screen,
       minimapSource: emptyMinimapSource });
     expect(childElements(rendered.element as unknown as FakeElement)).toEqual([]);
     expect([rendered.element.style.left, rendered.element.style.top]).toEqual(["1380px", "870px"]);

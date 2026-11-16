@@ -1,6 +1,7 @@
 import type { WorldEntity } from "../../world/worldTypes";
 import type { NativeWindowScreen } from "./nativeWindowAnchors";
 import { readNativeWindowFieldBindings, type NativeWindowFieldBinding } from "./nativeWindowFieldBindings";
+import { loadNativeWindowFonts, revokeNativeWindowFonts, type NativeWindowFont } from "./nativeWindowFonts";
 import { loadNativeWindowManifest, nativeWindowMinimapSource, resolveNativeWindowTextures, revokeNativeWindowTextures, type NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
 import { renderNativeWindow, type RenderedNativeWindow } from "./nativeWindowRenderer";
 
@@ -40,6 +41,7 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
   const fieldBindings = readNativeWindowFieldBindings();
   const openWindows = new Map<string, OpenNativeWindow>();
   const pendingOpens = new Map<string, Promise<NativeWindowOpenResult>>();
+  let fontsLoad: Promise<ReadonlyMap<number, NativeWindowFont>> | null = null;
   const containerScreen = (): NativeWindowScreen => {
     const bounds = container.getBoundingClientRect();
     return { width: bounds.width, height: bounds.height };
@@ -54,13 +56,15 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
     const load = await loadNativeWindowManifest(windowId, lifetime.signal);
     if (load.status === "not-in-catalog") return { status: "not-in-catalog", windowId, key: load.key, reason: load.reason };
     const windowBindings = fieldBindings.filter(binding => binding.windowId === windowId);
+    fontsLoad ??= loadNativeWindowFonts(load.catalog, lifetime.signal);
+    const fonts = await fontsLoad;
     const textures = await resolveNativeWindowTextures(load.catalog, windowTextureReferences(load.manifest.textureRefs, windowBindings), lifetime.signal);
     if (lifetime.signal.aborted) {
       revokeNativeWindowTextures(textures);
       lifetime.signal.throwIfAborted();
     }
     const rendered = renderNativeWindow(container, load.manifest, {
-      localPlayer: readLocalPlayer(), textures, fieldBindings: windowBindings, screen: containerScreen(),
+      localPlayer: readLocalPlayer(), textures, fonts, fieldBindings: windowBindings, screen: containerScreen(),
       minimapSource: nativeWindowMinimapSource(load.catalog, lifetime.signal),
     });
     const result = { status: "opened", windowId, key: load.key, window: rendered } as const;
@@ -97,6 +101,7 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
         revokeNativeWindowTextures(openWindow.textures);
       }
       openWindows.clear();
+      void fontsLoad?.then(revokeNativeWindowFonts, () => undefined);
     },
   };
 }

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "facts": "rea-in/20261113-roadmap-verify/verified-fonts.md (Phase 3 Q9, replay wf_d7db45d4-32c on the E: nwindow.dll c673288a)",
+    "report": "rea-in/20261113-roadmap/textbox-font-selection.json",
+    "reportSha256": "903ea77455aa5e1bbe730db8c260e9b47fcf515f39185cfee48fa40563d2f40c",
+    "effectiveFont": "getter 0x100ebaf0 returns the stored +0x98 value when non-zero, else the default object at +0x80; PreCreate 0x100f06d0 stores no default when the template is 'undefined' (verified-control-layouts.md part 4), and no decoded TextBox carries a template, so the effective font is the stored value"
+  },
+  "fonts": [
+    {
+      "fontType": 0,
+      "authoringName": "Normal",
+      "route": "bitmap-glyph-table",
+      "texture": {"package": "systextures/L2Font-e.utx", "object": "L2Font-e.Font.SmallFont-e", "width": 1024, "height": 128},
+      "glyphTable": "system/smallfont-e.gly",
+      "selection": "localization.ini [English] English_Font and English_Glyph; bitmap branch when GIsTrueFontUse is 0 and GLanguageType is not 5"
+    },
+    {
+      "fontType": 1,
+      "authoringName": "Big",
+      "route": "bitmap-glyph-table",
+      "texture": {"package": "systextures/L2Font-e.utx", "object": "L2Font-e.Font.LargeFont-e", "width": 1024, "height": 128},
+      "glyphTable": "system/largefont-e.gly",
+      "selection": "localization.ini [English] English_Font2 and English_Glyph2; bitmap branch when GIsTrueFontUse is 0 and GLanguageType is not 5"
+    },
+    {
+      "fontType": 4,
+      "authoringName": "ZoneTitle",
+      "route": "system-face",
+      "selection": "TTFontInfo.ini Font1 vivo Sans Global Medium (vivo-medium.ttf) weight 600 size 25 through GDI CreateFontIndirect"
+    },
+    {
+      "fontType": 6,
+      "authoringName": "Broadcast1",
+      "route": "system-face",
+      "selection": "TTFontInfo.ini Font3 Tahoma KOI8 (koi8.ttf) weight 600 size 8 through GDI CreateFontIndirect"
+    },
+    {
+      "fontType": 7,
+      "authoringName": "Broadcast2",
+      "route": "system-face",
+      "selection": "TTFontInfo.ini Font4 vivo Sans Global Medium (vivo-medium.ttf) weight 600 size 14 through GDI CreateFontIndirect"
+    },
+    {
+      "fontType": 10,
+      "authoringName": "SpecialDigitLarge",
+      "route": "digit-atlas",
+      "texture": {"package": "systextures/l2ui.utx", "object": "l2ui.Nwindow.Number", "width": 256, "height": 8},
+      "cellWidth": 8,
+      "cellHeight": 8,
+      "slotCharacters": "0123456789HMP/%.C:",
+      "selection": "device load 0x10021fc0 mode 1 from L2UI.NWindow.Number; DrawSpecialDigit cells at y 0, unsupported characters neither draw nor advance"
+    },
+    {
+      "fontType": 11,
+      "authoringName": "SpecialDigitXLarge",
+      "route": "digit-atlas",
+      "texture": {"package": "systextures/L2UI_CH3.utx", "object": "L2UI_CH3.etc.XLargeNumber", "width": 256, "height": 16},
+      "cellWidth": 11,
+      "cellHeight": 16,
+      "slotCharacters": "0123456789HMP/%.C:",
+      "selection": "device load 0x10021fc0 mode 2 from L2UI_CH3.Etc.XLargeNumber; DrawSpecialDigit cells at y 0, unsupported characters neither draw nor advance"
+    }
+  ]
+}

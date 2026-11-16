@@ -12,8 +12,11 @@ export interface NativeWindowCatalogRecord {
 export interface NativeMaterialProgramCatalogRecord {
   readonly sourceObject: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number;
 }
+export interface NativeFontCatalogRecord {
+  readonly fontType: number; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number;
+}
 
-type PinnedManifestSliceName = "tiles" | "tables" | "windows" | "materialPrograms";
+type PinnedManifestSliceName = "tiles" | "tables" | "windows" | "materialPrograms" | "fonts";
 
 interface PinnedManifestRecordShape {
   readonly fields: readonly string[];
@@ -29,6 +32,8 @@ export const tableIdPattern = /^[a-z][a-z0-9_]*(?:-[a-z])?$/;
 export const windowIdPattern = /^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$/;
 export const materialProgramRecordIdPrefix = "material-program:";
 export const ue2ObjectPathPattern = /^[A-Za-z0-9_']+(?:\.[A-Za-z0-9_']+)+$/;
+const fontRecordIdPrefix = "ui-font:";
+const fontRecordIdPattern = /^ui-font:(?:0|[1-9]\d{0,2})$/;
 const materialProgramRecordIdPattern = new RegExp(`^${materialProgramRecordIdPrefix}${ue2ObjectPathPattern.source.slice(1)}`);
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const pinnedManifestRecordFields = ["id", "manifest", "manifestSha256", "manifestBytes"];
@@ -41,6 +46,8 @@ const pinnedManifestRecordShapes: Readonly<Record<PinnedManifestSliceName, Pinne
     manifestPathPattern: /^\/l2\/windows\/(?<sha256>[a-f0-9]{64})\/window\.json$/, maximumManifestBytes: 8_000_000 },
   materialPrograms: { fields: pinnedManifestRecordFields, idPattern: materialProgramRecordIdPattern,
     manifestPathPattern: /^\/l2\/native-materials\/material-program-(?<sha256>[a-f0-9]{64})\.json$/, maximumManifestBytes: 1_000_000 },
+  fonts: { fields: pinnedManifestRecordFields, idPattern: fontRecordIdPattern,
+    manifestPathPattern: /^\/l2\/fonts\/(?<sha256>[a-f0-9]{64})\/font\.json$/, maximumManifestBytes: 1_000_000 },
 };
 
 function invalidCatalogRecord(sliceName: PinnedManifestSliceName): Error {
@@ -85,4 +92,9 @@ export function readWindowCatalogRecord(value: unknown): NativeWindowCatalogReco
 export function readMaterialProgramCatalogRecord(value: unknown): NativeMaterialProgramCatalogRecord {
   const { id, manifest, manifestSha256, manifestBytes } = readPinnedManifestRecord(value, "materialPrograms");
   return { sourceObject: id.slice(materialProgramRecordIdPrefix.length), manifest, manifestSha256, manifestBytes };
+}
+
+export function readFontCatalogRecord(value: unknown): NativeFontCatalogRecord {
+  const { id, manifest, manifestSha256, manifestBytes } = readPinnedManifestRecord(value, "fonts");
+  return { fontType: Number(id.slice(fontRecordIdPrefix.length)), manifest, manifestSha256, manifestBytes };
 }

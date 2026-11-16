@@ -27,6 +27,7 @@ export interface NativeCatalog {
   readonly windows: readonly unknown[];
   readonly tiles: readonly unknown[];
   readonly materialPrograms: readonly unknown[];
+  readonly fonts: readonly unknown[];
   readonly sourceCatalogSha256?: string;
   readonly servedCatalogSha256: string;
   readonly laneCatalogSha256: string | null;
@@ -86,7 +87,7 @@ function validateNativeCatalog(input: unknown, servedCatalogSha256: string, lane
     combatAudio: optionalCatalogSlice(catalog, "combatAudio"), worldAudio: optionalCatalogSlice(catalog, "worldAudio"),
     effectComponents: optionalCatalogSlice(catalog, "effectComponents"), tables: optionalCatalogSlice(catalog, "tables"),
     windows: optionalCatalogSlice(catalog, "windows"), tiles: optionalCatalogSlice(catalog, "tiles"),
-    materialPrograms: optionalCatalogSlice(catalog, "materialPrograms"),
+    materialPrograms: optionalCatalogSlice(catalog, "materialPrograms"), fonts: optionalCatalogSlice(catalog, "fonts"),
     ...optionalSourceCatalogSha256(catalog), servedCatalogSha256, laneCatalogSha256 };
 }
 
