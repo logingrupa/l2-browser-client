@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
+import argparse
 import json
 
 from actors.actor_unit_inventory import NO_MESH_IN_ROW_REASON
@@ -6,7 +14,19 @@ from actors.character_requests import (BODY_MESH_GROUP, CHARGRP_ROW_COLLECTION, 
                                        CLASSINFO_TABLE_NAME, GAP_STATUS, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME, character_key,
                                        classinfo_class_resolution, is_padding_row, manifest_record_fields)
 from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF
-from native_store.store_paths import lane_work_root
+from native_assets import UMODEL, Converter
+from native_catalog.tables import decode_table
+from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
+from reference_client_guard import require_reference_client
+
+CHARACTER_LANE_NAME = 'actors'
+CONVERTER_WORK_FOLDER = 'converter'
+CHARACTER_CENSUS_DESCRIPTION = ('Write docs/parts/player-characters/character-census.json from the sealed character units of the actors lane. '
+                                '--check compares and writes nothing.')
+
+
+class CharacterCensusError(ValueError):
+    pass
 
 CHARACTER_CENSUS_RELATIVE_PATH = 'docs/parts/player-characters/character-census.json'
 CHARACTER_CENSUS_SCHEMA_VERSION = 1
@@ -76,13 +96,25 @@ def character_census(run):
                                            'verdict': run.sources.class_sources['document']['verdict']}},
             'layoutRecordFields': {HAIRGRP_TABLE_NAME: manifest_record_fields(run.sources.hairgrp),
                                    HELMETGRP_TABLE_NAME: manifest_record_fields(run.sources.helmetgrp)},
+            'idleFamilies': {'path': run.sources.idle_families['path'], 'sha256': run.sources.idle_families['sha256']},
             'counts': census_counts(rows), 'rows': rows}
+
+
+def character_census_bytes(run):
+    return (json.dumps(character_census(run), indent=1, sort_keys=True, ensure_ascii=True) + '\n').encode('ascii')
 
 
 def write_character_census(run):
     path = run.project_root / CHARACTER_CENSUS_RELATIVE_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes((json.dumps(character_census(run), indent=1, sort_keys=True, ensure_ascii=True) + '\n').encode('ascii'))
+    path.write_bytes(character_census_bytes(run))
+    return path
+
+
+def check_character_census(run):
+    path = run.project_root / CHARACTER_CENSUS_RELATIVE_PATH
+    if not (path.is_file() and path.read_bytes() == character_census_bytes(run)):
+        raise CharacterCensusError(f'{CHARACTER_CENSUS_RELATIVE_PATH} differs from the census of the sealed character units; rerun without --check')
     return path
 
 
@@ -99,7 +131,7 @@ def run_character_batch(run, limit, preflight):
 
 
 def run_character_conversion(project_root, client_access, converter, output_root, decode_table, arguments, preflight):
-    work_root = lane_work_root(project_root, 'actors')
+    work_root = lane_work_root(project_root, CHARACTER_LANE_NAME)
     sources = read_character_sources(project_root, client_access.root, decode_table, work_root / 'class-defaults')
     run = CharacterConversionRun(project_root, client_access, converter, work_root, output_root, sources)
     if arguments.batch == CHARACTER_BATCH_NAME:
@@ -108,3 +140,29 @@ def run_character_conversion(project_root, client_access, converter, output_root
     else:
         outcomes = [run.convert(arguments.character)]
     return outcomes
+
+
+def lane_character_run(project_root, client_access):
+    work_root, store_root = lane_work_root(project_root, CHARACTER_LANE_NAME), lane_store_root(project_root, CHARACTER_LANE_NAME)
+    converter = Converter(client_access.root, store_root.parent / CONVERTER_WORK_FOLDER, UMODEL)
+    sources = read_character_sources(project_root, client_access.root, decode_table, work_root / 'class-defaults')
+    return CharacterConversionRun(project_root, client_access, converter, work_root, store_root, sources)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=CHARACTER_CENSUS_DESCRIPTION)
+    parser.add_argument('--client', type=Path, required=True)
+    parser.add_argument('--check', action='store_true')
+    arguments = parser.parse_args(argv)
+    try:
+        run = lane_character_run(REPOSITORY_ROOT, require_reference_client(arguments.client))
+        path = check_character_census(run) if arguments.check else write_character_census(run)
+    except (OSError, ValueError, KeyError) as error:
+        print(f'Character census failed: {error}', file=sys.stderr)
+        return 1
+    print(json.dumps({'census': path.relative_to(REPOSITORY_ROOT).as_posix(), 'counts': json.loads(path.read_bytes())['counts']}, sort_keys=True))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

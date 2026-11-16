@@ -14,7 +14,8 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from actors import character_conversion
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, CHARGRP_ROW_UNIT_KIND, CONVERTIBLE_UNIT_STATUS
-from actors.character_census import CONVERTED_STATUS, PENDING_STATUS, character_census, run_character_batch
+from actors.character_census import (CONVERTED_STATUS, PENDING_STATUS, CharacterCensusError, character_census, check_character_census,
+                                     run_character_batch, write_character_census)
 from actors.character_conversion import PADDING_STATUS, CharacterConversionRun
 from actors.character_requests import GAP_STATUS
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
@@ -23,7 +24,7 @@ from native_store.catalog_index_keys import character_model_record_id
 from native_store.catalog_writer import read_store_catalog
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
-from test_character_requests import character_sources, synthetic_chargrp_row
+from test_character_requests import IDLE_FAMILIES_RECIPE_SHA256, character_sources, synthetic_chargrp_row
 
 FIRST_CONVERTER_SHA256 = 'e' * 64
 CHANGED_CONVERTER_SHA256 = 'f' * 64
@@ -143,6 +144,18 @@ class CharacterConversionRunTests(unittest.TestCase):
         self.assertIsNone(routed['request'])
         self.assertEqual(routed['gaps'], [{'field': 'parts', 'reason': CONVERTER_REFUSED_REASON_PREFIX + 'Magic skeletal export has trailing bytes'},
                                           {'field': 'hair', 'reason': 'hair-layout-undecoded'}])
+
+    def test_the_census_check_passes_on_the_written_census_and_fails_once_a_unit_reseals(self):
+        self.converted_outcomes(FIRST_CONVERTER_SHA256, [1])
+        run = SyntheticCharacterRun(self.project_root, self.client_root)
+        with mock.patch.object(character_conversion, 'implementation_hash', return_value=FIRST_CONVERTER_SHA256):
+            written = write_character_census(run)
+            self.assertEqual(check_character_census(run), written)
+            self.assertEqual(json.loads(written.read_bytes())['idleFamilies'],
+                             {'path': 'recipes/actors/character-idle-families.json', 'sha256': IDLE_FAMILIES_RECIPE_SHA256})
+            run.convert(2)
+            with self.assertRaisesRegex(CharacterCensusError, 'differs from the census of the sealed character units'):
+                check_character_census(run)
 
     def test_a_padding_row_is_never_converted_or_sealed(self):
         [outcome] = self.converted_outcomes(FIRST_CONVERTER_SHA256, [0])
