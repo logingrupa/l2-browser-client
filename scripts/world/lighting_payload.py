@@ -2,6 +2,7 @@ from typing import NamedTuple
 
 from native_store.canonical_json import canonical_json_bytes
 from world.bsp_lightmaps import LIGHTMAP_PAGE_MIPS, NO_LIGHTMAP, node_lightmap_texture, node_lightmap_uvs
+from world.bsp_render_section_sun_affect import SUN_AFFECT_UNRESOLVED, SUN_AFFECTED, render_section_sun_affect
 from world.typed_payload import BYTES_PER_ELEMENT_OF_TYPE, TYPED_PAYLOAD_ALIGNMENT, TypedPayloadArray
 
 HOURS_PER_DAY = 24
@@ -53,9 +54,10 @@ def lightmap_node_ranges(package, lightmaps, model, node_ranges):
     return ranges, sorted(reasons)
 
 
-def render_section_arrays(lightmaps):
+def render_section_arrays(lightmaps, section_sun_affect):
     return [array('LMSC.lightmapTexture', 'int32', [section.lightmap_texture for section in lightmaps.sections]),
-            array('LMSC.polyFlags', 'uint32', [section.poly_flags for section in lightmaps.sections])]
+            array('LMSC.polyFlags', 'uint32', [section.poly_flags for section in lightmaps.sections]),
+            array('LMSC.sunAffect', 'int32', section_sun_affect)]
 
 
 def lightmap_texture_arrays(lightmaps):
@@ -78,7 +80,10 @@ def lightmap_page_arrays(lightmaps):
     return [array('LMPG.texture', 'int32', [page.texture for page in pages]), array('LMPG.slot', 'int32', [page.slot for page in pages]),
             array('LMPG.slotCount', 'int32', [page.slot_count for page in pages]),
             array('LMPG.hourStart', 'float32', [start for start, _ in hours]), array('LMPG.hourEnd', 'float32', [end for _, end in hours]),
-            array('LMPG.header', 'int32', [value for page in pages for value in page.header]),
+            array('LMPG.revision', 'int32', [page.revision for page in pages]),
+            array('LMPG.format', 'uint8', [page.texture_format for page in pages]),
+            array('LMPG.width', 'int32', [page.width for page in pages]), array('LMPG.height', 'int32', [page.height for page in pages]),
+            array('LMPG.compressedRevision', 'int32', [page.compressed_revision for page in pages]),
             array('LMPG.mipEdge', 'uint32', [edge for _ in pages for edge, _ in LIGHTMAP_PAGE_MIPS]),
             array('LMPG.texelStart', 'uint32', prefix_starts(len(mip) for mip in mips)),
             array('LMPG.texels', 'uint8', b''.join(mips))]
@@ -113,6 +118,8 @@ def static_mesh_light_list_arrays(light_lists):
     return [array('SMLL.actorExportIndex', 'int32', [light_list.actor_export_index for light_list in light_lists]),
             array('SMLL.instanceExportIndex', 'int32', [light_list.instance_export_index for light_list in light_lists]),
             array('SMLL.colorCount', 'uint32', [light_list.color_count for light_list in light_lists]),
+            array('SMIC.bytes', 'uint8', b''.join(light_list.instance_colours for light_list in light_lists)),
+            array('SMIC.revision', 'int32', [light_list.instance_colour_revision for light_list in light_lists]),
             array('SMLL.sceneStart', 'uint32', prefix_starts(len(light_list.scene_lights) for light_list in light_lists)),
             array('SMLL.environmentStart', 'uint32', prefix_starts(len(light_list.environment_lights) for light_list in light_lists)),
             *visibility_entry_arrays('SMSC', scene), array('SMSC.applied', 'int32', [entry.applied for entry in scene]),
@@ -125,20 +132,26 @@ def terrain_lighting_arrays(sectors):
             array('TSEC.lightStart', 'uint32', prefix_starts(len(sector.lights) for sector in sectors)),
             array('TSEC.shadowMapStart', 'uint32', prefix_starts(len(sector.shadow_maps) for sector in sectors)),
             *visibility_entry_arrays('TLIT', [light for sector in sectors for light in sector.lights]),
-            array('TSHM.hour', 'float32', [slot_center_hour(slot, len(sector.shadow_maps)) for sector in sectors for slot in range(len(sector.shadow_maps))]),
             array('TSHM.byteStart', 'uint32', prefix_starts(len(shadow_map) for shadow_map in shadow_maps)),
             array('TSHM.bytes', 'uint8', b''.join(shadow_maps))]
+
+
+def terrain_intensity_map_arrays(intensity_maps):
+    return [array('TINT.time', 'float32', intensity_maps.times), array('TINT.width', 'uint32', [intensity_maps.width]),
+            array('TINT.height', 'uint32', [intensity_maps.height]), array('TINT.intensity', 'uint8', b''.join(intensity_maps.intensities))]
 
 
 def lighting_records_array(records):
     return array('RECS.canonicalJson', 'uint8', canonical_json_bytes(records))
 
 
-def bsp_lightmap_arrays(package, lightmaps, model, node_ranges):
+def bsp_lightmap_arrays(package, lightmaps, model, node_ranges, zones):
     ranges, reasons = lightmap_node_ranges(package, lightmaps, model, node_ranges)
-    arrays = [*render_section_arrays(lightmaps), *lightmap_texture_arrays(lightmaps), *lightmap_record_arrays(lightmaps),
+    section_sun_affect = render_section_sun_affect(model, len(lightmaps.sections), zones)
+    arrays = [*render_section_arrays(lightmaps, section_sun_affect), *lightmap_texture_arrays(lightmaps), *lightmap_record_arrays(lightmaps),
               *lightmap_page_arrays(lightmaps), *lightmap_node_range_arrays(ranges)]
     counts = {'renderSections': len(lightmaps.sections), 'records': len(lightmaps.records), 'textures': len(lightmaps.textures),
               'pages': len(lightmaps.pages), 'nodeRanges': len(ranges), 'litNodeRanges': sum(1 for item in ranges if item.uvs),
-              'uvs': sum(len(item.uvs) for item in ranges), 'unwalkedTailBytes': lightmaps.unwalked_tail_bytes}
+              'uvs': sum(len(item.uvs) for item in ranges), 'unwalkedTailBytes': lightmaps.unwalked_tail_bytes,
+              'sunAffectedSections': section_sun_affect.count(SUN_AFFECTED), 'sunAffectUnresolvedSections': section_sun_affect.count(SUN_AFFECT_UNRESOLVED)}
     return arrays, reasons, counts

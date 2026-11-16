@@ -24,6 +24,7 @@ UE_ZERO_LOCATION = (0.0, 0.0, 0.0)
 MAXIMUM_INSTANCE_COLORS = 4_000_000
 MAXIMUM_INSTANCE_LIGHTS = 65_536
 MAXIMUM_VISIBILITY_BYTES = 1 << 20
+BYTES_PER_INSTANCE_COLOUR = 4
 
 
 class LightingActor(NamedTuple):
@@ -58,7 +59,12 @@ class StaticMeshLightList(NamedTuple):
     instance_export_index: int
     scene_lights: tuple
     environment_lights: tuple
-    color_count: int
+    instance_colours: bytes
+    instance_colour_revision: int
+
+    @property
+    def color_count(self):
+        return len(self.instance_colours) // BYTES_PER_INSTANCE_COLOUR
 
 
 class ClassChains:
@@ -171,15 +177,15 @@ def read_static_mesh_light_list(package, actor_export_index, instance_export_ind
     color_count = reader.compact()
     if not 0 <= color_count <= MAXIMUM_INSTANCE_COLORS:
         raise FormatError(f'static mesh instance {instance_export_index} declares {color_count} colours')
-    reader.take(4 * color_count)
-    reader.number('i')
+    instance_colours, instance_colour_revision = bytes(reader.take(BYTES_PER_INSTANCE_COLOUR * color_count)), reader.number('i')
     label = f'static mesh instance {instance_export_index}'
     scene_lights, environment_lights = read_light_entries(reader, label), read_light_entries(reader, label)
     reader.compact()
     reader.compact()
     if reader.position != reader.end:
         raise FormatError(f'{label} holds {reader.end - reader.position} bytes after its light lists')
-    return StaticMeshLightList(actor_export_index, instance_export_index, scene_lights, environment_lights, color_count)
+    return StaticMeshLightList(actor_export_index, instance_export_index, scene_lights, environment_lights, instance_colours,
+                               instance_colour_revision)
 
 
 def read_static_mesh_light_lists(package, actors):
