@@ -13,7 +13,7 @@ import re
 from native_animation_families import decode_localization111
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import replace_file
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock, require_reference_client
+from reference_client_guard import require_reference_client
 
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent
 CHARACTER_IDLE_FAMILIES_RELATIVE_PATH = 'recipes/actors/character-idle-families.json'
@@ -181,13 +181,13 @@ def character_idle_family_document(facts_payload, idle_replay_payload, root_mesh
             'rootMeshAnimation': {'fact': root_mesh_animation_fact(facts_payload), 'replayedPairs': root_mesh_animation_pairs(root_mesh_replay)}}
 
 
-def character_idle_family_payload(verification_folder, client_root, lock):
+def character_idle_family_payload(verification_folder, client_access):
     folder = Path(verification_folder)
     return canonical_json_bytes(character_idle_family_document(
         pinned_bytes(folder / VERIFIED_CHARACTERS_FACTS_FILE_NAME, VERIFIED_CHARACTERS_FACTS_SHA256, 'verified facts'),
         pinned_bytes(folder / IDLE_REPLAY_RESULT_RELATIVE_PATH, IDLE_REPLAY_RESULT_SHA256, 'idle replay result'),
         pinned_bytes(folder / ROOT_MESH_ANIMATION_REPLAY_RESULT_RELATIVE_PATH, ROOT_MESH_ANIMATION_REPLAY_RESULT_SHA256, 'root mesh replay result'),
-        (Path(client_root) / LOCALIZATION_RELATIVE_PATH).read_bytes(), lock))
+        client_access.require_equal_file(LOCALIZATION_RELATIVE_PATH).read_bytes(), client_access.lock))
 
 
 def write_character_idle_families(project_root, payload, check):
@@ -217,8 +217,7 @@ def main(argv=None):
     parser.add_argument('--check', action='store_true')
     arguments = parser.parse_args(argv)
     try:
-        client_access = require_reference_client(arguments.client)
-        payload = character_idle_family_payload(arguments.verification_folder, client_access.root, read_reference_client_lock(REFERENCE_CLIENT_LOCK_PATH))
+        payload = character_idle_family_payload(arguments.verification_folder, require_reference_client(arguments.client))
         write_character_idle_families(REPOSITORY_ROOT, payload, arguments.check)
     except (OSError, ValueError, KeyError) as error:
         print(f'Character idle family recipe failed: {error}', file=sys.stderr)
