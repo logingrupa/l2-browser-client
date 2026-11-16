@@ -12,6 +12,8 @@
     "placement-class-unsupported:<class>",
     "placement-material-override-unsupported",
     "static-mesh-reference-unresolved",
+    "static-mesh-colour-stream-layout-unreviewed:<version>",
+    "static-mesh-colour-stream-join-mismatch",
     "bsp-node-outside-chunk-grid",
     "bsp-chunk-without-nodes",
     "material-mapping-size-zero",
