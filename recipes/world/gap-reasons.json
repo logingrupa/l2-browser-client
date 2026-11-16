@@ -34,7 +34,6 @@
     "music-derivative-encoder-unpinned",
     "lighting-lightmap-index-invalid:<index>",
     "lighting-payload-too-large",
-    "environment-program-unresolved:<file>",
     "lighting-water-volume-unlinked:<class>",
     "lighting-class-chain-unresolved:<class>",
     "object-gaps:<count>",
