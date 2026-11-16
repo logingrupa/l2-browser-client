@@ -47,7 +47,7 @@ interface BoundStaticMeshSlot {
   readonly libraryMaterial: Material | null;
 }
 
-export const staticMeshVertexLightingUnportedReason = "library-vertex-lighting-unported";
+export const staticMeshFinalVertexColourReason = "ma-final-static-vertex";
 
 const compareSourceObjects = (left: string | null, right: string | null) =>
   left === right ? 0 : left === null ? -1 : right === null ? 1 : left.toLowerCase() < right.toLowerCase() ? -1 : 1;
@@ -123,7 +123,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
       const slots = [...chunks.values()].flat();
       const statusCounts = { "library-compiled": 0, "library-diagnostic": 0, "program-gap": 0 };
       for (const slot of slots) statusCounts[slot.status] += 1;
-      return { gap: load.gap, lighting: "unlit", lightingReasons: [staticMeshVertexLightingUnportedReason], meshCount: slots.length, statusCounts,
+      return { gap: load.gap, lighting: "unlit", lightingReasons: [staticMeshFinalVertexColourReason], meshCount: slots.length, statusCounts,
         slots: slotInspections(slots) };
     },
     dispose() {

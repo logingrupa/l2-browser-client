@@ -73,7 +73,8 @@ export async function attachNativeTileSystems(scene: Scene, manifest: NativeTile
     const bindingsByChunkId = new Map<string, object>();
     const lightingSurfacesOf = (contents: NativeTileChunkSystemContents): TileLightingChunkSurfaces => ({ chunkId: contents.chunkId,
       bspChunk: contents.bspChunk === null ? null : { ...contents.bspChunk, chunkOrdinal: chunkOrdinalById.get(contents.chunkId)! },
-      staticMeshes: staticMeshesOf(contents.instances), terrainMeshes: contents.terrainMeshes });
+      staticMeshes: staticMeshesOf(contents.instances), terrainMeshes: contents.terrainMeshes,
+      staticMeshPlacements: contents.instances.map(({ source }) => ({ sourceActor: source.sourceActor, exportIndex: source.exportIndex })) });
     const addChunk = async (contents: NativeTileChunkSystemContents) => {
       if (bindingsByChunkId.has(contents.chunkId)) return;
       const chunkBinding = {};

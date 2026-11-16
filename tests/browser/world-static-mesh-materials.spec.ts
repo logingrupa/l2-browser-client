@@ -60,7 +60,7 @@ test.describe("desktop", () => {
     const slots = lighting.staticMeshSlots!;
     expect(slots.gap).toBeNull();
     expect(slots.lighting).toBe("unlit");
-    expect(slots.lightingReasons).toEqual(["library-vertex-lighting-unported"]);
+    expect(slots.lightingReasons).toEqual(["ma-final-static-vertex"]);
     expect(Object.values(slots.statusCounts).reduce((sum, count) => sum + count, 0)).toBe(slots.meshCount);
     expect(slots.slots.reduce((sum, slot) => sum + slot.meshes, 0)).toBe(slots.meshCount);
     expect(slots.statusCounts["library-compiled"], "a 20_21 static mesh slot draws through the UE2 material library").toBeGreaterThan(0);

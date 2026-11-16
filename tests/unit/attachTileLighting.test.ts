@@ -66,7 +66,7 @@ describe("attachTileLighting", () => {
     terrainMesh.material = malformedPinMaterial;
     const observersBefore = scene.onBeforeRenderObservable.observers.length;
     const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
-    await expect(attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshes: [], terrainMeshes: [terrainMesh] }))
+    await expect(attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshes: [], staticMeshPlacements: [], terrainMeshes: [terrainMesh] }))
       .rejects.toThrow(/is not a native-materials program pin/);
     expect((attached.inspection() as TileLightingRuntimeInspection).terrainLayers).toEqual({});
     attached.dispose();
@@ -94,7 +94,7 @@ describe("attachTileLighting", () => {
     const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(0);
     const staticMesh = new Mesh("late static mesh", scene);
-    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], terrainMeshes: [] });
+    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], staticMeshPlacements: [], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
     expect((attached.inspection() as TileLightingRuntimeInspection).environment).toEqual(timeOfDay.sample());
     expect(attached.materialUniforms!()).toMatchObject({ hour: 12, environmentType: 0 });
@@ -103,8 +103,29 @@ describe("attachTileLighting", () => {
     attached.removeChunk(lateChunkId);
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(0);
     expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots.meshCount).toBe(0);
-    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], terrainMeshes: [] });
+    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], staticMeshPlacements: [], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
+    attached.dispose();
+    scene.dispose();
+    engine.dispose();
+  });
+
+  it("reports the hourly lighting gaps of a payload converted before DB-7 and adds no Babylon light or scene ambient", async () => {
+    const engine = new NullEngine();
+    const scene = new Scene(engine);
+    provideDayNightTimeOfDay(scene);
+    const ambientBefore = scene.ambientColor.asArray();
+    const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    const staticMesh = new Mesh("late static mesh", scene);
+    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh],
+      staticMeshPlacements: [{ sourceActor: "20_21.StaticMeshActor1905", exportIndex: 7706 }], terrainMeshes: [] });
+    scene.onBeforeRenderObservable.notifyObservers(scene);
+    const { hourly } = attached.inspection() as TileLightingRuntimeInspection;
+    expect(hourly.terrain).toMatchObject({ gap: "hourly-lighting-input-unstaged:TINT.time", rebuildCount: 0 });
+    expect(hourly.staticMeshVisibility).toMatchObject({ gap: "hourly-lighting-input-unstaged:SMLL.actorExportIndex", placementCount: 1 });
+    expect(hourly.terms).toMatchObject({ hour: 12, actor: { ambient: { status: "resolved" } }, dynamicLights: { applied: false } });
+    expect(scene.lights).toHaveLength(0);
+    expect(scene.ambientColor.asArray()).toEqual(ambientBefore);
     attached.dispose();
     scene.dispose();
     engine.dispose();
