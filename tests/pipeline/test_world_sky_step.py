@@ -15,7 +15,8 @@ from support.level_model_fixture import build_synthetic_level_model, square_poin
 from world.sky_geometry import SKY_GLB_GENERATOR, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
 from world.sky_materials import SkyTextureUnsupported, external_reference_reasons, single_graph_texture_export
-from world.sky_step import SKY_STEP_ALGORITHM_VERSION, SKY_STEP_NAME, alpha_source, presentation_field_gap, sky_bundle_files, tile_sky_row
+from world.sky_step import SKY_STEP_ALGORITHM_VERSION, SKY_STEP_NAME, alpha_source, authored_color_rgba, presentation_field_gap, sky_bundle_files, \
+    tile_sky_row
 from world.tile_step_gap_rows import TileStepGapRows
 from world.tile_manifest_step import PENDING_TILE_STEPS, pending_steps_after_sealed, tile_level_gap_rows, tile_resources
 
@@ -114,6 +115,10 @@ class SkyMaterialTests(unittest.TestCase):
         self.assertEqual(presentation_field_gap({key: value for key, value in complete.items() if key != 'AlphaBlend'}),
                          'material-feature-unported:AlphaBlend')
 
+    def test_the_root_color_reads_the_serialized_bytes_in_the_core_dll_blue_green_red_alpha_order(self):
+        self.assertEqual(authored_color_rgba({'rawHex': '01020304'}), [3, 2, 1, 4])
+        self.assertEqual(authored_color_rgba({'rawHex': 'ce9600ff'}), [0, 150, 206, 255])
+
     def test_the_alpha_source_names_a_class_default_or_the_serialized_tag(self):
         self.assertEqual(alpha_source({'provenance': 'authored'}), 'serialized')
         self.assertEqual(alpha_source({'provenance': 'class-default', 'valueDeclaringClass': 'Engine.ColorModifier'}),
@@ -134,7 +139,7 @@ class SkyMaterialTests(unittest.TestCase):
 
 class SkyStepRecordTests(unittest.TestCase):
     def test_the_step_name_version_reasons_and_vocabulary_kind_are_registered(self):
-        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 2))
+        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 3))
         self.assertIn('sky', load_tile_manifest_vocabulary(ROOT).resource_kinds)
         patterns = load_gap_reason_patterns(ROOT)
         for reason in ('sky-zone-ambiguous:2', 'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):
@@ -184,7 +189,7 @@ class RealClientSkyTests(unittest.TestCase):
         converted = convert_tile_sky(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, zone_index, gaps)
         return converted, gaps.rows()
 
-    def test_the_generic_20_20_sky_glb_matches_the_served_sky_except_its_generator(self):
+    def test_the_generic_20_20_sky_glb_matches_the_served_sky_except_its_generator_and_its_red_blue_swapped_colors(self):
         served = (SERVED_SKY_FOLDER / 'sky.glb').read_bytes()
         self.assertEqual(hashlib.sha256(served).hexdigest(), SERVED_SKY_GLB_SHA256)
         converted, gap_rows = self.converted_sky_files('20_20')
@@ -194,8 +199,18 @@ class RealClientSkyTests(unittest.TestCase):
         self.assertEqual(generic_binary, served_binary)
         self.assertEqual(generic_document['asset'].pop('generator'), SKY_GLB_GENERATOR)
         served_document['asset'].pop('generator')
+        for material in served_document['materials']:
+            red, green, blue, alpha = material['pbrMetallicRoughness']['baseColorFactor']
+            material['pbrMetallicRoughness']['baseColorFactor'] = [blue, green, red, alpha]
         self.assertEqual(generic_document, served_document)
         self.assertEqual(converted.counts, {'nodes': 53, 'vertices': 182, 'triangles': 76, 'materialRoots': 3, 'textures': 3})
+
+    def test_tile_15_22_sky_layers_take_their_colors_from_the_blue_green_red_alpha_bytes(self):
+        converted, gap_rows = self.converted_sky_files('15_22')
+        self.assertEqual(gap_rows, [])
+        colors = {part['sourceMaterial']: part['authoredColorRGBA'] for part in json.loads(converted.files['sky.json'])['parts']}
+        self.assertEqual(colors, {'l2_skies.Shaders.SkybackgroundColor': [0, 150, 206, 255], 'l2_skies.Shaders.HazeRing_Final': [255, 228, 149, 255],
+                                  'l2_skies.Shaders.Cloud_Final': [255, 192, 151, 255]})
 
     def test_tile_20_21_builds_its_own_sky_from_its_one_sky_zone(self):
         converted, gap_rows = self.converted_sky_files('20_21')

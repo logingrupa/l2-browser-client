@@ -25,6 +25,7 @@ from world.raw_map_step import (RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, r
                                 tile_step_row, tile_unit_key)
 from world.sky_step import SKY_STEP_NAME
 from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME
+from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.static_mesh_step import STATIC_MESH_STEP_NAME
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, TerrainChunkStepError
 from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
@@ -222,10 +223,14 @@ class LockedInputConfigStepCurrentSealTests(CurrentSealTestCase):
         with patch.object(tile_step_current_seals, 'static_mesh_materials_unit_config', raising(ChunkPlanStepError('chunk plan is not sealed'))):
             self.assertEqual(self.seal_state(STATIC_MESH_MATERIALS_STEP_NAME).state, PENDING_SEAL_STATE)
 
-    def test_a_sky_receipt_answers_on_its_raw_seal_and_its_discovered_input_lock_records(self):
-        self.seal_step(SKY_STEP_NAME, {'rawFingerprint': OLDER_UPSTREAM_FINGERPRINT}, discovered_inputs())
+    def test_a_sky_receipt_answers_on_its_raw_seal_its_struct_rules_and_its_discovered_input_lock_records(self):
+        struct_rules_sha256 = read_struct_property_tag_rules().sha256
+        self.seal_step(SKY_STEP_NAME, {'rawFingerprint': OLDER_UPSTREAM_FINGERPRINT, 'structPropertyRulesSha256': struct_rules_sha256}, discovered_inputs())
         self.assertEqual(self.seal_state(SKY_STEP_NAME).state, PENDING_SEAL_STATE)
-        self.assert_locked_input_config_states(SKY_STEP_NAME, {'rawFingerprint': seal_raw_unit(self.project_root, LOCKED_TILE_ID)})
+        current_config = {'rawFingerprint': seal_raw_unit(self.project_root, LOCKED_TILE_ID), 'structPropertyRulesSha256': struct_rules_sha256}
+        self.assert_locked_input_config_states(SKY_STEP_NAME, current_config)
+        self.seal_step(SKY_STEP_NAME, {key: value for key, value in current_config.items() if key != 'structPropertyRulesSha256'}, discovered_inputs())
+        self.assertEqual(self.seal_state(SKY_STEP_NAME).state, STALE_SEAL_STATE)
 
     def test_a_mover_receipt_answers_on_its_config_and_waits_for_the_mover_class_receipt(self):
         current_config = upstream_config(CURRENT_UPSTREAM_FINGERPRINT)

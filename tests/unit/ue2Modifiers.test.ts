@@ -1,4 +1,7 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { COLOUR_CONSTANTS } from "../../src/materials/ue2/model/constants/combinerConstants";
 import { evaluateNativeFlameFade, selectNativeFlameFrame } from "../../src/scene/world/nativeFlameMaterials";
 import type { NativeFlamePlan } from "../../src/scene/world/nativeMaterialGraph";
 import { createRandomStream, deriveStreamSeed, randomRange } from "../../src/shared/random";
@@ -167,6 +170,14 @@ describe("colour sources", () => {
     expect(fadeColourBytes(node, 0.4)).toEqual(flameBytes(0.8));
     expect(fadeColourBytes(node, 0.6)[0]).toBe(Math.floor(Math.fround(Math.fround(Math.fround(1) * Math.fround(0.5)) + Math.fround(Math.fround(20 / 255) * Math.fround(0.5))) * 255));
     expect(colourSourceValue(programNode(program, "Synthetic.Constant"), 0)).toEqual([1 / 255, 2 / 255, 3 / 255, 4 / 255]);
+  });
+
+  it("reads Color bytes in the member order of the Core.dll binary Color struct the converters decode with", () => {
+    const structRules = JSON.parse(readFileSync(resolve("recipes/world/struct-property-tag-rules.json"), "utf8")) as {
+      rules: { structDispatch: { binary: { structs: { name: string; members: { name: string }[] }[] } } } };
+    const colourStruct = structRules.rules.structDispatch.binary.structs.find(binaryStruct => binaryStruct.name === "Color");
+    expect(colourStruct?.members.map(member => member.name)).toEqual([...COLOUR_CONSTANTS.byteOrder.runtimeDefault]);
+    expect(COLOUR_CONSTANTS.byteOrder).toMatchObject({ status: "confirmed-interlude", interludeEvidence: expect.stringMatching(/^Core\.dll 9462f87a /) });
   });
 });
 

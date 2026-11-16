@@ -48,9 +48,9 @@ export const COLOUR_CONSTANTS = {
   byteOrder: {
     id: "colour.byte-order",
     value: ["B", "G", "R", "A"],
-    provenance: `${materialNotes} colour.byte-order: B, G, R, A in lineage2js/src/assets/unreal/un-color.ts:37-43 and src/scene/world/nativeMaterialGraph.ts, R, G, B, A in scripts/world/sky_step.py:184; B, G, R, A until the R != B fixture`,
-    status: "unknown",
-    interludeEvidence: null,
+    provenance: `${materialNotes} colour.byte-order: the binary Color struct members B, G, R, A in recipes/world/struct-property-tag-rules.json; the 15_22 sky ColorModifier bytes ce 96 00 ff read B, G, R, A land within 24.4 of the bound timeenv SkyBoxColor rows and R, G, B, A 129.8 away`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Core.dll 9462f87a binary struct dispatch (vtable +0x84) for 0x5a Color, verification wf_c74f1a43-96a",
     runtimeDefault: ["B", "G", "R", "A"],
   },
   fadeColourForms: {
