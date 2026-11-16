@@ -34,6 +34,6 @@ completed: 2026-11-15
 
 ## Open
 
-- BSP UVs stay absent when the material chain ends at a Combiner, modifier or other class: Interlude `MaterialUSize` per class is not decoded (Engine.dll exports `UTexModifier::MaterialUSize` 0x10303e22). REA question.
+- Superseded: DB-3 answered the per-class mapping size; 261116-d3m (7da6f85) replaced the source texture size path.
 - No Playwright check of a bound sky: the lane cannot stage a store with pinned sky GLBs.
 - The served 20_20 sky on `/` keeps the old colour until the integration thread restages it.
