@@ -28,6 +28,7 @@ Planned 2026-11-11 (autonomous; the owner is away), revised twice after the plan
 | 13 | 03-14 | data-ui, ui | Data and UI converter fixes and the re-run chain | CHECK-04 |
 | 14 | 03-26 | world, movement-geodata | Gap SC5c: seam strip floor rule (Q1) or its named reason; border walk | WORLD-04, MOVE-01 |
 | 15 | 03-27 | actors, player-characters | Gap SC2b: skinned head parts, idle family (Q2), animation packages (Q3); characters batch and chain | ACT-01 |
+| 15 | 03-37 | actors, player-characters | Gap SC2b: generated player profiles from the RM-7 families, spawn any character key, retire the hand-staged human profiles; characters batch and chain (after 03-27 ran) | ACT-01 |
 | 16 | 03-28 | actors then integration | Gap SC2e: adapter `attack` event, role slots on verified routes (Q4, Q5), character sound bundles; chain | ACT-05 |
 | 17 | 03-29 | integration then actors | Gap SC2e: delete the legacy combat audio route and its sheet controls | ACT-05 |
 | 17 | 03-30 | actors, items | Gap SC2c: equipment slot recipe (Q6) and weapon attach (Q7), item gap rule, equip; sweeps and halves | ACT-03 |
@@ -43,7 +44,7 @@ Planned 2026-11-11 (autonomous; the owner is away), revised twice after the plan
 | 23 | 03-20 | data-ui, ui | Stage A check sections in the ui, data and sandbox EVIDENCE docs (split from 03-16, P91) | CHECK-03 |
 | 24 | 03-17 | integration, adapter-dispatch | Needs Human session lines, VERIFICATION Open, STATUS, adapter-dispatch evidence | CHECK-01, CHECK-02, CHECK-03 |
 
-Gap plans run in two blocks. The early block (waves 3 to 6) needs no new native fact and precedes the sandbox halves: 03-21 and 03-24 precede 03-08, 03-22 and 03-25 precede 03-07, and 03-25 leaves the union that 03-07 to 03-10 capture. The late block (waves 14 to 21) is gated on REA answers and follows 03-14, so those answers have time to arrive. 03-15 depends on the whole late block. Each gap plan that changes a converter runs the re-run chain, and the union-rebuilding plans form one chain in wave order: 03-24, 03-25, then 03-12 to 03-14, then 03-26 (when its Q1 answer needs a converter change), 03-27, 03-28, 03-32, 03-33 and 03-36. At most one batch-running plan runs per wave (DATABASE-PC crashed under parallel load), and same-wave plans share no file.
+Gap plans run in two blocks. The early block (waves 3 to 6) needs no new native fact and precedes the sandbox halves: 03-21 and 03-24 precede 03-08, 03-22 and 03-25 precede 03-07, and 03-25 leaves the union that 03-07 to 03-10 capture. The late block (waves 14 to 21) is gated on REA answers and follows 03-14, so those answers have time to arrive. 03-15 depends on the whole late block. Each gap plan that changes a converter runs the re-run chain, and the union-rebuilding plans form one chain in wave order: 03-24, 03-25, then 03-12 to 03-14, then 03-26 (when its Q1 answer needs a converter change), 03-27, 03-37, 03-28, 03-32, 03-33 and 03-36. At most one batch-running plan runs per wave (DATABASE-PC crashed under parallel load), and same-wave plans share no file.
 
 The fix plans 03-12, 03-13 and 03-14 are chained because each rebuilds the integration union. Waves state dependencies; execution stays one sequential executor (rule 1). 03-08 and 03-09 depend on 03-18 as well as 03-07, because their sandbox halves record `diagnosticMaterials`. 03-16, 03-19 and 03-20 each write one lane's EVIDENCE docs, share no file and run in wave 23 after 03-15; 03-17 depends on all three.
 
@@ -62,7 +63,7 @@ Phase exit (P16, P43, DEC-OWN-13): 03-17 runs the offline Debug batch on IMPORTA
 9. Docs use plain hyphens and sentence-case headings. EVIDENCE.md stays under 30,720 bytes with exactly the headings `## Passes now`, `## Open` and `## Evidence`, in that order. A plan that touches a doc with any other `##` heading makes it a `###` sub-heading under the heading its content belongs to, with its text unchanged (planning row P92). STATUS.md stays one line per part, rewritten in place.
 10. The last task of every plan stops what the plan started (Playwright `webServer`, browsers, Vitest workers, Python runs, ssh) by PID or by a command line holding this worktree path or port 5173 or 5175, never by image name, and confirms no listener remains on 5173 or 5175.
 
-## Gap plan rules (03-21 to 03-36)
+## Gap plan rules (03-21 to 03-37)
 
 Every gap plan carries rules 1 to 10 above and these. Each plan sets `gap_closure: true` and follows the 02-99 plan format.
 
@@ -93,6 +94,7 @@ The orchestrator sends these before the late block. The full text is in each pla
 | Q10 | 03-33 | interface.xdat tail layout of the 25 unsupported control types |
 | Q11 | 03-36 | Terrain layer UV mapping and alpha blend |
 | Q12 | 03-36 | Runtime selection and precedence of L2FogInfo |
+| RM-9 | 03-37 | Case rule of the sequence lookup behind PlayAnim and LoopAnim (clip name case) |
 
 Already open in STATE Needs Human (IMPORTA-PC minimap line) and cited by 03-22: radar-anchor, zone-title-source, zone-key-run, specialHiddenMap.
 
