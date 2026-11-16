@@ -90,6 +90,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - DEC-PIPE-1 / DEC-PIPE-2: independent per-system scripts, orchestrator optional; source-preserving conversion with pinned tools.
 - DEC-ASSET-1: one persistent runtime scene with bounded cells. Its "per-tile Editor authoring files stay compatible" clause is superseded by DEC-OWN-8.
 - DEC-SRC-1 / DEC-SRC-2: no source or assets copied from other workspaces or unlicensed projects; IMPORTA-PC reference (completed by DEC-OWN-2).
+- DEC-ENV-1 (2026-11-16, owner review): the day/night cycle follows DB-4 (report `fe5de165`; claim audit 21 supported, 5 partly, 0 refuted; 336 of 336 fixtures recompute). The timeenv files are environment types keyed by their own EnvType and shown as EnvType 0 to 3, never dusk or dawn, because the hour never switches tables. The hour has no T=24 wrap. The D6 `environment` record splits into `server-time` (signed integer game minutes), `environment-ssq-info` and `environment-red-sky`. Every unresolved DB-4 value stays a named gap (docs/NATIVE_SKY.md).
 </decisions>
 
 ## Key Decisions
