@@ -9,6 +9,8 @@ import { buildDisplayGammaTable, defaultDisplayGammaSettings, DISPLAY_GAMMA_ENTR
 export const displayGammaFragmentShaderName = "ue2DisplayGamma";
 const displayGammaLookupSamplerName = "displayGammaLookup";
 const sceneColourSamplerName = "textureSampler";
+const displayGammaQueryParameter = "displayGamma";
+const displayGammaOffQueryValue = "off";
 
 export interface DisplayGammaRampRow {
   readonly id: string;
@@ -18,6 +20,7 @@ export interface DisplayGammaRampRow {
 }
 
 export interface DisplayGammaInspection {
+  readonly attached: boolean;
   readonly settings: DisplayGammaSettings;
   readonly rows: readonly DisplayGammaRampRow[];
 }
@@ -27,7 +30,14 @@ export interface DisplayGammaPostProcess {
   readonly lookupTexture: RawTexture;
   readonly lookupTexels: Float32Array;
   inspect(): DisplayGammaInspection;
+  setAttached(attached: boolean): void;
   dispose(): void;
+}
+
+export type DisplayGammaControl = Pick<DisplayGammaPostProcess, "inspect" | "setAttached">;
+
+export function displayGammaAttachedByQuery(search: string): boolean {
+  return new URLSearchParams(search).get(displayGammaQueryParameter) !== displayGammaOffQueryValue;
 }
 
 function displayGammaFragmentSource(): string {
@@ -53,7 +63,7 @@ function displayGammaRampRows(): DisplayGammaRampRow[] {
     .map(row => ({ id: row.id, runtimeDefault: row.runtimeDefault, status: row.status, provenance: row.provenance }));
 }
 
-export function attachDisplayGammaPostProcess(camera: Camera): DisplayGammaPostProcess {
+export function attachDisplayGammaPostProcess(camera: Camera, initiallyAttached = true): DisplayGammaPostProcess {
   const scene = camera.getScene();
   const settings = defaultDisplayGammaSettings();
   const lookupTexels = buildDisplayGammaTable(settings);
@@ -67,10 +77,18 @@ export function attachDisplayGammaPostProcess(camera: Camera): DisplayGammaPostP
     samplers: [displayGammaLookupSamplerName], camera, samplingMode: Constants.TEXTURE_NEAREST_SAMPLINGMODE,
   });
   const bindLookup = postProcess.onApplyObservable.add(effect => effect.setTexture(displayGammaLookupSamplerName, lookupTexture));
-  let disposed = false;
+  let disposed = false, attached = true;
+  const setAttached = (nextAttached: boolean): void => {
+    if (disposed || nextAttached === attached) return;
+    attached = nextAttached;
+    if (attached) camera.attachPostProcess(postProcess);
+    else camera.detachPostProcess(postProcess);
+  };
+  setAttached(initiallyAttached);
   return {
     postProcess, lookupTexture, lookupTexels,
-    inspect: () => ({ settings, rows: displayGammaRampRows() }),
+    inspect: () => ({ attached, settings, rows: displayGammaRampRows() }),
+    setAttached,
     dispose() {
       if (disposed) return;
       disposed = true;

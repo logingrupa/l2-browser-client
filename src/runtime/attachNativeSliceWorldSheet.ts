@@ -5,7 +5,7 @@ import { nativeSandboxPresentation } from "../scene/presentationConfiguration";
 import type { NativeSliceSheetTools } from "./nativeSliceSheet";
 import { attachScenePresentationGroup } from "./attachScenePresentationGroup";
 import type { NativeSliceSheetContext } from "./attachNativeSliceSheet";
-import type { DisplayGammaInspection } from "../materials/ue2/babylon/displayGammaPostProcess";
+import type { DisplayGammaControl } from "../materials/ue2/babylon/displayGammaPostProcess";
 
 export interface NativeSliceCameraControls {
   follow: () => void;
@@ -86,21 +86,28 @@ function describeRampRowValue(value: unknown): string {
   return "";
 }
 
-function attachDisplayGammaGroup(section: DevSection, displayGamma: DisplayGammaInspection): void {
+function attachDisplayGammaGroup(section: DevSection, displayGamma: DisplayGammaControl, tools: NativeSliceSheetTools): void {
   const gammaGroup = section.group("display-gamma", "Display gamma");
-  const rowText = displayGamma.rows.map(row => `${row.id}${describeRampRowValue(row.runtimeDefault)} (${row.status})`).join("; ");
+  const { rows } = displayGamma.inspect();
+  const rowText = rows.map(row => `${row.id}${describeRampRowValue(row.runtimeDefault)} (${row.status})`).join("; ");
   gammaGroup.note(`UpdateGamma ramp on the native world camera: ${rowText}. Interface windows and this sheet are outside it.`, {
     testId: "sandbox-display-gamma-note",
-    hint: "One final post-process maps each colour channel through the 256-entry ramp. Rows marked unconfirmed stay runtime defaults until l2.ini and user.ini decode.",
-    variables: () => displayGamma.rows.map(row => ({ name: row.id, value: () => `${describeRampRowValue(row.runtimeDefault).trim() || "formula"} (${row.status})`,
+    hint: "One final post-process maps each colour channel through the 256-entry ramp.",
+    variables: () => rows.map(row => ({ name: row.id, value: () => `${describeRampRowValue(row.runtimeDefault).trim() || "formula"} (${row.status})`,
       source: row.provenance, status: unsettledRowStatuses.has(row.status) ? "unverified" : "native" })),
   });
+  const attachedVariables = (): VariableInfo[] => [{ name: "gamma.attached", value: () => String(displayGamma.inspect().attached), values: "true | false",
+    source: "developer sheet or ?displayGamma=off", status: "presentation" }];
+  tools.button(gammaGroup, "Display gamma on", () => displayGamma.setAttached(true), { testId: "native-display-gamma-on",
+    hint: "Draws the world through the UpdateGamma ramp, the default.", variables: attachedVariables });
+  tools.button(gammaGroup, "Display gamma off", () => displayGamma.setAttached(false), { testId: "native-display-gamma-off",
+    hint: "Detaches the ramp so world pixels compare with pre-ramp reference captures (PrintWindow PNGs, gdigrab video). Capture scripts use ?displayGamma=off.", variables: attachedVariables });
 }
 
 export function attachNativeSliceWorldSheet(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): NativeSliceWorldSheet {
   attachCameraGroup(section, context, tools);
   attachSkyGroup(section, context, tools);
-  attachDisplayGammaGroup(section, context.displayGamma);
+  attachDisplayGammaGroup(section, context.displayGamma, tools);
   const flameSheet = attachFlameGroup(section, context, tools);
   attachScenePresentationGroup(section, nativeSandboxPresentation, { sceneName: "native sandbox scene", readoutTestId: "native-scene-presentation" });
   return flameSheet;

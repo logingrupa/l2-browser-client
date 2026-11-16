@@ -21,8 +21,8 @@ export const DISPLAY_GAMMA_CONSTANTS = {
   brightnessAndContrast: {
     id: "gamma.brightness-contrast",
     value: { brightness: 0.8, contrast: 0.7 },
-    provenance: `${materialNotes} gamma.brightness-contrast: reference defaults Brightness 0.8 and Contrast 0.7 (lineage2js/src/assets/unreal/conf-files/un-conf-system.ts:40-44) until l2.ini and user.ini decode`,
-    status: "unconfirmed",
+    provenance: "client system/l2.ini decoded [WinDrv.WindowsClient] Brightness=0.8 and Contrast=0.7; Engine.dll 4dd2f63c UClient::Init 0x10542590 reads only [Video] Gamma from Option.ini, so Brightness and Contrast keep the l2.ini config values at UClient +0x7C and +0x80 (property registration near 0x10542AC0), which D3DDrv.dll 05622dde UpdateGamma 0x100182C0 reads",
+    status: "ue2-data",
     interludeEvidence: null,
     runtimeDefault: { brightness: 0.8, contrast: 0.7 },
   },

@@ -5,7 +5,7 @@ import { Effect } from "@babylonjs/core/Materials/effect";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Scene } from "@babylonjs/core/scene";
 import { afterEach, describe, expect, it } from "vitest";
-import { attachDisplayGammaPostProcess, displayGammaFragmentShaderName } from "../../src/materials/ue2/babylon/displayGammaPostProcess";
+import { attachDisplayGammaPostProcess, displayGammaAttachedByQuery, displayGammaFragmentShaderName } from "../../src/materials/ue2/babylon/displayGammaPostProcess";
 import { DISPLAY_GAMMA_CONSTANTS } from "../../src/materials/ue2/model/constants/displayGammaConstants";
 import { buildDisplayGammaTable, defaultDisplayGammaSettings, DISPLAY_GAMMA_ENTRY_COUNT } from "../../src/materials/ue2/model/displayGamma";
 
@@ -48,9 +48,39 @@ describe("attachDisplayGammaPostProcess", () => {
 
   it("reports the ramp, gamma and brightness and contrast rows with their status and provenance", () => {
     const inspection = attachDisplayGammaPostProcess(nullSceneCamera()).inspect();
+    expect(inspection.attached).toBe(true);
     expect(inspection.settings).toEqual(defaultDisplayGammaSettings());
     expect(inspection.rows).toEqual([DISPLAY_GAMMA_CONSTANTS.ramp, DISPLAY_GAMMA_CONSTANTS.gamma, DISPLAY_GAMMA_CONSTANTS.brightnessAndContrast]
       .map(row => ({ id: row.id, runtimeDefault: row.runtimeDefault, status: row.status, provenance: row.provenance })));
+  });
+
+  it("detaches the ramp from the camera for pre-ramp comparisons and attaches it again as the last post-process", () => {
+    const camera = nullSceneCamera();
+    const displayGamma = attachDisplayGammaPostProcess(camera);
+    displayGamma.setAttached(false);
+    expect(camera._postProcesses).not.toContain(displayGamma.postProcess);
+    expect(displayGamma.inspect().attached).toBe(false);
+    displayGamma.setAttached(true);
+    expect(camera._postProcesses.at(-1)).toBe(displayGamma.postProcess);
+    expect(camera._postProcesses.filter(postProcess => postProcess === displayGamma.postProcess)).toHaveLength(1);
+    expect(displayGamma.inspect().attached).toBe(true);
+  });
+
+  it("starts detached when the capture URL flag turns display gamma off", () => {
+    expect(displayGammaAttachedByQuery("?displayGamma=off")).toBe(false);
+    expect(displayGammaAttachedByQuery("?character=human-male-fighter")).toBe(true);
+    expect(displayGammaAttachedByQuery("?displayGamma=on")).toBe(true);
+    const camera = nullSceneCamera();
+    const displayGamma = attachDisplayGammaPostProcess(camera, displayGammaAttachedByQuery("?displayGamma=off"));
+    expect(camera._postProcesses).not.toContain(displayGamma.postProcess);
+    expect(displayGamma.inspect().attached).toBe(false);
+  });
+
+  it("cites the decoded l2.ini [WinDrv.WindowsClient] section and UClient::Init for brightness and contrast without changing the values", () => {
+    expect(DISPLAY_GAMMA_CONSTANTS.brightnessAndContrast).toMatchObject({ status: "ue2-data", runtimeDefault: { brightness: 0.8, contrast: 0.7 } });
+    expect(DISPLAY_GAMMA_CONSTANTS.brightnessAndContrast.provenance).toContain("l2.ini decoded [WinDrv.WindowsClient] Brightness=0.8 and Contrast=0.7");
+    expect(DISPLAY_GAMMA_CONSTANTS.brightnessAndContrast.provenance).toContain("UClient::Init 0x10542590");
+    expect(DISPLAY_GAMMA_CONSTANTS.brightnessAndContrast.provenance).toContain("UpdateGamma 0x100182C0");
   });
 
   it("releases the post-process and the lookup texture on dispose", () => {
