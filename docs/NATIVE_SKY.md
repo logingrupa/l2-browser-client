@@ -4,13 +4,14 @@ The original `20_20` sky and its environment color tables. The browser shows a f
 
 ## Now
 
-- The sky is a separate final-BSP sky room. `scripts/world/convert_tile.py --map XX_YY --step sky` builds any tile's sky from its one SkyZoneInfo zone into `skies/<hash>/` of the world lane store (20_20: 53 polygons, 182 vertices, 76 triangles, three material chains; its `sky.glb` BIN chunk equals the served sky). Serialized FColor is RGBA.
+- The sky is a separate final-BSP sky room. `scripts/world/convert_tile.py --map XX_YY --step sky` builds any tile's sky from its one SkyZoneInfo zone into `skies/<hash>/` of the world lane store (20_20: 53 polygons, 182 vertices, 76 triangles, three material chains; its `sky.glb` BIN chunk equals the served sky). Serialized Color is B, G, R, A (Core.dll struct rules).
 - `src/scene/world/nativeSkyPresentation.ts` loads the frozen `public/l2/skies/<hash>` 20_20 sky on `/` and the tile sky resource on `/?map=XX_YY`.
+- Tile sky surfaces draw through the UE2 library from the programs `sky.json` lists, so a sky colour passes only the display gamma ramp (15_22 background (0,150,206) shows (13,209,255)). The pinned 20_20 sky lists no programs and keeps its glTF PBR material, which encodes to sRGB before the ramp.
 - Interim browser policy until VIS-01 and MAT-01 (provisional, owner review): the sky follows the camera, draws first, writes no depth, keeps texture alpha and skips fog. Target: draw the sky zone from SkyZoneInfo when the visibility walk reaches a PF_FakeBackdrop surface.
 - `scripts/export-native-environment.py --input-dir <copies> --output <dir>` converts `Env.int` and `timeenv0..3`: 1,681 properties, 20 sky, haze and cloud tables, 500 color rows, anomalies kept. `scripts/stage-native-environment.mjs` stages them for `/l2/environments/<hash>/`.
-- The World sheet Sky group can **Load sky color tables**, **Compare selected sky row** and **Restore stored sky**: a reversible row comparison, not time of day.
+- The World sheet Sky group can **Load sky color tables**, **Compare selected sky row** and **Restore stored sky**: a reversible row comparison on the library ColorModifier colour, not time of day. It needs library sky surfaces.
 - `Env.int` sets `IsClock=true`, `StartTime=12`, `TimeRatio=6`. The `timeenv` files are environment types (default, dusk, dawn, cursed sword), not moon phases.
-- Tests: `tests/pipeline/test_world_sky_step.py`, `test_native_environment.py`, `tests/unit/nativeSky*.test.ts`, `nativeEnvironment*.test.ts`.
+- Tests: `tests/pipeline/test_world_sky_step.py`, `test_native_environment.py`, `tests/unit/nativeSky*.test.ts`, `nativeEnvironment*.test.ts`, `tests/browser/world-sky-library.spec.ts`.
 
 ## Open
 
