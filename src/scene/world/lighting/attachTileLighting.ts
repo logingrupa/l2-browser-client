@@ -51,10 +51,10 @@ function unboundTileLighting(gap: string): AttachedTileLighting {
   return { environmentClock: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
 }
 
-function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, cameraFrame: () => TileVisibilityFrame | null): CameraEnvironment {
+function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, cameraFrame: () => TileVisibilityFrame | null, hour: number): CameraEnvironment {
   const cameraPosition = scene.activeCamera?.globalPosition;
   const cameraSourcePosition = cameraPosition === undefined ? null : worldPositionToSource({ x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z });
-  return computeCameraEnvironment({ frame: cameraFrame(), cameraSourcePosition, collision: null, records: model.records });
+  return computeCameraEnvironment({ frame: cameraFrame(), cameraSourcePosition, collision: null, records: model.records, hour });
 }
 
 export async function attachTileLighting(scene: Scene, manifest: NativeTileManifest, cameraFrame: () => TileVisibilityFrame | null, signal: AbortSignal):
@@ -73,10 +73,10 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   const terrainMaterials = await loadTerrainMaterialsListing(manifest, signal);
   const presentationClock = createPresentationClock();
   const environmentClock = createWorldEnvironmentClock({ program: model.records.environmentProgram, presentationClock });
-  let cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame);
+  let cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame, environmentClock.sample().hour);
   const advance = scene.onBeforeRenderObservable.add(() => {
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
-    cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame);
+    cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame, environmentClock.sample().hour);
   });
   const sessionSeed = drawNativeSessionSeed();
   const materialUniforms = (): NativeMaterialUniforms => {

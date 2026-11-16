@@ -59,10 +59,11 @@ describe("decodeTileLighting", () => {
     expect(model.records.environmentProgram).toEqual({ startTimeHours: 12, timeRatio: 6, environmentTypes: [0, 1, 2, 3], unresolved: [] });
     expect(model.records.zones).toEqual([
       { zoneIndex: 0, fog: null, unresolvedReason: "lighting-zone-fog-unresolved:0:bDistanceFog" },
-      { zoneIndex: 1, unresolvedReason: null, fog: { distanceFog: true, sunAffected: true, fog: { colourBytes: [95, 112, 116], startSourceUnits: 100, endSourceUnits: 20000 } } },
-      { zoneIndex: 2, unresolvedReason: null, fog: { distanceFog: false, sunAffected: true, fog: null } },
+      { zoneIndex: 1, unresolvedReason: null, fog: { distanceFog: true, fog: { colourBytes: [95, 112, 116], startSourceUnits: 100, endSourceUnits: 20000 } } },
+      { zoneIndex: 2, unresolvedReason: null, fog: { distanceFog: false, fog: null } },
     ]);
-    expect(model.records).toMatchObject({ fogInfoCount: 1, waterVolumeCount: 1 });
+    expect(model.records).toMatchObject({ waterVolumeCount: 1, environmentFogRanges: { startRanges: [1, 1.5, 2, 2.5, 4], endRanges: [4, 5, 6, 7, 10] } });
+    expect(model.records.fogInfos.map(fogInfo => [fogInfo.exportIndex, fogInfo.unresolvedReason, fogInfo.record?.fogRanges.length])).toEqual([[9236, null, 5]]);
   });
 
   it("refuses page counts that disagree with the page arrays", () => {

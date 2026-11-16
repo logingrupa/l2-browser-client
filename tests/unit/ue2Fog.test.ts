@@ -8,40 +8,35 @@ import { buildFragmentChain, fogFactorExpression, foggedColourExpression } from 
 import { particleFragmentChain } from "../../src/materials/ue2/babylon/particleFragmentChain";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
 
-const preset = { colourBytes: [100, 110, 120] as const, startSourceUnits: 2000, endSourceUnits: 8000 };
 const zoneFog = { colourBytes: [10, 20, 30] as const, startSourceUnits: 100, endSourceUnits: 1100 };
-const fogInfo = { colourBytes: [200, 50, 25] as const, startSourceUnits: 500, endSourceUnits: 4500 };
-const water = { colourBytes: [39, 87, 126] as const, startSourceUnits: 200, endSourceUnits: 3000 };
-const noSources: FogInputs = { environmentPreset: null, cameraZone: null, fogInfo: null, waterVolume: null };
+const localFog = { colourBytes: [200, 50, 25] as const, startSourceUnits: 500, endSourceUnits: 4500 };
+const volumeFog = { colourBytes: [39, 87, 126] as const, startSourceUnits: 200, endSourceUnits: 3000 };
+const noSources: FogInputs = { volume: null, localFogList: null, cameraZone: null };
 
 describe("evaluateFogState", () => {
   it("is off without a source and exports no fogEnd", () => {
     expect(evaluateFogState(noSources)).toEqual(FOG_DISABLED);
   });
 
-  it("lets each later source override the earlier one and exports fogEnd for the frame", () => {
-    expect(evaluateFogState({ ...noSources, environmentPreset: preset })).toMatchObject({ source: "environment-preset", fogEnd: 8000 });
-    const zone = { distanceFog: true, sunAffected: false, fog: zoneFog };
-    expect(evaluateFogState({ ...noSources, environmentPreset: preset, cameraZone: zone })).toMatchObject({ source: "camera-zone", fogEnd: 1100, colour: [10 / 255, 20 / 255, 30 / 255] });
-    expect(evaluateFogState({ environmentPreset: preset, cameraZone: zone, fogInfo, waterVolume: null })).toMatchObject({ source: "fog-info", fogEnd: 4500 });
-    expect(evaluateFogState({ environmentPreset: preset, cameraZone: zone, fogInfo, waterVolume: water })).toMatchObject({ source: "water-volume", fogEnd: 3000 });
+  it("takes a fogged volume first, then a non-empty local fog list, then the camera zone distance fog, and exports fogEnd for the frame", () => {
+    const zone = { distanceFog: true, fog: zoneFog };
+    expect(evaluateFogState({ ...noSources, cameraZone: zone })).toMatchObject({ source: "camera-zone", fogEnd: 1100, colour: [10 / 255, 20 / 255, 30 / 255] });
+    expect(evaluateFogState({ ...noSources, localFogList: localFog, cameraZone: zone })).toMatchObject({ source: "local-fog-list", fogEnd: 4500 });
+    expect(evaluateFogState({ volume: volumeFog, localFogList: localFog, cameraZone: zone })).toMatchObject({ source: "volume", fogEnd: 3000 });
   });
 
-  it("turns fog off in a zone that is neither sun-affected nor distance-fogged and keeps the preset in a sun-affected one", () => {
-    expect(evaluateFogState({ ...noSources, environmentPreset: preset, cameraZone: { distanceFog: false, sunAffected: false, fog: null } }))
-      .toMatchObject({ enabled: false, source: "zone-without-fog", fogEnd: null });
-    expect(evaluateFogState({ ...noSources, environmentPreset: preset, cameraZone: { distanceFog: false, sunAffected: true, fog: null } }))
-      .toMatchObject({ enabled: true, source: "environment-preset" });
+  it("turns fog off in a zone without distance fog when no local fog list applies", () => {
+    expect(evaluateFogState({ ...noSources, cameraZone: { distanceFog: false, fog: null } })).toMatchObject({ enabled: false, source: "zone-without-fog", fogEnd: null });
   });
 
   it("refuses a range that does not increase and colours that are not bytes", () => {
-    expect(() => evaluateFogState({ ...noSources, fogInfo: { ...fogInfo, endSourceUnits: 500 } })).toThrow(/must be finite and increasing/);
-    expect(() => evaluateFogState({ ...noSources, fogInfo: { ...fogInfo, colourBytes: [256, 0, 0] } })).toThrow(/three bytes/);
+    expect(() => evaluateFogState({ ...noSources, localFogList: { ...localFog, endSourceUnits: 500 } })).toThrow(/must be finite and increasing/);
+    expect(() => evaluateFogState({ ...noSources, localFogList: { ...localFog, colourBytes: [256, 0, 0] } })).toThrow(/three bytes/);
   });
 });
 
 describe("fog families", () => {
-  const state = evaluateFogState({ ...noSources, fogInfo });
+  const state = evaluateFogState({ ...noSources, localFogList: localFog });
 
   it("targets the fog colour, black or 127/255 grey, and nothing for the none family or with fog off", () => {
     expect(fogTargetColour("fog-colour", state)).toEqual([200 / 255, 50 / 255, 25 / 255]);

@@ -2,6 +2,8 @@ import type { ReferenceConstantRow } from "../../../../shared/referenceConstant"
 import type { FogFamily } from "./blendFactorTypes";
 import { materialNotes } from "./materialNotes";
 
+const fogAnswer = "Q12 replay-verified l2foginfo-runtime.json 77cffb57...c465 (Engine.dll, D3DDrv.dll, Engine.u, Env.int, 20_21.unr lock-equal)";
+
 const materialFogFamilies = {
   finalBlend: ["fog-colour", "neutral-grey", "fog-colour", "black", "black", "black", "black", "black", null],
   outputBlending: ["fog-colour", "fog-colour", "neutral-grey", "black", "black", "black", "black"],
@@ -10,7 +12,7 @@ const materialFogFamilies = {
 
 const particleFogFamilies: readonly FogFamily[] = ["none", "none", "fog-colour", "black", "black", "fog-colour", "black"];
 
-export const FOG_CONSTANTS = {
+const fogConstantRows = {
   materialFamilies: {
     id: "fog.targets",
     value: materialFogFamilies,
@@ -38,25 +40,56 @@ export const FOG_CONSTANTS = {
   factor: {
     id: "fog.factor",
     value: "linear clamp((depth - start) / (end - start), 0, 1) on view depth",
-    provenance: `${materialNotes} fog.factor; lineage2js/src/materials/shader-chunks/l2_fog_fragment.glsl:2-6`,
+    provenance: `assumption: ${fogAnswer} finds no D3DRS_FOGTABLEMODE or D3DRS_FOGVERTEXMODE write, so the fog curve is unresolved; the linear ramp follows ${materialNotes} fog.factor`,
     status: "unconfirmed",
     interludeEvidence: null,
     runtimeDefault: "linear clamp((depth - start) / (end - start), 0, 1) on view depth",
   },
   rangeUnit: {
     id: "fog.range-unit",
-    value: 2000,
-    provenance: `${materialNotes} fog.range-unit: 2000 per the Env.int [FOG] comment, 2048 in lineage2js/src/rendering/render-manager.ts:2032-2040`,
-    status: "unconfirmed",
-    interludeEvidence: null,
+    value: 2048,
+    provenance: `${fogAnswer}: Env.int [FOG] StartRange and EndRange times 32768 * 0.0625 = 2048; the .int comment's 2000 is wrong`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll FLevelSceneNode::Render 0x1065e940 fog baseline",
     runtimeDefault: 2048,
   },
   sourcePrecedence: {
     id: "fog.source-precedence",
-    value: ["water-volume", "fog-info", "camera-zone", "environment-preset"],
-    provenance: `${materialNotes} fog.source-precedence: water, L2FogInfo, zone, preset; a zone that is not sun-affected and has no distance fog turns fog off; lineage2js/src/rendering/render-manager.ts:2026-2074,2108-2153,2214-2224,2307-2321`,
-    status: "unconfirmed",
+    value: ["volume", "local-fog-list", "camera-zone"],
+    provenance: `${fogAnswer}: a physics volume with its fog flag sets fog directly; else a non-empty local L2FogInfo list blends over the Env.int preset; else ZoneInfo DistanceFog is the fallback`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll FLevelSceneNode::Render 0x1065e940",
+    runtimeDefault: ["volume", "local-fog-list", "camera-zone"],
+  },
+  terrainClipRange: {
+    id: "fog.terrain-clip-range",
+    value: null,
+    provenance: `${fogAnswer}: the FogRange slot follows the imported GL2TerrainCR (< 5 FogRange1 to >= 8 FogRange5); its runtime value and producer are unresolved`,
+    status: "unknown",
     interludeEvidence: null,
-    runtimeDefault: ["water-volume", "fog-info", "camera-zone", "environment-preset"],
+    runtimeDefault: null,
+  },
+  fadeReferencePosition: {
+    id: "fog.fade-reference-position",
+    value: null,
+    provenance: `${fogAnswer}: the fade 0x10444560 measures from a reference position held in the unnamed viewport field +0x3bc; which position that is stays unresolved`,
+    status: "unknown",
+    interludeEvidence: null,
+    runtimeDefault: null,
+  },
+  localListProducer: {
+    id: "fog.local-list-producer",
+    value: null,
+    provenance: `${fogAnswer}: FLevelSceneNode::Render loops the local fog list at level+0x74 -> +0x18c in index order; which L2FogInfo actors fill it, and in which order, stays unresolved`,
+    status: "unknown",
+    interludeEvidence: null,
+    runtimeDefault: null,
   },
 } as const satisfies Record<string, ReferenceConstantRow<unknown>>;
+
+export const FOG_CONSTANTS: Omit<typeof fogConstantRows, "terrainClipRange" | "fadeReferencePosition" | "localListProducer"> & {
+  readonly terrainClipRange: ReferenceConstantRow<number | null>;
+  readonly fadeReferencePosition: ReferenceConstantRow<"camera" | null>;
+  readonly localListProducer: ReferenceConstantRow<"tile-fog-infos-in-export-order" | null>;
+} = fogConstantRows;
+

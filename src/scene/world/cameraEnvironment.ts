@@ -1,4 +1,6 @@
-import { evaluateFogState, type CameraZoneFogRecord, type FogState } from "../../materials/ue2/babylon/material";
+import { evaluateFogState, type CameraZoneFogRecord, type FogRangeRecord, type FogState } from "../../materials/ue2/babylon/material";
+import { FOG_CONSTANTS } from "../../materials/ue2/model/constants/fogConstants";
+import { environmentFogBaseline, localFogListRecord } from "../../materials/ue2/model/fog";
 import type { Vector3 } from "../../shared/math/vector3";
 import type { TileVisibilityFrame } from "./bspVisibility/core/tileVisibilityFrame";
 import type { CollisionWorld } from "./movement/core/collisionWorld";
@@ -16,6 +18,7 @@ export interface CameraEnvironmentSources {
   readonly cameraSourcePosition: Vector3 | null;
   readonly collision: CameraEnvironmentCollision | null;
   readonly records: TileLightingRecords;
+  readonly hour: number;
 }
 
 export interface CameraEnvironment {
@@ -27,9 +30,11 @@ export interface CameraEnvironment {
 
 const noCameraZone = -1;
 export const cameraEnvironmentGaps = {
-  environmentPresetUnselected: "environment-fog-preset-unselected",
   cameraZoneUnknown: "camera-zone-unknown",
-  fogInfoRangeUnparsed: "fog-info-range-unparsed",
+  fogInfoTerrainClipRangeUnresolved: "fog-info-terrain-clip-range-unresolved",
+  fogInfoReferencePositionUnresolved: "fog-info-reference-position-unresolved",
+  fogInfoListProducerUnresolved: "fog-info-list-producer-unresolved",
+  environmentFogRangesUnresolved: "environment-fog-ranges-unresolved",
   volumeQueryUnbound: "camera-volume-query-unbound",
   volumeWaterFlagAbsent: "camera-volume-water-flag-absent",
   volumePriorityUnknown: "camera-volume-priority-unknown",
@@ -44,6 +49,23 @@ function cameraZoneFog(cameraZone: number, records: TileLightingRecords, gaps: s
   return zone.fog;
 }
 
+function localFogList(sources: CameraEnvironmentSources, gaps: string[]): FogRangeRecord | null {
+  const { fogInfos, environmentFogRanges } = sources.records;
+  if (fogInfos.length === 0) return null;
+  for (const fogInfo of fogInfos) if (fogInfo.unresolvedReason !== null) gaps.push(fogInfo.unresolvedReason);
+  const terrainClipRange = FOG_CONSTANTS.terrainClipRange.runtimeDefault;
+  const referencePosition = FOG_CONSTANTS.fadeReferencePosition.runtimeDefault === "camera" ? sources.cameraSourcePosition : null;
+  const listProducer = FOG_CONSTANTS.localListProducer.runtimeDefault;
+  if (terrainClipRange === null) gaps.push(cameraEnvironmentGaps.fogInfoTerrainClipRangeUnresolved);
+  if (referencePosition === null) gaps.push(cameraEnvironmentGaps.fogInfoReferencePositionUnresolved);
+  if (listProducer === null) gaps.push(cameraEnvironmentGaps.fogInfoListProducerUnresolved);
+  if (environmentFogRanges === null) gaps.push(cameraEnvironmentGaps.environmentFogRangesUnresolved);
+  const resolvedFogInfos = fogInfos.flatMap(fogInfo => fogInfo.record === null ? [] : [fogInfo.record]);
+  if (terrainClipRange === null || referencePosition === null || listProducer === null || environmentFogRanges === null || resolvedFogInfos.length === 0) return null;
+  return localFogListRecord(resolvedFogInfos, environmentFogBaseline(environmentFogRanges, terrainClipRange),
+    { hour: sources.hour, terrainClipRange, referencePosition });
+}
+
 function cameraVolume(sources: CameraEnvironmentSources, gaps: string[]): ContainingVolume | null {
   if (sources.collision === null || sources.cameraSourcePosition === null) { gaps.push(cameraEnvironmentGaps.volumeQueryUnbound); return null; }
   const containing = volumesContaining(sources.collision.world, sources.cameraSourcePosition, sources.collision.rules);
@@ -54,12 +76,12 @@ function cameraVolume(sources: CameraEnvironmentSources, gaps: string[]): Contai
 }
 
 export function computeCameraEnvironment(sources: CameraEnvironmentSources): CameraEnvironment {
-  const gaps: string[] = [cameraEnvironmentGaps.environmentPresetUnselected];
+  const gaps: string[] = [];
   const cameraZone = sources.frame?.cameraZone ?? noCameraZone;
   const zoneFog = cameraZoneFog(cameraZone, sources.records, gaps);
-  if (sources.records.fogInfoCount > 0) gaps.push(cameraEnvironmentGaps.fogInfoRangeUnparsed);
+  const localFog = localFogList(sources, gaps);
   if (sources.records.waterVolumeCount > 0) gaps.push(cameraEnvironmentGaps.waterVolumeUnlinked);
   const containingVolume = cameraVolume(sources, gaps);
-  const fog = evaluateFogState({ environmentPreset: null, cameraZone: zoneFog, fogInfo: null, waterVolume: null });
+  const fog = evaluateFogState({ volume: null, localFogList: localFog, cameraZone: zoneFog });
   return { cameraZone, containingVolume, fog, gaps };
 }

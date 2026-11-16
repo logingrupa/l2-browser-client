@@ -1,4 +1,6 @@
 import type { CameraZoneFogRecord } from "../../../materials/ue2/babylon/material";
+import type { EnvironmentFogRanges } from "../../../materials/ue2/model/fog";
+import { decodeEnvironmentFogRanges, decodeFogInfos, type DecodedFogInfo } from "./tileFogInfoRecords";
 import { TileLightingDecodeError } from "./tileLightingDecodeError";
 
 export interface TileLightingZone {
@@ -17,7 +19,8 @@ export interface WorldEnvironmentProgram {
 export interface TileLightingRecords {
   readonly zones: readonly TileLightingZone[];
   readonly environmentProgram: WorldEnvironmentProgram;
-  readonly fogInfoCount: number;
+  readonly environmentFogRanges: EnvironmentFogRanges | null;
+  readonly fogInfos: readonly DecodedFogInfo[];
   readonly waterVolumeCount: number;
 }
 
@@ -58,18 +61,14 @@ function readZone(value: unknown, position: number): TileLightingZone {
   requireRecords(isRecord(value) && Number.isSafeInteger(value.zoneIndex) && Array.isArray(value.distanceFog), `${label} has no zoneIndex and distanceFog list.`);
   const zoneIndex = value.zoneIndex as number;
   const fields = new Map((value.distanceFog as unknown[]).map((entry, index) => readFieldRecord(entry, `${label}.distanceFog[${index}]`)).map(entry => [entry.field, entry]));
-  const sunAffect = readFieldRecord(value.sunAffect, `${label}.sunAffect`);
-  const unresolvedField = [...zoneFogFields.map(field => fields.get(field)), sunAffect].find(entry => entry === undefined || entry.provenance === unresolvedProvenance);
-  if (unresolvedField !== undefined) {
-    return { zoneIndex, fog: null, unresolvedReason: `lighting-zone-fog-unresolved:${zoneIndex}:${unresolvedField?.field ?? "missing"}` };
-  }
+  const unresolvedField = zoneFogFields.find(field => fields.get(field) === undefined || fields.get(field)!.provenance === unresolvedProvenance);
+  if (unresolvedField !== undefined) return { zoneIndex, fog: null, unresolvedReason: `lighting-zone-fog-unresolved:${zoneIndex}:${unresolvedField}` };
   const enabled = fields.get("bDistanceFog")!.value, start = fields.get("DistanceFogStart")!.value, end = fields.get("DistanceFogEnd")!.value;
-  requireRecords(typeof sunAffect.value === "boolean" || sunAffect.value === null, `${label} bSunAffect is not a boolean.`);
   requireRecords(typeof enabled === "boolean" || enabled === null, `${label} bDistanceFog is not a boolean.`);
-  if (enabled !== true) return { zoneIndex, fog: { distanceFog: false, sunAffected: sunAffect.value === true, fog: null }, unresolvedReason: null };
+  if (enabled !== true) return { zoneIndex, fog: { distanceFog: false, fog: null }, unresolvedReason: null };
   requireRecords(typeof start === "number" && typeof end === "number" && Number.isFinite(start) && Number.isFinite(end), `${label} fog range is not two numbers.`);
   if (end <= start) return { zoneIndex, fog: null, unresolvedReason: `lighting-zone-fog-range-not-increasing:${zoneIndex}:${start}:${end}` };
-  return { zoneIndex, unresolvedReason: null, fog: { distanceFog: true, sunAffected: sunAffect.value === true,
+  return { zoneIndex, unresolvedReason: null, fog: { distanceFog: true,
     fog: { colourBytes: readFogColourBytes(fields.get("DistanceFogColor")!.value, label), startSourceUnits: start, endSourceUnits: end } } };
 }
 
@@ -106,6 +105,7 @@ export function decodeTileLightingRecords(bytes: Uint8Array): TileLightingRecord
     "the records need zones, fogInfos and waterVolumes lists.");
   const zones = document.zones.map(readZone);
   requireRecords(new Set(zones.map(zone => zone.zoneIndex)).size === zones.length, "two zone records share a zoneIndex.");
-  return { zones, environmentProgram: readEnvironmentProgram(document.environmentProgram), fogInfoCount: document.fogInfos.length,
-    waterVolumeCount: document.waterVolumes.length };
+  const environmentProgram = readEnvironmentProgram(document.environmentProgram);
+  return { zones, environmentProgram, environmentFogRanges: decodeEnvironmentFogRanges((document.environmentProgram as Record<string, unknown>).setup),
+    fogInfos: decodeFogInfos(document.fogInfos), waterVolumeCount: document.waterVolumes.length };
 }

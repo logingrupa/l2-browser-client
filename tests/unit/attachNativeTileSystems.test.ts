@@ -68,10 +68,10 @@ describe("attachNativeTileSystems", () => {
 
   it("takes a chunk whose lighting refuses it back out of the visibility walk", async () => {
     const systems = await attachNativeTileSystems(scene, systemsTileManifest(), { initialChunks: [], drawLimitRules: [] }, new AbortController().signal, () => false);
-    const terrainMesh = new Mesh("terrain with a malformed pin", scene);
-    terrainMesh.material = new StandardMaterial("malformed-pin", scene);
-    terrainMesh.material.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: "native-materials/not-a-digest", programSha256: "not-a-digest" } } } };
-    await expect(systems.addChunk({ ...wallsChunk(), terrainMeshes: [terrainMesh] })).rejects.toThrow(/is not a native-materials program pin/);
+    const chunk = wallsChunk(), walls = chunk.bspChunk!.meshes[0]!;
+    walls.material = new StandardMaterial("malformed-pin", scene);
+    walls.material.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: "native-materials/not-a-digest", programSha256: "not-a-digest" } } } };
+    await expect(systems.addChunk(chunk)).rejects.toThrow(/is not a native-materials program pin/);
     expect(systems.boundChunkIds()).toEqual([]);
     expect((systems.visibility.inspection() as BoundTileVisibilityRuntimeInspection).targetChunkIds).toEqual([]);
     systems.dispose();

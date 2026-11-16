@@ -18,6 +18,26 @@ function fieldRecord(field: string, value: unknown, provenance = "authored") {
   return { declaringClass: "Engine.ZoneInfo", field, provenance, value };
 }
 
+const fogInfoField = (field: string, value: unknown, provenance = "authored") => ({ declaringClass: "Engine.L2FogInfo", field, provenance, value });
+const fogColourKey = (time: number, red: number, green: number, blue: number) => ({ Time: time, FogColor: { R: red, G: green, B: blue, A: 0 } });
+
+export const fogInfo9236FogColourKeys = [fogColourKey(0, 70, 83, 83), fogColourKey(5, 70, 83, 83), fogColourKey(6, 107, 114, 97), fogColourKey(7, 107, 114, 97),
+  fogColourKey(19, 107, 114, 97), fogColourKey(20, 107, 114, 97), fogColourKey(23, 116, 112, 95)];
+
+export function fogInfo9236Record() {
+  return { exportIndex: 9236, object: "20_21.L2FogInfo46", actorClass: "Engine.L2FogInfo", baseClass: "Engine.L2FogInfo", zone: 1, fields: [
+    fogInfoField("AffectRange", { Max: 4000, Min: 3000 }),
+    ...[2000, 4000, 6000, 8000, 10000].map((maximum, slot) => fogInfoField(`FogRange${slot + 1}`, { Max: maximum, Min: 0 })),
+    fogInfoField("TextureDistance", null, "ue-zero"), fogInfoField("Colors", fogInfo9236FogColourKeys), fogInfoField("CloudTexture", null, "ue-zero"),
+    fogInfoField("Location", { X: 28491.390625, Y: 110465.5, Z: -1361.5125732421875 }),
+  ] };
+}
+
+export const environmentFogSection = { section: "FOG", line: 52, occurrence: 0, properties: [
+  ...[1, 1.5, 2, 2.5, 4].map((value, slot) => ({ key: `StartRange${slot + 1}`, kind: "number", value })),
+  ...[4, 5, 6, 7, 10].map((value, slot) => ({ key: `EndRange${slot + 1}`, kind: "number", value })),
+  { key: "FogSpeed", kind: "integer", value: 1 }] };
+
 export function tileLightingRecordsDocument() {
   const zone = (zoneIndex: number, provenance: string, distanceFog: boolean) => ({ zoneIndex, unresolved: provenance === "unresolved",
     distanceFog: [fieldRecord("bDistanceFog", provenance === "unresolved" ? null : distanceFog, provenance),
@@ -25,9 +45,9 @@ export function tileLightingRecordsDocument() {
       fieldRecord("DistanceFogStart", provenance === "unresolved" ? null : 100, provenance),
       fieldRecord("DistanceFogEnd", provenance === "unresolved" ? null : 20000, provenance)],
     sunAffect: fieldRecord("bSunAffect", provenance === "unresolved" ? null : true, provenance === "unresolved" ? provenance : "class-default") });
-  return { schemaVersion: 1, kind: "native-tile-lighting-records", lights: [], fogInfos: [{ exportIndex: 7 }], levelInfos: [], rules: [],
+  return { schemaVersion: 1, kind: "native-tile-lighting-records", lights: [], fogInfos: [fogInfo9236Record()], levelInfos: [], rules: [],
     waterVolumes: [{ exportIndex: 8 }], zones: [zone(0, "unresolved", false), zone(1, "authored", true), zone(2, "authored", false)],
-    environmentProgram: { schemaVersion: 1, kind: "native-environment-program", setup: {}, unresolved: [],
+    environmentProgram: { schemaVersion: 1, kind: "native-environment-program", setup: { sections: [environmentFogSection] }, unresolved: [],
       setupValues: { StartTime: { key: "StartTime", value: 12 }, TimeRatio: { key: "TimeRatio", value: 6 }, TimeEnvFileNum: { key: "TimeEnvFileNum", value: 4 } },
       environmentTypes: [0, 1, 2, 3].map(environmentType => ({ environmentType, sections: [] })) } };
 }
