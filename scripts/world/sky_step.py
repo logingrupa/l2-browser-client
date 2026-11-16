@@ -34,7 +34,7 @@ from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
 from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row
 
-SKY_STEP_ALGORITHM_VERSION = 4
+SKY_STEP_ALGORITHM_VERSION = 5
 SKY_STEP_NAME = 'sky'
 SKY_PRODUCT_NAME = 'sky.json'
 SKY_BUNDLE_KIND = 'native-sky-source-bundle'
@@ -54,7 +54,8 @@ SOURCE_COLOR_ORDER = ('serialized FColor bytes B, G, R, A; recipes/world/struct-
 SKY_LIMITATIONS = ['Frozen authored sky source state; no native visible-pixel parity is established.',
                    'Native runtime sky camera projection, parallax, far-plane/depth composition and live zone binding are unobserved.',
                    'Texture panner rates and stored matrices are retained in the material programs; no invented clock, phase or animation is applied.',
-                   'Source ColorModifier bytes are B, G, R, A (research Q6 binary-member-order). Native time-of-day tint updates, sun, moon and lens-flare behavior are not reproduced.',
+                   'Source ColorModifier bytes are B, G, R, A (research Q6 binary-member-order). The runtime writes the DB-4 per-hour Env.int SKYBOX, '
+                   'HAZERING and CLOUD colours into these ColorModifiers; sun, moon and lens-flare behavior are not reproduced.',
                    'GLB source preview maps stored color/alpha declarations to unlit factors; native Shader/ColorModifier blending and BSP two-sided '
                    'precedence remain unverified.',
                    'Original mip blocks are preserved; PNG is an ordinary BC1/BC3 decode of mip 0, without alpha/channel repair, recoloring or generated '
@@ -231,7 +232,7 @@ def sky_snapshot(tile_id, level, zone_index, sky_actor, location, actor_properti
                        'skyActorOffset': sky_actor['offset'], 'skyActorBytes': sky_actor['size'],
                        'skyActorSha256': sha256_hex(level.package.data[sky_actor['offset']:sky_actor['offset'] + sky_actor['size']]),
                        'sourceColorOrder': SOURCE_COLOR_ORDER},
-            'unresolvedDynamics': {'texturePanners': 'retained in the material programs; not applied', 'timeOfDay': 'unverified; no authored-color replacement',
+            'unresolvedDynamics': {'texturePanners': 'retained in the material programs; not applied', 'timeOfDay': 'runtime writes the DB-4 per-hour Env.int ColorModifier colours; native parity unverified',
                                    'sunMoonLensFlare': 'unimplemented; source actor references retained'},
             'limitations': SKY_LIMITATIONS}
 

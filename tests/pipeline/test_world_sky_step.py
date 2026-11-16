@@ -165,7 +165,7 @@ class SkyMaterialTests(unittest.TestCase):
 
 class SkyStepRecordTests(unittest.TestCase):
     def test_the_step_name_version_reasons_and_vocabulary_kind_are_registered(self):
-        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 4))
+        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 5))
         self.assertIn('sky', load_tile_manifest_vocabulary(ROOT).resource_kinds)
         patterns = load_gap_reason_patterns(ROOT)
         for reason in ('sky-zone-ambiguous:2', 'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):
@@ -237,9 +237,12 @@ class RealClientSkyTests(unittest.TestCase):
     def test_tile_15_22_sky_layers_take_their_colors_from_the_blue_green_red_alpha_bytes(self):
         converted, gap_rows = self.converted_sky_files('15_22')
         self.assertEqual(gap_rows, [])
-        colors = {part['sourceMaterial']: part['authoredColorRGBA'] for part in json.loads(converted.files['sky.json'])['parts']}
+        snapshot = json.loads(converted.files['sky.json'])
+        colors = {part['sourceMaterial']: part['authoredColorRGBA'] for part in snapshot['parts']}
         self.assertEqual(colors, {'l2_skies.Shaders.SkybackgroundColor': [0, 150, 206, 255], 'l2_skies.Shaders.HazeRing_Final': [255, 228, 149, 255],
                                   'l2_skies.Shaders.Cloud_Final': [255, 192, 151, 255]})
+        self.assertEqual(snapshot['unresolvedDynamics']['timeOfDay'], 'runtime writes the DB-4 per-hour Env.int ColorModifier colours; native parity unverified')
+        self.assertFalse(any('time-of-day tint updates' in limitation for limitation in snapshot['limitations']))
 
     def test_tile_20_21_builds_its_own_sky_from_its_one_sky_zone(self):
         converted, gap_rows = self.converted_sky_files('20_21')
