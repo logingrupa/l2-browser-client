@@ -22,21 +22,24 @@ function environmentOn(fog: FogState | null, withClock = true) {
 }
 
 describe("world environment wiring", () => {
-  it("reports the program fallback until an adapter environment event moves the game clock", () => {
+  it("reports the program fallback until an adapter server-time event moves the game clock", () => {
     const { environment, presentationClock, emit } = environmentOn(null);
     expect(environment.inspection().clock).toMatchObject({ gameMinutes: 360, environmentType: 0, source: "environment-program-fallback" });
-    emit({ type: "environment", gameMinutes: 1200, environmentType: 1 });
+    emit({ type: "server-time", gameMinutes: 1200 });
     presentationClock.advance(10);
-    expect(environment.inspection().clock).toMatchObject({ gameMinutes: 1201, environmentType: 1, source: "environment-event" });
+    expect(environment.inspection().clock).toMatchObject({ gameMinutes: 1201, environmentType: 0, source: "server-time" });
     expect(environment.inspection()).toMatchObject({ appliedEventCount: 1, rejectedEventCount: 0 });
   });
 
-  it("counts an environment event the clock refuses, and one that reaches a world without a clock, instead of throwing", () => {
+  it("counts a server time the clock refuses, the type events without a manager and one that reaches a world without a clock, instead of throwing", () => {
     const { environment, emit } = environmentOn(null);
-    expect(() => emit({ type: "environment", gameMinutes: 30, environmentType: 7 })).not.toThrow();
-    expect(environment.inspection()).toMatchObject({ appliedEventCount: 0, rejectedEventCount: 1, lastRejectedEvent: expect.stringContaining("type 7") });
+    expect(() => emit({ type: "server-time", gameMinutes: -30 })).not.toThrow();
+    expect(environment.inspection()).toMatchObject({ appliedEventCount: 0, rejectedEventCount: 1, lastRejectedEvent: expect.stringContaining("-30") });
+    emit({ type: "environment-ssq-info", first: 1, second: 0 });
+    emit({ type: "environment-red-sky", timeoutSeconds: 5 });
+    expect(environment.inspection()).toMatchObject({ rejectedEventCount: 3, lastRejectedEvent: "environment-manager-absent" });
     const unlit = environmentOn(null, false);
-    unlit.emit({ type: "environment", gameMinutes: 30, environmentType: 0 });
+    unlit.emit({ type: "server-time", gameMinutes: 30 });
     expect(unlit.environment.inspection()).toMatchObject({ clock: null, rejectedEventCount: 1, lastRejectedEvent: expect.stringContaining("environment-clock-absent") });
   });
 

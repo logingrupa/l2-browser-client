@@ -17,22 +17,33 @@ function adapterWiredToEnvironmentClock() {
   return { adapter, environment, receivedEvents };
 }
 
-describe("NativeSliceAdapter set-environment", () => {
-  it("answers set-environment with the environment event the wiring applies to the clock", () => {
-    const { adapter, environment, receivedEvents } = adapterWiredToEnvironmentClock();
-    adapter.dispatch({ type: "set-environment", gameMinutes: 1200, environmentType: 1 });
-    expect(receivedEvents).toEqual([{ type: "environment", gameMinutes: 1200, environmentType: 1 }]);
-    expect(environment.inspection()).toMatchObject({ appliedEventCount: 1, rejectedEventCount: 0, lastRejectedEvent: null });
-    expect(environment.inspection().clock).toMatchObject({ gameMinutes: 1200, environmentType: 1, source: "environment-event" });
+describe("NativeSliceAdapter environment sandbox commands", () => {
+  it("answers each environment command with exactly its own event and passes the values through unchanged", () => {
+    const { adapter, receivedEvents } = adapterWiredToEnvironmentClock();
+    adapter.dispatch({ type: "set-server-time", gameMinutes: -90 });
+    adapter.dispatch({ type: "set-environment-ssq-info", first: 2, second: 1 });
+    adapter.dispatch({ type: "set-environment-red-sky", timeoutSeconds: 30 });
+    expect(receivedEvents).toEqual([
+      { type: "server-time", gameMinutes: -90 },
+      { type: "environment-ssq-info", first: 2, second: 1 },
+      { type: "environment-red-sky", timeoutSeconds: 30 },
+    ]);
     adapter.dispose();
   });
 
-  it("passes an unknown environment type through so the clock refuses it and the wiring counts the rejection", () => {
+  it("reaches the wiring with server time and names the unresolved server packet in the inspection", () => {
     const { adapter, environment } = adapterWiredToEnvironmentClock();
-    expect(() => adapter.dispatch({ type: "set-environment", gameMinutes: 30, environmentType: 7 })).not.toThrow();
-    expect(environment.inspection()).toMatchObject({ appliedEventCount: 0, rejectedEventCount: 1,
-      lastRejectedEvent: "Environment event type 7 is not one of the program types 0, 1." });
-    expect(environment.inspection().clock).toMatchObject({ gameMinutes: 360, environmentType: 0, source: "environment-program-fallback" });
+    adapter.dispatch({ type: "set-server-time", gameMinutes: 1200 });
+    expect(environment.inspection()).toMatchObject({ appliedEventCount: 1, rejectedEventCount: 0, lastRejectedEvent: null,
+      serverPacket: { producer: "sandbox-command", status: "unresolved", reason: "server-packet-unresolved" } });
+    expect(environment.inspection().clock).toMatchObject({ gameMinutes: 1200, source: "server-time" });
     adapter.dispose();
+  });
+
+  it("emits nothing after dispose", () => {
+    const { adapter, receivedEvents } = adapterWiredToEnvironmentClock();
+    adapter.dispose();
+    adapter.dispatch({ type: "set-server-time", gameMinutes: 60 });
+    expect(receivedEvents).toEqual([]);
   });
 });

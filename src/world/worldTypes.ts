@@ -43,7 +43,9 @@ export type WorldEvent =
       readonly targetId?: string;
     }
   | { readonly type: "command-rejected"; readonly commandType: WorldCommand["type"]; readonly reason: string }
-  | { readonly type: "environment"; readonly gameMinutes: number; readonly environmentType: number }
+  | { readonly type: "server-time"; readonly gameMinutes: number }
+  | { readonly type: "environment-ssq-info"; readonly first: number; readonly second: number }
+  | { readonly type: "environment-red-sky"; readonly timeoutSeconds: number }
   | {
       readonly type: "move";
       readonly entityId: string;
@@ -74,4 +76,6 @@ export type WorldCommand =
   | { readonly type: "set-health"; readonly entityId: string; readonly health: number }
   | { readonly type: "report-position"; readonly position: SourcePosition; readonly heading: number }
   | { readonly type: "cannot-move"; readonly position: SourcePosition; readonly heading: number }
-  | { readonly type: "set-environment"; readonly gameMinutes: number; readonly environmentType: number };
+  | { readonly type: "set-server-time"; readonly gameMinutes: number }
+  | { readonly type: "set-environment-ssq-info"; readonly first: number; readonly second: number }
+  | { readonly type: "set-environment-red-sky"; readonly timeoutSeconds: number };

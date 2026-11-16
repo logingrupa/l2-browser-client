@@ -1,10 +1,8 @@
 import type { PresentationClock } from "../../../shared/presentationClock";
-import type { WorldEvent } from "../../../world/worldTypes";
 import { hoursPerDay } from "./lightmapPages";
 import type { WorldEnvironmentProgram } from "./tileLightingRecords";
 
-export type WorldEnvironmentEvent = Extract<WorldEvent, { type: "environment" }>;
-export type WorldEnvironmentSource = "environment-event" | "environment-program-fallback";
+export type WorldEnvironmentSource = "server-time" | "environment-program-fallback";
 
 export interface WorldEnvironmentSample {
   readonly gameMinutes: number;
@@ -14,7 +12,7 @@ export interface WorldEnvironmentSample {
 }
 
 export interface WorldEnvironmentClock {
-  applyEnvironmentEvent(event: WorldEnvironmentEvent): void;
+  applyServerTime(gameMinutes: number): void;
   sample(): WorldEnvironmentSample;
 }
 
@@ -47,12 +45,9 @@ export function createWorldEnvironmentClock(settings: WorldEnvironmentClockSetti
   let anchor: ClockAnchor = { gameMinutes: program.startTimeHours * minutesPerHour, levelSeconds: presentationClock.levelSeconds,
     environmentType: fallbackEnvironmentType, source: "environment-program-fallback" };
   return {
-    applyEnvironmentEvent(event) {
-      if (!Number.isFinite(event.gameMinutes) || event.gameMinutes < 0) throw new RangeError(`Environment event game minutes ${event.gameMinutes} must be finite and not negative.`);
-      if (!Number.isSafeInteger(event.environmentType) || !knownEnvironmentTypes.has(event.environmentType)) {
-        throw new RangeError(`Environment event type ${event.environmentType} is not one of the program types ${[...knownEnvironmentTypes].join(", ")}.`);
-      }
-      anchor = { gameMinutes: event.gameMinutes, levelSeconds: presentationClock.levelSeconds, environmentType: event.environmentType, source: "environment-event" };
+    applyServerTime(gameMinutes) {
+      if (!Number.isFinite(gameMinutes) || gameMinutes < 0) throw new RangeError(`Server time game minutes ${gameMinutes} must be finite and not negative.`);
+      anchor = { gameMinutes, levelSeconds: presentationClock.levelSeconds, environmentType: anchor.environmentType, source: "server-time" };
     },
     sample() {
       const elapsedGameMinutes = (presentationClock.levelSeconds - anchor.levelSeconds) * program.timeRatio / secondsPerMinute;

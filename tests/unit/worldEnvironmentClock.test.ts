@@ -14,31 +14,30 @@ describe("createWorldEnvironmentClock", () => {
     expect(clock.sample()).toMatchObject({ gameMinutes: 780, hour: 13, source: "environment-program-fallback" });
   });
 
-  it("takes game minutes and type from an environment event and advances from there at TimeRatio", () => {
+  it("takes game minutes from server time, keeps the environment type and advances from there at TimeRatio", () => {
     const presentationClock = createPresentationClock();
     presentationClock.advance(50);
     const clock = createWorldEnvironmentClock({ program, presentationClock });
-    clock.applyEnvironmentEvent({ type: "environment", gameMinutes: 330, environmentType: 2 });
-    expect(clock.sample()).toEqual({ gameMinutes: 330, hour: 5.5, environmentType: 2, source: "environment-event" });
+    clock.applyServerTime(330);
+    expect(clock.sample()).toEqual({ gameMinutes: 330, hour: 5.5, environmentType: 0, source: "server-time" });
     presentationClock.advance(30);
-    expect(clock.sample()).toMatchObject({ gameMinutes: 333, environmentType: 2 });
+    expect(clock.sample()).toMatchObject({ gameMinutes: 333, environmentType: 0 });
   });
 
   it("wraps past midnight", () => {
     const presentationClock = createPresentationClock();
     const clock = createWorldEnvironmentClock({ program, presentationClock });
-    clock.applyEnvironmentEvent({ type: "environment", gameMinutes: 1430, environmentType: 1 });
+    clock.applyServerTime(1430);
     presentationClock.advance(200);
     expect(clock.sample()).toMatchObject({ gameMinutes: 10, hour: 10 / 60 });
-    clock.applyEnvironmentEvent({ type: "environment", gameMinutes: 2880 + 90, environmentType: 1 });
+    clock.applyServerTime(2880 + 90);
     expect(clock.sample().hour).toBe(1.5);
   });
 
-  it("refuses game minutes that are not finite or negative and environment types outside the program", () => {
+  it("refuses server time that is not finite or negative and a program without environment type 0", () => {
     const clock = createWorldEnvironmentClock({ program, presentationClock: createPresentationClock() });
-    expect(() => clock.applyEnvironmentEvent({ type: "environment", gameMinutes: Number.NaN, environmentType: 0 })).toThrow(RangeError);
-    expect(() => clock.applyEnvironmentEvent({ type: "environment", gameMinutes: -1, environmentType: 0 })).toThrow(RangeError);
-    expect(() => clock.applyEnvironmentEvent({ type: "environment", gameMinutes: 10, environmentType: 4 })).toThrow(/not one of the program types/);
+    expect(() => clock.applyServerTime(Number.NaN)).toThrow(RangeError);
+    expect(() => clock.applyServerTime(-1)).toThrow(RangeError);
     expect(() => createWorldEnvironmentClock({ program: { ...program, environmentTypes: [1] }, presentationClock: createPresentationClock() }))
       .toThrow(/no environment type 0/);
   });

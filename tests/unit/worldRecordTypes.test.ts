@@ -10,11 +10,13 @@ type CommandOfType<CommandType extends WorldCommand["type"]> = Extract<WorldComm
 type AccountSessionStateOfStage<Stage extends AccountSessionState["stage"]> = Extract<AccountSessionState, { readonly stage: Stage }>;
 
 describe("world record types", () => {
-  it("shapes the command-rejected and environment events", () => {
+  it("shapes the command-rejected event and the three environment events", () => {
     expectTypeOf<EventOfType<"command-rejected">>()
       .toEqualTypeOf<{ readonly type: "command-rejected"; readonly commandType: WorldCommand["type"]; readonly reason: string }>();
-    expectTypeOf<EventOfType<"environment">>()
-      .toEqualTypeOf<{ readonly type: "environment"; readonly gameMinutes: number; readonly environmentType: number }>();
+    expectTypeOf<EventOfType<"server-time">>().toEqualTypeOf<{ readonly type: "server-time"; readonly gameMinutes: number }>();
+    expectTypeOf<EventOfType<"environment-ssq-info">>()
+      .toEqualTypeOf<{ readonly type: "environment-ssq-info"; readonly first: number; readonly second: number }>();
+    expectTypeOf<EventOfType<"environment-red-sky">>().toEqualTypeOf<{ readonly type: "environment-red-sky"; readonly timeoutSeconds: number }>();
   });
 
   it("shapes the movement events in source units", () => {

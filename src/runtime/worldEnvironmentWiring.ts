@@ -21,6 +21,7 @@ export interface WorldEnvironmentOptions {
 
 export interface WorldEnvironmentInspection {
   readonly clock: WorldEnvironmentSample | null;
+  readonly serverPacket: typeof serverPacketGap;
   readonly farPlane: CameraFarPlane;
   readonly appliedEventCount: number;
   readonly rejectedEventCount: number;
@@ -34,6 +35,8 @@ export interface WorldEnvironment {
 }
 
 const environmentClockAbsentReason = "environment-clock-absent: the loaded world has no lighting resource";
+const environmentManagerAbsentReason = "environment-manager-absent";
+const serverPacketGap = { producer: "sandbox-command", status: "unresolved", reason: "server-packet-unresolved" } as const;
 const noCameraZone = -1;
 
 export function cameraFogOnZoneChange(section: Pick<NativeSection, "tileVisibility" | "inspection">): () => FogState | null {
@@ -58,15 +61,17 @@ export function wireWorldEnvironment(options: WorldEnvironmentOptions): WorldEnv
   if (!Number.isFinite(presentationFarPlane) || presentationFarPlane <= 0) throw new RangeError("The presentation far plane must be a positive finite distance.");
   let appliedEventCount = 0, rejectedEventCount = 0, lastRejectedEvent: string | null = null;
   let farPlane: CameraFarPlane = { maxZ: presentationFarPlane, source: "presentation" };
+  const reject = (reason: string) => { rejectedEventCount += 1; lastRejectedEvent = reason; };
   const unsubscribe = adapter.subscribe(event => {
-    if (event.type !== "environment") return;
-    if (environmentClock === null) { rejectedEventCount += 1; lastRejectedEvent = environmentClockAbsentReason; return; }
+    if (event.type === "environment-ssq-info" || event.type === "environment-red-sky") { reject(environmentManagerAbsentReason); return; }
+    if (event.type !== "server-time") return;
+    if (environmentClock === null) { reject(environmentClockAbsentReason); return; }
     try {
-      environmentClock.applyEnvironmentEvent(event);
+      environmentClock.applyServerTime(event.gameMinutes);
       appliedEventCount += 1;
     } catch (error) {
       if (!(error instanceof RangeError)) throw error;
-      rejectedEventCount += 1; lastRejectedEvent = error.message;
+      reject(error.message);
     }
   });
   return {
@@ -74,7 +79,7 @@ export function wireWorldEnvironment(options: WorldEnvironmentOptions): WorldEnv
       farPlane = cameraFarPlane(options.cameraFog(), presentationFarPlane);
       camera.maxZ = farPlane.maxZ;
     },
-    inspection: () => ({ clock: environmentClock?.sample() ?? null, farPlane, appliedEventCount, rejectedEventCount, lastRejectedEvent }),
+    inspection: () => ({ clock: environmentClock?.sample() ?? null, serverPacket: serverPacketGap, farPlane, appliedEventCount, rejectedEventCount, lastRejectedEvent }),
     release: unsubscribe,
   };
 }

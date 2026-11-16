@@ -42,7 +42,7 @@ async function setCameraPose(page: Page, pose: { target: number[]; alpha: number
 test.describe("sandbox framing for side-by-side halves", () => {
   test.use({ viewport: desktopViewport });
 
-  test("setCameraPose round-trips the snapshot camera read-out and refuses a radius beyond the limit; set-environment moves the clock through the adapter", async ({ page }) => {
+  test("setCameraPose round-trips the snapshot camera read-out and refuses a radius beyond the limit; set-server-time moves the clock through the adapter", async ({ page }) => {
     test.setTimeout(300_000);
     const errors = collectBrowserErrors(page);
     await openCaptureTile(page);
@@ -60,14 +60,13 @@ test.describe("sandbox framing for side-by-side halves", () => {
 
     const environmentBefore = await readEnvironmentInspection(page);
     if (!environmentBefore.clock) throw new Error(`Tile ${captureTileId} has no environment clock: ${environmentBefore.lastRejectedEvent ?? "no lighting resource"}.`);
-    const currentEnvironmentType = environmentBefore.clock.environmentType;
-    await page.evaluate(([gameMinutes, environmentType]) => {
-      window.__nativeSlice!.dispatch({ type: "set-environment", gameMinutes, environmentType });
-    }, [framingGameMinutes, currentEnvironmentType] as const);
+    await page.evaluate(gameMinutes => {
+      window.__nativeSlice!.dispatch({ type: "set-server-time", gameMinutes });
+    }, framingGameMinutes);
     const environmentAfter = await readEnvironmentInspection(page);
     expect(environmentAfter.appliedEventCount).toBe(environmentBefore.appliedEventCount + 1);
     expect(environmentAfter.rejectedEventCount).toBe(environmentBefore.rejectedEventCount);
-    expect(environmentAfter.clock).toMatchObject({ source: "environment-event", environmentType: currentEnvironmentType });
+    expect(environmentAfter.clock).toMatchObject({ source: "server-time" });
     expect(errors).toEqual([]);
   });
 });
