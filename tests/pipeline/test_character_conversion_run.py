@@ -46,8 +46,8 @@ class SyntheticCharacterRun(CharacterConversionRun):
         self.converted_archive = Path(client_root).parent / 'converted.l2asset'
         self.converted_archive.write_bytes(b'synthetic converted archive')
 
-    def converted_model_reason(self, request):
-        self.converted_rows.append(request['parts'][0]['sourceBinding']['meshPath'][1])
+    def converted_model_reason(self, generated):
+        self.converted_rows.append(generated['request']['parts'][0]['sourceBinding']['meshPath'][1])
         if self.refusal:
             return CONVERTER_REFUSED_REASON_PREFIX + self.refusal, None
         return None, {'file': self.converted_archive}

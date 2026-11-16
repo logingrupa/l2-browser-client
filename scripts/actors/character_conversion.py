@@ -6,6 +6,7 @@ from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES,
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, model_record_capacity, decoded_table_identity
 from actors.character_class_sources import read_character_class_sources
 from actors.character_head_part_routes import decoded_skeleton_summary, generated_with_head_part_routes
+from actors.character_idle_family_recipe import read_character_idle_families
 from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, CLASS_SOURCES_ROUTE, GAP_STATUS, HAIRGRP_TABLE_NAME,
                                        HELMETGRP_TABLE_NAME, CharacterRequestError, build_character_request, character_gap_rows, character_key,
                                        chargrp_row_at, is_padding_row, resolve_character_actor_class)
@@ -27,7 +28,7 @@ from reference_client_guard import ReferenceClientLockError
 CHARACTER_ALGORITHM_VERSION = 1
 CHARACTER_LANE_NAME = 'actors'
 PADDING_STATUS = 'padding'
-CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition class_sources')
+CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition class_sources idle_families')
 
 
 class LazyClassDefinitionReader:
@@ -52,7 +53,8 @@ def read_character_sources(project_root, client_root, decode_table, class_work_r
     return CharacterSources(decode_table(Path(client_root), 'chargrp'), data_ui_table_manifest(project_root, CLASSINFO_TABLE_NAME),
                             data_ui_table_manifest(project_root, HAIRGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
                             data_ui_table_manifest(project_root, HELMETGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
-                            LazyClassDefinitionReader(client_root, class_work_root), read_character_class_sources(project_root))
+                            LazyClassDefinitionReader(client_root, class_work_root), read_character_class_sources(project_root),
+                            read_character_idle_families(project_root))
 
 
 def model_gap_reason(census_reason, generated):
@@ -126,14 +128,16 @@ class CharacterConversionRun:
         return character_gap_rows(row_index, CHARACTER_STEP, GAP_STATUS, reason, self.table_identity,
                                   evidence.relative_to(self.ledger.lane_folder).as_posix())[0]
 
-    def converted_model_reason(self, request):
+    def converted_model_reason(self, generated):
+        root_mesh = generated['rootMesh']
+        if root_mesh['reason']:
+            return root_mesh['reason'], None
         try:
-            first_part = request['parts'][0]
-            _, package = self.converter.package(first_part['package'])
-            mesh_export = self.converter.select(package, first_part['object'], 'SkeletalMesh')
+            _, package = self.converter.package(root_mesh['package'])
+            mesh_export = self.converter.select(package, root_mesh['object'], 'SkeletalMesh')
             animation_reference = serialized_animation_reference(package, mesh_export)
             reason = animation_reference_gap_reason(animation_reference, package.package_name)
-            return (reason, None) if reason else (None, self.converter.convert({**request, 'animation': animation_reference}))
+            return (reason, None) if reason else (None, self.converter.convert({**generated['request'], 'animation': animation_reference}))
         except ReferenceClientLockError:
             raise
         except ValueError as error:
@@ -162,7 +166,7 @@ class CharacterConversionRun:
         outputs = []
         if model_reason is None:
             try:
-                model_reason, result = self.converted_model_reason(generated['request'])
+                model_reason, result = self.converted_model_reason(generated)
             except TRANSIENT_FAILURES as error:
                 return {**self.outcome(row_index, path_free_reason(str(error), self.client_access.root, self.converter.output), False, []),
                         'status': FAILED_STATUS}

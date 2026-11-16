@@ -1,0 +1,859 @@
+{
+  "engine": {
+    "imageBase": "0x10300000",
+    "path": "system/engine.dll",
+    "sha256": "4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08"
+  },
+  "idleGetter": {
+    "address": "0x103416e0",
+    "array": "WaitAnimName",
+    "arrayDim": 8,
+    "function": "APawn::GetWaitAnimName",
+    "meshTypeJumpTable": "0x10481be8"
+  },
+  "kind": "character-idle-families",
+  "meshTypes": [
+    {
+      "class": "LineageWarrior.MFighter",
+      "meshType": 0,
+      "section": "MFighter",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 6,
+          "value": "wait_Hand_MFighter",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 50,
+          "value": "wait_1HS_MFighter",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 101,
+          "value": "wait_2HS_MFighter",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 151,
+          "value": "wait_Dual_MFighter",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 211,
+          "value": "wait_Pole_MFighter",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 258,
+          "value": "wait_Bow_MFighter",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 302,
+          "value": "wait_Hand_MFighter",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.FFighter",
+      "meshType": 1,
+      "section": "FFighter",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 433,
+          "value": "wait_Hand_FFighter",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 476,
+          "value": "wait_1HS_FFighter",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 527,
+          "value": "wait_2HS_FFighter",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 577,
+          "value": "wait_Dual_FFighter",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 637,
+          "value": "wait_Pole_FFighter",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 684,
+          "value": "wait_Bow_FFighter",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 728,
+          "value": "wait_Hand_FFighter",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.MDarkElf",
+      "meshType": 2,
+      "section": "MDarkElf",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 2547,
+          "value": "wait_Hand_MDarkElf",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 2590,
+          "value": "wait_1HS_MDarkElf",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 2640,
+          "value": "wait_2HS_MDarkElf",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 2689,
+          "value": "wait_Dual_MDarkElf",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 2748,
+          "value": "wait_Pole_MDarkElf",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 2795,
+          "value": "wait_Bow_MDarkElf",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 2839,
+          "value": "wait_Hand_MDarkElf",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.FDarkElf",
+      "meshType": 3,
+      "section": "FDarkElf",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 2969,
+          "value": "wait_Hand_FDarkElf",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 3012,
+          "value": "wait_1HS_FDarkElf",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 3062,
+          "value": "wait_2HS_FDarkElf",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 3111,
+          "value": "wait_Dual_FDarkElf",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 3169,
+          "value": "wait_Pole_FDarkElf",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 3216,
+          "value": "wait_Bow_FDarkElf",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 3260,
+          "value": "wait_Hand_FDarkElf",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.MDwarf",
+      "meshType": 4,
+      "section": "MDwarf",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 5096,
+          "value": "wait_Hand_MDwarf",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 5139,
+          "value": "wait_1HS_MDwarf",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 5189,
+          "value": "wait_2HS_MDwarf",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 5238,
+          "value": "wait_Dual_MDwarf",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 5299,
+          "value": "wait_Pole_MDwarf",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 5346,
+          "value": "wait_Bow_MDwarf",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 5390,
+          "value": "wait_Hand_MDwarf",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.FDwarf",
+      "meshType": 5,
+      "section": "FDwarf",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 5520,
+          "value": "wait_Hand_FDwarf",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 5563,
+          "value": "wait_1HS_FDwarf",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 5613,
+          "value": "wait_2HS_FDwarf",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 5662,
+          "value": "wait_Dual_FDwarf",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 5723,
+          "value": "wait_Pole_FDwarf",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 5770,
+          "value": "wait_Bow_FDwarf",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 5814,
+          "value": "wait_Hand_FDwarf",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.MElf",
+      "meshType": 6,
+      "section": "MElf",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 1699,
+          "value": "wait_Hand_MElf",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 1742,
+          "value": "wait_1HS_MElf",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 1792,
+          "value": "wait_2HS_MElf",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 1841,
+          "value": "wait_Dual_MElf",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 1902,
+          "value": "wait_Pole_MElf",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 1949,
+          "value": "wait_Bow_MElf",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 1993,
+          "value": "wait_Hand_MElf",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.FElf",
+      "meshType": 7,
+      "section": "FElf",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 2123,
+          "value": "wait_Hand_FElf",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 2166,
+          "value": "wait_1HS_FElf",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 2216,
+          "value": "wait_2HS_FElf",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 2265,
+          "value": "wait_Dual_FElf",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 2326,
+          "value": "wait_Pole_FElf",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 2373,
+          "value": "wait_Bow_FElf",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 2417,
+          "value": "wait_Hand_FElf",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.MMagic",
+      "meshType": 8,
+      "section": "MMagic",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 859,
+          "value": "wait_Hand_MMagic",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 902,
+          "value": "wait_1HS_MMagic",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 952,
+          "value": "wait_2HS_MMagic",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 1001,
+          "value": "wait_Dual_MMagic",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 1058,
+          "value": "wait_Pole_MMagic",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 1105,
+          "value": "wait_Bow_MMagic",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 1149,
+          "value": "wait_Hand_MMagic",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.FMagic",
+      "meshType": 9,
+      "section": "FMagic",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 1279,
+          "value": "wait_Hand_FMagic",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 1322,
+          "value": "wait_1HS_FMagic",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 1372,
+          "value": "wait_2HS_FMagic",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 1421,
+          "value": "wait_Dual_FMagic",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 1478,
+          "value": "wait_Pole_FMagic",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 1525,
+          "value": "wait_Bow_FMagic",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 1569,
+          "value": "wait_Hand_FMagic",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.MOrc",
+      "meshType": 10,
+      "section": "MOrc",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 3390,
+          "value": "wait_Hand_MOrc",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 3433,
+          "value": "wait_1HS_MOrc",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 3483,
+          "value": "wait_2HS_MOrc",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 3532,
+          "value": "wait_Dual_MOrc",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 3593,
+          "value": "wait_Pole_MOrc",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 3640,
+          "value": "wait_Bow_MOrc",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 3684,
+          "value": "wait_Hand_MOrc",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.FOrc",
+      "meshType": 11,
+      "section": "FOrc",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 3818,
+          "value": "wait_Hand_FOrc",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 3861,
+          "value": "wait_1HS_FOrc",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 3911,
+          "value": "wait_2HS_FOrc",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 3960,
+          "value": "wait_Dual_FOrc",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 4021,
+          "value": "wait_Pole_FOrc",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 4068,
+          "value": "wait_Bow_FOrc",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 4112,
+          "value": "wait_Hand_FOrc",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.MShaman",
+      "meshType": 12,
+      "section": "MShaman",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 4246,
+          "value": "wait_Hand_MShaman",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 4289,
+          "value": "wait_1HS_MShaman",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 4339,
+          "value": "wait_2HS_MShaman",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 4388,
+          "value": "wait_Dual_MShaman",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 4449,
+          "value": "wait_Pole_MShaman",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 4496,
+          "value": "wait_Bow_MShaman",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 4540,
+          "value": "wait_Hand_MShaman",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    },
+    {
+      "class": "LineageWarrior.FShaman",
+      "meshType": 13,
+      "section": "FShaman",
+      "waitAnimNames": [
+        {
+          "index": 0,
+          "line": 4671,
+          "value": "wait_Hand_FShaman",
+          "weaponType": "WT_HAND"
+        },
+        {
+          "index": 1,
+          "line": 4714,
+          "value": "wait_1HS_FShaman",
+          "weaponType": "WT_1HS"
+        },
+        {
+          "index": 2,
+          "line": 4764,
+          "value": "wait_2HS_FShaman",
+          "weaponType": "WT_2HS"
+        },
+        {
+          "index": 3,
+          "line": 4813,
+          "value": "wait_Dual_FShaman",
+          "weaponType": "WT_DUAL"
+        },
+        {
+          "index": 4,
+          "line": 4874,
+          "value": "wait_Pole_FShaman",
+          "weaponType": "WT_POLE"
+        },
+        {
+          "index": 5,
+          "line": 4921,
+          "value": "wait_Bow_FShaman",
+          "weaponType": "WT_BOW"
+        },
+        {
+          "index": 6,
+          "unresolved": "no WaitAnimName key of this weapon type in the class section",
+          "value": null,
+          "weaponType": "WT_THROW"
+        },
+        {
+          "index": 7,
+          "line": 4965,
+          "value": "wait_Hand_FShaman",
+          "weaponType": "WT_DUALFIST"
+        }
+      ]
+    }
+  ],
+  "rootMeshAnimation": {
+    "fact": "The root mesh's animation is bound through 0x106b3990 -> SetSkelAnim 0x106b38f0 (gates: instance non-null, no animation yet, mesh+0x248 non-null). Body sub-instances (USubSkeletalMeshInstance) skin with the owning actor's root bone transforms (0x106c5070); a UExtraSkeletalMeshInstance uses its own.",
+    "replayedPairs": [
+      {
+        "boneCount": 76,
+        "package": "Fighter",
+        "rootAnimation": "Fighter.FFighter_anim"
+      },
+      {
+        "boneCount": 82,
+        "package": "DarkElf",
+        "rootAnimation": "DarkElf.MDarkElf_anim"
+      },
+      {
+        "boneCount": 90,
+        "package": "Magic",
+        "rootAnimation": "Magic.FMagic_anim"
+      },
+      {
+        "boneCount": 109,
+        "package": "Shaman",
+        "rootAnimation": "Shaman.FShaman_anim"
+      }
+    ]
+  },
+  "schemaVersion": 1,
+  "source": {
+    "path": "system/lineagewarrior.int",
+    "sha256": "8d951cbccd010a849f05df827d7065ec5f9372245953e71f3e88344cf8189485"
+  },
+  "verification": {
+    "facts": {
+      "date": "2026-11-14",
+      "file": "verified-characters.md",
+      "sha256": "19fc5ff025305d19e9628fcb211b206fb26d928d7c4f05cf256fdc72cf530fb6",
+      "workflow": "wf_f33ef63c-301"
+    },
+    "idleReplay": {
+      "data": {
+        "checked": 187,
+        "matched": 187
+      },
+      "instructions": {
+        "checked": 145,
+        "matched": 145
+      },
+      "path": "q2-phase3-replay/replay-result.json",
+      "sha256": "0b3e117734392bc5989f48ebf7c65d6d2a8a7ff83128d1338eff50c04a478a1b"
+    },
+    "rootMeshAnimationReplay": {
+      "data": {
+        "checked": 194,
+        "matched": 194
+      },
+      "instructions": {
+        "checked": 339,
+        "matched": 339
+      },
+      "path": "q3-phase3-replay/replay-result.json",
+      "sha256": "b8c23d0eb81b966baa017aea369c69a8b5a1964c382713890a2baf76c61c7e3a"
+    }
+  },
+  "weaponTypes": [
+    "WT_HAND",
+    "WT_1HS",
+    "WT_2HS",
+    "WT_DUAL",
+    "WT_POLE",
+    "WT_BOW",
+    "WT_THROW",
+    "WT_DUALFIST"
+  ]
+}

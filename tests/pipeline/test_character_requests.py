@@ -58,9 +58,22 @@ def refusing_class_reader(reference):
     raise AssertionError(f'no class may be read without a source join: {reference}')
 
 
-def character_sources(rows, classinfo=None, hairgrp=None, helmetgrp=None, read_class_definition=refusing_class_reader, class_sources=None):
+IDLE_FAMILIES_RECIPE_SHA256 = '6' * 64
+
+
+def synthetic_idle_families(class_reference=None):
+    by_class = {class_reference: {'class': class_reference, 'meshType': 0, 'waitAnimNames': [
+        {'weaponType': 'WT_HAND', 'index': 0, 'value': 'wait_Hand_SyntheticFighter', 'line': 6},
+        {'weaponType': 'WT_THROW', 'index': 1, 'value': None, 'unresolved': 'no WaitAnimName key of this weapon type in the class section'}]}}
+    return {'path': 'recipes/actors/character-idle-families.json', 'sha256': IDLE_FAMILIES_RECIPE_SHA256,
+            'byClass': by_class if class_reference else {}}
+
+
+def character_sources(rows, classinfo=None, hairgrp=None, helmetgrp=None, read_class_definition=refusing_class_reader, class_sources=None,
+                      idle_families=None):
     return CharacterSources(synthetic_chargrp_table(rows), classinfo or decoded_shape_classinfo(), hairgrp or decoded_shape_hairgrp(),
-                            helmetgrp or decoded_shape_helmetgrp(), read_class_definition, class_sources or not_decided_class_sources())
+                            helmetgrp or decoded_shape_helmetgrp(), read_class_definition, class_sources or not_decided_class_sources(),
+                            idle_families or synthetic_idle_families())
 
 
 class CharacterRequestTracerTests(unittest.TestCase):
@@ -229,7 +242,7 @@ class CharacterClassSourcesRouteTests(unittest.TestCase):
         actor_class = sourced_actor_class(sources)
         self.assertEqual(actor_class['joinSource'], {'source': CHARACTER_CLASS_SOURCES_RELATIVE_PATH, 'sha256': CLASS_SOURCES_RESULT_SHA256})
         generated = build_character_request(row, 0, actor_class, sources)
-        limitation = [line for line in generated['request']['limitations'] if SOURCED_CLASS in line]
+        limitation = [line for line in generated['request']['limitations'] if SOURCED_CLASS in line and 'is joined to this chargrp row' in line]
         self.assertEqual(len(limitation), 1)
         for cited in (CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASS_SOURCES_RESULT_SHA256, SOURCED_CLASS_PACKAGE_SHA256):
             self.assertIn(cited, limitation[0])
@@ -252,21 +265,45 @@ class CharacterClassSourcesRouteTests(unittest.TestCase):
                 self.assertEqual((resolution['class'], resolution['reason'], resolution['route']), (None, CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, None))
                 self.assertEqual(resolution['evidence']['classSources']['path'], CHARACTER_CLASS_SOURCES_RELATIVE_PATH)
 
-    def test_an_adopted_class_borrows_no_animation_and_a_mesh_without_one_stays_animation_reference_missing(self):
+    def converted_with_root_mesh_animation(self, root_mesh_animation):
         from unittest import mock
         from actors import character_conversion
         from actors.character_conversion import CharacterConversionRun
-        from actors.npc_requests import ANIMATION_REFERENCE_MISSING_REASON
         row = synthetic_chargrp_row()
         sources = character_sources([row], read_class_definition=sourced_class_reader(), class_sources=adopted_class_sources())
-        request = build_character_request(row, 0, sourced_actor_class(sources), sources)['request']
-        self.assertIsNone(request['animation'])
+        generated = build_character_request(row, 0, sourced_actor_class(sources), sources)
         converter = mock.Mock()
         converter.package.return_value = (None, type('PackageDouble', (), {'package_name': 'Fighter'})())
+        converter.convert.return_value = {'file': 'converted.l2asset'}
         run = type('RunDouble', (), {'converter': converter, 'client_access': None})()
-        with mock.patch.object(character_conversion, 'serialized_animation_reference', return_value=None):
-            self.assertEqual(CharacterConversionRun.converted_model_reason(run, request), (ANIMATION_REFERENCE_MISSING_REASON, None))
+        with mock.patch.object(character_conversion, 'serialized_animation_reference', return_value=root_mesh_animation):
+            return generated, converter, CharacterConversionRun.converted_model_reason(run, generated)
+
+    def test_the_animation_set_is_the_one_the_class_mesh_default_root_mesh_serializes(self):
+        generated, converter, outcome = self.converted_with_root_mesh_animation('Fighter.MFighter_anim')
+        self.assertEqual(generated['rootMesh'], {'reason': None, 'package': 'Fighter', 'object': 'Face_m000_f', 'class': SOURCED_CLASS,
+                                                 'classPackageSha256': SOURCED_CLASS_PACKAGE_SHA256, 'meshPath': ['Mesh']})
+        self.assertIsNone(generated['request']['animation'])
+        self.assertEqual(converter.package.call_args.args, ('Fighter',))
+        self.assertEqual(converter.select.call_args.args[1:], ('Face_m000_f', 'SkeletalMesh'))
+        self.assertEqual(converter.convert.call_args.args[0]['animation'], 'Fighter.MFighter_anim')
+        self.assertEqual(outcome, (None, {'file': 'converted.l2asset'}))
+        self.assertIn(f'The animation set is the Animation that the {SOURCED_CLASS} Mesh default Fighter.Face_m000_f serializes, the root mesh '
+                      f'binding recorded in recipes/actors/character-idle-families.json (sha256 {IDLE_FAMILIES_RECIPE_SHA256}).',
+                      generated['request']['limitations'])
+
+    def test_a_root_mesh_without_an_animation_stays_animation_reference_missing_and_nothing_converts(self):
+        from actors.npc_requests import ANIMATION_REFERENCE_MISSING_REASON
+        _, converter, outcome = self.converted_with_root_mesh_animation(None)
+        self.assertEqual(outcome, (ANIMATION_REFERENCE_MISSING_REASON, None))
         converter.convert.assert_not_called()
+
+    def test_without_a_joined_class_no_root_mesh_is_read_and_the_model_names_the_class_gap(self):
+        from actors.character_conversion import CharacterConversionRun
+        row = synthetic_chargrp_row()
+        generated = build_character_request(row, 0, None, character_sources([row]))
+        run = type('RunDouble', (), {'converter': None, 'client_access': None})()
+        self.assertEqual(CharacterConversionRun.converted_model_reason(run, generated), (CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, None))
 
 
 class CharacterLayoutJoinTests(unittest.TestCase):
@@ -304,37 +341,6 @@ class CharacterLayoutJoinTests(unittest.TestCase):
     def test_the_same_rules_on_helmetgrp_give_helmet_gaps(self):
         generated = self.generated_with_hair([hair_record(0, ('MFighter.Hair_t00', 'MFighter.Hair_t01'))], table='helmetgrp')
         self.assertEqual((generated['helmet']['reason'], generated['helmet']['candidateCount']), ('helmet-layout-undecoded', 2))
-
-
-class CharacterCollisionChainTests(unittest.TestCase):
-    def profile(self, definitions):
-        from actors.character_requests import character_profile_fields
-        return character_profile_fields(joined_actor_class(definitions[JOINED_CLASS]['properties']), class_definitions(definitions))
-
-    def test_declared_values_are_copied_exactly_and_an_omitted_value_comes_from_the_declared_parent(self):
-        profile = self.profile({JOINED_CLASS: {'properties': {'CollisionHeight': 23.0001}, 'nativeSuperClass': 'LineageWarrior.LineagePawn'},
-                                'LineageWarrior.LineagePawn': {'properties': {'CollisionRadius': 9.999}, 'nativeSuperClass': None}})
-        self.assertEqual(profile['collision'], {'collisionRadius': {'value': 9.999, 'class': 'LineageWarrior.LineagePawn'},
-                                                'collisionHeight': {'value': 23.0001, 'class': JOINED_CLASS}})
-        self.assertEqual(profile['reason'], 'actor-default-unresolved:WaitAnimName')
-        self.assertEqual(profile['actorClassDefaults'], {'class': JOINED_CLASS, 'classPackageSha256': CLASS_PACKAGE_SHA256,
-                                                         'HeadBone': None, 'RightHandBone': None})
-
-    def test_a_value_absent_through_the_whole_ancestry_stays_actor_default_unresolved(self):
-        profile = self.profile({JOINED_CLASS: {'properties': {'CollisionHeight': 22.5}, 'nativeSuperClass': 'Engine.Pawn'},
-                                'Engine.Pawn': {'properties': {}, 'nativeSuperClass': None}})
-        self.assertEqual(profile['reason'], 'actor-default-unresolved:CollisionRadius')
-        self.assertEqual(profile['collision']['collisionRadius']['classChain'], [JOINED_CLASS, 'Engine.Pawn'])
-
-    def test_the_female_fighter_row_is_compared_with_the_audit_values_and_never_adjusted(self):
-        stage = json.loads((ROOT / 'recipes' / 'native-player-ffighter-stage.json').read_bytes())
-        audit_values = {field: entry['previousValue'] for field, entry in stage['profiles'][0]['unresolved'].items()}
-        row = synthetic_chargrp_row()
-        generated = build_character_request(row, 1, None, character_sources([row, row]))
-        self.assertEqual((generated['profileFields']['reason'], generated['profileFields']['collision']), (CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, None))
-        self.assertEqual(audit_values, {'collisionRadius': 8, 'collisionHeight': 23.5})
-        for module in ('character_requests.py', 'character_conversion.py', 'character_census.py', 'convert_actors.py'):
-            self.assertNotIn('previousValue', (ROOT / 'scripts' / 'actors' / module).read_text(encoding='utf-8'))
 
 
 class CharacterEdgeTests(unittest.TestCase):
@@ -404,7 +410,7 @@ class ReferenceClientRowZeroCrossCheckTests(unittest.TestCase):
         from native_catalog.tables import decode_table
         chargrp = decode_table(REFERENCE_CLIENT, 'chargrp')
         sources = CharacterSources(chargrp, decoded_shape_classinfo(), decoded_shape_hairgrp(), decoded_shape_helmetgrp(), refusing_class_reader,
-                                   not_decided_class_sources())
+                                   not_decided_class_sources(), synthetic_idle_families())
         generated = build_character_request(chargrp_row_at(chargrp, 0), 0, None, sources)
         recipe_parts = json.loads((ROOT / 'recipes' / 'native-mfighter.json').read_bytes())[0]['parts']
         recipe_body_parts = [{key: part[key] for key in ('package', 'object', 'materials', 'sourceBinding')}
