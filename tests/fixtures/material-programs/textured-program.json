@@ -65,39 +65,6 @@
           "value": 256
         },
         {
-          "declaredType": "const int",
-          "declaringClass": "Engine.BitmapMaterial",
-          "field": "VSize",
-          "provenance": "ue-zero",
-          "status": "typed",
-          "value": null,
-          "valueDeclaringClass": "Engine.BitmapMaterial"
-        },
-        {
-          "declaredType": "BitmapMaterial.ETexClampMode",
-          "declaringClass": "Engine.BitmapMaterial",
-          "field": "UClampMode",
-          "provenance": "ue-zero",
-          "status": "typed",
-          "value": {
-            "name": "TC_Wrap",
-            "ordinal": 0
-          },
-          "valueDeclaringClass": "Engine.BitmapMaterial"
-        },
-        {
-          "declaredType": "BitmapMaterial.ETexClampMode",
-          "declaringClass": "Engine.BitmapMaterial",
-          "field": "VClampMode",
-          "provenance": "ue-zero",
-          "status": "typed",
-          "value": {
-            "name": "TC_Wrap",
-            "ordinal": 0
-          },
-          "valueDeclaringClass": "Engine.BitmapMaterial"
-        },
-        {
           "declaredType": "BitmapMaterial.ETextureFormat",
           "declaringClass": "Engine.BitmapMaterial",
           "field": "Format",
@@ -129,15 +96,6 @@
           "declaredType": "Texture",
           "declaringClass": "Engine.Texture",
           "field": "AnimNext",
-          "provenance": "ue-zero",
-          "status": "typed",
-          "value": null,
-          "valueDeclaringClass": "Engine.Texture"
-        },
-        {
-          "declaredType": "float",
-          "declaringClass": "Engine.Texture",
-          "field": "MaxFrameRate",
           "provenance": "ue-zero",
           "status": "typed",
           "value": null,
