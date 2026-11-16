@@ -33,22 +33,25 @@ afterEach(() => {
   }
 });
 
-describe("Modulate2X lighting", () => {
-  it("samples the lightmap on its own coordinates and multiplies before fog only when the material is lightmapped", () => {
-    expect(LIGHTING_CONSTANTS.modulate2x).toMatchObject({ status: "unconfirmed", runtimeDefault: 2 });
+describe("lightmap colour operation", () => {
+  it("samples the lightmap on its own coordinates and scales it by the D3D operation before fog only when the material is lightmapped", () => {
+    expect(LIGHTING_CONSTANTS.lightmapModulateScale).toMatchObject({ status: "confirmed-interlude", runtimeDefault: 1 });
+    expect(LIGHTING_CONSTANTS.lightmapModulate2xScale).toMatchObject({ status: "unconfirmed", runtimeDefault: 2 });
     const plan = swatchMaterial().plan as CompiledMaterialStagePlan;
-    const lightmapped = buildFragmentChain(plan, "lightmap"), unlit = buildFragmentChain(plan, "unlit");
-    expect(lightmapped.samplers).toContain(lightmapSamplerName);
-    expect(lightmapped.fragmentSource).toContain(`varying vec2 ${lightmapCoordinatesVaryingName};`);
-    expect(lightmapped.fragmentSource).toContain(`* 2.0 * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`);
+    const modulated = buildFragmentChain(plan, "lightmap-modulate"), doubled = buildFragmentChain(plan, "lightmap-modulate2x");
+    const unlit = buildFragmentChain(plan, "unlit");
+    expect(doubled.samplers).toContain(lightmapSamplerName);
+    expect(doubled.fragmentSource).toContain(`varying vec2 ${lightmapCoordinatesVaryingName};`);
+    expect(doubled.fragmentSource).toContain(`* 2.0 * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`);
+    expect(modulated.fragmentSource).toContain(`* 1.0 * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`);
     expect(unlit.samplers).not.toContain(lightmapSamplerName);
     expect(unlit.fragmentSource).not.toContain(lightmapSamplerName);
   });
 
   it("binds a lightmap texture on a lightmapped material and refuses one on an unlit material", () => {
     const scene = nullScene();
-    const lightmapped = createNativeMaterial(scene, swatchMaterial(), { sessionSeed: 1, lighting: "lightmap" });
-    expect(lightmapped.inspect()).toMatchObject({ status: "compiled", lighting: "lightmap", lightmapBound: false });
+    const lightmapped = createNativeMaterial(scene, swatchMaterial(), { sessionSeed: 1, lighting: "lightmap-modulate2x" });
+    expect(lightmapped.inspect()).toMatchObject({ status: "compiled", lighting: "lightmap-modulate2x", lightmapBound: false });
     lightmapped.setLightmap(RawTexture.CreateRGBATexture(new Uint8Array(16).fill(128), 2, 2, scene));
     expect(lightmapped.inspect().lightmapBound).toBe(true);
     const unlit = createNativeMaterial(scene, swatchMaterial(), { sessionSeed: 1, lighting: "unlit" });

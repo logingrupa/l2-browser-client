@@ -49,7 +49,7 @@ describe("attachNativeTileSystems", () => {
     data.applyToMesh(walls, false);
     return { chunkId: "chunk-0-0", instances, terrainMeshes: [],
       bspChunk: { chunkId: "chunk-0-0", resource: "/l2/bsp/walls", meshes: [walls],
-        sections: [{ primitive: 0, material: "fixture", unlit: false, lightmap: null, outdoor: false, translucent: true }],
+        sections: [{ primitive: 0, material: "fixture", unlit: false, lightmap: null, nativeRenderSection: 0, translucent: true }],
         nodeRanges: [{ node: 2, primitive: 0, firstIndex: 0, indexCount: 3 }, { node: 3, primitive: 0, firstIndex: 3, indexCount: 3 }] } };
   }
 

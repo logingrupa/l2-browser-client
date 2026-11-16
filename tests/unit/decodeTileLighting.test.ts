@@ -8,19 +8,21 @@ import { FOG_DISABLED, type LoadedNativeMaterial } from "../../src/materials/ue2
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import type { NativeBspNodeRange, NativeBspSection } from "../../src/scene/world/nativeBspResources";
-import { bindTileLighting, type TileLightingBspChunk } from "../../src/scene/world/lighting/bindTileLighting";
-import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
+import { bindTileLighting, lightmapColourOperationOf, type TileLightingBspChunk } from "../../src/scene/world/lighting/bindTileLighting";
+import { decodeTileLighting, type TileLightingModel } from "../../src/scene/world/lighting/decodeTileLighting";
 import { decodeDxt1Texels, lightmapPageAtHour } from "../../src/scene/world/lighting/lightmapPages";
-import { planLightmapSections, type LightmapSectionChunk } from "../../src/scene/world/lighting/tileLightmapSections";
+import {
+  nativeRenderSectionUnstagedReason, planLightmapSections, sectionSunAffectUnresolvedReason, type LightmapSectionChunk,
+} from "../../src/scene/world/lighting/tileLightmapSections";
 import type { WorldEnvironmentSample } from "../../src/scene/world/worldTimeOfDay";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
-import { replaceArray, tileLightingArrays, tileLightingModel, tileLightingPayload } from "../support/tileLightingFixture";
+import { replaceArray, tileLightingArrays, tileLightingModel, tileLightingPayload, withoutArray } from "../support/tileLightingFixture";
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
 
 const sections: NativeBspSection[] = [
-  { primitive: 0, material: "Synthetic.Lit", unlit: false, lightmap: 0, outdoor: true, translucent: false },
-  { primitive: 1, material: "Synthetic.Indoor", unlit: false, lightmap: 1, outdoor: false, translucent: false },
-  { primitive: 2, material: "Synthetic.Unlit", unlit: true, lightmap: null, outdoor: true, translucent: false },
+  { primitive: 0, material: "Synthetic.Lit", unlit: false, lightmap: 0, nativeRenderSection: 0, translucent: false },
+  { primitive: 1, material: "Synthetic.Indoor", unlit: false, lightmap: 1, nativeRenderSection: 1, translucent: false },
+  { primitive: 2, material: "Synthetic.Unlit", unlit: true, lightmap: null, nativeRenderSection: 2, translucent: false },
 ];
 const nodeRanges: NativeBspNodeRange[] = [
   { node: 10, primitive: 0, firstIndex: 0, indexCount: 6 }, { node: 11, primitive: 1, firstIndex: 0, indexCount: 3 },
@@ -106,11 +108,26 @@ describe("lightmap pages by hour", () => {
 
 describe("planLightmapSections", () => {
   it("places each node range's lightmap coordinates on its own vertices and leaves unlit sections unlit", () => {
-    const [outdoor, indoor, unlit] = planLightmapSections(tileLightingModel(), [plainChunk()]);
-    expect(outdoor).toMatchObject({ kind: "lightmapped", lightmapTexture: 0, outdoor: true });
-    expect(Array.from(outdoor?.kind === "lightmapped" ? outdoor.lightmapCoordinates : [])).toEqual([0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75]);
-    expect(indoor).toMatchObject({ kind: "lightmapped", lightmapTexture: 1, outdoor: false });
+    const [sunAffected, sheltered, unlit] = planLightmapSections(tileLightingModel(), [plainChunk()]);
+    expect(sunAffected).toMatchObject({ kind: "lightmapped", lightmapTexture: 0, nativeRenderSection: 0, sunAffect: true });
+    expect(Array.from(sunAffected?.kind === "lightmapped" ? sunAffected.lightmapCoordinates : [])).toEqual([0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75]);
+    expect(sheltered).toMatchObject({ kind: "lightmapped", lightmapTexture: 1, nativeRenderSection: 1, sunAffect: false });
     expect(unlit).toEqual({ kind: "unlit", chunkId: "chunk-0-0", primitive: 2, reason: "section-unlit" });
+  });
+
+  it.each<[string, () => TileLightingModel, LightmapSectionChunk, string]>([
+    ["a section whose native render section sun affect is unresolved",
+      () => decoded(replaceArray(tileLightingArrays(), "LMSC.sunAffect", [-1, 0, 0])), plainChunk(), sectionSunAffectUnresolvedReason],
+    ["a payload converted before LMSC.sunAffect", () => decoded(withoutArray(tileLightingArrays(), "LMSC.sunAffect")), plainChunk(),
+      "hourly-lighting-input-unstaged:LMSC.sunAffect"],
+    ["a payload converted before the page footer", () => decoded(withoutArray(tileLightingArrays(), "LMPG.compressedRevision")), plainChunk(),
+      "hourly-lighting-input-unstaged:LMPG.compressedRevision"],
+    ["a page whose revision differs from its compressed revision",
+      () => decoded(replaceArray(tileLightingArrays(), "LMPG.compressedRevision", [3, 3, 4, 3, 3, 3, 3, 3, 3])), plainChunk(), "bsp-live-cache-state"],
+    ["a chunk BSP keyed by the outdoor class", tileLightingModel, { ...plainChunk(), sections: sections.map(section => ({ ...section, nativeRenderSection: null })) },
+      nativeRenderSectionUnstagedReason],
+  ])("turns %s into a named gap instead of a lightmap", (_, model, chunk, reason) => {
+    expect(planLightmapSections(model(), [chunk])[0]).toMatchObject({ kind: "gap", reason });
   });
 
   it("names a node range the lighting resource holds differently from the chunk BSP", () => {
@@ -150,6 +167,10 @@ describe("bindTileLighting", () => {
     const pagesAtThirteen = binding.inspection().sections.map(section => section.page);
     expect(pagesAtOne).toEqual([0, 8, null]);
     expect(pagesAtThirteen).toEqual([4, 8, null]);
+    expect(binding.inspection().textureSlots).toEqual([{ texture: 0, childCount: 8, sunAffectedSlot: 4 }, { texture: 1, childCount: 1, sunAffectedSlot: 0 }]);
+    expect(binding.inspection()).toMatchObject({ sunAffectedSectionCount: 1, lightmapUpload: { reason: "lightmap-bc1-cpu-decode" } });
+    expect(binding.inspection().sections.map(section => [section.sunAffect, section.colourOperation?.operation ?? null, section.reasons])).toEqual([
+      [true, "global-modulation", ["d3d-device-live-state"]], [false, "global-modulation", ["d3d-device-live-state"]], [null, null, ["section-unlit"]]]);
     expect(binding.inspection().lightmapHourGap).toBeNull();
     const boundLightmapPages = () => meshes[0]!.material!.getActiveTextures().map(texture => texture.name).filter(name => name.startsWith("Tile lightmap page"));
     expect(boundLightmapPages()).toEqual(["Tile lightmap page 4"]);
@@ -172,6 +193,16 @@ describe("bindTileLighting", () => {
     expect(binding.inspection()).toMatchObject({ sectionCount: 3, lightmappedSectionCount: 2 });
     expect(meshes[0]!.material!.getClassName()).toBe("ShaderMaterial");
     binding.dispose();
+  });
+
+  it("takes D3DTOP_MODULATE for a ColorModifier root and the MODULATE2X image default with the live device gap otherwise", () => {
+    const swatchImage = textureImageFor(swatchTexturePng());
+    const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
+    const loaded: LoadedNativeMaterial = { materialId: "ef".repeat(32), program, plan: compileMaterialStagePlan(program), texturePixels: new Map() };
+    const colourModifierRoot: LoadedNativeMaterial = { ...loaded, program: { ...program,
+      nodes: program.nodes.map(node => node.id === program.root ? { ...node, class: "Engine.ColorModifier" } : node) } };
+    expect(lightmapColourOperationOf(colourModifierRoot)).toEqual({ operation: "modulate", opcode: 4 });
+    expect(lightmapColourOperationOf(loaded)).toEqual({ operation: "global-modulation", imageDefaultOpcode: 5, status: "unresolved", reason: "d3d-device-live-state" });
   });
 
   it("binds no material for a chunk removed while its program loads and keeps no sections for it", async () => {

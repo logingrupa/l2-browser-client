@@ -138,7 +138,7 @@ describe("Babylon targets and picking", () => {
   beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true; });
   afterEach(() => { scene.dispose(); engine.dispose(); });
 
-  const section = (translucent: boolean): NativeBspSection => ({ primitive: 0, material: "fixture", unlit: false, lightmap: null, outdoor: false, translucent });
+  const section = (translucent: boolean): NativeBspSection => ({ primitive: 0, material: "fixture", unlit: false, lightmap: null, nativeRenderSection: 0, translucent });
   const triangleMesh = (name: string, triangleCount: number) => {
     const mesh = new Mesh(name, scene), data = new VertexData();
     data.positions = Array.from({ length: triangleCount * 9 }, (_, index) => index);

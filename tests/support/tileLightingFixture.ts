@@ -2,6 +2,7 @@ import { decodeTileLighting, type TileLightingModel } from "../../src/scene/worl
 import { goldenTypedPayloadMetadata, writeTypedPayloadFixture, type TypedPayloadFixture, type TypedPayloadFixtureArray } from "./typedPayloadFixture";
 
 export const hourSetSlotCount = 8;
+const pageRevision = 3;
 const pageMipEdges = [8, 4] as const;
 const dxt1BytesOfEdge = (edge: number) => (edge / 4) * (edge / 4) * 8;
 
@@ -39,11 +40,14 @@ export function tileLightingArrays(records: unknown = tileLightingRecordsDocumen
   return [
     { name: "LMSC.lightmapTexture", type: "int32", values: [0, 1, -1] },
     { name: "LMSC.polyFlags", type: "uint32", values: [0, 0, 0] },
+    { name: "LMSC.sunAffect", type: "int32", values: [1, 0, 0] },
     { name: "LMTX.recordStart", type: "uint32", values: [0, 1, 2] },
     { name: "LMTX.pageStart", type: "uint32", values: [0, hourSetSlotCount, hourSetSlotCount + 1] },
     { name: "LMPG.texture", type: "int32", values: [...hourPages.map(() => 0), 1] },
     { name: "LMPG.slot", type: "int32", values: [...hourPages, 0] },
     { name: "LMPG.slotCount", type: "int32", values: [...hourPages.map(() => hourSetSlotCount), 1] },
+    { name: "LMPG.revision", type: "int32", values: pageColours.map(() => pageRevision) },
+    { name: "LMPG.compressedRevision", type: "int32", values: pageColours.map(() => pageRevision) },
     { name: "LMPG.mipEdge", type: "uint32", values: pageColours.flatMap(() => [...pageMipEdges]) },
     { name: "LMPG.texelStart", type: "uint32", values: texelStart },
     { name: "LMPG.texels", type: "uint8", values: texels },
@@ -67,6 +71,10 @@ export function tileLightingPayload(arrays: readonly TypedPayloadFixtureArray[] 
 export function tileLightingModel(): TileLightingModel {
   const payload = tileLightingPayload();
   return decodeTileLighting(payload.assetRecord, payload.payloadBytes);
+}
+
+export function withoutArray(arrays: readonly TypedPayloadFixtureArray[], name: string): TypedPayloadFixtureArray[] {
+  return arrays.filter(array => array.name !== name);
 }
 
 export function replaceArray(arrays: readonly TypedPayloadFixtureArray[], name: string, values: readonly number[]): TypedPayloadFixtureArray[] {

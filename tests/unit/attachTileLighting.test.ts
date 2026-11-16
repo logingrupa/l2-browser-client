@@ -37,8 +37,8 @@ function lightingTileManifest() {
 
 function lateBspChunk(scene: Scene): TileLightingBspChunk {
   const sections: NativeBspSection[] = [
-    { primitive: 0, material: "Synthetic.Lit", unlit: false, lightmap: 0, outdoor: true, translucent: false },
-    { primitive: 1, material: "Synthetic.Indoor", unlit: false, lightmap: 1, outdoor: false, translucent: false },
+    { primitive: 0, material: "Synthetic.Lit", unlit: false, lightmap: 0, nativeRenderSection: 0, translucent: false },
+    { primitive: 1, material: "Synthetic.Indoor", unlit: false, lightmap: 1, nativeRenderSection: 1, translucent: false },
   ];
   const primitiveIndices = [[0, 1, 2, 0, 2, 3], [0, 1, 2]];
   const meshes = primitiveIndices.map((indices, primitive) => {
