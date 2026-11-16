@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "kind": "hourly-lighting-db7-fixtures",
+  "source": {
+    "composition": {
+      "file": "hourly-lighting-composition.json",
+      "sha256": "f0a6eb0f106be32fa9b4b58f1ea5868eb3f5d5a394ef5c0696016ac8ab6dee3c",
+      "question": "DB-7 How the hour reaches final world lighting",
+      "generatedAt": "2026-11-16T21:15:03.3449696+02:00"
+    },
+    "replayResult": {
+      "file": "replay-result.json",
+      "sha256": "7a0b2e2f73e9b199e8f47a63773e3f7d82b9202b4c57a93741ad71c52206a787",
+      "checked": 32,
+      "matched": 32
+    }
+  },
+  "context": {
+    "tIntMapTimes": [
+      1.5,
+      4.5,
+      7.5,
+      10.5,
+      13.5,
+      16.5,
+      19.5,
+      22.5
+    ],
+    "tIntMapSample134x129": [
+      156,
+      156,
+      57,
+      156,
+      213,
+      213,
+      156,
+      57
+    ],
+    "nativePatchSamplesLocal6x1": [
+      156,
+      156,
+      57,
+      156,
+      213,
+      213,
+      156,
+      57
+    ],
+    "terrainLightMaskBit23": [
+      [
+        361,
+        0,
+        0
+      ]
+    ],
+    "staticHourlyVertex0Bits": [
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "staticHourlyItemsContiguous": true,
+    "atlasChildCounts": [
+      8,
+      1,
+      1,
+      8,
+      1,
+      1,
+      1,
+      1,
+      8
+    ]
+  },
+  "fixtures": [
+    {"index": 0, "hour": 0, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x7f", "input": {"mapIndices": [7, 0], "times": [22.5, 25.5], "weight": 0.5, "intensities": [57, 156], "truncatedIntensity": 106, "TerrainAmbientRGB": [51, 98, 122], "HSVTerrainLight": [0.0, 0.0, 0.0, 0.0], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [61, 49, 25, 255], "vertexRGB": [25, 49, 61]}},
+    {"index": 1, "hour": 6, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x7f", "input": {"mapIndices": [1, 2], "times": [4.5, 7.5], "weight": 0.5, "intensities": [156, 57], "truncatedIntensity": 106, "TerrainAmbientRGB": [100, 108, 132], "HSVTerrainLight": [0.278127521276474, 0.23720411956310272, 0.19324937462806702, 0.3921568691730499], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [76, 66, 64, 255], "vertexRGB": [64, 66, 76]}},
+    {"index": 2, "hour": 12, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x7f", "input": {"mapIndices": [3, 4], "times": [10.5, 13.5], "weight": 0.5, "intensities": [156, 213], "truncatedIntensity": 184, "TerrainAmbientRGB": [120, 120, 120], "HSVTerrainLight": [0.6441645622253418, 0.6441645622253418, 0.6441645622253418, 0.7843137383460999], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [119, 119, 119, 255], "vertexRGB": [119, 119, 119]}},
+    {"index": 3, "hour": 18, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x7f", "input": {"mapIndices": [5, 6], "times": [16.5, 19.5], "weight": 0.5, "intensities": [213, 156], "truncatedIntensity": 184, "TerrainAmbientRGB": [122, 107, 99], "HSVTerrainLight": [0.5153316855430603, 0.5153316855430603, 0.5153316855430603, 0.6274510025978088], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [96, 100, 108, 255], "vertexRGB": [108, 100, 96]}},
+    {"index": 4, "hour": 0, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x27f", "input": {"mapIndices": [7, 0], "times": [22.5, 25.5], "weight": 0.5, "intensities": [57, 156], "truncatedIntensity": 106, "TerrainAmbientRGB": [51, 98, 122], "HSVTerrainLight": [0.0, 0.0, 0.0, 0.0], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [61, 49, 25, 255], "vertexRGB": [25, 49, 61]}},
+    {"index": 5, "hour": 6, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x27f", "input": {"mapIndices": [1, 2], "times": [4.5, 7.5], "weight": 0.5, "intensities": [156, 57], "truncatedIntensity": 106, "TerrainAmbientRGB": [100, 108, 132], "HSVTerrainLight": [0.278127521276474, 0.23720411956310272, 0.19324937462806702, 0.3921568691730499], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [76, 66, 64, 255], "vertexRGB": [64, 66, 76]}},
+    {"index": 6, "hour": 12, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x27f", "input": {"mapIndices": [3, 4], "times": [10.5, 13.5], "weight": 0.5, "intensities": [156, 213], "truncatedIntensity": 184, "TerrainAmbientRGB": [120, 120, 120], "HSVTerrainLight": [0.6441645622253418, 0.6441645622253418, 0.6441645622253418, 0.7843137383460999], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [119, 119, 119, 255], "vertexRGB": [119, 119, 119]}},
+    {"index": 7, "hour": 18, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x27f", "input": {"mapIndices": [5, 6], "times": [16.5, 19.5], "weight": 0.5, "intensities": [213, 156], "truncatedIntensity": 184, "TerrainAmbientRGB": [122, 107, 99], "HSVTerrainLight": [0.5153316855430603, 0.5153316855430603, 0.5153316855430603, 0.6274510025978088], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [96, 100, 108, 255], "vertexRGB": [108, 100, 96]}},
+    {"index": 8, "hour": 0, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x37f", "input": {"mapIndices": [7, 0], "times": [22.5, 25.5], "weight": 0.5, "intensities": [57, 156], "truncatedIntensity": 106, "TerrainAmbientRGB": [51, 98, 122], "HSVTerrainLight": [0.0, 0.0, 0.0, 0.0], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [61, 49, 25, 255], "vertexRGB": [25, 49, 61]}},
+    {"index": 9, "hour": 6, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x37f", "input": {"mapIndices": [1, 2], "times": [4.5, 7.5], "weight": 0.5, "intensities": [156, 57], "truncatedIntensity": 106, "TerrainAmbientRGB": [100, 108, 132], "HSVTerrainLight": [0.278127521276474, 0.23720411956310272, 0.19324937462806702, 0.3921568691730499], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [76, 66, 64, 255], "vertexRGB": [64, 66, 76]}},
+    {"index": 10, "hour": 12, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x37f", "input": {"mapIndices": [3, 4], "times": [10.5, 13.5], "weight": 0.5, "intensities": [156, 213], "truncatedIntensity": 184, "TerrainAmbientRGB": [120, 120, 120], "HSVTerrainLight": [0.6441645622253418, 0.6441645622253418, 0.6441645622253418, 0.7843137383460999], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [119, 119, 119, 255], "vertexRGB": [119, 119, 119]}},
+    {"index": 11, "hour": 18, "surfaceType": "terrain", "object": "20_21.TerrainInfo0.TerrainSector136 vertex global(134,129)", "environmentType": 0, "controlWord": "0x37f", "input": {"mapIndices": [5, 6], "times": [16.5, 19.5], "weight": 0.5, "intensities": [213, 156], "truncatedIntensity": 184, "TerrainAmbientRGB": [122, 107, 99], "HSVTerrainLight": [0.5153316855430603, 0.5153316855430603, 0.5153316855430603, 0.6274510025978088], "staticLightBaseRGB": [0, 0, 0]}, "output": {"vertexBGRA": [96, 100, 108, 255], "vertexRGB": [108, 100, 96]}},
+    {"index": 12, "hour": 0, "surfaceType": "BSP", "object": "20_21.Model export1436, surface699, lightmap0, atlas0", "claimIds": ["bsp-discrete-selection", "bsp-map-counts", "bsp-ambient-build"], "input": {"environmentType": 0, "bSunAffect": true, "atlasCount": 8, "GetBSPAmbientColorRGB": [64, 88, 111]}, "output": {"selectedAtlasChild": 0, "textureFormatOrdinal": 3, "lightingTextureDimensions": [512, 512], "firstBlockBytesHex": "8729a721aaaaaaaa", "firstBlockUint16Endpoints": [10631, 8615], "firstBlockIndexBits": "0xaaaaaaaa", "rebuildAmbientRGB": [32, 44, 55]}},
+    {"index": 13, "hour": 6, "surfaceType": "BSP", "object": "20_21.Model export1436, surface699, lightmap0, atlas0", "claimIds": ["bsp-discrete-selection", "bsp-map-counts", "bsp-ambient-build"], "input": {"environmentType": 0, "bSunAffect": true, "atlasCount": 8, "GetBSPAmbientColorRGB": [64, 88, 111]}, "output": {"selectedAtlasChild": 2, "textureFormatOrdinal": 3, "lightingTextureDimensions": [512, 512], "firstBlockBytesHex": "8729a721aaaaaaaa", "firstBlockUint16Endpoints": [10631, 8615], "firstBlockIndexBits": "0xaaaaaaaa", "rebuildAmbientRGB": [32, 44, 55]}},
+    {"index": 14, "hour": 12, "surfaceType": "BSP", "object": "20_21.Model export1436, surface699, lightmap0, atlas0", "claimIds": ["bsp-discrete-selection", "bsp-map-counts", "bsp-ambient-build"], "input": {"environmentType": 0, "bSunAffect": true, "atlasCount": 8, "GetBSPAmbientColorRGB": [120, 120, 120]}, "output": {"selectedAtlasChild": 4, "textureFormatOrdinal": 3, "lightingTextureDimensions": [512, 512], "firstBlockBytesHex": "8729a721aaaaaaaa", "firstBlockUint16Endpoints": [10631, 8615], "firstBlockIndexBits": "0xaaaaaaaa", "rebuildAmbientRGB": [60, 60, 60]}},
+    {"index": 15, "hour": 18, "surfaceType": "BSP", "object": "20_21.Model export1436, surface699, lightmap0, atlas0", "claimIds": ["bsp-discrete-selection", "bsp-map-counts", "bsp-ambient-build"], "input": {"environmentType": 0, "bSunAffect": true, "atlasCount": 8, "GetBSPAmbientColorRGB": [120, 120, 120]}, "output": {"selectedAtlasChild": 6, "textureFormatOrdinal": 3, "lightingTextureDimensions": [512, 512], "firstBlockBytesHex": "8729a721aaaaaaaa", "firstBlockUint16Endpoints": [10631, 8615], "firstBlockIndexBits": "0xaaaaaaaa", "rebuildAmbientRGB": [60, 60, 60]}},
+    {"index": 16, "hour": 0, "surfaceType": "staticMesh", "object": "20_21.StaticMeshActor3190", "environmentType": 0, "status": "conditional-input-fixture", "claimIds": ["ma-static-ambient"], "input": {"hourlyAmbientRGB": [75, 103, 131], "hourlyStaticSunPlane": [0.0, 0.0, 0.0, 0.0], "assumedEnvironmentGate": true, "fixtureSource": "C:\\Lineage2-client-support\\rea-out\\20261113-roadmap\\day-night-work\\native-fixtures.json", "fixtureSourceSha256": "7f6a9a14df94dc93882a6dbfe0d0285c95e02253e13b1218ff7a52bff6b9219c"}, "output": {"ambientRGB": [37, 51, 65], "alpha": 255}},
+    {"index": 17, "hour": 0, "surfaceType": "staticMesh", "object": null, "status": "synthetic-arithmetic-fixture", "claimIds": ["ma-static-ambient"], "input": {"gate": "original actor+0x274==0 and LOD2", "ambientRGB": [75, 103, 131], "sunPlane": [0.0, 0.0, 0.0, 0.0]}, "output": {"ambientRGB": [37, 51, 65], "alpha": 255}},
+    {"index": 18, "hour": 0, "surfaceType": "actor", "object": null, "environmentType": 0, "status": "conditional-input-fixture", "claimIds": ["ma-actor-ambient"], "input": {"hourlyAmbientRGB": [75, 103, 131], "hourlyStaticSunPlane": null, "assumedEnvironmentGate": true, "fixtureSource": "C:\\Lineage2-client-support\\rea-out\\20261113-roadmap\\day-night-work\\native-fixtures.json", "fixtureSourceSha256": "7f6a9a14df94dc93882a6dbfe0d0285c95e02253e13b1218ff7a52bff6b9219c"}, "output": {"ambientRGB": [37, 51, 65], "alpha": 255}},
+    {"index": 19, "hour": 6, "surfaceType": "staticMesh", "object": "20_21.StaticMeshActor3190", "environmentType": 0, "status": "conditional-input-fixture", "claimIds": ["ma-static-ambient"], "input": {"hourlyAmbientRGB": [71, 77, 95], "hourlyStaticSunPlane": [0.278127521276474, 0.23720411956310272, 0.19324937462806702, 0.3921568691730499], "assumedEnvironmentGate": true, "fixtureSource": "C:\\Lineage2-client-support\\rea-out\\20261113-roadmap\\day-night-work\\native-fixtures.json", "fixtureSourceSha256": "7f6a9a14df94dc93882a6dbfe0d0285c95e02253e13b1218ff7a52bff6b9219c"}, "output": {"ambientRGB": [35, 38, 47], "alpha": 255}},
+    {"index": 20, "hour": 6, "surfaceType": "staticMesh", "object": null, "status": "synthetic-arithmetic-fixture", "claimIds": ["ma-static-ambient"], "input": {"gate": "original actor+0x274==0 and LOD2", "ambientRGB": [71, 77, 95], "sunPlane": [0.278127521276474, 0.23720411956310272, 0.19324937462806702, 0.3921568691730499]}, "output": {"ambientRGB": [43, 45, 53], "alpha": 255}},
+    {"index": 21, "hour": 6, "surfaceType": "actor", "object": null, "environmentType": 0, "status": "conditional-input-fixture", "claimIds": ["ma-actor-ambient"], "input": {"hourlyAmbientRGB": [90, 97, 120], "hourlyStaticSunPlane": null, "assumedEnvironmentGate": true, "fixtureSource": "C:\\Lineage2-client-support\\rea-out\\20261113-roadmap\\day-night-work\\native-fixtures.json", "fixtureSourceSha256": "7f6a9a14df94dc93882a6dbfe0d0285c95e02253e13b1218ff7a52bff6b9219c"}, "output": {"ambientRGB": [45, 48, 60], "alpha": 255}},
+    {"index": 22, "hour": 12, "surfaceType": "staticMesh", "object": "20_21.StaticMeshActor3190", "environmentType": 0, "status": "conditional-input-fixture", "claimIds": ["ma-static-ambient"], "input": {"hourlyAmbientRGB": [120, 120, 120], "hourlyStaticSunPlane": [0.6119563579559326, 0.6119563579559326, 0.6119563579559326, 0.7450980544090271], "assumedEnvironmentGate": true, "fixtureSource": "C:\\Lineage2-client-support\\rea-out\\20261113-roadmap\\day-night-work\\native-fixtures.json", "fixtureSourceSha256": "7f6a9a14df94dc93882a6dbfe0d0285c95e02253e13b1218ff7a52bff6b9219c"}, "output": {"ambientRGB": [60, 60, 60], "alpha": 255}},
+    {"index": 23, "hour": 12, "surfaceType": "staticMesh", "object": null, "status": "synthetic-arithmetic-fixture", "claimIds": ["ma-static-ambient"], "input": {"gate": "original actor+0x274==0 and LOD2", "ambientRGB": [120, 120, 120], "sunPlane": [0.6119563579559326, 0.6119563579559326, 0.6119563579559326, 0.7450980544090271]}, "output": {"ambientRGB": [79, 79, 79], "alpha": 255}},
+    {"index": 24, "hour": 12, "surfaceType": "actor", "object": null, "environmentType": 0, "status": "conditional-input-fixture", "claimIds": ["ma-actor-ambient"], "input": {"hourlyAmbientRGB": [150, 150, 150], "hourlyStaticSunPlane": null, "assumedEnvironmentGate": true, "fixtureSource": "C:\\Lineage2-client-support\\rea-out\\20261113-roadmap\\day-night-work\\native-fixtures.json", "fixtureSourceSha256": "7f6a9a14df94dc93882a6dbfe0d0285c95e02253e13b1218ff7a52bff6b9219c"}, "output": {"ambientRGB": [75, 75, 75], "alpha": 255}},
+    {"index": 25, "hour": 18, "surfaceType": "staticMesh", "object": "20_21.StaticMeshActor3190", "environmentType": 0, "status": "conditional-input-fixture", "claimIds": ["ma-static-ambient"], "input": {"hourlyAmbientRGB": [120, 120, 120], "hourlyStaticSunPlane": [0.6119563579559326, 0.6119563579559326, 0.6119563579559326, 0.7450980544090271], "assumedEnvironmentGate": true, "fixtureSource": "C:\\Lineage2-client-support\\rea-out\\20261113-roadmap\\day-night-work\\native-fixtures.json", "fixtureSourceSha256": "7f6a9a14df94dc93882a6dbfe0d0285c95e02253e13b1218ff7a52bff6b9219c"}, "output": {"ambientRGB": [60, 60, 60], "alpha": 255}},
+    {"index": 26, "hour": 18, "surfaceType": "staticMesh", "object": null, "status": "synthetic-arithmetic-fixture", "claimIds": ["ma-static-ambient"], "input": {"gate": "original actor+0x274==0 and LOD2", "ambientRGB": [120, 120, 120], "sunPlane": [0.6119563579559326, 0.6119563579559326, 0.6119563579559326, 0.7450980544090271]}, "output": {"ambientRGB": [79, 79, 79], "alpha": 255}},
+    {"index": 27, "hour": 18, "surfaceType": "actor", "object": null, "environmentType": 0, "status": "conditional-input-fixture", "claimIds": ["ma-actor-ambient"], "input": {"hourlyAmbientRGB": [120, 120, 120], "hourlyStaticSunPlane": null, "assumedEnvironmentGate": true, "fixtureSource": "C:\\Lineage2-client-support\\rea-out\\20261113-roadmap\\day-night-work\\native-fixtures.json", "fixtureSourceSha256": "7f6a9a14df94dc93882a6dbfe0d0285c95e02253e13b1218ff7a52bff6b9219c"}, "output": {"ambientRGB": [60, 60, 60], "alpha": 255}},
+    {"index": 28, "hour": 0, "surfaceType": "staticMesh", "object": "20_21.StaticMeshActor1905", "vertexIndex": 0, "status": "conditional-authored-input-fixture", "claimIds": ["ma-real-static-input", "ma-hour-keys", "ma-shader-path", "ma-stream-colours"], "input": {"mesh": "cruma_s.G_12", "instance": "20_21.StaticMeshInstance9067", "environmentType": 0, "previousTimeIndex": 7, "nextTimeIndex": 0, "weight": 0.5, "previousVisible": 1, "nextVisible": 0, "localVertex": {"position": [59.09939956665039, 62.224700927734375, -24.698999404907227], "normal": [0.0, 0.9374460577964783, -0.3481305241584778]}, "authoredColourBGRA": [255, 255, 255, 255], "alternateColourBGRA": [255, 255, 255, 255], "assumptions": ["Both time entries resolve to a nonnull FDynamicLight with+0x24 and+0x28 zero.", "Shader visibility update branch selected."]}, "output": {"shaderVisibilityFloat": 0.5}},
+    {"index": 29, "hour": 6, "surfaceType": "staticMesh", "object": "20_21.StaticMeshActor1905", "vertexIndex": 0, "status": "conditional-authored-input-fixture", "claimIds": ["ma-real-static-input", "ma-hour-keys", "ma-shader-path", "ma-stream-colours"], "input": {"mesh": "cruma_s.G_12", "instance": "20_21.StaticMeshInstance9067", "environmentType": 0, "previousTimeIndex": 1, "nextTimeIndex": 2, "weight": 0.5, "previousVisible": 1, "nextVisible": 0, "localVertex": {"position": [59.09939956665039, 62.224700927734375, -24.698999404907227], "normal": [0.0, 0.9374460577964783, -0.3481305241584778]}, "authoredColourBGRA": [255, 255, 255, 255], "alternateColourBGRA": [255, 255, 255, 255], "assumptions": ["Both time entries resolve to a nonnull FDynamicLight with+0x24 and+0x28 zero.", "Shader visibility update branch selected."]}, "output": {"shaderVisibilityFloat": 0.5}},
+    {"index": 30, "hour": 12, "surfaceType": "staticMesh", "object": "20_21.StaticMeshActor1905", "vertexIndex": 0, "status": "conditional-authored-input-fixture", "claimIds": ["ma-real-static-input", "ma-hour-keys", "ma-shader-path", "ma-stream-colours"], "input": {"mesh": "cruma_s.G_12", "instance": "20_21.StaticMeshInstance9067", "environmentType": 0, "previousTimeIndex": 3, "nextTimeIndex": 4, "weight": 0.5, "previousVisible": 0, "nextVisible": 1, "localVertex": {"position": [59.09939956665039, 62.224700927734375, -24.698999404907227], "normal": [0.0, 0.9374460577964783, -0.3481305241584778]}, "authoredColourBGRA": [255, 255, 255, 255], "alternateColourBGRA": [255, 255, 255, 255], "assumptions": ["Both time entries resolve to a nonnull FDynamicLight with+0x24 and+0x28 zero.", "Shader visibility update branch selected."]}, "output": {"shaderVisibilityFloat": 0.5}},
+    {"index": 31, "hour": 18, "surfaceType": "staticMesh", "object": "20_21.StaticMeshActor1905", "vertexIndex": 0, "status": "conditional-authored-input-fixture", "claimIds": ["ma-real-static-input", "ma-hour-keys", "ma-shader-path", "ma-stream-colours"], "input": {"mesh": "cruma_s.G_12", "instance": "20_21.StaticMeshInstance9067", "environmentType": 0, "previousTimeIndex": 5, "nextTimeIndex": 6, "weight": 0.5, "previousVisible": 1, "nextVisible": 1, "localVertex": {"position": [59.09939956665039, 62.224700927734375, -24.698999404907227], "normal": [0.0, 0.9374460577964783, -0.3481305241584778]}, "authoredColourBGRA": [255, 255, 255, 255], "alternateColourBGRA": [255, 255, 255, 255], "assumptions": ["Both time entries resolve to a nonnull FDynamicLight with+0x24 and+0x28 zero.", "Shader visibility update branch selected."]}, "output": {"shaderVisibilityFloat": 1.0}}
+  ]
+}
