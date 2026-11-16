@@ -8,7 +8,8 @@ import type { Scene } from "@babylonjs/core/scene";
 import { createNativeMaterial, type FogState, type LoadedNativeMaterial, type NativeMaterial } from "../../../materials/ue2/babylon/material";
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
 import type { TileLightingModel } from "./decodeTileLighting";
-import { decodeDxt1Texels, hoursPerDay, lightmapHourPages, lightmapPageAtHour } from "./lightmapPages";
+import { decodeDxt1Texels, lightmapHourPages, lightmapPageAtHour } from "./lightmapPages";
+import { ENVIRONMENT_ENGINE_CONSTANTS } from "../../../environment/model/nativeEnvironmentEngineConstants";
 import { readNativeMaterialProgramPin } from "../../../assets/native/nativeMaterialProgramPin";
 import { planLightmapSections, type LightmapSectionPlan } from "./tileLightmapSections";
 import type { WorldEnvironmentSample } from "../worldTimeOfDay";
@@ -88,7 +89,7 @@ interface BoundChunk {
 const lightmapHourOutsideDayReason = "lightmap-hour-outside-day";
 
 function isHourOfDay(hour: number): boolean {
-  return hour >= 0 && hour < hoursPerDay;
+  return hour >= 0 && hour < ENVIRONMENT_ENGINE_CONSTANTS.hoursPerDay.value;
 }
 
 function lightmapHourGap(hour: number): string | null {

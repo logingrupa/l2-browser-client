@@ -20,8 +20,8 @@ The original `20_20` sky and its environment color tables. The browser shows a f
 - Sky for all 153 tiles (WORLD-02): the tile step runs on 20_20 and 20_21 so far.
 - Yellow sky: the step read ColorModifier bytes as R, G, B, A; fixed on lane/combiner-db1, it clears when the integration thread reconverts. Hard blue horizon against L2.exe (CHECK-01, then POL-04). Needs the native writer for color exports 76/77/78 and native draw state.
 - Restage: the served export `e10827c4` has no `time-tables.json`; the integration thread restages it and re-pins `nativeEnvironmentSource`.
-- Unresolved, shown by reason: `server-packet-unresolved`, `freeze-producer-unresolved`, `env-color-transition-unresolved`, `frame-composite-unresolved`, `static-mesh-plane-term-unresolved`, `dynamic-light-formula-unresolved`, `local-hour-fog-unresolved`, `relight-routine-unresolved`, `authored-sky-channel-order-unresolved`, `time-scale-read-past-table` (MoonScale from hour 6), `sky-layer-start-colour-unresolved`, the sun and moon direction rotation, and the type 1 to 3 names.
-- Only the sky colours reach the screen: ambient, HSV lights, sun and moon, terrain and the dynamic-light gate have no Babylon writer (`environment-lighting-composition-unresolved`). LATE-01 covers Seven Signs windows only.
+- Unresolved, shown by reason: `server-packet-unresolved`, `freeze-producer-unresolved`, `env-color-transition-unresolved`, `frame-composite-unresolved`, `local-hour-fog-unresolved`, `relight-routine-unresolved`, `authored-sky-channel-order-unresolved`, `time-scale-read-past-table` (MoonScale from hour 6), `sky-layer-start-colour-unresolved`, the sun and moon direction rotation, and the type 1 to 3 names.
+- Only the sky colours reach the screen: ambient, HSV lights, sun and moon, terrain and the dynamic-light gate have no Babylon writer (`environment-lighting-composition-unresolved`). The DB-7 hourly lighting model and its 13 named gaps live in `src/environment/model/` (`nativeDrawLightingStates.ts`). LATE-01 covers Seven Signs windows only.
 
 ## Pointers
 

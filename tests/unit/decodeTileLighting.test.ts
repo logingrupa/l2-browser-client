@@ -10,7 +10,7 @@ import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePla
 import type { NativeBspNodeRange, NativeBspSection } from "../../src/scene/world/nativeBspResources";
 import { bindTileLighting, type TileLightingBspChunk } from "../../src/scene/world/lighting/bindTileLighting";
 import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
-import { decodeDxt1Texels, lightmapPageAtHour, lightmapSlotAtHour } from "../../src/scene/world/lighting/lightmapPages";
+import { decodeDxt1Texels, lightmapPageAtHour } from "../../src/scene/world/lighting/lightmapPages";
 import { planLightmapSections, type LightmapSectionChunk } from "../../src/scene/world/lighting/tileLightmapSections";
 import type { WorldEnvironmentSample } from "../../src/scene/world/worldTimeOfDay";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
@@ -89,11 +89,7 @@ describe("decodeTileLighting", () => {
 });
 
 describe("lightmap pages by hour", () => {
-  it("takes truncate(h * n / 24) mod n outdoors and slot 0 indoors", () => {
-    expect([0, 2.99, 3, 12, 23.9].map(hour => lightmapSlotAtHour(hour, 8, true))).toEqual([0, 0, 1, 4, 7]);
-    expect(lightmapSlotAtHour(13, 8, false)).toBe(0);
-    expect(lightmapSlotAtHour(13, 1, true)).toBe(0);
-    expect(() => lightmapSlotAtHour(24, 8, true)).toThrow(RangeError);
+  it("offsets the texture's first page by the model slot of the hour", () => {
     const model = tileLightingModel();
     expect(lightmapPageAtHour(model, 0, 1, true)).not.toBe(lightmapPageAtHour(model, 0, 13, true));
     expect(lightmapPageAtHour(model, 1, 13, false)).toBe(8);

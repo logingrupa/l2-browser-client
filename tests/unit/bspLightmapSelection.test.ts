@@ -1,0 +1,38 @@
+import { describe, expect, it } from "vitest";
+import { bspCompressedLightmapGate, bspLightmapRebuildAmbient, bspLightmapSlot } from "../../src/environment/model/bspLightmapSelection";
+
+describe("BSP lightmap slot (draw sections 0x10668ac0 and 0x10669de0)", () => {
+  it("selects trunc(float32(hour) * N / 24) % N for a sun-affected section, 0/2/4/6 at 0/6/12/18 for an 8-child atlas", () => {
+    expect([0, 6, 12, 18].map(hour => bspLightmapSlot(hour, 8, true))).toEqual([0, 2, 4, 6]);
+    expect([2.99, 3, 23.9].map(hour => bspLightmapSlot(hour, 8, true))).toEqual([0, 1, 7]);
+  });
+
+  it("keeps slot 0 for a section whose node zones lack bSunAffect and for a one-child group", () => {
+    expect(bspLightmapSlot(13, 8, false)).toBe(0);
+    expect(bspLightmapSlot(13, 1, true)).toBe(0);
+  });
+
+  it("divides by 24 in double precision as _ftol2 does, not after a float32 rounding", () => {
+    const hourJustBelowThreeFifths = 14.399999618530273;
+    expect(Math.trunc(Math.fround(Math.fround(Math.fround(hourJustBelowThreeFifths) * 5) / 24))).toBe(3);
+    expect(bspLightmapSlot(hourJustBelowThreeFifths, 5, true)).toBe(2);
+  });
+
+  it("refuses an hour outside the day and a child count below 1", () => {
+    expect(() => bspLightmapSlot(24, 8, true)).toThrow(RangeError);
+    expect(() => bspLightmapSlot(Number.NaN, 8, true)).toThrow(RangeError);
+    expect(() => bspLightmapSlot(1, 0, true)).toThrow(RangeError);
+  });
+});
+
+describe("compressed lightmap path (bsp-compressed-choice)", () => {
+  it("takes the compressed child only while the page revision equals its compressed revision", () => {
+    expect(bspCompressedLightmapGate(2, 2)).toEqual({ status: "compressed" });
+    expect(bspCompressedLightmapGate(3, 2)).toEqual({ status: "unresolved", reason: "bsp-live-cache-state" });
+  });
+
+  it("keeps BSPAmbient * 0.5 as the rebuild start only", () => {
+    expect(bspLightmapRebuildAmbient([64, 88, 111])).toEqual([32, 44, 55]);
+    expect(bspLightmapRebuildAmbient([255, 1, 0])).toEqual([127, 0, 0]);
+  });
+});

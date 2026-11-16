@@ -20,6 +20,9 @@ describe("src/environment/model import boundary", () => {
     expect(modelModules).toEqual(expect.arrayContaining([
       `${modelFolder}/nativeTimeClock.ts`, `${modelFolder}/nativeEnvironmentManager.ts`, `${modelFolder}/calculateEnvironmentDelta.ts`,
       `${modelFolder}/sampleNativeTimeTables.ts`, `${modelFolder}/fGetHsv.ts`, `${modelFolder}/nativeEnvironmentColours.ts`, `${modelFolder}/nativeSunMoonDirection.ts`,
+      `${modelFolder}/terrainVertexLighting.ts`, `${modelFolder}/bspLightmapSelection.ts`, `${modelFolder}/staticMeshHourlyLighting.ts`,
+      `${modelFolder}/meshLightingTerms.ts`, `${modelFolder}/nativeDrawLightingStates.ts`, `${modelFolder}/nativeColourBytes.ts`,
+      `${modelFolder}/x87IntegerConversion.ts`, `${modelFolder}/hourlyLightingEngineConstants.ts`,
     ]));
   });
 

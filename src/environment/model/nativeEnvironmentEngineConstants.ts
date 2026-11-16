@@ -25,7 +25,7 @@ export const ENVIRONMENT_ENGINE_CONSTANTS = {
   lastHourOfDay: confirmedRow("environment.last-hour-of-day", 23,
     `${dayNightReport}; UpdateNTime 0x1051b43b cmp ecx, 0x17 then signed remainder by 24 through magic 0xd5555555`),
   hoursPerDay: confirmedRow("environment.hours-per-day", 24,
-    `${engineConstant("0x1085ada0", 5611936)} double and ${engineConstant("0x10854bac", 5586860)} float32; day-part end, sun range end, terrain map unwrap and GetShadowMapIndex normalisation`),
+    `${engineConstant("0x1085ada0", 5611936)} double and ${engineConstant("0x10854bac", 5586860)} float32; day-part end, sun range end, terrain map unwrap and GetShadowMapIndex normalisation; DB-7 BSP lightmap slot divisor at 0x10668c0a-0x10668d96, static mesh hour keys 0x106f4010 and their unwrap at 0x10679a1b`),
   dayPartBounds: confirmedRow("environment.day-part-bounds", { morningStart: 6, dayStart: 8, eveningStart: 22, dayEnd: 24 },
     `${engineConstant("0x10854ba0", 5586848)} 6.0, ${engineConstant("0x10891830", 5835824)} 8.0, ${engineConstant("0x1089faa0", 5893792)} 22.0 and 24.0 at 0x1085ada0; UpdateNTime 0x1051b483-0x1051b511 writes +0x130 = 0 for [6,8), 1 for [8,22), 2 for [22,24), else 3`),
   ssqDelayHours: confirmedRow("environment.ssq-delay-hours", 0.019999999552965164,

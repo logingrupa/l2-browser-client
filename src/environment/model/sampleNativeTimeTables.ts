@@ -28,7 +28,7 @@ export type TimeScaleSample =
   | { readonly status: "unwritten" }
   | { readonly status: "unresolved"; readonly reason: "time-scale-read-past-table" };
 
-export interface TerrainIntensityMapBlend {
+export interface HourlyKeyBlend {
   readonly index: number;
   readonly nextIndex: number;
   readonly weight: number;
@@ -93,14 +93,17 @@ export function shadowMapIndexAtHour(mapTimes: readonly number[], hour: number):
   return mapTimes.length - 1;
 }
 
-export function terrainIntensityMapBlend(mapTimes: readonly number[], hour: number): TerrainIntensityMapBlend {
-  if (mapTimes.length === 0) throw new RangeError("Terrain intensity map blending needs at least one map time.");
-  const index = shadowMapIndexAtHour(mapTimes, hour);
-  const nextIndex = (index + 1) % mapTimes.length;
-  const fromTime = mapTimes[index]!;
-  let toTime = mapTimes[nextIndex]!;
-  while (toTime < fromTime) toTime = Math.fround(toTime + hoursPerDay.value);
+export function blendAdjacentHourlyKeys(keys: readonly number[], index: number, hour: number): HourlyKeyBlend {
+  const nextIndex = (index + 1) % keys.length;
+  const fromKey = keys[index]!;
+  let toKey = keys[nextIndex]!;
+  while (toKey < fromKey) toKey = Math.fround(toKey + hoursPerDay.value);
   let unwrappedHour = Math.fround(hour);
-  while (unwrappedHour < fromTime) unwrappedHour = Math.fround(unwrappedHour + hoursPerDay.value);
-  return { index, nextIndex, weight: Math.fround((unwrappedHour - fromTime) / (toTime - fromTime)) };
+  while (unwrappedHour < fromKey) unwrappedHour = Math.fround(unwrappedHour + hoursPerDay.value);
+  return { index, nextIndex, weight: Math.fround((unwrappedHour - fromKey) / (toKey - fromKey)) };
+}
+
+export function terrainIntensityMapBlend(mapTimes: readonly number[], hour: number): HourlyKeyBlend {
+  if (mapTimes.length === 0) throw new RangeError("Terrain intensity map blending needs at least one map time.");
+  return blendAdjacentHourlyKeys(mapTimes, shadowMapIndexAtHour(mapTimes, hour), hour);
 }

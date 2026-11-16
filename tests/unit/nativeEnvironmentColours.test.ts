@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  actorAmbientRenderColour, bspAmbientRenderColour, environmentColour, environmentLightPlane, environmentScale, nativeFogBaseline, skyLayerColour,
-  staticMeshAmbientRenderColour,
+  environmentColour, environmentLightPlane, environmentScale, nativeFogBaseline, skyLayerColour,
 } from "../../src/environment/model/nativeEnvironmentColours";
 import type { NativeEnvironmentBlend } from "../../src/environment/model/nativeEnvironmentManager";
 import {
@@ -68,19 +67,7 @@ describe("sky layer, plane and scale getters", () => {
   });
 });
 
-describe("ambient consumers and fog baseline", () => {
-  it("halves skeletal ambient by a shift with alpha 255", () => {
-    expect(actorAmbientRenderColour([75, 103, 131])).toEqual([37, 51, 65, 255]);
-  });
-
-  it("scales BSP ambient bytes by 0.5", () => {
-    expect(bspAmbientRenderColour([64, 88, 111])).toEqual([32, 44, 55]);
-  });
-
-  it("halves static mesh ambient and keeps its plane term visibly unresolved", () => {
-    expect(staticMeshAmbientRenderColour([75, 103, 131])).toEqual({ halvedAmbient: [37, 51, 65], unresolvedTerm: "static-mesh-plane-term-unresolved" });
-  });
-
+describe("fog baseline", () => {
   it("holds the constant fog baseline and leaves local hour fog unresolved", () => {
     expect(nativeFogBaseline).toEqual({ colour: [127, 127, 127, 255], localHourFog: { status: "unresolved", reason: "local-hour-fog-unresolved" } });
   });

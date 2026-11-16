@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { bspLightmapSlot } from "../../src/environment/model/bspLightmapSelection";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
 import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
@@ -58,10 +59,6 @@ function servedBspSectionCount(): number {
   }, 0);
 }
 
-function slotAtHour(hour: number, slotCount: number, outdoor: boolean): number {
-  return outdoor ? Math.trunc(Math.fround(Math.fround(Math.fround(hour) * slotCount) / hoursPerDay)) % slotCount : 0;
-}
-
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=world");
 test.skip(!environmentTimeTablesStaged(laneName), environmentTimeTablesRequirement);
 test.skip(lightingResource === null, "the world lane store has no tile 20_21 with a lighting resource; run convert_tile.py --map 20_21 --step lighting, then --step manifest");
@@ -96,12 +93,12 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
   const lightmapped = sections.filter(section => section.lighting === "lightmapped");
   expect(lightmapped.length).toBe(inspection.lightmappedSectionCount);
   for (const section of lightmapped) {
-    expect(section.page).toBe(section.hourPages[slotAtHour(hour, section.hourPages.length, section.outdoor!)]);
+    expect(section.page).toBe(section.hourPages[bspLightmapSlot(hour, section.hourPages.length, section.outdoor!)]);
   }
   const hourSetSection = lightmapped.find(section => section.outdoor && section.hourPages.length > 1);
   expect(hourSetSection, "an outdoor section of tile 20_21 has a lightmap hour set").toBeDefined();
   const laterHour = (hour + hoursPerDay / hourSetSection!.hourPages.length) % hoursPerDay;
-  expect(hourSetSection!.hourPages[slotAtHour(laterHour, hourSetSection!.hourPages.length, true)]).not.toBe(hourSetSection!.page);
+  expect(hourSetSection!.hourPages[bspLightmapSlot(laterHour, hourSetSection!.hourPages.length, true)]).not.toBe(hourSetSection!.page);
   await page.screenshot({ path: `test-results/${screenshotName}` });
   expect(pageErrors).toEqual([]);
   return { ...inspection, sections: undefined, mapEmitterPlacements: world.mapEmitterPlacements };
