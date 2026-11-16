@@ -16,7 +16,7 @@ const getLocInfoCaseZoneName = "Giran Castle Town";
 const globalRadarTileId = "20_21";
 const radarTextureMapBinding = { windowId: "NewRadarWnd", controlName: "texMap" };
 const unresolvedMinimapReasons = ["minimap-join-unresolved:zone-title-source", "minimap-join-unresolved:radar-anchor", "texture-reference-unresolved",
-  "presentation:view-origin-centred-on-marker", "label-unresolved"];
+  "presentation:view-origin-centred-on-marker"];
 
 interface CensusMinimapControl { readonly windowId: string; readonly controlNames: readonly string[] }
 interface LaneCatalogRecord { readonly id: string; readonly manifest: string }

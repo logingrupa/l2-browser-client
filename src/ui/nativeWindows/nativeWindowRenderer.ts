@@ -8,6 +8,7 @@ import { minimapControlType, renderMinimapControl, type RenderedMinimapControl }
 import { radarTextureMapBinding } from "./minimapRadarRouteRecipe";
 import { placeNativeWindowElement } from "./nativeWindowPlacement";
 import { renderTextBox, type RenderedTextBox } from "./nativeWindowTextBox";
+import { zoneNameTextBoxBinding } from "./zoneNameTextBoxRecipe";
 
 export const nativeWindowRenderedControlTypes: readonly string[] = ["Window", "Texture", "Button", "TextBox", minimapControlType];
 
@@ -174,9 +175,17 @@ export function renderNativeWindow(container: HTMLElement, windowManifest: Nativ
   element.setAttribute("data-native-window", windowManifest.windowId);
   const radarTextureMap = windowManifest.windowId === radarTextureMapBinding.windowId
     ? controls.find(control => control.node.name === radarTextureMapBinding.controlName)?.element ?? null : null;
+  const zoneNameTextBoxes = windowManifest.windowId === zoneNameTextBoxBinding.windowId
+    ? controls.filter(control => control.textBox !== null && zoneNameTextBoxBinding.controlNames.includes(control.node.name)) : [];
+  const showZoneName = (zoneName: string | null): void => {
+    for (const control of zoneNameTextBoxes) {
+      control.textBox!.showText(zoneName ?? "");
+      markControlGaps(control);
+    }
+  };
   for (const control of controls.filter(candidate => candidate.node.type === minimapControlType)) {
     control.minimap = renderMinimapControl(control.element, control.rectangle, { localPlayer: renderInputs.localPlayer,
-      minimapSource: renderInputs.minimapSource, radarTextureMap, onGapsChanged: () => markControlGaps(control) });
+      minimapSource: renderInputs.minimapSource, radarTextureMap, onGapsChanged: () => markControlGaps(control), onZoneNameChanged: showZoneName });
   }
   let currentLocalPlayer = renderInputs.localPlayer;
   const refresh = (localPlayer: WorldEntity | null): void => {

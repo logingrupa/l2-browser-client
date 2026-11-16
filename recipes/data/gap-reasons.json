@@ -1,11 +1,10 @@
 {
   "schemaVersion": 1,
-  "listVersion": 2,
+  "listVersion": 3,
   "reasons": [
     "texture-reference-unresolved",
     "texture-not-in-catalog",
     "anchor-unresolved:<reason>",
-    "label-unresolved",
     "textbox-text-set-at-runtime",
     "textbox-text-undefined-sentinel",
     "textbox-tail-unresolved",

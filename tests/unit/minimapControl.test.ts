@@ -3,6 +3,8 @@ import { renderNativeWindow } from "../../src/ui/nativeWindows/nativeWindowRende
 import type { NativeWindowMinimapSource, NativeWindowTextureResolution } from "../../src/ui/nativeWindows/nativeWindowManifestLoader";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { radarTextureMapBinding } from "../../src/ui/nativeWindows/minimapRadarRouteRecipe";
+import { parseNativeWindowFontManifest, type NativeWindowFont } from "../../src/ui/nativeWindows/nativeWindowFonts";
+import { zoneNameTextBoxBinding } from "../../src/ui/nativeWindows/zoneNameTextBoxRecipe";
 import { syntheticArchiveSha256 } from "../fixtures/minimapRouteManifestFixture";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 import { syntheticZoneKeyMip, syntheticZoneKeyRows } from "./support/radarZoneFixtures";
@@ -15,6 +17,13 @@ const screen = { width: 1440, height: 900 };
 const controlWidth = 256;
 const controlHeight = 256;
 const worldMapPieceObject = (suffix: number) => `L2Font-e.Minimap.int_worldmap${suffix}`;
+const printableCodeUnits = Array.from({ length: 95 }, (_, index) => 32 + index);
+const syntheticBitmapFont: NativeWindowFont = {
+  manifest: parseNativeWindowFontManifest({ kind: "native-ui-font", schemaVersion: 1, fontType: 0, route: "bitmap-glyph-table",
+    atlas: { width: 512, height: 8, image: `/l2/${"e".repeat(64)}/texture.png`, imageSha256: "e".repeat(64), imageBytes: 100 },
+    glyphs: printableCodeUnits.map((codeUnit, index) => ({ codeUnit, x: index * 4, y: 0, width: 4, height: 8 })) }, 0),
+  imageUrl: "blob:synthetic/small-font",
+};
 
 function minimapElement(container: FakeElement): FakeElement {
   const element = container.querySelector('[data-native-type="MinimapCtrl"]');
@@ -66,13 +75,15 @@ describe("renderMinimapControl", () => {
     expect(rendered.gaps.map(gap => gap.reason)).not.toContain("control-type-unsupported:MinimapCtrl");
   });
 
-  it("lists every unresolved minimap item in the control gaps", async () => {
+  it("lists every unresolved minimap item in the control gaps and keeps no text gap of its own", async () => {
     const rendered = render(syntheticLocalPlayerAtSource(0, 0), oneTileSource());
     await readyMinimap();
-    expect(rendered.gaps.filter(gap => gap.controlName === "SyntheticMinimap").map(gap => gap.reason)).toEqual(expect.arrayContaining([
+    const reasons = rendered.gaps.filter(gap => gap.controlName === "SyntheticMinimap").map(gap => gap.reason);
+    expect(reasons).toEqual(expect.arrayContaining([
       "minimap-join-unresolved:zone-title-source", "minimap-join-unresolved:radar-anchor", "texture-reference-unresolved",
-      "presentation:view-origin-centred-on-marker", "label-unresolved"]));
-    expect(minimapPart(container, "zone-name")?.getAttribute("data-native-gap")).toBe("label-unresolved");
+      "presentation:view-origin-centred-on-marker"]));
+    expect(reasons).not.toContain("label-unresolved");
+    expect(minimapPart(container, "zone-name")?.getAttribute("data-native-gap")).toBeNull();
     expect(minimapPart(container, "zone-name")?.textContent).toBe("");
   });
 
@@ -153,13 +164,30 @@ describe("renderMinimapControl", () => {
       return container.querySelector(`[data-native-control="${radarTextureMapBinding.controlName}"] [data-native-radar-texture-map]`);
     }
 
-    it("carries the sampled zone name in data-native-zone-name and keeps the visible text gap", async () => {
+    it("carries the sampled zone name in data-native-zone-name and draws no text of its own", async () => {
       render(syntheticLocalPlayerAtSource(giranPosition.x, giranPosition.y), zoneSource());
       await readyMinimap();
       await vi.waitFor(() => expect(minimapPart(container, "zone-name")?.getAttribute("data-native-zone-name")).toBe("Giran Castle Town"));
-      expect(minimapPart(container, "zone-name")?.getAttribute("data-native-gap")).toBe("label-unresolved");
+      expect(minimapPart(container, "zone-name")?.getAttribute("data-native-gap")).toBeNull();
       expect(minimapPart(container, "zone-name")?.textContent).toBe("");
       expect(radarTextureMap()).toBeNull();
+    });
+
+    it("draws the sampled zone name in the GetLocInfo text boxes with the converted font and clears it on a zone gap", async () => {
+      const rendered = renderNativeWindow(container as unknown as HTMLElement, syntheticMinimapWindowManifest(controlWidth, controlHeight,
+        zoneNameTextBoxBinding.windowId, [], zoneNameTextBoxBinding.controlNames), { localPlayer: syntheticLocalPlayerAtSource(giranPosition.x, giranPosition.y),
+        textures: new Map(), fonts: new Map([[0, syntheticBitmapFont]]), fieldBindings: [], screen, minimapSource: zoneSource() });
+      const zoneNameGlyphs = (controlName: string) => container.querySelectorAll(`[data-native-control="${controlName}"] [data-native-glyph]`);
+      const textBoxReasons = () => rendered.gaps.filter(gap => zoneNameTextBoxBinding.controlNames.includes(gap.controlName)).map(gap => gap.reason);
+      await readyMinimap();
+      for (const controlName of zoneNameTextBoxBinding.controlNames) {
+        await vi.waitFor(() => expect(zoneNameGlyphs(controlName)).toHaveLength("Giran Castle Town".length));
+      }
+      expect(zoneNameGlyphs(zoneNameTextBoxBinding.controlNames[0]!).map(glyph => glyph.style.left).slice(0, 3)).toEqual(["0px", "4px", "8px"]);
+      expect(new Set(textBoxReasons())).toEqual(new Set(["font-bitmap-branch-unconfirmed"]));
+      rendered.refresh(syntheticLocalPlayerAtSource(keyRunPosition.x, keyRunPosition.y, 1000));
+      await vi.waitFor(() => expect(zoneNameGlyphs(zoneNameTextBoxBinding.controlNames[0]!)).toHaveLength(0));
+      expect(new Set(textBoxReasons())).toEqual(new Set(["textbox-text-set-at-runtime"]));
     });
 
     it("shows the GetLocInfo texture of the sampled zone in texMap and follows a zone change on refresh", async () => {

@@ -73,10 +73,14 @@ function syntheticNode(name: string, type: string, width: number, height: number
   return { name, type, width, height, x: 0, y: 0, sizeMode: "absolute", position: topLeftAnchor, textures: [], children, sourceOffset: 10, tail: syntheticTail };
 }
 
+function syntheticEmptyTextBox(name: string) {
+  return { ...syntheticNode(name, "TextBox", 0, 0), textLayout: { defaultText: "", autoSize: 1, fontType: 0, alignEnum: 2 }, color: "#FFFFFF", align: "center" };
+}
+
 export function syntheticMinimapWindowManifest(controlWidth: number, controlHeight: number, windowId = "SyntheticMinimapWnd",
-  extraControlNames: readonly string[] = []): NativeWindowManifest {
+  extraControlNames: readonly string[] = [], textBoxNames: readonly string[] = []): NativeWindowManifest {
   const children = [syntheticNode("SyntheticMinimap", "MinimapCtrl", controlWidth, controlHeight),
-    ...extraControlNames.map(name => syntheticNode(name, "Texture", controlWidth, controlHeight))];
+    ...extraControlNames.map(name => syntheticNode(name, "Texture", controlWidth, controlHeight)), ...textBoxNames.map(syntheticEmptyTextBox)];
   return parseNativeWindowManifest({
     kind: "native-window-layout", schemaVersion: 1, windowId, name: windowId, sourceSha256: "e".repeat(64),
     sourceOffset: 0, textureRefs: [], anchorProof: "Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b",

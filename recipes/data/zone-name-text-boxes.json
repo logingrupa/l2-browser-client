@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "source": "rea-in/20261113-roadmap-verify/verified-minimap-radar.md: interface.NewRadarWnd.GetLocInfo (system/interface.u export 7786) gives the .zoneName and .zoneNameShadow text boxes the sampled ZoneName; the MinimapWnd binding stays open (minimap-binding)",
+  "windowId": "NewRadarWnd",
+  "controlNames": ["zoneName", "zoneNameShadow"]
+}
