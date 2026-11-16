@@ -65,6 +65,7 @@ test.describe("sandbox framing for side-by-side halves", () => {
     }, framingGameMinutes);
     const environmentAfter = await readEnvironmentInspection(page);
     expect(environmentAfter.appliedEventCount).toBe(environmentBefore.appliedEventCount + 1);
+    expect(environmentAfter.ignoredEventCount).toBe(environmentBefore.ignoredEventCount);
     expect(environmentAfter.rejectedEventCount).toBe(environmentBefore.rejectedEventCount);
     expect(environmentAfter.timeOfDay).toMatchObject({ status: "running", snapshot: { clock: { hourSource: "server-time" } } });
     expect(errors).toEqual([]);

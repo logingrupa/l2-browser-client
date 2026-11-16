@@ -30,6 +30,8 @@ export interface ChangeEnvironmentRequest {
 
 export type DayPart = 0 | 1 | 2 | 3;
 
+export type ChangeEnvironmentOutcome = "changed" | "peak-delay-negative" | "end-before-peak-delay" | "target-weight-out-of-range" | "environment-type-unloaded";
+
 export interface NativeEnvironmentSnapshot extends NativeEnvironmentBlend {
   readonly clock: NativeTimeClockSnapshot;
   readonly frozen: { readonly value: false; readonly status: "unresolved"; readonly reason: "freeze-producer-unresolved" };
@@ -51,9 +53,9 @@ export interface NativeEnvironmentSnapshot extends NativeEnvironmentBlend {
 export interface NativeEnvironmentManager {
   tick(deltaSeconds: number): void;
   receiveServerTime(gameMinutes: number): void;
-  changeEnvironment(request: ChangeEnvironmentRequest): void;
-  receiveSsqInfo(first: number, second: number): void;
-  receiveRedSky(timeoutSeconds: number): void;
+  changeEnvironment(request: ChangeEnvironmentRequest): ChangeEnvironmentOutcome;
+  receiveSsqInfo(first: number, second: number): ChangeEnvironmentOutcome;
+  receiveRedSky(timeoutSeconds: number): ChangeEnvironmentOutcome;
   hour(): number;
   blend(): NativeEnvironmentBlend;
   snapshot(): NativeEnvironmentSnapshot;
@@ -97,7 +99,7 @@ export function createNativeEnvironmentManager(settings: NativeEnvironmentManage
   let targetWeight = 0, oldWeight = 0, weight = 0;
   let remainingRevertSeconds = 0;
 
-  function changeEnvironment(request: ChangeEnvironmentRequest): void {
+  function changeEnvironment(request: ChangeEnvironmentRequest): ChangeEnvironmentOutcome {
     const environmentType = requireByte(request.environmentType, "Environment type");
     const immediate = requireByte(request.immediate, "Immediate flag");
     const endDelayHours = requireFinite(request.endDelayHours, "End delay");
@@ -110,13 +112,13 @@ export function createNativeEnvironmentManager(settings: NativeEnvironmentManage
       transitionStart = transitionEnd = transitionPeak = hour;
       targetWeight = oldWeight = 1;
       if (request.persistent) persistentTargetType = persistentOldType = environmentType;
-      return;
+      return "changed";
     }
-    if (peakDelayHours < 0) return;
+    if (peakDelayHours < 0) return "peak-delay-negative";
     const end = endDelayHours + hour;
-    if (end < peakDelayHours) return;
-    if (requestedWeight < 0 || requestedWeight > 1) return;
-    if (!loadedEnvironmentTypes.has(signedCharacter(environmentType))) return;
+    if (end < peakDelayHours) return "end-before-peak-delay";
+    if (requestedWeight < 0 || requestedWeight > 1) return "target-weight-out-of-range";
+    if (!loadedEnvironmentTypes.has(signedCharacter(environmentType))) return "environment-type-unloaded";
     transitionStart = hour;
     transitionEnd = Math.fround(end);
     transitionPeak = Math.fround(peakDelayHours + hour);
@@ -133,6 +135,7 @@ export function createNativeEnvironmentManager(settings: NativeEnvironmentManage
       transitionPeak = transitionEnd;
       targetWeight = 1;
     }
+    return "changed";
   }
 
   function revertRequest(): ChangeEnvironmentRequest {
@@ -165,12 +168,12 @@ export function createNativeEnvironmentManager(settings: NativeEnvironmentManage
     receiveServerTime: gameMinutes => clock.receiveServerTime(gameMinutes),
     changeEnvironment,
     receiveSsqInfo(first, second) {
-      changeEnvironment({ environmentType: first, immediate: second, endDelayHours: ssqDelayHours.value, peakDelayHours: ssqDelayHours.value,
+      return changeEnvironment({ environmentType: first, immediate: second, endDelayHours: ssqDelayHours.value, peakDelayHours: ssqDelayHours.value,
         targetWeight: 1, timeoutSeconds: 0, persistent: true });
     },
     receiveRedSky(timeoutSeconds) {
       if (!Number.isInteger(timeoutSeconds)) throw new RangeError(`Red sky timeout ${timeoutSeconds} must be an integer number of seconds.`);
-      changeEnvironment({ environmentType: redSkyEnvironmentType.value, immediate: 0, endDelayHours: redSkyDelayHours.value,
+      return changeEnvironment({ environmentType: redSkyEnvironmentType.value, immediate: 0, endDelayHours: redSkyDelayHours.value,
         peakDelayHours: redSkyDelayHours.value, targetWeight: 1, timeoutSeconds, persistent: false });
     },
     hour: () => clock.hour(),

@@ -124,16 +124,24 @@ describe("native ChangeEnv 0x1051a420, OnSSQInfo 0x1048b890 and OnRedSky 0x1048d
   });
 
   it.each([
-    ["a type with no table", request({ environmentType: 7 })],
-    ["a negative peak delay", request({ peakDelayHours: -0.1 })],
-    ["a peak delay above the absolute end", request({ endDelayHours: 0.1, peakDelayHours: 13 })],
-    ["a weight below 0", request({ targetWeight: -0.1 })],
-    ["a weight above 1", request({ targetWeight: 1.1 })],
-  ])("ignores %s", (_, ignoredRequest) => {
+    ["a type with no table", request({ environmentType: 7 }), "environment-type-unloaded"],
+    ["a negative peak delay", request({ peakDelayHours: -0.1 }), "peak-delay-negative"],
+    ["a peak delay above the absolute end", request({ endDelayHours: 0.1, peakDelayHours: 13 }), "end-before-peak-delay"],
+    ["a weight below 0", request({ targetWeight: -0.1 }), "target-weight-out-of-range"],
+    ["a weight above 1", request({ targetWeight: 1.1 }), "target-weight-out-of-range"],
+  ] as const)("ignores %s and names why", (_, ignoredRequest, outcome) => {
     const { manager } = managerWith();
     const before = manager.snapshot();
-    manager.changeEnvironment(ignoredRequest);
+    expect(manager.changeEnvironment(ignoredRequest)).toBe(outcome);
     expect(manager.snapshot()).toEqual(before);
+  });
+
+  it("reports a request that took effect as changed, immediate or windowed", () => {
+    const { manager } = managerWith();
+    expect(manager.changeEnvironment(request({}))).toBe("changed");
+    expect(manager.receiveSsqInfo(2, 1)).toBe("changed");
+    expect(manager.receiveRedSky(5)).toBe("changed");
+    expect(manager.receiveSsqInfo(7, 0)).toBe("environment-type-unloaded");
   });
 
   it("looks the requested type up as a signed character", () => {

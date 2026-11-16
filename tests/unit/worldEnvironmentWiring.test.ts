@@ -46,8 +46,19 @@ describe("world environment wiring", () => {
     emit({ type: "environment-red-sky", timeoutSeconds: 5 });
     expect(runningSnapshot(environment)).toMatchObject({ oldType: 1, targetType: 3, persistentTargetType: 1, remainingRevertSeconds: 5 });
     emit({ type: "spawn", entity: { id: "x", kind: "npc", displayName: "x", position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, health: 1, maximumHealth: 1, animation: "idle" } });
-    expect(environment.inspection()).toMatchObject({ appliedEventCount: 3, rejectedEventCount: 0, lastRejectedEvent: null,
+    expect(environment.inspection()).toMatchObject({ appliedEventCount: 3, ignoredEventCount: 0, lastIgnoredEvent: null, rejectedEventCount: 0, lastRejectedEvent: null,
       serverPacket: { producer: "sandbox-command", status: "unresolved", reason: "server-packet-unresolved" } });
+  });
+
+  it("counts an SSQ info or red sky that ChangeEnv ignores as ignored with its reason, not as applied", () => {
+    const { environment, emit } = environmentOn(null);
+    const before = runningSnapshot(environment);
+    emit({ type: "environment-ssq-info", first: 7, second: 0 });
+    expect(runningSnapshot(environment)).toMatchObject({ oldType: before.oldType, targetType: before.targetType });
+    expect(environment.inspection()).toMatchObject({ appliedEventCount: 0, ignoredEventCount: 1, rejectedEventCount: 0,
+      lastIgnoredEvent: "environment-ssq-info: ChangeEnv environment-type-unloaded" });
+    emit({ type: "environment-ssq-info", first: 1, second: 0 });
+    expect(environment.inspection()).toMatchObject({ appliedEventCount: 1, ignoredEventCount: 1 });
   });
 
   it("counts an event the manager refuses, and every event that reaches an unstaged time of day, instead of throwing", () => {
