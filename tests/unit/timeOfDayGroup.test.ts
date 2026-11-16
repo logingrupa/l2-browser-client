@@ -3,6 +3,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DevSheet } from "../../src/ui/devSheet/DevSheet";
 import { attachTimeOfDayGroup, changeEnvironmentCallText, float32Text, timeOfDayVariables, type TimeOfDayGroupContext } from "../../src/runtime/attachTimeOfDayGroup";
+import { hourlyLightingVariables } from "../../src/runtime/hourlyLightingVariables";
 import { ENVIRONMENT_ENGINE_CONSTANTS } from "../../src/environment/model/nativeEnvironmentEngineConstants";
 import { redSkyChangeRequest, ssqInfoChangeRequest } from "../../src/environment/model/nativeEnvironmentManager";
 import type { SkyEnvironmentColourInspection } from "../../src/scene/world/skyEnvironmentColours";
@@ -52,7 +53,7 @@ function attachGroup(timeOfDay: WorldTimeOfDay, overrides: Partial<TimeOfDayGrou
   sheets.push(sheet);
   const dispatched: WorldCommand[] = [];
   const context: TimeOfDayGroupContext = { timeOfDay, adapter: { dispatch: vi.fn((command: WorldCommand) => { dispatched.push(command); }) },
-    skyEnvironmentColours: null, skyAbsentReason: "sky-not-staged", ...overrides };
+    skyEnvironmentColours: null, skyAbsentReason: "sky-not-staged", tileLighting: () => ({ gap: "world-section-absent" }), ...overrides };
   attachTimeOfDayGroup(section, context);
   const panel = section.element as unknown as FakeElement;
   const byTestId = (testId: string) => panel.querySelector(`[data-testid="${testId}"]`);
@@ -194,6 +195,14 @@ describe("time of day developer sheet group", () => {
     expect(float32Text(Math.fround(0.1))).toBe("0.1");
     expect(float32Text(Math.fround(1 / 3))).toBe("0.33333334");
     expect(float32Text(12)).toBe("12");
+  });
+
+  it("shows the hourly lighting readout with every variable as a named gap when no tile lighting is loaded", () => {
+    const timeOfDay = stoppedTimeOfDay();
+    const { byTestId, context } = attachGroup(timeOfDay);
+    const variables = hourlyLightingVariables(context.tileLighting);
+    expect(byTestId("time-of-day-hourly-lighting")!.querySelector("output")!.textContent).toBe(`0 ported values · ${variables.length} named gaps`);
+    for (const entry of variables) expect({ value: entry.value(), status: entry.status }).toEqual({ value: "world-section-absent", status: "unverified" });
   });
 
   it("reads the game time and the environment type pair in the readout", () => {

@@ -8,12 +8,14 @@ import { redSkyChangeRequest, ssqInfoChangeRequest, type ChangeEnvironmentReques
 import type { SkyEnvironmentColourInspection } from "../scene/world/skyEnvironmentColours";
 import type { SkyEnvironmentBinding } from "../environment/parseNativeTimeTables";
 import type { RunningWorldTimeOfDay, WorldTimeOfDay } from "../scene/world/worldTimeOfDay";
+import { hourlyLightingVariables, type TileLightingReading } from "./hourlyLightingVariables";
 
 export interface TimeOfDayGroupContext {
   readonly timeOfDay: WorldTimeOfDay;
   readonly adapter: Pick<GameWorldAdapter, "dispatch">;
   readonly skyEnvironmentColours: (() => readonly SkyEnvironmentColourInspection[]) | null;
   readonly skyAbsentReason: string;
+  readonly tileLighting: () => TileLightingReading;
 }
 
 const dayNightReport = "DB-4 day-night-cycle.json fe5de165";
@@ -164,8 +166,16 @@ export function attachTimeOfDayGroup(section: DevSection, context: TimeOfDayGrou
     return;
   }
   const variables = () => timeOfDayVariables(timeOfDay, context);
-  group.note("DB-4 time of day from the staged Env.int and timeenv tables. Only the sky, haze and cloud colours reach the screen.", {
+  group.note("DB-4 time of day from the staged Env.int and timeenv tables. The sky, haze and cloud colours and the BSP lightmap hour reach the screen.", {
     testId: "time-of-day-status", tone: "info", variables,
-    hint: "Ambient, HSV lights, sun and moon, terrain and the dynamic-light gate stay inspection only (environment-lighting-composition-unresolved)." });
+    hint: "Terrain vertex colour, static mesh visibility and ambient, and actor ambient follow the hour under Hourly lighting; their final colour is d3d-programmable-composition. Sun and moon have no Babylon applier (environment-lighting-composition-unresolved)." });
   attachTimeOfDayControls(group, timeOfDay, context, variables);
+  const lightingVariables = () => hourlyLightingVariables(context.tileLighting);
+  group.readout({ label: "Hourly lighting", testId: "time-of-day-hourly-lighting", variables: lightingVariables,
+    hint: "DB-7 hourly lighting per surface: BSP lightmap slot, terrain vertex colour, static mesh visibility and ambient, actor ambient, and every named gap.",
+    value: () => {
+      const values = lightingVariables();
+      const ported = values.filter(entry => entry.status === "native").length;
+      return `${ported} ported values · ${values.length - ported} named gaps`;
+    } });
 }
