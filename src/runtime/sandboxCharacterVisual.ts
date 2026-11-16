@@ -8,14 +8,8 @@ export type SandboxAppearanceOfCharacterRecord = (record: NativeCharacterCatalog
 
 export type SandboxCharacterPresentation = SandboxNpcPresentation;
 
-const playerProfileNotLoadedReason = "its player profile is not loaded in this sandbox";
-
 function isCharacterCatalogRecord(record: object): record is NativeCharacterCatalogRecord {
   return "chargrpIndex" in record && "playerProfileId" in record;
-}
-
-export function sandboxLoadedPlayerProfileAppearance(loadedPlayerProfileId: string, loadedAppearanceId: string): SandboxAppearanceOfCharacterRecord {
-  return record => record.playerProfileId === loadedPlayerProfileId ? { appearanceId: loadedAppearanceId } : { unavailableReason: playerProfileNotLoadedReason };
 }
 
 export function resolveSandboxCharacterPresentation(index: NativeCatalogIndex, templateIndex: number,

@@ -8,17 +8,27 @@ import type { ActorClipPlayer } from "../../src/animation/actorClipPlayback";
 import type { CharacterVisual, CharacterVisualFactory } from "../../src/assets/CharacterVisual";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
 import { EntityRegistry } from "../../src/entities/EntityRegistry";
-import {
-  resolveSandboxCharacterPresentation, sandboxCharacterVisualFactory, sandboxLoadedPlayerProfileAppearance,
-} from "../../src/runtime/sandboxCharacterVisual";
+import type { NativeCharacterProfile } from "../../src/assets/native/NativeCharacterVisual";
+import { sandboxCharacterAppearances } from "../../src/runtime/sandboxCharacterAppearances";
+import { resolveSandboxCharacterPresentation, sandboxCharacterVisualFactory } from "../../src/runtime/sandboxCharacterVisual";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import { createSpawnedCharacterEntity } from "../../src/world/sandboxCommands";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
+import { fixturePlayerProfile, modelArchiveFixture, serveStoreFiles } from "../support/nativeActorCatalogFixtures";
+import { catalogWith } from "../support/nativeCatalogIndexFixtures";
 
 const loadedProfileId = "human-male-fighter";
 const loadedAppearanceId = `native-player:${loadedProfileId}`;
-const appearanceOfCharacterRecord = sandboxLoadedPlayerProfileAppearance(loadedProfileId, loadedAppearanceId);
+const generatedProfile = { ...fixturePlayerProfile, id: "character-1", chargrpIndex: 1, catalogId: "character-model:1", upperItems: [],
+  forwardAxis: [1, 0, 0] as const, actorScale: [1, 2, 3] as const };
+
+function characterAppearanceSources(catalog = catalogWith({})) {
+  return { catalog, playerProfiles: new Map([[generatedProfile.id, generatedProfile]]),
+    loadedAppearanceByProfile: new Map([[loadedProfileId, loadedAppearanceId]]), characterProfiles: new Map<string, NativeCharacterProfile>() };
+}
+
+const appearanceOfCharacterRecord = sandboxCharacterAppearances(characterAppearanceSources());
 
 function catalogIndexOver(lookups: readonly NativeCatalogLookup[]): NativeCatalogIndex {
   const byKey = new Map(lookups.map(lookup => [lookup.key, lookup]));
@@ -30,7 +40,8 @@ function catalogIndexOver(lookups: readonly NativeCatalogLookup[]): NativeCatalo
 
 const characterLookups: readonly NativeCatalogLookup[] = [
   { status: "converted", key: "character:0", namedGaps: [], record: { chargrpIndex: 0, playerProfileId: loadedProfileId, catalogId: "human-male-fighter:0" } },
-  { status: "converted", key: "character:1", namedGaps: [], record: { chargrpIndex: 1, playerProfileId: "human-female-fighter", catalogId: "human-female-fighter:0" } },
+  { status: "converted", key: "character:1", namedGaps: [], record: { chargrpIndex: 1, playerProfileId: "character-1", catalogId: "character-model:1" } },
+  { status: "converted", key: "character:5", namedGaps: [], record: { chargrpIndex: 5, playerProfileId: "character-5", catalogId: "character-model:5" } },
   { status: "gap", key: "character:4", reason: "converter-refused:chargrp row 4", coverageStatus: "gap" },
 ];
 
@@ -80,9 +91,40 @@ describe("spawn-character presentation through the catalog index", () => {
     visual.dispose();
   });
 
-  it("marks a converted record whose player profile is not loaded instead of drawing another body", () => {
-    expect(resolveSandboxCharacterPresentation(catalogIndexOver(characterLookups), 1, appearanceOfCharacterRecord))
-      .toEqual({ missingAssetDiagnostic: "character:1 converted but its player profile is not loaded in this sandbox" });
+  it("gives a converted record with a served profile the appearance of that profile, registered once with its profile values", () => {
+    const sources = characterAppearanceSources(), appearanceOf = sandboxCharacterAppearances(sources);
+    expect(resolveSandboxCharacterPresentation(catalogIndexOver(characterLookups), 1, appearanceOf)).toEqual({ appearanceId: "native-player:character-1" });
+    const registered = sources.characterProfiles.get("native-player:character-1")!;
+    expect(resolveSandboxCharacterPresentation(catalogIndexOver(characterLookups), 1, appearanceOf)).toEqual({ appearanceId: "native-player:character-1" });
+    expect(sources.characterProfiles.get("native-player:character-1")).toBe(registered);
+    expect([...sources.characterProfiles.keys()]).toEqual(["native-player:character-1"]);
+    expect(registered.clips).toEqual(generatedProfile.clips);
+    expect(registered.forwardAxis?.asArray()).toEqual([1, 0, 0]);
+    expect(registered.actorScale?.asArray()).toEqual([1, 2, 3]);
+    expect(registered.collisionHalfHeight).toBe(.235);
+    expect(typeof registered.asset).toBe("function");
+  });
+
+  it("loads the served profile model on spawn and checks it against the profile", async () => {
+    const model = await modelArchiveFixture(generatedProfile.sourceObject, generatedProfile.sourceSha256);
+    serveStoreFiles(new Map([[model.archive, model.bytes]]));
+    const sources = characterAppearanceSources(catalogWith({ models: [{ id: generatedProfile.catalogId, archive: model.archive, archiveSha256: model.archiveSha256 }] }));
+    sandboxCharacterAppearances(sources)({ chargrpIndex: 1, playerProfileId: "character-1", catalogId: "character-model:1" });
+    const loader = sources.characterProfiles.get("native-player:character-1")!.asset;
+    if (typeof loader !== "function") throw new Error("a served character must load its model on spawn");
+    expect((await loader(new AbortController().signal)).manifest.source.object).toBe(generatedProfile.sourceObject);
+    const mismatched = characterAppearanceSources(catalogWith({ models: [{ id: generatedProfile.catalogId, archive: model.archive, archiveSha256: model.archiveSha256 }] }));
+    mismatched.playerProfiles.set("character-1", { ...generatedProfile, sourceSha256: "c".repeat(64) });
+    sandboxCharacterAppearances(mismatched)({ chargrpIndex: 1, playerProfileId: "character-1", catalogId: "character-model:1" });
+    const mismatchedLoader = mismatched.characterProfiles.get("native-player:character-1")!.asset;
+    if (typeof mismatchedLoader !== "function") throw new Error("a served character must load its model on spawn");
+    await expect(mismatchedLoader(new AbortController().signal)).rejects.toThrow("Native player body source identity mismatch.");
+    vi.unstubAllGlobals();
+  });
+
+  it("marks a converted record whose player profile is not served", () => {
+    expect(resolveSandboxCharacterPresentation(catalogIndexOver(characterLookups), 5, appearanceOfCharacterRecord))
+      .toEqual({ missingAssetDiagnostic: "character:5 converted but player profile character-5 is not in the served player profiles" });
   });
 
   it("marks a gap record with its coverage reason", () => {

@@ -33,7 +33,8 @@ import { resolveNativeHumanHandAnchor } from "../assets/native/nativeHumanHandAn
 import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionCamera";
 import { isSceneSuspended } from "../engine/renderSuspension";
 import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
-import { sandboxCharacterVisualFactory, sandboxLoadedPlayerProfileAppearance } from "./sandboxCharacterVisual";
+import { sandboxCharacterVisualFactory } from "./sandboxCharacterVisual";
+import { sandboxCharacterAppearances, servedPlayerAppearanceId } from "./sandboxCharacterAppearances";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
 import { actorClipListingEvents, wireSpawnedActorSounds } from "./spawnedActorSoundWiring";
 import { createSandboxRuntimeActions } from "./sandboxRuntimeActions";
@@ -100,7 +101,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   const playerProfile = catalog.playerProfile ?? defaultNativePlayerProfile;
   const playerChoices = catalog.playerProfiles ?? new Map([[playerProfile.id, playerProfile]]);
   const usesDefaultPlayerProfile = playerProfile.id === defaultNativePlayerProfile.id;
-  const appearanceId = usesDefaultPlayerProfile ? "native-human-fighter" : `native-player:${playerProfile.id}`;
+  const appearanceId = usesDefaultPlayerProfile ? "native-human-fighter" : servedPlayerAppearanceId(playerProfile.id);
   const assets: ReadonlyMap<string, AssetPackage> = catalog.models, musveren = catalog.npcProfiles.get("npc:21622");
   validateLifetime();
   if (![playerProfile.catalogId, "musveren:0", ...playerProfile.upperItems.map(item => item.catalogId)].every(id => assets.has(id))) {
@@ -119,6 +120,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   ]);
   const sandboxAppearanceOfNpc = sandboxNpcAppearances({ catalog: servedCatalog, npcProfiles: catalog.npcProfiles,
     loadedAppearanceByModel: loadedSandboxNpcAppearanceByModel, characterProfiles: profiles });
+  const sandboxAppearanceOfCharacter = sandboxCharacterAppearances({ catalog: servedCatalog, playerProfiles: playerChoices,
+    loadedAppearanceByProfile: new Map([[playerProfile.id, appearanceId]]), characterProfiles: profiles });
   const boundaryReleases: (() => void)[] = [];
   let disposed = false;
   const stop = () => {
@@ -202,7 +205,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       createVisual: sandboxCharacterVisualFactory(catalogIndex,
         sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, catalogEquippedItemSource(servedCatalog, catalogIndex), actorMaterialProgramsOfCatalog(servedCatalog),
           actionCues, footsteps, clipPreview), sandboxAppearanceOfNpc),
-        sandboxLoadedPlayerProfileAppearance(playerProfile.id, appearanceId)),
+        sandboxAppearanceOfCharacter),
       actorClipPlayer: entityId => clipPreview.actorClipPlayer(entityId),
       ...(section ? { ground: (position: WorldPosition) => movement.groundBelow(position) } : {}),
       movementPose: entityId => movement.pose(entityId),
