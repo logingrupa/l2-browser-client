@@ -168,9 +168,9 @@ describe("createNativeMaterial", () => {
 
   it("exports the particle fragment hook and texture frames for the actors render stage", () => {
     const translucent = particleFragmentChain(3);
-    expect(translucent).toMatchObject({ fragmentFunctionName: "ue2ParticleFragment", babylonBlend: { alphaMode: Constants.ALPHA_SCREENMODE }, blend: { fogFamily: "black" } });
+    expect(translucent).toMatchObject({ fragmentFunctionName: "ue2ParticleFragment", babylonBlend: { alphaMode: Constants.ALPHA_ONEONE }, blend: { fogFamily: "black" } });
     expect(translucent.fragmentFunctionSource).toContain("vec4 ue2ParticleFragment(vec4 sourceColour, float viewDepth)");
-    expect(particleFragmentChain(6).babylonBlend.alphaMode).toBe(Constants.ALPHA_ONEONE);
+    expect(particleFragmentChain(6).babylonBlend.alphaMode).toBe(Constants.ALPHA_SCREENMODE);
     expect(() => particleFragmentChain(2)).toThrow(/destination-colour,source-colour has no Babylon blend state/);
     expect(selectTextureFrame({ frameCount: 4, maximumFrameRate: 10 }, 0.25).index).toBe(2);
     expect(FOG_DISABLED.fogEnd).toBeNull();

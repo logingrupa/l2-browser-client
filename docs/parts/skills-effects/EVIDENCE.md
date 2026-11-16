@@ -102,7 +102,7 @@ POL-04 corrections (simulator version 2): first-step draws, polar start through 
 Effect playback runs on the simulator and the UE2 material library; the closed-form timelines, per-slot pool and preview material are deleted (02-69 SUMMARY).
 
 - Vertex stage: `src/effects/particles/render/particleInstances.ts` writes each live slot as one thin instance (matrix, colour, atlas cell, sprite half extent and roll) in browser axes through `sourcePositionToWorld`. Mesh particles draw T * R * S with the GLB primitive node transforms baked into the vertices; sprites face the camera in the vertex shader. World-stored (Spray, Independent) particles skip the live bRotEmitter rotation, owner-frame ones take it, and mesh orientation follows it as in the reference (b9092b3). Instance buffers grow with the emitter columns (threat T-02-69-01).
-- Fragment stage: `particleMaterialBinding.ts` builds the material from `particleFragmentChain(DrawStyle)` with the record's ZTest, ZWrite, AlphaTest and RenderTwoSided, colour texel * particle colour, and sets `metadata.nativeEmitterOrdinal` on every effect mesh. No effect mesh sets `alphaIndex`. DrawStyle 3 and 6 keep the shipped pairs (`ALPHA_SCREENMODE`, `ALPHA_ONEONE`) until the swatch comparison is recorded; `particleMaterialBinding.test.ts` fails if they flip.
+- Fragment stage: `particleMaterialBinding.ts` builds the material from `particleFragmentChain(DrawStyle)` with the record's ZTest, ZWrite, AlphaTest and RenderTwoSided, colour texel * particle colour, and sets `metadata.nativeEmitterOrdinal` on every effect mesh. No effect mesh sets `alphaIndex`. DrawStyle 3 draws ONE, ONE (`ALPHA_ONEONE`) and 6 ONE, INVSRCCOLOR (`ALPHA_SCREENMODE`) from the IMPORTA RM-2 D3DDrv pass setup (0x100273d0 -> 0x10027acb); the emitter field identities stay asserted, not derived (RM-8 open).
 - `loadEffectComponent.ts` loads one emitter's geometry and its texture chain (AnimNext frames follow the library `selectTextureFrame`), and every mesh primitive gets its own material and texture. `emitterActorPlayback.ts` runs an emitter actor on `createEffectScheduler`; the init, shot and component previews play through it, and an AutoDestroy actor ends the preview. It removes the effect it replaces, stops or disposes from the scheduler, so replays leave no undrawn simulation stepping (02-REVIEW-FIX).
 - Natives: `emitterNatives.ts` applies AdjustparticleLife, SetSizeScale, SetDelayed, Kill and Trigger to a live emitter actor from a closed name list; an unknown name is refused (threat T-02-69-02). Since 02-84 only the playback hook `applyNative` imports it (`emitterNatives.test.ts`). After AdjustparticleLife lowers ForcedMaxParticles, the update, the live listing and the dead rule use the allocated slots (d238922; traces unchanged).
 - RibbonEmitter: `ribbonEmitter.ts` samples, interpolates, drops and decays ribbon points from a point source; rewritten from the client in wave 12 (next section). Ribbons simulate but do not draw yet: the staged manifest binds no RibbonEmitter texture (`ribbon-texture-unstaged`).
@@ -112,14 +112,12 @@ Effect playback runs on the simulator and the UE2 material library; the closed-f
 
 | Check | Result |
 | --- | --- |
-| `tests/unit/particleMaterialBinding.test.ts` | shipped DrawStyle 3 and 6 pairs, record depth, culling and alpha test, emitter ordinal metadata, instance matrices, atlas cells and overrides |
+| `tests/unit/particleMaterialBinding.test.ts` | DrawStyle 3 and 6 D3DDrv pass blends, record depth, culling and alpha test, emitter ordinal metadata, instance matrices, atlas cells and overrides |
 | `tests/unit/loadEffectComponent.test.ts`, `nativeEffectRetained.test.ts` | baked primitive geometry, per-primitive library materials, AnimNext frames, refusals and cleanup; all six retained Power Strike components render live particles |
 | `tests/unit/ribbonEmitter.test.ts` | synthetic ribbon golden trace at seed 1, step 1/60, 0 ulp (334 rows, regenerated in wave 12); NPC caster gets no trail |
 | `tests/unit/emitterNatives.test.ts`, `mapEmitterPlayback.test.ts`, `nativeSkeletalMaterials.test.ts` | each native as its row states; visibility gate; library and magenta slots |
 | `DEV_PORT=5175 pnpm test:e2e tests/browser/sandbox-skill-cast.spec.ts` (shared store) | 4 passed: `?skill=3:1` plays `lineageeffect.s_u002_a` (init) and `lineageeffect.p_u004_a` (shot) to destruction with live particles drawn; screenshots `artifacts/skill-evidence/skill-3-1-cast-1440x900.png` and `skill-3-1-cast-932x430.png`; no horizontal scroll at 430 x 932 |
 | `node tools/reference-overlap/referenceOverlap.mjs --area particles` | at 02-69: 547 blocking (479 the GLSL line array of `particleMaterialBinding.ts`), 2,552 unreviewed, 4 stale sign-offs (`artifacts/reference-overlap/02-69-particles.json`); the area exits 0 since cf2c891 |
-
-PTDS 3 and 6 stay as shipped until the swatch comparison with L2.exe is recorded here.
 
 ### Clean-room ribbon rewrite (wave 12, 2026-11-10)
 

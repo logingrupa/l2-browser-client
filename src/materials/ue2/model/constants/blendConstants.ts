@@ -48,10 +48,6 @@ const particleDrawStyleReferencePairs: readonly NamedBlendPair[] = [
   named("PTDS_Brighten", pair("one", "inverse-source-colour")),
 ];
 
-const particleDrawStyleShippedPairs: readonly NamedBlendPair[] = particleDrawStyleReferencePairs.map((reference, drawStyle) =>
-  drawStyle === 3 ? named(reference.name, pair("one", "inverse-source-colour"))
-    : drawStyle === 6 ? named(reference.name, pair("one", "one")) : reference);
-
 export const BLEND_CONSTANTS = {
   finalBlendPairs: {
     id: "blend.fb-pairs",
@@ -96,10 +92,10 @@ export const BLEND_CONSTANTS = {
   particleDrawStylePairs: {
     id: "blend.ptds-pairs",
     value: particleDrawStyleReferencePairs,
-    provenance: `${materialNotes} blend.ptds-pairs; lineage2js/src/materials/particle-material/particle-material.ts:145-201; the runtime keeps the shipped src/effects/nativeEffectMaterial.ts:152 mapping, DrawStyle 3 ONE, INVSRCCOLOR and 6 ONE, ONE, until a swatch comparison with L2.exe is recorded in docs/parts/skills-effects/EVIDENCE.md (critic conflict 14)`,
-    status: "unconfirmed",
-    interludeEvidence: null,
-    runtimeDefault: particleDrawStyleShippedPairs,
+    provenance: "IMPORTA-PC RM-2 report rea-in/20261113-roadmap/power-strike-caster-burst.json, replayed 704 of 704 instructions: the D3DDrv pass setup switches on material+0x578 and DrawStyle 3 PTDS_Translucent writes source ONE, destination ONE, DrawStyle 6 PTDS_Brighten source ONE, destination INVSRCCOLOR; the pass is committed as D3DRS_SRCBLEND 19 and D3DRS_DESTBLEND 20; the emitter field identities +0x344 DrawStyle and +0x4d4 bit 0 UseMeshBlendMode are asserted by the report, not derived (RM-8 open)",
+    status: "confirmed-interlude",
+    interludeEvidence: "D3DDrv.dll 05622dde 0x100273d0 -> 0x10027acb (src 2, dst 2 for DrawStyle 3; src 2, dst 4 for DrawStyle 6), SetRenderState 0x13/0x14 at 0x1002ef48/0x1002ef6f; emitter +0x344 and +0x4d4 field identities asserted, not derived (RM-8 open)",
+    runtimeDefault: particleDrawStyleReferencePairs,
   },
   particleAlphaPair: {
     id: "blend.ptds-alpha",

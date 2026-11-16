@@ -44,13 +44,12 @@ function steppedEmitter(source: EmitterSourceRecord, steps: number) {
 }
 
 describe("particle material binding through the UE2 material library", () => {
-  it.each([[3, "ALPHA_SCREENMODE"], [6, "ALPHA_ONEONE"]] as const)("keeps the shipped DrawStyle %s pair until the swatch comparison is recorded", (drawStyle, alphaModeName) => {
+  it.each([[3, "ALPHA_ONEONE"], [6, "ALPHA_SCREENMODE"]] as const)("draws DrawStyle %s with the D3DDrv pass blend %s", (drawStyle, alphaModeName) => {
     const { scene, texture, mesh } = sceneWithTexture();
     const binding = drawnBinding(scene, mesh, { record: parseEmitterRecord(withOverrides(meshSource, { DrawStyle: drawStyle })), emitterOrdinal: 1, texture });
     expect(binding.inspect().babylonAlphaMode).toBe(alphaModeName);
     expect(binding.chain.blend.pair).toEqual(BLEND_CONSTANTS.particleDrawStylePairs.runtimeDefault[drawStyle]!.pair);
-    expect(binding.chain.blend.pair).not.toEqual(binding.chain.blend.referencePair);
-    expect(binding.material.alphaMode).toBe(drawStyle === 3 ? Constants.ALPHA_SCREENMODE : Constants.ALPHA_ONEONE);
+    expect(binding.material.alphaMode).toBe(drawStyle === 3 ? Constants.ALPHA_ONEONE : Constants.ALPHA_SCREENMODE);
   });
 
   it("takes depth, culling and alpha test from the record and tags the mesh with its emitter ordinal", () => {

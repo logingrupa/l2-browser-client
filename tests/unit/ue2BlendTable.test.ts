@@ -81,10 +81,12 @@ describe("particle draw style rows", () => {
     expect(blendFactorsForParticleDrawStyle(drawStyle)).toMatchObject({ pair: { source, destination }, alphaPair: { source: "zero", destination: "one" } });
   });
 
-  it("keeps the shipped PTDS 3 and 6 pairs until a swatch comparison is recorded", () => {
-    expect(blendFactorsForParticleDrawStyle(3)).toMatchObject({ pair: { source: "one", destination: "inverse-source-colour" }, referencePair: { source: "one", destination: "one" } });
-    expect(blendFactorsForParticleDrawStyle(6)).toMatchObject({ pair: { source: "one", destination: "one" }, referencePair: { source: "one", destination: "inverse-source-colour" } });
-    expect(MATERIAL_CONSTANT_TABLES.blend.particleDrawStylePairs.status).toBe("unconfirmed");
+  it("draws PTDS 3 ONE, ONE and PTDS 6 ONE, INVSRCCOLOR from the D3DDrv pass setup with the emitter field identities left asserted", () => {
+    expect(blendFactorsForParticleDrawStyle(3)).toMatchObject({ modeName: "PTDS_Translucent", pair: { source: "one", destination: "one" } });
+    expect(blendFactorsForParticleDrawStyle(6)).toMatchObject({ modeName: "PTDS_Brighten", pair: { source: "one", destination: "inverse-source-colour" } });
+    expect(MATERIAL_CONSTANT_TABLES.blend.particleDrawStylePairs).toMatchObject({ status: "confirmed-interlude",
+      interludeEvidence: expect.stringMatching(/^D3DDrv\.dll 05622dde 0x100273d0 -> 0x10027acb .*asserted, not derived \(RM-8 open\)$/) });
+    expect(MATERIAL_CONSTANT_TABLES.blend.particleDrawStylePairs.runtimeDefault).toBe(MATERIAL_CONSTANT_TABLES.blend.particleDrawStylePairs.value);
     expect(() => blendFactorsForParticleDrawStyle(7)).toThrow(RangeError);
   });
 });
@@ -103,9 +105,10 @@ describe("material constants rows", () => {
     expect(new Set(rows.map(row => row.id)).size).toBe(rows.length);
   });
 
-  it("keep every reference factor unconfirmed and cite NATIVE_FLAMES for the Interlude OB_Brighten and OB_Translucent pairs", () => {
+  it("keep every other reference factor unconfirmed and cite NATIVE_FLAMES for the Interlude OB_Brighten and OB_Translucent pairs", () => {
     const blendRows = Object.values(MATERIAL_CONSTANT_TABLES.blend);
-    for (const row of blendRows.filter(row => row.id !== "blend.ob-brighten-translucent" && row.id !== "blend.enum-ordinals" && row.id !== "blend.non-blending-root")) {
+    const decidedRowIds = ["blend.ob-brighten-translucent", "blend.enum-ordinals", "blend.non-blending-root", "blend.ptds-pairs"];
+    for (const row of blendRows.filter(row => !decidedRowIds.includes(row.id))) {
       expect(row.status).toBe("unconfirmed");
     }
     expect(MATERIAL_CONSTANT_TABLES.blend.outputBlendingInterludePairs.provenance).toContain("docs/NATIVE_FLAMES.md:9");

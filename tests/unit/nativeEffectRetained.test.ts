@@ -17,7 +17,7 @@ const manifest = parseEffectManifest(JSON.parse(await readFile(resolve(directory
 const bundle: EffectBundle = { manifest, manifestSha256, readResource: async (resource, signal) => {
   signal.throwIfAborted(); const bytes = new Uint8Array(await readFile(resolve(directory, resource.file))); signal.throwIfAborted(); return bytes;
 } };
-const shippedAlphaModeByDrawStyle: Readonly<Record<number, string>> = { 3: "ALPHA_SCREENMODE", 6: "ALPHA_ONEONE" };
+const alphaModeByDrawStyle: Readonly<Record<number, string>> = { 3: "ALPHA_ONEONE", 6: "ALPHA_SCREENMODE" };
 
 describe("retained Power Strike components render through the simulator and the UE2 particle material", () => {
   it.each(manifest.components)("plays $object without mutating source records", async component => {
@@ -28,7 +28,7 @@ describe("retained Power Strike components render through the simulator and the 
       expect(loaded.root.isEnabled()).toBe(false);
       expect(loaded.meshes.every(mesh => mesh.getTotalVertices() > 0 && !mesh.isPickable && mesh.doNotSerialize)).toBe(true);
       expect(loaded.meshes.every(mesh => (mesh.metadata as { nativeEmitterOrdinal: number }).nativeEmitterOrdinal === component.emitterOrdinal)).toBe(true);
-      expect(loaded.materials.map(binding => binding.inspect().babylonAlphaMode)).toEqual(loaded.materials.map(() => shippedAlphaModeByDrawStyle[loaded.record.DrawStyle]));
+      expect(loaded.materials.map(binding => binding.inspect().babylonAlphaMode)).toEqual(loaded.materials.map(() => alphaModeByDrawStyle[loaded.record.DrawStyle]));
       const emitter = createEmitterSimulation(parseEmitterRecord(component), createRandomStream(deriveStreamSeed(1, "test", [component.object])));
       const context = { owner: { location: { x: 0, y: 0, z: 0 }, rotation: { pitch: 0, yaw: 0, roll: 0 } }, emitterRotation: { pitch: 0, yaw: 0, roll: 0 },
         globalOffset: { x: 0, y: 0, z: 0 }, actorAutoReset: false, actorAutoDestroy: false, siblings: [emitter.runtime] };

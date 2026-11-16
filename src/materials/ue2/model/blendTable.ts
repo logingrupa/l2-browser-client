@@ -35,7 +35,6 @@ export interface ParticleDrawStyleBlend {
   readonly modeName: string;
   readonly pair: BlendFactorPair;
   readonly alphaPair: BlendFactorPair;
-  readonly referencePair: BlendFactorPair;
   readonly fogFamily: FogFamily;
   readonly constantIds: readonly string[];
 }
@@ -153,14 +152,13 @@ export function blendFactorsForMaterial(program: MaterialProgram): MaterialBlend
 }
 
 export function blendFactorsForParticleDrawStyle(drawStyle: number): ParticleDrawStyleBlend {
-  const shipped = BLEND_CONSTANTS.particleDrawStylePairs.runtimeDefault[drawStyle];
-  const reference = BLEND_CONSTANTS.particleDrawStylePairs.value[drawStyle];
+  const drawStylePair = BLEND_CONSTANTS.particleDrawStylePairs.runtimeDefault[drawStyle];
   const fogFamily = FOG_CONSTANTS.particleFamilies.runtimeDefault[drawStyle];
-  if (!Number.isInteger(drawStyle) || !shipped?.pair || !reference?.pair || fogFamily === undefined) {
+  if (!Number.isInteger(drawStyle) || !drawStylePair?.pair || fogFamily === undefined) {
     throw new RangeError(`Particle draw style ${drawStyle} has no blend table row.`);
   }
   return {
-    drawStyle, modeName: shipped.name, pair: shipped.pair, alphaPair: BLEND_CONSTANTS.particleAlphaPair.runtimeDefault, referencePair: reference.pair, fogFamily,
+    drawStyle, modeName: drawStylePair.name, pair: drawStylePair.pair, alphaPair: BLEND_CONSTANTS.particleAlphaPair.runtimeDefault, fogFamily,
     constantIds: [BLEND_CONSTANTS.particleDrawStylePairs.id, BLEND_CONSTANTS.particleAlphaPair.id, FOG_CONSTANTS.particleFamilies.id],
   };
 }
