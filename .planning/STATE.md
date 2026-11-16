@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-36-PLAN.md
-last_updated: "2026-11-16T13:45:14.046Z"
+stopped_at: Completed 03-27-PLAN.md
+last_updated: "2026-11-16T16:20:24.716Z"
 last_activity: 2026-11-14
 last_activity_desc: "Phase 03 plan 03-25 complete (shared skeletal material programs: 3,381 material-program units in the materialPrograms slice; skinned slots draw through the UE2 library with bone influences)"
-state_head: bf8cf84f13b040f32bf2aeadec31e35509cb6381
+state_head: c167ee92ca044dc164af03d5903323729c4bddd2
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 152
-  completed_plans: 129
+  completed_plans: 130
   percent: 0
 ---
 
@@ -175,6 +175,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P24 | 1h 50m | 3 tasks | 27 files |
 | Phase 03 P25 | 1h 30m | 3 tasks | 52 files |
 | Phase 3 P36 | 2h 48m | 3 tasks | 40 files |
+| Phase 03 P27 | 81min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -472,6 +473,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 3]: 03-36: P1224 one library shader per tile composites the verified terrain pass chain; BLENDOP ADD is the one assumption row
 - [Phase 3]: 03-36: P1225 to P1226 Ai only from equal-channel alpha maps, bUseAlpha layers listed, sampler budget kept as a reason
 - [Phase 3]: 03-36: P1227 to P1228 L2FogInfo selection follows Q12 but waits on GL2TerrainCR, the fade reference position and the list producer; no fog transition yet
+- [Phase 03]: 03-27: a class with its WaitAnimName families keeps the profile gap actor-default-unresolved:RunAnimName until Q2b verifies the run, attack and death family getters (row 1217)
+- [Phase 03]: 03-27: every character animation set is the Animation the class Mesh default root mesh serializes (Q3, row 1218)
+- [Phase 03]: 03-27: no client character route on idle alone; the sandbox keeps each key's gap marker (row 1219)
 
 ### Pending Todos
 
@@ -599,6 +603,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Key content digests and material programs (CHECK-02, 03-25): `scripts/native_store/side_by_side_key_digest.py` attributes no materialPrograms record to the npc:, item: or character: keys whose models name it, so a program reseal touches no key and the chain step 4 sweep cannot see it (03-25 touched no key). Unblocked by: attributing listing pins to keys through the model provenance slots in the digest owner.
 - Actor material programs left diagnostic or gapped (MAT-01, MAT-02, 03-25): 895 plans are material-reference-external (specular TexEnvMap to `CubeMaps.*` in another package), 21 material-feature-unported, 10 texture-image-absent, 1 material-class-unported; 33 objects are material-class-unported:Engine.GlowModifier. Unblocked by: cross-package texture nodes in the shared material graph and the GlowModifier class port.
 - Union rebuild for 03-25 (INT-01, P1223): exit 1 with union bfd4c648 unchanged; `actors/l2/b9973a89.../model.glb` (item:429 armor, pin c8fce657...) read through the page cache with one bit flipped at offset 5,484,658 (0xeb as 0xfb), while an unbuffered read of the disk matches the pin. Missing: the union with the materialPrograms slice and 03-25 chain steps 4 and 5. Unblocked by: one re-run of the union after the flipped page leaves memory (for example after a restart), then the touched-key sweep, the queue and a 25-key npcs load slice.
+- Character profiles (ACT-01, 03-27, rows 1217 and 1219): all 14 character models convert, and every key keeps `actor-default-unresolved:RunAnimName`. Missing: a verified source for the run, attack and death families (Q2b: are `RunAnimName`, `Atk01AnimName` and `DeathAnimName` read by `CurWeaponType` getters like `APawn::GetWaitAnimName` 0x103416e0, and what does WT_THROW fall back to?), and a generated chargrp player profile pack that lets the sandbox load a character key. 03-30 equips on that character. Unblocked by: a verified Q2b answer, then a plan for that player profile pack.
 - Sky colour (WORLD-03, MAT-01, MAT-02, debug tile-15-22-yellow-sky and sky-colour-double-transfer): tile skies draw through the UE2 library from the programs their `sky.json` lists (143 world tiles, 3 programs), so the 15_22 background (0,150,206) reaches the screen once through the display gamma ramp as (13,209,255). Missing: the shared 20_20 sky `public/l2/skies/f7a0b5ef...` (pinned in `nativeSkyPresentation.ts`, route `/`) has swapped colours and lists no programs, so it still draws through Babylon PBR, whose sRGB encode runs before the ramp; panners and the hour colours (SkyBoxColor, HazeringColor, CloudColor1) are unwired. Unblocked by: the integration restage and a re-pointed 20_20 sky pin.
 
 ## Deferred Verification
@@ -621,6 +626,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-16T13:45:13.197Z
-Stopped at: Completed 03-36-PLAN.md
+Last session: 2026-11-16T16:20:23.742Z
+Stopped at: Completed 03-27-PLAN.md
 Resume file: None
