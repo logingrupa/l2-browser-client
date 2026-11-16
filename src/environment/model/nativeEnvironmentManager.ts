@@ -87,6 +87,16 @@ function requireFinite(value: number, label: string): number {
   return Math.fround(value);
 }
 
+export function ssqInfoChangeRequest(first: number, second: number): ChangeEnvironmentRequest {
+  return { environmentType: first, immediate: second, endDelayHours: ssqDelayHours.value, peakDelayHours: ssqDelayHours.value,
+    targetWeight: 1, timeoutSeconds: 0, persistent: true };
+}
+
+export function redSkyChangeRequest(timeoutSeconds: number): ChangeEnvironmentRequest {
+  return { environmentType: redSkyEnvironmentType.value, immediate: 0, endDelayHours: redSkyDelayHours.value,
+    peakDelayHours: redSkyDelayHours.value, targetWeight: 1, timeoutSeconds, persistent: false };
+}
+
 export function createNativeEnvironmentManager(settings: NativeEnvironmentManagerSettings): NativeEnvironmentManager {
   const { setup, loadedEnvironmentTypes, readRealSeconds } = settings;
   const clock = createNativeTimeClock(setup, readRealSeconds);
@@ -167,14 +177,10 @@ export function createNativeEnvironmentManager(settings: NativeEnvironmentManage
     },
     receiveServerTime: gameMinutes => clock.receiveServerTime(gameMinutes),
     changeEnvironment,
-    receiveSsqInfo(first, second) {
-      return changeEnvironment({ environmentType: first, immediate: second, endDelayHours: ssqDelayHours.value, peakDelayHours: ssqDelayHours.value,
-        targetWeight: 1, timeoutSeconds: 0, persistent: true });
-    },
+    receiveSsqInfo: (first, second) => changeEnvironment(ssqInfoChangeRequest(first, second)),
     receiveRedSky(timeoutSeconds) {
       if (!Number.isInteger(timeoutSeconds)) throw new RangeError(`Red sky timeout ${timeoutSeconds} must be an integer number of seconds.`);
-      return changeEnvironment({ environmentType: redSkyEnvironmentType.value, immediate: 0, endDelayHours: redSkyDelayHours.value,
-        peakDelayHours: redSkyDelayHours.value, targetWeight: 1, timeoutSeconds, persistent: false });
+      return changeEnvironment(redSkyChangeRequest(timeoutSeconds));
     },
     hour: () => clock.hour(),
     blend: () => ({ oldType, targetType, weight }),

@@ -2,7 +2,9 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DevSheet } from "../../src/ui/devSheet/DevSheet";
-import { attachTimeOfDayGroup, timeOfDayVariables, type TimeOfDayGroupContext } from "../../src/runtime/attachTimeOfDayGroup";
+import { attachTimeOfDayGroup, changeEnvironmentCallText, float32Text, timeOfDayVariables, type TimeOfDayGroupContext } from "../../src/runtime/attachTimeOfDayGroup";
+import { ENVIRONMENT_ENGINE_CONSTANTS } from "../../src/environment/model/nativeEnvironmentEngineConstants";
+import { redSkyChangeRequest, ssqInfoChangeRequest } from "../../src/environment/model/nativeEnvironmentManager";
 import type { SkyEnvironmentColourInspection } from "../../src/scene/world/skyEnvironmentColours";
 import type { RunningWorldTimeOfDay, WorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
 import type { WorldCommand } from "../../src/world/worldTypes";
@@ -172,6 +174,26 @@ describe("time of day developer sheet group", () => {
     const { dispatched, submit } = attachGroup(timeOfDay);
     submit("time-of-day-red-sky", { timeoutSeconds: "45" });
     expect(dispatched).toEqual([{ type: "set-environment-red-sky", timeoutSeconds: 45 }]);
+  });
+
+  it("builds the day part, EnvType and ChangeEnv copy from the engine constants and the loaded types", () => {
+    const timeOfDay = stoppedTimeOfDay();
+    const { context } = attachGroup(timeOfDay);
+    const variables = timeOfDayVariables(timeOfDay, context);
+    const valuesOf = (name: string) => variables.find(entry => entry.name === name)!.values;
+    const { morningStart, dayStart, eveningStart, dayEnd } = ENVIRONMENT_ENGINE_CONSTANTS.dayPartBounds.value;
+    expect(valuesOf("env.dayPart")).toBe(`0 [${morningStart},${dayStart}) | 1 [${dayStart},${eveningStart}) | 2 [${eveningStart},${dayEnd}) | 3 otherwise`);
+    expect(valuesOf("env.targetType")).toBe("EnvType 0 | EnvType 1 | EnvType 2 | EnvType 3 (type names unresolved; never dusk or dawn)");
+    expect(changeEnvironmentCallText(ssqInfoChangeRequest(0, 0), { environmentType: "type", immediate: "immediate" }))
+      .toBe("ChangeEnv(type, immediate, 0.02, 0.02, 1, 0, 1)");
+    expect(changeEnvironmentCallText(redSkyChangeRequest(0), { timeoutSeconds: "timeout" })).toBe("ChangeEnv(3, 0, 0.002, 0.002, 1, timeout, 0)");
+  });
+
+  it("writes a float32 as the shortest decimal that rounds back to it", () => {
+    expect(float32Text(ENVIRONMENT_ENGINE_CONSTANTS.ssqDelayHours.value)).toBe("0.02");
+    expect(float32Text(Math.fround(0.1))).toBe("0.1");
+    expect(float32Text(Math.fround(1 / 3))).toBe("0.33333334");
+    expect(float32Text(12)).toBe("12");
   });
 
   it("reads the game time and the environment type pair in the readout", () => {

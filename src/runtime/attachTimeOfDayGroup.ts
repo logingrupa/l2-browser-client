@@ -3,6 +3,8 @@ import type { VariableInfo } from "../ui/devSheet/types";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { RgbBytes, TimeScaleSample } from "../environment/model/sampleNativeTimeTables";
 import type { EnvironmentTransitionGap } from "../environment/model/nativeEnvironmentColours";
+import { ENVIRONMENT_ENGINE_CONSTANTS } from "../environment/model/nativeEnvironmentEngineConstants";
+import { redSkyChangeRequest, ssqInfoChangeRequest, type ChangeEnvironmentRequest } from "../environment/model/nativeEnvironmentManager";
 import type { SkyEnvironmentColourInspection } from "../scene/world/skyEnvironmentColours";
 import type { SkyEnvironmentBinding } from "../environment/parseNativeTimeTables";
 import type { RunningWorldTimeOfDay, WorldTimeOfDay } from "../scene/world/worldTimeOfDay";
@@ -15,16 +17,45 @@ export interface TimeOfDayGroupContext {
 }
 
 const dayNightReport = "DB-4 day-night-cycle.json fe5de165";
-const environmentTypeValues = "EnvType 0..3 (type names unresolved; never dusk or dawn)";
 const minutesPerHour = 60;
+const float32SignificantDigits = 9;
 const authoredSkyChannelOrderGap = "authored-sky-channel-order-unresolved";
-const immediateOptions = [
-  { value: "0", label: "0 (blend)", hint: "ChangeEnv starts a 0.02 h window from the current hour." },
-  { value: "1", label: "1 (immediate)", hint: "ChangeEnv switches the old and target types at once." },
-];
+const { dayPartBounds, hoursPerDay } = ENVIRONMENT_ENGINE_CONSTANTS;
 
 const environmentTypeLabel = (environmentType: number) => `EnvType ${environmentType}`;
 const rgbText = (rgb: RgbBytes) => rgb.join(", ");
+
+export function float32Text(value: number): string {
+  for (let digits = 1; digits <= float32SignificantDigits; digits += 1) {
+    const candidate = Number(value.toPrecision(digits));
+    if (Math.fround(candidate) === value) return String(candidate);
+  }
+  return String(value);
+}
+
+export function changeEnvironmentCallText(request: ChangeEnvironmentRequest, argumentNames: Partial<Record<keyof ChangeEnvironmentRequest, string>>): string {
+  const argument = (name: keyof ChangeEnvironmentRequest, text: string) => argumentNames[name] ?? text;
+  return `ChangeEnv(${argument("environmentType", String(request.environmentType))}, ${argument("immediate", String(request.immediate))}, `
+    + `${float32Text(request.endDelayHours)}, ${float32Text(request.peakDelayHours)}, ${request.targetWeight}, `
+    + `${argument("timeoutSeconds", String(request.timeoutSeconds))}, ${request.persistent ? 1 : 0})`;
+}
+
+function dayPartValues(): string {
+  const { morningStart, dayStart, eveningStart, dayEnd } = dayPartBounds.value;
+  return `0 [${morningStart},${dayStart}) | 1 [${dayStart},${eveningStart}) | 2 [${eveningStart},${dayEnd}) | 3 otherwise`;
+}
+
+function environmentTypeValues(timeOfDay: RunningWorldTimeOfDay): string {
+  return `${timeOfDay.environmentTypes.map(environmentTypeLabel).join(" | ")} (type names unresolved; never dusk or dawn)`;
+}
+
+function immediateOptions() {
+  const windowHours = float32Text(ssqInfoChangeRequest(0, 0).endDelayHours);
+  return [
+    { value: "0", label: "0 (blend)", hint: `ChangeEnv starts a ${windowHours} h window from the current hour.` },
+    { value: "1", label: "1 (immediate)", hint: "ChangeEnv switches the old and target types at once." },
+  ];
+}
 
 function clockText(hour: number): string {
   const wholeHour = Math.trunc(hour), minute = Math.trunc((hour - wholeHour) * minutesPerHour);
@@ -70,6 +101,7 @@ function skyColourVariable(binding: SkyEnvironmentBinding, context: TimeOfDayGro
 
 export function timeOfDayVariables(timeOfDay: RunningWorldTimeOfDay, context: TimeOfDayGroupContext): VariableInfo[] {
   const snapshot = () => timeOfDay.manager.snapshot();
+  const typeValues = environmentTypeValues(timeOfDay);
   return [
     nativeVariable("env.hour", () => String(snapshot().clock.hour), "f32 game hour", "UpdateNTime minute/60 + hour + second/3600 in float32"),
     nativeVariable("env.hourSource", () => snapshot().clock.hourSource, "start-time | server-time",
@@ -77,15 +109,15 @@ export function timeOfDayVariables(timeOfDay: RunningWorldTimeOfDay, context: Ti
     nativeVariable("env.timeRatio", () => String(snapshot().clock.timeRatio), "integer game seconds per real second", "Env.int [EnvSetup] TimeRatio"),
     nativeVariable("env.isClock", () => snapshot().clock.isClock ? "1" : "0", "1 runs the clock | 0 keeps the hour", "Env.int [EnvSetup] IsClock"),
     unresolvedVariable("env.frozen", () => "0", snapshot().frozen.reason, "Freeze flag stays 0; its producer 0x10c51050 is not identified"),
-    nativeVariable("env.dayPart", () => String(snapshot().dayPart), "0 [6,8) | 1 [8,22) | 2 [22,24) | 3 otherwise", "UpdateNTime day part at +0x130"),
-    nativeVariable("env.oldType", () => environmentTypeLabel(snapshot().oldType), environmentTypeValues, "ChangeEnv old type"),
-    nativeVariable("env.targetType", () => environmentTypeLabel(snapshot().targetType), environmentTypeValues, "ChangeEnv target type"),
-    nativeVariable("env.persistentType", () => environmentTypeLabel(snapshot().persistentTargetType), environmentTypeValues,
+    nativeVariable("env.dayPart", () => String(snapshot().dayPart), dayPartValues(), "UpdateNTime day part at +0x130"),
+    nativeVariable("env.oldType", () => environmentTypeLabel(snapshot().oldType), typeValues, "ChangeEnv old type"),
+    nativeVariable("env.targetType", () => environmentTypeLabel(snapshot().targetType), typeValues, "ChangeEnv target type"),
+    nativeVariable("env.persistentType", () => environmentTypeLabel(snapshot().persistentTargetType), typeValues,
       "ChangeEnv persistent target, the red sky revert type"),
     nativeVariable("env.weight", () => String(snapshot().weight), "f32 blend weight", "CalcEnvDelta in native branch order"),
     nativeVariable("env.start", () => String(snapshot().transitionStart), "f32 hour", "ChangeEnv window start, no wrap"),
     nativeVariable("env.peak", () => String(snapshot().transitionPeak), "f32 hour", "ChangeEnv window peak, no wrap"),
-    nativeVariable("env.end", () => String(snapshot().transitionEnd), "f32 hour (past 24 never settles)", "ChangeEnv window end, no wrap"),
+    nativeVariable("env.end", () => String(snapshot().transitionEnd), `f32 hour (past ${hoursPerDay.value} never settles)`, "ChangeEnv window end, no wrap"),
     nativeVariable("env.timeout", () => String(snapshot().remainingRevertSeconds), "f32 real seconds",
       "OnRedSky timeout countdown; reverts to the persistent type once it drops below 0"),
     nativeVariable("env.lightingDirty", () => String(snapshot().lightingDirty), "true | false",
@@ -111,13 +143,13 @@ function attachTimeOfDayControls(group: DevGroup, timeOfDay: RunningWorldTimeOfD
   const environmentTypeOptions = timeOfDay.environmentTypes.map(environmentType => ({ value: String(environmentType), label: environmentTypeLabel(environmentType) }));
   const ssqType = group.choice({ label: "SSQ type", testId: "time-of-day-ssq-type", display: "select", options: environmentTypeOptions, variables,
     hint: "First OnSSQInfo byte: the environment type, from the loaded timeenv files." });
-  const ssqImmediate = group.choice({ label: "SSQ immediate", testId: "time-of-day-ssq-immediate", display: "select", options: immediateOptions, variables,
+  const ssqImmediate = group.choice({ label: "SSQ immediate", testId: "time-of-day-ssq-immediate", display: "select", options: immediateOptions(), variables,
     hint: "Second OnSSQInfo byte: ChangeEnv immediate flag." });
   group.button({ label: "SSQ info", testId: "time-of-day-ssq-info", variables,
-    hint: "Dispatches set-environment-ssq-info through the adapter; OnSSQInfo calls ChangeEnv(type, immediate, 0.02, 0.02, 1, 0, persistent).",
+    hint: `Dispatches set-environment-ssq-info through the adapter; OnSSQInfo calls ${changeEnvironmentCallText(ssqInfoChangeRequest(0, 0), { environmentType: "type", immediate: "immediate" })}.`,
     onClick: () => adapter.dispatch({ type: "set-environment-ssq-info", first: Number(ssqType.value), second: Number(ssqImmediate.value) }) });
   group.idEntry({ label: "Red sky", testId: "time-of-day-red-sky", submitText: "Red sky", variables,
-    hint: "Dispatches set-environment-red-sky through the adapter; OnRedSky calls ChangeEnv(3, 0, 0.002, 0.002, 1, timeout, 0).",
+    hint: `Dispatches set-environment-red-sky through the adapter; OnRedSky calls ${changeEnvironmentCallText(redSkyChangeRequest(0), { timeoutSeconds: "timeout" })}.`,
     fields: [{ name: "timeoutSeconds", label: "Timeout (s)", kind: "integer", minimum: 0 }],
     onSubmit: values => adapter.dispatch({ type: "set-environment-red-sky", timeoutSeconds: Number(values.timeoutSeconds) }) });
 }
