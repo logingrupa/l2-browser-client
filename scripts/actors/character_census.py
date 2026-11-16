@@ -96,7 +96,7 @@ def character_census(run):
                                            'verdict': run.sources.class_sources['document']['verdict']}},
             'layoutRecordFields': {HAIRGRP_TABLE_NAME: manifest_record_fields(run.sources.hairgrp),
                                    HELMETGRP_TABLE_NAME: manifest_record_fields(run.sources.helmetgrp)},
-            'idleFamilies': {'path': run.sources.idle_families['path'], 'sha256': run.sources.idle_families['sha256']},
+            'animationFamilies': {'path': run.sources.animation_families['path'], 'sha256': run.sources.animation_families['sha256']},
             'counts': census_counts(rows), 'rows': rows}
 
 

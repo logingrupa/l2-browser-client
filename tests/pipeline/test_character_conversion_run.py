@@ -24,7 +24,7 @@ from native_store.catalog_index_keys import character_model_record_id
 from native_store.catalog_writer import read_store_catalog
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
-from test_character_requests import IDLE_FAMILIES_RECIPE_SHA256, character_sources, synthetic_chargrp_row
+from test_character_requests import ANIMATION_FAMILIES_RECIPE_PATH, ANIMATION_FAMILIES_RECIPE_SHA256, character_sources, synthetic_chargrp_row
 
 FIRST_CONVERTER_SHA256 = 'e' * 64
 CHANGED_CONVERTER_SHA256 = 'f' * 64
@@ -151,8 +151,8 @@ class CharacterConversionRunTests(unittest.TestCase):
         with mock.patch.object(character_conversion, 'implementation_hash', return_value=FIRST_CONVERTER_SHA256):
             written = write_character_census(run)
             self.assertEqual(check_character_census(run), written)
-            self.assertEqual(json.loads(written.read_bytes())['idleFamilies'],
-                             {'path': 'recipes/actors/character-idle-families.json', 'sha256': IDLE_FAMILIES_RECIPE_SHA256})
+            self.assertEqual(json.loads(written.read_bytes())['animationFamilies'],
+                             {'path': ANIMATION_FAMILIES_RECIPE_PATH, 'sha256': ANIMATION_FAMILIES_RECIPE_SHA256})
             run.convert(2)
             with self.assertRaisesRegex(CharacterCensusError, 'differs from the census of the sealed character units'):
                 check_character_census(run)

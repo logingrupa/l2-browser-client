@@ -8,27 +8,37 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from actors.character_requests import CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, build_character_request
-from test_character_requests import (CLASS_PACKAGE_SHA256, IDLE_FAMILIES_RECIPE_SHA256, JOINED_CLASS, character_sources, class_definitions,
-                                     joined_actor_class, synthetic_chargrp_row, synthetic_idle_families)
+from test_character_requests import (ANIMATION_FAMILIES_RECIPE_PATH, ANIMATION_FAMILIES_RECIPE_SHA256, CLASS_PACKAGE_SHA256, JOINED_CLASS,
+                                     SYNTHETIC_FAMILY_SOURCE, SYNTHETIC_GETTERS, SYNTHETIC_HAND_VALUES, character_sources, class_definitions,
+                                     joined_actor_class, synthetic_animation_families, synthetic_chargrp_row)
+
+RESOLVED_COLLISION_CLASS = {JOINED_CLASS: {'properties': {'CollisionHeight': 23.0, 'CollisionRadius': 9.0}, 'nativeSuperClass': None}}
 
 
 class CharacterCollisionChainTests(unittest.TestCase):
-    def profile(self, definitions, idle_families=None):
+    def profile(self, definitions, animation_families=None):
         from actors.character_requests import character_profile_fields
         return character_profile_fields(joined_actor_class(definitions[JOINED_CLASS]['properties']), class_definitions(definitions),
-                                        idle_families or synthetic_idle_families())
+                                        animation_families or synthetic_animation_families())
 
-    def test_the_idle_animations_come_from_the_recipe_by_weapon_type_and_the_run_family_is_the_next_unsourced_field(self):
-        profile = self.profile({JOINED_CLASS: {'properties': {'CollisionHeight': 23.0, 'CollisionRadius': 9.0}, 'nativeSuperClass': None}},
-                               synthetic_idle_families(JOINED_CLASS))
-        self.assertEqual(profile['idleAnimations'], {'recipe': 'recipes/actors/character-idle-families.json', 'recipeSha256': IDLE_FAMILIES_RECIPE_SHA256,
-                                                     'meshType': 0, 'byWeaponType': [{'weaponType': 'WT_HAND', 'value': 'wait_Hand_SyntheticFighter'},
-                                                                                      {'weaponType': 'WT_THROW', 'value': None}]})
-        self.assertEqual(profile['reason'], 'actor-default-unresolved:RunAnimName')
+    def test_the_families_come_from_the_recipe_by_weapon_slot_and_the_profile_resolves_with_collision_and_the_required_families(self):
+        profile = self.profile(RESOLVED_COLLISION_CLASS, synthetic_animation_families(JOINED_CLASS))
+        families = profile['animationFamilies']
+        self.assertEqual({key: families[key] for key in ('recipe', 'recipeSha256', 'familySource', 'meshType', 'section', 'getters')},
+                         {'recipe': ANIMATION_FAMILIES_RECIPE_PATH, 'recipeSha256': ANIMATION_FAMILIES_RECIPE_SHA256,
+                          'familySource': SYNTHETIC_FAMILY_SOURCE, 'meshType': 0, 'section': 'SyntheticFighter', 'getters': SYNTHETIC_GETTERS})
+        self.assertEqual([slot['weaponType'] for slot in families['byWeaponType']], ['WT_HAND', 'WT_THROW'])
+        self.assertEqual(families['byWeaponType'][0]['values'], SYNTHETIC_HAND_VALUES)
+        self.assertEqual((profile['status'], profile['reason']), ('resolved', None))
+
+    def test_a_missing_hand_value_of_a_required_family_names_that_family(self):
+        hand_values = {**SYNTHETIC_HAND_VALUES, 'Atk01AnimName': None}
+        profile = self.profile(RESOLVED_COLLISION_CLASS, synthetic_animation_families(JOINED_CLASS, hand_values))
+        self.assertEqual((profile['status'], profile['reason']), ('gap', 'actor-default-unresolved:Atk01AnimName'))
 
     def test_a_class_absent_from_the_recipe_keeps_the_wait_animation_gap(self):
-        profile = self.profile({JOINED_CLASS: {'properties': {'CollisionHeight': 23.0, 'CollisionRadius': 9.0}, 'nativeSuperClass': None}})
-        self.assertEqual((profile['idleAnimations'], profile['reason']), (None, 'actor-default-unresolved:WaitAnimName'))
+        profile = self.profile(RESOLVED_COLLISION_CLASS)
+        self.assertEqual((profile['animationFamilies'], profile['reason']), (None, 'actor-default-unresolved:WaitAnimName'))
 
     def test_declared_values_are_copied_exactly_and_an_omitted_value_comes_from_the_declared_parent(self):
         profile = self.profile({JOINED_CLASS: {'properties': {'CollisionHeight': 23.0001}, 'nativeSuperClass': 'LineageWarrior.LineagePawn'},

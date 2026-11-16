@@ -6,7 +6,7 @@ from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES,
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, model_record_capacity, decoded_table_identity
 from actors.character_class_sources import read_character_class_sources
 from actors.character_head_part_routes import decoded_skeleton_summary, generated_with_head_part_routes
-from actors.character_idle_family_recipe import read_character_idle_families
+from actors.character_animation_family_recipe import read_character_animation_families
 from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, CLASS_SOURCES_ROUTE, GAP_STATUS, HAIRGRP_TABLE_NAME,
                                        HELMETGRP_TABLE_NAME, CharacterRequestError, build_character_request, character_gap_rows, character_key,
                                        chargrp_row_at, is_padding_row, resolve_character_actor_class)
@@ -28,7 +28,7 @@ from reference_client_guard import ReferenceClientLockError
 CHARACTER_ALGORITHM_VERSION = 1
 CHARACTER_LANE_NAME = 'actors'
 PADDING_STATUS = 'padding'
-CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition class_sources idle_families')
+CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition class_sources animation_families')
 
 
 class LazyClassDefinitionReader:
@@ -54,7 +54,7 @@ def read_character_sources(project_root, client_root, decode_table, class_work_r
                             data_ui_table_manifest(project_root, HAIRGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
                             data_ui_table_manifest(project_root, HELMETGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
                             LazyClassDefinitionReader(client_root, class_work_root), read_character_class_sources(project_root),
-                            read_character_idle_families(project_root))
+                            read_character_animation_families(project_root))
 
 
 def model_gap_reason(census_reason, generated):

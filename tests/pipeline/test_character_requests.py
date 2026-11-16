@@ -58,22 +58,30 @@ def refusing_class_reader(reference):
     raise AssertionError(f'no class may be read without a source join: {reference}')
 
 
-IDLE_FAMILIES_RECIPE_SHA256 = '6' * 64
+ANIMATION_FAMILIES_RECIPE_SHA256 = '6' * 64
+ANIMATION_FAMILIES_RECIPE_PATH = 'recipes/actors/character-animation-families.json'
+SYNTHETIC_FAMILY_SOURCE = {'path': 'system/lineagewarrior.int', 'sha256': '5' * 64}
+SYNTHETIC_HAND_VALUES = {'WaitAnimName': 'wait_Hand_SyntheticFighter', 'RunAnimName': 'run_Hand_SyntheticFighter',
+                         'Atk01AnimName': 'Atk01_Hand_SyntheticFighter', 'DeathAnimName': 'Death_SyntheticFighter', 'DamageFlyAnimName': None}
+SYNTHETIC_GETTERS = {family: {'family': family, 'getter': f'APawn::Get{family}', 'address': f'0x1034{index:04x}', 'selectorOffset': '0x71d'}
+                     for index, family in enumerate(SYNTHETIC_HAND_VALUES)}
 
 
-def synthetic_idle_families(class_reference=None):
-    by_class = {class_reference: {'class': class_reference, 'meshType': 0, 'waitAnimNames': [
-        {'weaponType': 'WT_HAND', 'index': 0, 'value': 'wait_Hand_SyntheticFighter', 'line': 6},
-        {'weaponType': 'WT_THROW', 'index': 1, 'value': None, 'unresolved': 'no WaitAnimName key of this weapon type in the class section'}]}}
-    return {'path': 'recipes/actors/character-idle-families.json', 'sha256': IDLE_FAMILIES_RECIPE_SHA256,
-            'byClass': by_class if class_reference else {}}
+def synthetic_animation_families(class_reference=None, hand_values=None):
+    values = SYNTHETIC_HAND_VALUES if hand_values is None else hand_values
+    by_class = {class_reference: {'class': class_reference, 'meshType': 0, 'section': 'SyntheticFighter', 'weaponTypes': [
+        {'weaponType': 'WT_HAND', 'index': 0, 'values': dict(values),
+         'lines': {family: line for line, (family, value) in enumerate(values.items(), 3) if value is not None}},
+        {'weaponType': 'WT_THROW', 'index': 1, 'values': {family: None for family in values}, 'lines': {}}]}}
+    return {'path': ANIMATION_FAMILIES_RECIPE_PATH, 'sha256': ANIMATION_FAMILIES_RECIPE_SHA256, 'source': SYNTHETIC_FAMILY_SOURCE,
+            'getters': SYNTHETIC_GETTERS, 'byClass': by_class if class_reference else {}}
 
 
 def character_sources(rows, classinfo=None, hairgrp=None, helmetgrp=None, read_class_definition=refusing_class_reader, class_sources=None,
-                      idle_families=None):
+                      animation_families=None):
     return CharacterSources(synthetic_chargrp_table(rows), classinfo or decoded_shape_classinfo(), hairgrp or decoded_shape_hairgrp(),
                             helmetgrp or decoded_shape_helmetgrp(), read_class_definition, class_sources or not_decided_class_sources(),
-                            idle_families or synthetic_idle_families())
+                            animation_families or synthetic_animation_families())
 
 
 class CharacterRequestTracerTests(unittest.TestCase):
@@ -289,7 +297,7 @@ class CharacterClassSourcesRouteTests(unittest.TestCase):
         self.assertEqual(converter.convert.call_args.args[0]['animation'], 'Fighter.MFighter_anim')
         self.assertEqual(outcome, (None, {'file': 'converted.l2asset'}))
         self.assertIn(f'The animation set is the Animation that the {SOURCED_CLASS} Mesh default Fighter.Face_m000_f serializes, the root mesh '
-                      f'binding recorded in recipes/actors/character-idle-families.json (sha256 {IDLE_FAMILIES_RECIPE_SHA256}).',
+                      f'binding recorded in {ANIMATION_FAMILIES_RECIPE_PATH} (sha256 {ANIMATION_FAMILIES_RECIPE_SHA256}).',
                       generated['request']['limitations'])
 
     def test_a_root_mesh_without_an_animation_stays_animation_reference_missing_and_nothing_converts(self):
@@ -410,7 +418,7 @@ class ReferenceClientRowZeroCrossCheckTests(unittest.TestCase):
         from native_catalog.tables import decode_table
         chargrp = decode_table(REFERENCE_CLIENT, 'chargrp')
         sources = CharacterSources(chargrp, decoded_shape_classinfo(), decoded_shape_hairgrp(), decoded_shape_helmetgrp(), refusing_class_reader,
-                                   not_decided_class_sources(), synthetic_idle_families())
+                                   not_decided_class_sources(), synthetic_animation_families())
         generated = build_character_request(chargrp_row_at(chargrp, 0), 0, None, sources)
         recipe_parts = json.loads((ROOT / 'recipes' / 'native-mfighter.json').read_bytes())[0]['parts']
         recipe_body_parts = [{key: part[key] for key in ('package', 'object', 'materials', 'sourceBinding')}

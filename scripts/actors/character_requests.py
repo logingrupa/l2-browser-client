@@ -28,9 +28,9 @@ CLASS_SOURCES_ROUTE = 'character-class-sources'
 ADOPTED_CLASS_SOURCES_VERDICT, NOT_DECIDED_CLASS_SOURCES_VERDICT = 'adopted', 'not-decided'
 HEAD_BONE_FIELD, RIGHT_HAND_BONE_FIELD, SUB_MESHES_FIELD, CLASS_MESH_FIELD = 'HeadBone', 'RightHandBone', 'SubMeshes', 'Mesh'
 COLLISION_SOURCE_FIELDS = (('collisionRadius', 'CollisionRadius'), ('collisionHeight', 'CollisionHeight'))
-IDLE_ANIMATION_FAMILY_FIELD = 'WaitAnimName'
-RUN_ANIMATION_FAMILY_FIELD = 'RunAnimName'
-REQUESTED_STATUS, UNBOUND_TEXTURE_STATUS, BOUND_STATUS, GAP_STATUS = 'requested', 'requested-unbound', 'bound', 'gap'
+PROFILE_REQUIRED_FAMILY_FIELDS = ('WaitAnimName', 'RunAnimName', 'Atk01AnimName', 'DeathAnimName')
+PROFILE_WEAPON_TYPE = 'WT_HAND'
+REQUESTED_STATUS, UNBOUND_TEXTURE_STATUS, BOUND_STATUS, GAP_STATUS, RESOLVED_STATUS = 'requested', 'requested-unbound', 'bound', 'gap', 'resolved'
 FACE_FIELD_NAME = 'face'
 CHARACTER_REQUEST_LIMITATIONS = (
     'Generated from the decoded chargrp row: body parts follow body_mesh1 upward with their body_texture fields; no recipe value is copied.',
@@ -256,26 +256,34 @@ def collision_from_class_chain(class_reference, read_class_definition):
             for profile_field, source_field in COLLISION_SOURCE_FIELDS}
 
 
-def idle_animations_of_class(idle_families, class_reference):
-    family = idle_families['byClass'].get(class_reference)
+def animation_families_of_class(animation_families, class_reference):
+    family = animation_families['byClass'].get(class_reference)
     if family is None:
         return None
-    return {'recipe': idle_families['path'], 'recipeSha256': idle_families['sha256'], 'meshType': family['meshType'],
-            'byWeaponType': [{'weaponType': row['weaponType'], 'value': row['value']} for row in family['waitAnimNames']]}
+    return {'recipe': animation_families['path'], 'recipeSha256': animation_families['sha256'], 'familySource': animation_families['source'],
+            'meshType': family['meshType'], 'section': family['section'], 'getters': animation_families['getters'],
+            'byWeaponType': [{'weaponType': slot['weaponType'], 'values': slot['values'], 'lines': slot['lines']} for slot in family['weaponTypes']]}
 
 
-def character_profile_fields(actor_class, read_class_definition, idle_families):
+def profile_weapon_type_slot(families_of_class):
+    slots = [slot for slot in families_of_class['byWeaponType'] if slot['weaponType'] == PROFILE_WEAPON_TYPE] if families_of_class else []
+    return slots[0] if slots else {'values': {}, 'lines': {}}
+
+
+def character_profile_fields(actor_class, read_class_definition, animation_families):
     if actor_class is None:
         return {'status': GAP_STATUS, 'reason': CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, 'collision': None, 'actorClassDefaults': None,
-                'idleAnimations': None}
+                'animationFamilies': None}
     collision = collision_from_class_chain(actor_class['class'], read_class_definition)
     properties = actor_class['properties']
     class_defaults = {'class': actor_class['class'], 'classPackageSha256': actor_class['packageSha256'],
                       HEAD_BONE_FIELD: properties.get(HEAD_BONE_FIELD), RIGHT_HAND_BONE_FIELD: properties.get(RIGHT_HAND_BONE_FIELD)}
-    idle_animations = idle_animations_of_class(idle_families, actor_class['class'])
-    unsourced_field = IDLE_ANIMATION_FAMILY_FIELD if idle_animations is None else RUN_ANIMATION_FAMILY_FIELD
-    reason = next((entry['reason'] for entry in collision.values() if 'reason' in entry), ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + unsourced_field)
-    return {'status': GAP_STATUS, 'reason': reason, 'collision': collision, 'actorClassDefaults': class_defaults, 'idleAnimations': idle_animations}
+    families_of_class = animation_families_of_class(animation_families, actor_class['class'])
+    profile_values = profile_weapon_type_slot(families_of_class)['values']
+    unsourced_reasons = [ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + field for field in PROFILE_REQUIRED_FAMILY_FIELDS if profile_values.get(field) is None]
+    reason = next((entry['reason'] for entry in collision.values() if 'reason' in entry), None) or next(iter(unsourced_reasons), None)
+    return {'status': GAP_STATUS if reason else RESOLVED_STATUS, 'reason': reason, 'collision': collision, 'actorClassDefaults': class_defaults,
+            'animationFamilies': families_of_class}
 
 
 def root_mesh_animation_source(actor_class):
@@ -290,9 +298,9 @@ def root_mesh_animation_source(actor_class):
             'classPackageSha256': actor_class['packageSha256'], 'meshPath': [CLASS_MESH_FIELD]}
 
 
-def root_mesh_animation_limitation(root_mesh, idle_families):
+def root_mesh_animation_limitation(root_mesh, animation_families):
     return (f'The animation set is the Animation that the {root_mesh["class"]} {CLASS_MESH_FIELD} default {root_mesh["package"]}.'
-            f'{root_mesh["object"]} serializes, the root mesh binding recorded in {idle_families["path"]} (sha256 {idle_families["sha256"]}).')
+            f'{root_mesh["object"]} serializes, the root mesh binding recorded in {animation_families["path"]} (sha256 {animation_families["sha256"]}).')
 
 
 def build_character_request(chargrp_row, row_index, actor_class, sources):
@@ -311,11 +319,11 @@ def build_character_request(chargrp_row, row_index, actor_class, sources):
         limitations = (list(CHARACTER_REQUEST_LIMITATIONS) + ([actor_class_join_limitation(actor_class)] if actor_class else [])
                        + ([unbound_face_limitation(chargrp_row, row_index, actor_class)] if face and 'sourceBinding' not in face else [])
                        + [layout_binding_limitation(binding) for binding in (hair, helmet) if binding['status'] == BOUND_STATUS]
-                       + ([root_mesh_animation_limitation(root_mesh, sources.idle_families)] if root_mesh['reason'] is None else []))
+                       + ([root_mesh_animation_limitation(root_mesh, sources.animation_families)] if root_mesh['reason'] is None else []))
         request = {'kind': 'model', 'name': character_key(row_index).replace(':', '-'), 'animation': None, 'withEventAudio': True,
                    'parts': parts, 'limitations': limitations}
     return {'request': request, 'rootMesh': root_mesh,
-            'profileFields': character_profile_fields(actor_class, sources.read_class_definition, sources.idle_families),
+            'profileFields': character_profile_fields(actor_class, sources.read_class_definition, sources.animation_families),
             'parts': statuses + [face_status], 'hair': hair, 'helmet': helmet, 'gaps': gaps}
 
 

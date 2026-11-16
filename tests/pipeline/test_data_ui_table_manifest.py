@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from actors.actor_sound_batch import npc_profile_rows
 from actors.actor_sound_conversion import ActorSoundConversionError, ActorSoundConversionRun
 from actors.character_conversion import read_character_sources
-from actors.character_idle_family_recipe import CHARACTER_IDLE_FAMILIES_RELATIVE_PATH
+from actors.character_animation_family_recipe import CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH
 from actors.character_requests import CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASSINFO_TABLE_NAME, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME
 from catalog_store_fixture import write_store_catalog
 from native_store.catalog_writer import CatalogWriteError
@@ -167,9 +167,9 @@ class DataUiTableManifestTests(unittest.TestCase):
         class_sources_path = self.project_root / CHARACTER_CLASS_SOURCES_RELATIVE_PATH
         class_sources_path.parent.mkdir(parents=True)
         class_sources_path.write_bytes((ROOT / CHARACTER_CLASS_SOURCES_RELATIVE_PATH).read_bytes())
-        idle_families_path = self.project_root / CHARACTER_IDLE_FAMILIES_RELATIVE_PATH
-        idle_families_path.parent.mkdir(parents=True)
-        idle_families_path.write_bytes((ROOT / CHARACTER_IDLE_FAMILIES_RELATIVE_PATH).read_bytes())
+        animation_families_path = self.project_root / CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH
+        animation_families_path.parent.mkdir(parents=True)
+        animation_families_path.write_bytes((ROOT / CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH).read_bytes())
         sources = read_character_sources(self.project_root, self.project_root, lambda client_root, table_name: DECODED_CHARGRP_TABLE,
                                          self.project_root / 'class-work')
         self.assertEqual((sources.classinfo['records'], sources.hairgrp['records'], sources.helmetgrp['records']),
