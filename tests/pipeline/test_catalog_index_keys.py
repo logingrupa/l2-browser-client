@@ -125,6 +125,15 @@ class CatalogIndexKeysJoinTests(unittest.TestCase):
         catalog = {'schemaVersion': 1, 'models': self.models, 'playerProfiles': [record]}
         self.assertEqual(catalog_index_keys(self.store_root, catalog, self.shared_store_root), ('character:0', 'item:22'))
 
+    def test_the_generated_character_profile_pack_gives_one_character_key_per_profiled_model(self):
+        from actors.character_store_records import CHARACTER_PLAYER_PROFILES_RECORD_ID, write_player_profile_pack
+        from test_character_player_profiles import generated_profile
+        write_player_profile_pack(self.store_root, CHARACTER_PLAYER_PROFILES_RECORD_ID, [generated_profile(row_index) for row_index in range(14)])
+        catalog = json.loads((self.store_root / 'catalog.json').read_bytes())
+        catalog['models'] = [model_record(character_model_record_id(row_index), FIGHTER_MESH) for row_index in range(14)]
+        self.assertEqual(catalog_index_keys(self.store_root, catalog, self.shared_store_root),
+                         tuple(sorted(f'character:{row_index}' for row_index in range(14))))
+
     def test_item_model_records_give_item_keys_like_the_browser_catalog_index(self):
         models = [model_record('interlude:item:1:body-part:7:weapon', 'LineageWeapons.small_sword_m00_wp'),
                   model_record('interlude:item:26:body-part:6:armor:2', 'Fighter.FFighter_m002_l'),

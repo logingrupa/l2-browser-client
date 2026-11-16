@@ -12,7 +12,8 @@ from test_character_requests import (ANIMATION_FAMILIES_RECIPE_PATH, ANIMATION_F
                                      SYNTHETIC_FAMILY_SOURCE, SYNTHETIC_GETTERS, SYNTHETIC_HAND_VALUES, character_sources, class_definitions,
                                      joined_actor_class, synthetic_animation_families, synthetic_chargrp_row)
 
-RESOLVED_COLLISION_CLASS = {JOINED_CLASS: {'properties': {'CollisionHeight': 23.0, 'CollisionRadius': 9.0}, 'nativeSuperClass': None}}
+RESOLVED_COLLISION_CLASS = {JOINED_CLASS: {'properties': {'CollisionHeight': 23.0, 'CollisionRadius': 9.0, 'DrawScale': 1.0,
+                                                          'DrawScale3D': {'X': 1.0, 'Y': 1.0, 'Z': 1.0}}, 'nativeSuperClass': None}}
 
 
 class CharacterCollisionChainTests(unittest.TestCase):

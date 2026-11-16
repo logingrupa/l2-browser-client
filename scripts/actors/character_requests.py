@@ -28,6 +28,9 @@ CLASS_SOURCES_ROUTE = 'character-class-sources'
 ADOPTED_CLASS_SOURCES_VERDICT, NOT_DECIDED_CLASS_SOURCES_VERDICT = 'adopted', 'not-decided'
 HEAD_BONE_FIELD, RIGHT_HAND_BONE_FIELD, SUB_MESHES_FIELD, CLASS_MESH_FIELD = 'HeadBone', 'RightHandBone', 'SubMeshes', 'Mesh'
 COLLISION_SOURCE_FIELDS = (('collisionRadius', 'CollisionRadius'), ('collisionHeight', 'CollisionHeight'))
+DRAW_SCALE_FIELD, DRAW_SCALE_3D_FIELD, PRE_PIVOT_FIELD = 'DrawScale', 'DrawScale3D', 'PrePivot'
+VECTOR_AXES = ('X', 'Y', 'Z')
+CHARACTER_PIVOT_UNAPPLIED_REASON = 'character-pivot-unapplied'
 PROFILE_REQUIRED_FAMILY_FIELDS = ('WaitAnimName', 'RunAnimName', 'Atk01AnimName', 'DeathAnimName')
 PROFILE_WEAPON_TYPE = 'WT_HAND'
 REQUESTED_STATUS, UNBOUND_TEXTURE_STATUS, BOUND_STATUS, GAP_STATUS, RESOLVED_STATUS = 'requested', 'requested-unbound', 'bound', 'gap', 'resolved'
@@ -232,19 +235,33 @@ def layout_binding_limitation(binding):
             f'{HAIR_TABLE_FIELD_PROOF}; unverified presentation until the side-by-side check.')
 
 
-def collision_value(properties, source_field):
+def is_finite_number(value):
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def positive_number_value(properties, source_field):
     value = properties.get(source_field)
-    return value if type(value) in (int, float) and math.isfinite(value) and value > 0 else None
+    return value if is_finite_number(value) and value > 0 else None
 
 
-def class_supplying_field(class_reference, source_field, read_class_definition):
+def finite_vector_value(properties, source_field):
+    value = properties.get(source_field)
+    return value if isinstance(value, dict) and set(value) == set(VECTOR_AXES) and all(is_finite_number(value[axis]) for axis in VECTOR_AXES) else None
+
+
+def positive_vector_value(properties, source_field):
+    value = finite_vector_value(properties, source_field)
+    return value if value is not None and all(value[axis] > 0 for axis in VECTOR_AXES) else None
+
+
+def class_supplying_field(class_reference, source_field, read_class_definition, read_value=positive_number_value):
     reference, chain = class_reference, []
     while reference:
         if reference in chain:
             raise CharacterRequestError(f'cyclic class chain at {reference}')
         chain.append(reference)
         definition = read_class_definition(reference)
-        value = collision_value(definition['properties'], source_field)
+        value = read_value(definition['properties'], source_field)
         if value is not None:
             return {'value': value, 'class': reference}
         reference = definition['nativeSuperClass']
@@ -254,6 +271,18 @@ def class_supplying_field(class_reference, source_field, read_class_definition):
 def collision_from_class_chain(class_reference, read_class_definition):
     return {profile_field: class_supplying_field(class_reference, source_field, read_class_definition)
             for profile_field, source_field in COLLISION_SOURCE_FIELDS}
+
+
+def presentation_from_class_chain(class_reference, read_class_definition):
+    return {'drawScale': class_supplying_field(class_reference, DRAW_SCALE_FIELD, read_class_definition),
+            'drawScale3D': class_supplying_field(class_reference, DRAW_SCALE_3D_FIELD, read_class_definition, positive_vector_value),
+            'prePivot': class_supplying_field(class_reference, PRE_PIVOT_FIELD, read_class_definition, finite_vector_value)}
+
+
+def presentation_reason(presentation):
+    scale_reason = next((presentation[field]['reason'] for field in ('drawScale', 'drawScale3D') if 'reason' in presentation[field]), None)
+    pivot = presentation['prePivot'].get('value')
+    return scale_reason or (CHARACTER_PIVOT_UNAPPLIED_REASON if pivot and any(pivot[axis] != 0 for axis in VECTOR_AXES) else None)
 
 
 def animation_families_of_class(animation_families, class_reference):
@@ -272,18 +301,20 @@ def profile_weapon_type_slot(families_of_class):
 
 def character_profile_fields(actor_class, read_class_definition, animation_families):
     if actor_class is None:
-        return {'status': GAP_STATUS, 'reason': CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, 'collision': None, 'actorClassDefaults': None,
-                'animationFamilies': None}
+        return {'status': GAP_STATUS, 'reason': CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, 'collision': None, 'presentation': None,
+                'actorClassDefaults': None, 'animationFamilies': None}
     collision = collision_from_class_chain(actor_class['class'], read_class_definition)
+    presentation = presentation_from_class_chain(actor_class['class'], read_class_definition)
     properties = actor_class['properties']
     class_defaults = {'class': actor_class['class'], 'classPackageSha256': actor_class['packageSha256'],
                       HEAD_BONE_FIELD: properties.get(HEAD_BONE_FIELD), RIGHT_HAND_BONE_FIELD: properties.get(RIGHT_HAND_BONE_FIELD)}
     families_of_class = animation_families_of_class(animation_families, actor_class['class'])
     profile_values = profile_weapon_type_slot(families_of_class)['values']
     unsourced_reasons = [ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + field for field in PROFILE_REQUIRED_FAMILY_FIELDS if profile_values.get(field) is None]
-    reason = next((entry['reason'] for entry in collision.values() if 'reason' in entry), None) or next(iter(unsourced_reasons), None)
-    return {'status': GAP_STATUS if reason else RESOLVED_STATUS, 'reason': reason, 'collision': collision, 'actorClassDefaults': class_defaults,
-            'animationFamilies': families_of_class}
+    reason = (next((entry['reason'] for entry in collision.values() if 'reason' in entry), None) or next(iter(unsourced_reasons), None)
+              or presentation_reason(presentation))
+    return {'status': GAP_STATUS if reason else RESOLVED_STATUS, 'reason': reason, 'collision': collision, 'presentation': presentation,
+            'actorClassDefaults': class_defaults, 'animationFamilies': families_of_class}
 
 
 def root_mesh_animation_source(actor_class):

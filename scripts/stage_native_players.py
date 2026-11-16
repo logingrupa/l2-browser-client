@@ -3,12 +3,11 @@ from __future__ import annotations
 import argparse
 import copy
 import json
-import math
 from pathlib import Path
-import re
 import struct
 import sys
 
+from actors.character_store_records import (PLAYER_CATALOG_ID_PATTERN, PLAYER_PROFILE_ID_PATTERN, REQUIRED_ALIASES, profile_shape)
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.guard_clauses import require_condition
 from native_assets_lib.sha256_identity import SHA256_HEX_PATTERN, sha256_hex_digest
@@ -25,30 +24,13 @@ PLAYER_STAGE_DESCRIPTION = (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-ID = re.compile(r'[a-z0-9][a-z0-9-]{0,79}')
-CATALOG_ID = re.compile(r'[a-z0-9][a-z0-9:-]{0,95}')
-OBJECT = re.compile(r'[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+')
+ID = PLAYER_PROFILE_ID_PATTERN
+CATALOG_ID = PLAYER_CATALOG_ID_PATTERN
 BUNDLE_ID = 'native-player-profiles'
 MAX_MANIFEST = 2_000_000
 MAXIMUM_MODEL_JSON_CHUNK_BYTES = 96 * 1024 * 1024
 BUILT_IN = 'human-male-fighter'
-REQUIRED_ALIASES = ('idle', 'run', 'attack', 'death')
-PLAYER_ALIASES = (
-    'idle', 'walk', 'run', 'turn', 'atkWait', 'attack', 'atk02', 'atk03', 'shieldAtk',
-    'castShort', 'castMid', 'castLong', 'castEnd', 'magicShot', 'magicThrow', 'magicNoTarget',
-    'sit', 'sitWait', 'stand', 'chairSit', 'chairWait', 'chairStand', 'pickup',
-    'death', 'deathWait', 'deathStand', 'damage', 'damageFly', 'fall',
-    'swim', 'swimWait', 'swimAtkWait', 'swimDeath', 'swimDeathWait',
-    *(f'social{index}' for index in range(2, 14)))
-BOUND_STATUSES = frozenset({'exact', 'case-only'})
-UNBOUND_STATUSES = frozenset({'no-family-value', 'no-native-field', 'missing-clip', 'conflict-unresolved', 'ambiguous', 'unsupported-syntax'})
-EVIDENCE_FIELDS = {'generator', 'report', 'reportSha256', 'family', 'familySource', 'familySourceSha256', 'rows'}
-EVIDENCE_ROW_FIELDS = {'alias', 'key', 'status', 'reference', 'line', 'selectionPath', 'reason'}
 SUPERSEDABLE_FIELDS = {'clips', 'aliasEvidence'}
-
-
-def is_browser_string_within_utf16_units(value, maximum=512):
-    return isinstance(value, str) and 0 < len(value.encode('utf-16-le')) // 2 <= maximum
 
 
 def clip_names(data):
@@ -83,71 +65,6 @@ def model_record(catalog_id, path, expected_hash):
         require_condition(name.casefold() != 'asset.l2asset', 'Embedded archive path conflicts with staged package')
         files[expected_hash + '/' + name] = payload
     return record, asset, clip_names(model), files
-
-
-def alias_evidence_shape(evidence, clips):
-    require_condition(isinstance(evidence, dict) and set(evidence) == EVIDENCE_FIELDS, 'Invalid player alias evidence fields')
-    require_condition(all(is_browser_string_within_utf16_units(evidence[name]) for name in ('generator', 'report', 'family', 'familySource')) and
-            all(isinstance(evidence[name], str) and SHA256_HEX_PATTERN.fullmatch(evidence[name]) for name in ('reportSha256', 'familySourceSha256')),
-            'Invalid player alias evidence source')
-    rows = evidence['rows']
-    require_condition(isinstance(rows, list) and 0 < len(rows) <= 64, 'Invalid player alias evidence rows')
-    seen = set()
-    for row in rows:
-        require_condition(isinstance(row, dict) and {'alias', 'key', 'status'} <= set(row) <= EVIDENCE_ROW_FIELDS, 'Invalid player alias evidence row fields')
-        alias, status = row['alias'], row['status']
-        require_condition(alias in PLAYER_ALIASES and alias not in seen, 'Unknown/duplicate player alias evidence: ' + str(alias))
-        seen.add(alias)
-        require_condition(status in BOUND_STATUSES or status in UNBOUND_STATUSES, 'Unknown player alias status: ' + str(status))
-        require_condition(is_browser_string_within_utf16_units(row['key'], 128) and all(is_browser_string_within_utf16_units(row[name]) for name in ('reference', 'selectionPath', 'reason') if name in row),
-                'Invalid player alias evidence strings')
-        require_condition('line' not in row or (type(row['line']) is int and 0 < row['line'] <= 2**31 - 1), 'Invalid player alias evidence line')
-        require_condition((alias in clips) if status in BOUND_STATUSES else (alias not in clips and 'reason' in row),
-                'Player alias evidence disagrees with its clip: ' + alias)
-    require_condition(set(clips) <= seen, 'Player clip aliases lack evidence rows')
-
-
-def profile_shape(profile):
-    fields = {'id', 'name', 'catalogId', 'assetId', 'sourceObject', 'sourceSha256', 'clips', 'forwardAxis', 'actorScale',
-              'collisionRadius', 'collisionHeight', 'sourceUnitsPerMetre', 'upperItems', 'sourceEvidence', 'limitations'}
-    require_condition(isinstance(profile, dict) and set(profile) in (fields, fields | {'aliasEvidence'}), 'Invalid player profile fields')
-    require_condition(isinstance(profile['id'], str) and ID.fullmatch(profile['id']) and
-            isinstance(profile['name'], str) and 0 < len(profile['name']) <= 128, 'Invalid player profile identity')
-    require_condition(isinstance(profile['catalogId'], str) and CATALOG_ID.fullmatch(profile['catalogId']) and
-            is_browser_string_within_utf16_units(profile['assetId']) and
-            is_browser_string_within_utf16_units(profile['sourceObject']) and OBJECT.fullmatch(profile['sourceObject']) and
-            isinstance(profile['sourceSha256'], str) and SHA256_HEX_PATTERN.fullmatch(profile['sourceSha256']), 'Invalid player source identity')
-    require_condition(type(profile['sourceUnitsPerMetre']) is int and profile['sourceUnitsPerMetre'] == 100, 'Player profile source units must be 100 per metre')
-    for name in ('collisionRadius', 'collisionHeight'):
-        value = profile[name]
-        require_condition(type(value) in (int, float) and math.isfinite(value) and 0 < value <= 10000, 'Invalid player collision dimension')
-    axis = profile['forwardAxis']
-    require_condition(isinstance(axis, list) and len(axis) == 3 and all(type(value) in (int, float) and math.isfinite(value) for value in axis)
-            and axis[1] == 0 and abs(math.hypot(axis[0], axis[2]) - 1) <= 1e-6,
-            'Player facing must be a finite normalized horizontal vector')
-    scale = profile['actorScale']
-    require_condition(isinstance(scale, list) and len(scale) == 3 and
-            all(type(value) in (int, float) and math.isfinite(value) and 0 < value <= 100 for value in scale),
-            'Player actorScale must contain three positive finite presentation-axis values')
-    clips = profile['clips']
-    require_condition(isinstance(clips, dict) and set(REQUIRED_ALIASES) <= set(clips) <= set(PLAYER_ALIASES) and
-            all(isinstance(value, str) and 0 < len(value) <= 128 for value in clips.values()), 'Invalid player clip selection')
-    if 'aliasEvidence' in profile:
-        alias_evidence_shape(profile['aliasEvidence'], clips)
-    require_condition(isinstance(profile['sourceEvidence'], dict) and profile['sourceEvidence'], 'Player profile requires source evidence')
-    require_condition(isinstance(profile['limitations'], list) and 0 < len(profile['limitations']) <= 64 and
-            all(is_browser_string_within_utf16_units(value) for value in profile['limitations']), 'Player profile requires explicit limitations')
-    items = profile['upperItems']
-    require_condition(isinstance(items, list) and len(items) <= 64, 'Invalid upper-item bindings')
-    ids = set()
-    for item in items:
-        require_condition(isinstance(item, dict) and set(item) == {'itemId', 'catalogId', 'sourceObject', 'sourceSha256'}, 'Invalid upper-item fields')
-        require_condition(type(item['itemId']) is int and 0 < item['itemId'] <= 2**31 - 1 and item['itemId'] not in ids,
-                'Invalid/duplicate upper-item identity')
-        ids.add(item['itemId'])
-        require_condition(isinstance(item['catalogId'], str) and CATALOG_ID.fullmatch(item['catalogId']) and
-                is_browser_string_within_utf16_units(item['sourceObject']) and OBJECT.fullmatch(item['sourceObject']) and
-                isinstance(item['sourceSha256'], str) and SHA256_HEX_PATTERN.fullmatch(item['sourceSha256']), 'Invalid upper-item source binding')
 
 
 def stage(recipe_path, destination, expected_catalog_sha256, *, plan_only=False, verify_only=False, project_root=ROOT):

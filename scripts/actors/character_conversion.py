@@ -6,6 +6,7 @@ from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES,
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, model_record_capacity, decoded_table_identity
 from actors.character_class_sources import read_character_class_sources
 from actors.character_head_part_routes import decoded_skeleton_summary, generated_with_head_part_routes
+from actors.character_player_profiles import CLIP_BINDING_FILE_NAME, archive_animation_clip_names, clip_binding_reason, family_clip_binding
 from actors.character_animation_family_recipe import read_character_animation_families
 from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, CLASS_SOURCES_ROUTE, GAP_STATUS, HAIRGRP_TABLE_NAME,
                                        HELMETGRP_TABLE_NAME, CharacterRequestError, build_character_request, character_gap_rows, character_key,
@@ -19,6 +20,7 @@ from data.lane_unit_outcomes import replace_step_gap_row
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import character_model_record_id
+from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.data_ui_table_manifest import ELBERA_ADAPTER_ROUTE, data_ui_table_manifest
 from native_store.linked_file_copy import link_or_copy_file
@@ -163,7 +165,7 @@ class CharacterConversionRun:
             return self.synchronize_model_record(row_index, self.sealed_outcome(row_index))
         step_directory = self.ledger.begin(key, fingerprint)
         model_reason = model_gap_reason(config['censusReason'], generated)
-        outputs = []
+        outputs, binding = [], None
         if model_reason is None:
             try:
                 model_reason, result = self.converted_model_reason(generated)
@@ -174,11 +176,22 @@ class CharacterConversionRun:
                 archive_copy = step_directory / MODEL_ARCHIVE_FILE_NAME
                 link_or_copy_file(result['file'], archive_copy)
                 outputs.append(file_output_record(self.ledger.lane_folder, archive_copy))
-        reason = model_reason or generated['profileFields']['reason']
+                binding = self.sealed_clip_binding(row_index, generated, archive_copy, step_directory, outputs)
+        reason = model_reason or generated['profileFields']['reason'] or (binding and clip_binding_reason(binding))
         gap_row = self.gap_row(row_index, reason) if reason else None
         self.ledger.seal(key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': [gap_row] if gap_row else []})
         replace_step_gap_row(self.project_root, CHARACTER_LANE_NAME, CHARACTER_STEP, key, gap_row)
         return self.synchronize_model_record(row_index, self.outcome(row_index, reason, False, outputs))
+
+    def sealed_clip_binding(self, row_index, generated, archive_path, step_directory, outputs):
+        families_of_class = generated['profileFields']['animationFamilies']
+        if families_of_class is None:
+            return None
+        binding = family_clip_binding(families_of_class, archive_animation_clip_names(archive_path), character_model_record_id(row_index))
+        binding_path = step_directory / CLIP_BINDING_FILE_NAME
+        binding_path.write_bytes(canonical_json_bytes(binding))
+        outputs.append(file_output_record(self.ledger.lane_folder, binding_path))
+        return binding
 
     def synchronize_model_record(self, row_index, outcome):
         record_id = character_model_record_id(row_index)

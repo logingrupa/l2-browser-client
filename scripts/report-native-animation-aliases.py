@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_animation_families import (
     IDENT, _decode_localization111, build_animation_families, class_getters, resolve_animation_references, section_records)
+from actors.character_player_profiles import bound_family_clip
 from native_catalog.ue2 import FormatError
 from reference_client_guard import require_reference_client
 from stage_native_runtime import verified_archive
@@ -202,19 +203,6 @@ def clip_list(glb):
     return names
 
 
-def resolve_reference(value, clips):
-    if value is None:
-        return 'no-family-value', None, []
-    if not isinstance(value, str) or re.fullmatch(IDENT, value) is None:
-        return 'unsupported-syntax', None, []
-    matches = [name for name in clips if name.casefold() == value.casefold()]
-    if not matches:
-        return 'missing-clip', None, []
-    if len(matches) != 1:
-        return 'ambiguous', None, matches
-    return ('exact' if matches[0] == value else 'case-only'), matches[0], matches
-
-
 def localized_keys_by_selected_exported_clip(family_document):
     result = {}
     for reference in family_document['clipResolution']['references']:
@@ -263,7 +251,7 @@ def alias_rows(family_document, clips, class_name):
                 entry['reason'] = 'Nonidentical duplicate source rows; no native precedence is applied.'
                 entry['candidates'] = value['candidates']
             else:
-                status, clip, matches = resolve_reference(value['value'], clips)
+                status, clip, matches = bound_family_clip(value['value'], clips)
                 entry.update(reference=value['value'], line=value['line'])
                 if status == 'missing-clip':
                     entry['reason'] = f'Localized value {value["value"]} matches no exported clip.'
@@ -282,13 +270,13 @@ def alias_rows(family_document, clips, class_name):
             else:
                 require(len(matching) == 1, 'Unexpected duplicate unverified record: ' + key)
                 row = matching[0]
-                status, clip, matches = resolve_reference(row['value'], clips)
+                status, clip, matches = bound_family_clip(row['value'], clips)
                 entry.update(status=status, clip=clip, reference=row['value'], line=row['line'], selectionPath=row.get('selectionPath', 'unverified'),
                              note='No reviewed direct Engine.Pawn getter; this localized value is the per-weapon-type source row, native selection path unverified.')
         rows.append(entry)
     socials = [row for row in records if row['arrayName'].casefold() == 'pcsocialanimname']
     for row in socials:
-        status, clip, _ = resolve_reference(row['value'], clips)
+        status, clip, _ = bound_family_clip(row['value'], clips)
         rows.append({'alias': f'social[{row["index"]}]', 'family': None, 'familyIndex': None, 'field': 'PcSocialAnimName',
                      'key': row['key'], 'reference': row['value'], 'line': row['line'], 'getter': None,
                      'selectionPath': row.get('selectionPath', 'unverified'), 'status': status, 'clip': clip,

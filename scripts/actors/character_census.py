@@ -10,9 +10,11 @@ import json
 
 from actors.actor_unit_inventory import NO_MESH_IN_ROW_REASON
 from actors.character_conversion import PADDING_STATUS, CharacterConversionRun, read_character_sources
+from actors.character_player_profiles import write_character_player_profile_pack
 from actors.character_requests import (BODY_MESH_GROUP, CHARGRP_ROW_COLLECTION, CLASSINFO_ACTOR_CLASS_FIELD, CLASSINFO_CHARGRP_INDEX_FIELD,
                                        CLASSINFO_TABLE_NAME, GAP_STATUS, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME, character_key,
                                        classinfo_class_resolution, is_padding_row, manifest_record_fields)
+from actors.character_store_records import CHARACTER_PLAYER_PROFILES_RECORD_ID, stored_player_profiles
 from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF
 from native_assets import UMODEL, Converter
 from native_catalog.tables import decode_table
@@ -50,7 +52,13 @@ def padding_census_row(row_index, chargrp_row):
             'profile': None}
 
 
-def character_census_row(row_index, receipt):
+def census_profile_status(row_index, reason, written_indexes):
+    if reason:
+        return GAP_STATUS
+    return WRITTEN_STATUS if row_index in written_indexes else PENDING_STATUS
+
+
+def character_census_row(row_index, receipt, written_indexes):
     if receipt is None:
         return {'chargrpIndex': row_index, 'key': character_key(row_index), 'padding': False, 'model': PENDING_STATUS, 'parts': [],
                 'hair': None, 'helmet': None, 'collision': None, 'gaps': [], 'profile': PENDING_STATUS}
@@ -62,8 +70,13 @@ def character_census_row(row_index, receipt):
             'hair': {field: generated['hair'][field] for field in LAYOUT_CENSUS_FIELDS},
             'helmet': {field: generated['helmet'][field] for field in LAYOUT_CENSUS_FIELDS},
             'collision': census_collision(profile),
-            'gaps': model_gaps + generated['gaps'] + ([{'field': 'profile', 'reason': profile['reason']}] if profile['reason'] else []),
-            'profile': GAP_STATUS if profile['reason'] else WRITTEN_STATUS}
+            'gaps': model_gaps + generated['gaps'] + profile_gaps(receipt),
+            'profile': census_profile_status(row_index, gap_rows[0]['reason'] if gap_rows else None, written_indexes)}
+
+
+def profile_gaps(receipt):
+    reason = receipt['gapRows'][0]['reason'] if receipt['gapRows'] and receipt['outputs'] else None
+    return [{'field': 'profile', 'reason': reason}] if reason else []
 
 
 def census_counts(rows):
@@ -81,9 +94,19 @@ def current_character_receipt(run, row_index):
     return run.ledger.sealed_receipt(key) if run.ledger.is_sealed(key, fingerprint) else None
 
 
+def current_character_receipts(run):
+    return {index: current_character_receipt(run, index) for index, row in enumerate(run.sources.chargrp['data'][CHARGRP_ROW_COLLECTION])
+            if not is_padding_row(row)}
+
+
+def written_profile_indexes(run):
+    return {profile['chargrpIndex'] for profile in stored_player_profiles(run.store_root, CHARACTER_PLAYER_PROFILES_RECORD_ID)}
+
+
 def character_census(run):
     chargrp_rows = run.sources.chargrp['data'][CHARGRP_ROW_COLLECTION]
-    rows = [padding_census_row(index, row) if is_padding_row(row) else character_census_row(index, current_character_receipt(run, index))
+    receipts, written_indexes = current_character_receipts(run), written_profile_indexes(run)
+    rows = [padding_census_row(index, row) if is_padding_row(row) else character_census_row(index, receipts[index], written_indexes)
             for index, row in enumerate(chargrp_rows)]
     sources = {table: manifest['sourceSha256'] if manifest else None for table, manifest in
                ((CLASSINFO_TABLE_NAME, run.sources.classinfo), (HAIRGRP_TABLE_NAME, run.sources.hairgrp), (HELMETGRP_TABLE_NAME, run.sources.helmetgrp))}
@@ -136,9 +159,11 @@ def run_character_conversion(project_root, client_access, converter, output_root
     run = CharacterConversionRun(project_root, client_access, converter, work_root, output_root, sources)
     if arguments.batch == CHARACTER_BATCH_NAME:
         outcomes = run_character_batch(run, arguments.limit, preflight)
-        write_character_census(run)
     else:
         outcomes = [run.convert(arguments.character)]
+    write_character_player_profile_pack(run.ledger, run.store_root, list(current_character_receipts(run).values()))
+    if arguments.batch == CHARACTER_BATCH_NAME:
+        write_character_census(run)
     return outcomes
 
 

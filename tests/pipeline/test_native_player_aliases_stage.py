@@ -9,6 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import stage_native_players  # noqa: E402
+from actors import character_store_records  # noqa: E402
 
 RECIPE = ROOT / 'recipes/native-player-aliases-stage.json'
 REPORT = ROOT / 'artifacts/native-parity/research/dev-sheet-audio-20261107/models/ALIAS_COVERAGE.json'
@@ -34,9 +35,9 @@ class RecipeTests(unittest.TestCase):
         source = (ROOT / 'src/assets/native/nativeAnimationAliases.ts').read_text(encoding='utf-8')
         browser = re.findall(r'\{ alias: "(\w+)", field:', source) + [f'social{index}' for index in range(2, 14)]
         self.assertIn('[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map', source)
-        self.assertEqual(tuple(browser), stage_native_players.PLAYER_ALIASES)
+        self.assertEqual(tuple(browser), character_store_records.PLAYER_ALIASES)
         self.assertEqual(re.search(r'requiredNativeAliases = \[([^\]]+)\]', source).group(1).replace('"', '').replace(' ', '').split(','),
-                         list(stage_native_players.REQUIRED_ALIASES))
+                         list(character_store_records.REQUIRED_ALIASES))
 
     def test_every_profile_binds_45_aliases_and_leaves_only_damage_unmapped(self):
         recipe = load(RECIPE)
@@ -45,11 +46,11 @@ class RecipeTests(unittest.TestCase):
         self.assertEqual(set(recipe['supersedes']), set(CLASSES))
         self.assertEqual(recipe['supersedes']['human-male-fighter'], 'built-in')
         for profile in recipe['profiles']:
-            stage_native_players.profile_shape(profile)
+            character_store_records.profile_shape(profile)
             cls, rows = CLASSES[profile['id']], profile['aliasEvidence']['rows']
-            self.assertEqual([row['alias'] for row in rows], list(stage_native_players.PLAYER_ALIASES))
+            self.assertEqual([row['alias'] for row in rows], list(character_store_records.PLAYER_ALIASES))
             self.assertEqual(len(profile['clips']), 45)
-            unbound = [row for row in rows if row['status'] not in stage_native_players.BOUND_STATUSES]
+            unbound = [row for row in rows if row['status'] not in character_store_records.BOUND_STATUSES]
             self.assertEqual([(row['alias'], row['key'], row['status']) for row in unbound], [('damage', 'DamageAnimName[0]', 'no-family-value')])
             self.assertIn('do not substitute DamageFly', unbound[0]['reason'])
             self.assertNotIn('damage', profile['clips'])

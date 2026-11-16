@@ -1,4 +1,8 @@
 {
+ "animationFamilies": {
+  "path": "recipes/actors/character-animation-families.json",
+  "sha256": "5e3fc4d089cbd071f8a0473ab3220f12b3bcd123b805d53df78ee94a75b4fc61"
+ },
  "chargrpSourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
  "classJoin": {
   "classSources": {
@@ -18,20 +22,16 @@
  "classinfoSourceSha256": "537681972450e4f3264efcc00748a3776f2420fa7e1531556934ebe41e560507",
  "counts": {
   "characters": 14,
-  "gapKeys": 14,
+  "gapKeys": 0,
   "modelsConverted": 14,
   "padding": 1,
   "pendingKeys": 0,
-  "profilesWritten": 0,
+  "profilesWritten": 14,
   "rows": 15
  },
  "hairFieldProof": "client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
  "hairgrpSourceSha256": "03df44930cd3752e0f67c99ad2f402028a4406d53a5e30978adc92b589c8fa59",
  "helmetgrpSourceSha256": "ace5b171bf7bd6203de614257a4a523fe07e6fb14abc19af351f7b51c1809237",
- "idleFamilies": {
-  "path": "recipes/actors/character-idle-families.json",
-  "sha256": "873cca92d2f403d3363b10afd505cdf425775acb4eb2ae335a3ef6e0386777a5"
- },
  "layoutRecordFields": {
   "hairgrp": [],
   "helmetgrp": [
@@ -56,10 +56,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -104,7 +100,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 1,
@@ -122,10 +118,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -170,7 +162,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 2,
@@ -188,10 +180,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -236,7 +224,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 3,
@@ -254,10 +242,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -302,7 +286,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 4,
@@ -320,10 +304,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -368,7 +348,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 5,
@@ -386,10 +366,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -434,7 +410,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 6,
@@ -452,10 +428,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -500,7 +472,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 7,
@@ -518,10 +490,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -566,7 +534,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 8,
@@ -584,10 +552,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -632,7 +596,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 9,
@@ -650,10 +614,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -698,7 +658,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 10,
@@ -716,10 +676,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -764,7 +720,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 11,
@@ -782,10 +738,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -830,7 +782,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 12,
@@ -848,10 +800,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -896,7 +844,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 13,
@@ -914,10 +862,6 @@
     {
      "field": "helmet",
      "reason": "helmet-layout-undecoded"
-    },
-    {
-     "field": "profile",
-     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -962,7 +906,7 @@
      "status": "requested-unbound"
     }
    ],
-   "profile": "gap"
+   "profile": "written"
   },
   {
    "chargrpIndex": 14,

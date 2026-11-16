@@ -15,8 +15,8 @@ from reference_client_guard import require_reference_client
 from native_assets_lib.guard_clauses import require_condition
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_assets_lib.strict_json import decode_strict_json
-from stage_native_players import (
-    BOUND_STATUSES, BUILT_IN, BUNDLE_ID, PLAYER_ALIASES, REQUIRED_ALIASES, UNBOUND_STATUSES, profile_shape)
+from actors.character_store_records import BOUND_STATUSES, PLAYER_ALIASES, REQUIRED_ALIASES, UNBOUND_STATUSES, profile_shape
+from stage_native_players import BUILT_IN, BUNDLE_ID
 
 PLAYER_ALIAS_PREPARATION_DESCRIPTION = (
     'Prepare the native animation-alias update for the four staged Human player profiles.\n'

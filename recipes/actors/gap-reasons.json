@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 13,
+  "listVersion": 14,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -26,6 +26,8 @@
     "skill-sound-caster-index-unresolved:<stage>",
     "skill-sound-member-unrouted:<ordinal>",
     "skill-dispatch-candidate-runtime-unresolved",
-    "skinned-part-bone-missing:<bones>"
+    "skinned-part-bone-missing:<bones>",
+    "character-clip-missing:<field>",
+    "character-pivot-unapplied"
   ]
 }
