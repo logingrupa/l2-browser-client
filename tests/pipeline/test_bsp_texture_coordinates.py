@@ -32,7 +32,7 @@ def texture_coordinates_of_primitives(glb):
 
 
 def chunk_texture_coordinates(model, mapping_size):
-    sections = build_chunk_sections(model, list(range(len(model.nodes))), [MATERIAL] * len(model.nodes), FLAGS, {}, frozenset())
+    sections = build_chunk_sections(model, list(range(len(model.nodes))), [MATERIAL] * len(model.nodes), FLAGS, {})
     glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: BspSurfaceMaterial(MATERIAL, None, mapping_size, False, None)})
     return texture_coordinates_of_primitives(glb)
 

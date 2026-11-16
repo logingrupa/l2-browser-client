@@ -19,7 +19,6 @@ SOURCE_FRAME_UNITS_TO_METRES = 0.01
 SOURCE_FRAME_AXIS_ORDER = (0, 2, 1)
 UNSIGNED_32_BIT_MASK = 0xFFFFFFFF
 NO_LIGHTMAP = -1
-OUTDOOR_FRONT_ZONE_SIDE = 1
 MINIMUM_POLYGON_VERTICES = 3
 UNBOUND_MATERIAL_COLOUR = [1, 0, 1, 1]
 UNLIT_MATERIAL_EXTENSION = 'KHR_materials_unlit'
@@ -39,7 +38,7 @@ class BspSectionKey(NamedTuple):
     material: str
     unlit: bool
     lightmap: object
-    outdoor: bool
+    native_render_section: int
 
 
 class BspSection(NamedTuple):
@@ -110,21 +109,21 @@ def node_lightmap_texture(node, lightmap_texture_of_record):
     return lightmap_texture_of_record.get(node.i_light_map)
 
 
-def node_section_key(model, node, material_of_surface, flags, lightmap_texture_of_record, outdoor_zones):
+def node_section_key(model, node, material_of_surface, flags, lightmap_texture_of_record):
     surface = model.surfs[node.i_surf]
     return BspSectionKey(material_of_surface[node.i_surf], bool(unsigned_flags(surface.flags) & flags.unlit_mask),
-                         node_lightmap_texture(node, lightmap_texture_of_record), node.i_zone[OUTDOOR_FRONT_ZONE_SIDE] in outdoor_zones)
+                         node_lightmap_texture(node, lightmap_texture_of_record), node.i_section)
 
 
 def section_order(key):
     lightmap_order = (key.lightmap is None, NO_LIGHTMAP if key.lightmap is None else key.lightmap)
-    return key.material.casefold(), key.material, key.unlit, lightmap_order, key.outdoor
+    return key.material.casefold(), key.material, key.unlit, lightmap_order, key.native_render_section
 
 
-def build_chunk_sections(model, node_indices, material_of_surface, flags, lightmap_texture_of_record, outdoor_zones):
+def build_chunk_sections(model, node_indices, material_of_surface, flags, lightmap_texture_of_record):
     nodes_by_key = {}
     for index in sorted(node_indices):
-        key = node_section_key(model, model.nodes[index], material_of_surface, flags, lightmap_texture_of_record, outdoor_zones)
+        key = node_section_key(model, model.nodes[index], material_of_surface, flags, lightmap_texture_of_record)
         nodes_by_key.setdefault(key, []).append(index)
     return [BspSection(key, nodes_by_key[key]) for key in sorted(nodes_by_key, key=section_order)]
 
@@ -239,7 +238,8 @@ def chunk_bsp_glb(model, chunk_id, sections, materials_by_identity):
                                                                                   'material': material_index_of_key[material_key]}]})
         nodes.append({'name': f'{chunk_id}.section-{primitive}', 'mesh': primitive})
         section_records.append({'primitive': primitive, 'material': section.key.material, 'unlit': section.key.unlit,
-                                'lightmap': section.key.lightmap, 'outdoor': section.key.outdoor, 'translucent': material.translucent})
+                                'lightmap': section.key.lightmap, 'nativeRenderSection': section.key.native_render_section,
+                                'translucent': material.translucent})
     if image_of_identity:
         builder.data['samplers'] = [{'wrapS': 10497, 'wrapT': 10497}]
     if any(UNLIT_MATERIAL_EXTENSION in material.get('extensions', {}) for material in gltf_materials):

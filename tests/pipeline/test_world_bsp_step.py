@@ -89,27 +89,34 @@ class BspSectionTests(unittest.TestCase):
                                              synthetic_polygon(square_points(80, 0, 10), surface_flags=0x08000000)])
         self.assertEqual(drawn_node_indices(model, FLAGS, frozenset({2})), [0, 4])
 
-    def test_a_section_never_mixes_unlit_lightmap_texture_or_outdoor_class(self):
-        cases = ({'surface_flags': 0x00400000}, {'light_map': 3}, {'zones': (1, 2)})
+    def test_a_section_never_mixes_unlit_lightmap_texture_or_native_render_section(self):
+        cases = ({'surface_flags': 0x00400000}, {'light_map': 3}, {'section': 1})
         for second in cases:
             model = two_square_model(**second)
-            sections = build_chunk_sections(model, [0, 1], [MATERIAL, MATERIAL], FLAGS, {3: 4}, frozenset({0, 1}))
+            sections = build_chunk_sections(model, [0, 1], [MATERIAL, MATERIAL], FLAGS, {3: 4})
             self.assertEqual(len(sections), 2, second)
-        same = build_chunk_sections(two_square_model(), [0, 1], [MATERIAL, MATERIAL], FLAGS, {}, frozenset({0}))
+        same = build_chunk_sections(two_square_model(zones=(1, 2)), [0, 1], [MATERIAL, MATERIAL], FLAGS, {})
         self.assertEqual([section.nodes for section in same], [[0, 1]])
-        unresolved = build_chunk_sections(two_square_model(light_map=3), [0, 1], [MATERIAL, MATERIAL], FLAGS, {}, frozenset())
+        unresolved = build_chunk_sections(two_square_model(light_map=3), [0, 1], [MATERIAL, MATERIAL], FLAGS, {})
         self.assertEqual([section.key.lightmap for section in unresolved], [-1, None])
+
+    def test_every_section_record_names_its_native_render_section(self):
+        model = two_square_model(section=1)
+        sections = build_chunk_sections(model, [0, 1], [MATERIAL, MATERIAL], FLAGS, {})
+        _, section_records, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: textured(MATERIAL)})
+        self.assertEqual([record['nativeRenderSection'] for record in section_records], [0, 1])
+        self.assertTrue(all('outdoor' not in record for record in section_records))
 
     def test_sections_order_by_casefold_material_then_nodes_by_index(self):
         model = two_square_model()
-        sections = build_chunk_sections(model, [1, 0], [MATERIAL, OTHER_MATERIAL], FLAGS, {}, frozenset())
+        sections = build_chunk_sections(model, [1, 0], [MATERIAL, OTHER_MATERIAL], FLAGS, {})
         self.assertEqual([(section.key.material, section.nodes) for section in sections], [(OTHER_MATERIAL, [1]), (MATERIAL, [0])])
 
     def test_node_ranges_cover_every_triangle_once_and_stay_contiguous(self):
         polygons = [synthetic_polygon(square_points(0, 0, 100)), synthetic_polygon([(200, 0, 0), (300, 0, 0), (350, 50, 0), (300, 100, 0), (200, 100, 0)]),
                     synthetic_polygon(square_points(400, 0, 100), surface_flags=0x00400000)]
         model = build_synthetic_level_model(polygons)
-        sections = build_chunk_sections(model, [0, 1, 2], [MATERIAL] * 3, FLAGS, {}, frozenset())
+        sections = build_chunk_sections(model, [0, 1, 2], [MATERIAL] * 3, FLAGS, {})
         glb, section_records, node_ranges, triangles = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: textured(MATERIAL)})
         document = glb_document(glb)
         self.assertEqual((document['extras']['nativeBspSections'], document['extras']['nativeBspNodeRanges']), (section_records, node_ranges))
@@ -129,7 +136,7 @@ class BspSectionTests(unittest.TestCase):
 
     def test_an_unconverted_material_is_a_magenta_diagnostic(self):
         model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100))])
-        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {}, frozenset())
+        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {})
         glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: BspSurfaceMaterial(MATERIAL, None, None, False, None)})
         document = glb_document(glb)
         self.assertEqual(document['materials'][0]['pbrMetallicRoughness']['baseColorFactor'], [1, 0, 1, 1])
@@ -139,7 +146,7 @@ class BspSectionTests(unittest.TestCase):
 
     def test_a_baked_material_without_a_mapping_size_is_a_magenta_diagnostic_without_image_or_program(self):
         model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100))])
-        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {}, frozenset())
+        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {})
         program_pin = {'directory': f'native-materials/{"a" * 64}', 'programSha256': 'a' * 64}
         unmapped = BspSurfaceMaterial(MATERIAL, synthetic_png_bytes(), None, False, program_pin)
         document = glb_document(chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: unmapped})[0])
@@ -153,7 +160,7 @@ class BspSectionTests(unittest.TestCase):
 
     def test_an_unbaked_material_with_a_mapping_size_still_writes_its_texture_coordinates(self):
         model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100))])
-        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {}, frozenset())
+        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {})
         glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections,
                                      {MATERIAL: BspSurfaceMaterial(MATERIAL, None, MaterialMappingSize(64, 32), False, None)})
         document = glb_document(glb)

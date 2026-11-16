@@ -153,7 +153,7 @@ def material_store_outputs(project_root, material_files):
     return [{**record, 'path': (store_root / record['path']).relative_to(store_root.parent).as_posix()} for record in material_files]
 
 
-def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps):
+def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, lightmap_textures, gaps):
     records, glbs = {}, {}
     materials = {identity: outcome.material for identity, outcome in outcomes.items()}
     for chunk in chunk_plan['chunks']:
@@ -164,7 +164,7 @@ def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, ou
         if not node_indices:
             records[chunk_id] = chunk_bsp_record(chunk_id, None, None, None, 0, [], [], 0, [])
             continue
-        sections = build_chunk_sections(level.model, node_indices, identities, flags, lightmap_textures, outdoor_zones)
+        sections = build_chunk_sections(level.model, node_indices, identities, flags, lightmap_textures)
         glb, section_records, node_ranges, triangle_count = chunk_bsp_glb(level.model, chunk_id, sections, materials)
         glbs[chunk_id] = glb
         records[chunk_id] = chunk_bsp_record(chunk_id, '/l2/' + chunk_bsp_store_path(sha256_hex(glb)), sha256_hex(glb), glb, len(node_indices),
@@ -208,7 +208,7 @@ def run_bsp_step(project_root, client_root, tile_id):
     outcomes = surface_materials(used_identities, sources)
     inputs = locked_input_records(sorted({tile_map_path(tile_id), *sources.map_sources.dependencies}))
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
-    records, glbs = chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps)
+    records, glbs = chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, lightmap_textures, gaps)
     gap_rows, material_files = gaps.rows(), surface_material_files(outcomes)
     product = {'tileId': tile_id, 'levelModel': level.binding['model'], 'nodeCount': len(level.model.nodes), 'drawnNodeCount': len(drawn),
                'outdoorZones': sorted(outdoor_zones), 'skyZones': sorted(sky_zones), 'chunks': records,
