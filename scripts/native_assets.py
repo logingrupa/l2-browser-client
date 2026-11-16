@@ -21,8 +21,8 @@ from native_assets_lib.rigid import is_root_rigid, attach_rigid_part
 from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.source_table_binding import material_overrides_by_slot, verify_source_table_binding
-from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
-from native_assets_lib.texture_png_alpha import texture_png_keeping_native_alpha
+from native_assets_lib.texture_mips import UnsupportedTextureSource
+from native_assets_lib.texture_png_alpha import native_alpha_limitations, texture_png_keeping_native_alpha, texture_source_or_unsupported
 from native_assets_lib.texture_package_118 import read_unreal_package
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
 from native_assets_lib.converter_source_digests import ConverterSourceDigests
@@ -260,18 +260,18 @@ class Converter:
             raise ValueError(f'Expected exactly one exported payload for {item["object"]}: {matches}')
         return matches[0]
 
-    def texture_png(self, work, package_path, package, item):
+    def texture_png(self, work, package_path, item, native_source):
         self.run(work, package_path, item)
         payload = self.exported(work, item, ('.png',)).read_bytes()
         if not payload.startswith(b'\x89PNG\r\n\x1a\n'):
             raise ValueError('Texture exporter did not produce PNG')
-        return texture_png_keeping_native_alpha(payload, package, item)
+        return texture_png_keeping_native_alpha(payload, native_source)
 
     def texture(self, work, reference):
         package_name = reference.split('.')[0]
         path, package = self.package(package_name)
         item = self.select(package, reference, 'Texture')
-        payload = self.texture_png(work, path, package, item)
+        payload, _ = self.texture_png(work, path, item, texture_source_or_unsupported(package, item))
         properties, _ = package.properties(item)
         return payload, {prop['name']: prop.get('value', {'rawHex': prop['payloadHex']}) for prop in properties}, item['object']
 
@@ -647,14 +647,21 @@ class Converter:
                     primary = 'model.glb'
                     files[primary], mime[primary] = document.glb(), 'model/gltf-binary'
                 elif kind == 'texture':
+                    native_source = texture_source_or_unsupported(package, item)
                     primary = 'texture.png'
-                    files[primary] = self.texture_png(work, source_path, package, item)
+                    files[primary], native_alpha = self.texture_png(work, source_path, item, native_source)
                     mime[primary] = 'image/png'
                     properties, _ = package.properties(item)
                     metadata['nativeProperties'] = properties
-                    limitations.append('Texture mip0 decoded by pinned UModel, with native mip0 alpha restored when UModel drops it; native material/shader behavior is not included.')
-                    try:
-                        native_texture, native_files = build_texture_source(package, item)
+                    metadata['nativeAlpha'] = native_alpha
+                    limitations.append('Texture mip0 decoded by pinned UModel; native material/shader behavior is not included.')
+                    limitations.extend(native_alpha_limitations(native_alpha))
+                    if isinstance(native_source, UnsupportedTextureSource):
+                        metadata['nativeTextureSource'] = {'status': 'unsupported', 'reason': str(native_source), 'gapReason': native_source.reason}
+                        metadata['nativeTextureDDS'] = {'status': 'unsupported', 'reason': 'Native texture source sidecar is unavailable: ' + str(native_source)}
+                        limitations.append('Original native mip sidecar unsupported: ' + str(native_source))
+                    else:
+                        native_texture, native_files = native_source
                         if native_texture['format']['propertyStatus'] == 'omitted-native-zero-default':
                             _, defaults = self.package('Engine')
                             expected = native_texture['layout']['evidence']['omittedFormat']['enginePackageSha256']
@@ -687,10 +694,6 @@ class Converter:
                         except UnsupportedTextureDDS as error:
                             metadata['nativeTextureDDS'] = {'status': 'unsupported', 'reason': str(error)}
                             limitations.append('Compressed texture derivative unsupported: ' + str(error))
-                    except UnsupportedTextureSource as error:
-                        metadata['nativeTextureSource'] = {'status': 'unsupported', 'reason': str(error), 'gapReason': error.reason}
-                        metadata['nativeTextureDDS'] = {'status': 'unsupported', 'reason': 'Native texture source sidecar is unavailable: ' + str(error)}
-                        limitations.append('Original native mip sidecar unsupported: ' + str(error))
                 else:
                     payload, media_mime, metadata = self.sound(work, package, item)
                     primary = 'audio.ogg' if media_mime == 'audio/ogg' else 'audio.wav'

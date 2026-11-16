@@ -73,10 +73,10 @@ def block_compressed_alpha(format_id, width, height, payload):
             block_start = (block_row * blocks_wide + block_column) * block_bytes
             block_alpha = BLOCK_ALPHA_DECODERS[format_id](payload[block_start:block_start + block_bytes])
             for texel, value in enumerate(block_alpha):
-                x = block_column * BLOCK_EDGE_TEXELS + texel % BLOCK_EDGE_TEXELS
-                y = block_row * BLOCK_EDGE_TEXELS + texel // BLOCK_EDGE_TEXELS
-                if x < width and y < height:
-                    alpha[y * width + x] = value
+                texel_column = block_column * BLOCK_EDGE_TEXELS + texel % BLOCK_EDGE_TEXELS
+                texel_row = block_row * BLOCK_EDGE_TEXELS + texel // BLOCK_EDGE_TEXELS
+                if texel_column < width and texel_row < height:
+                    alpha[texel_row * width + texel_column] = value
     return bytes(alpha)
 
 

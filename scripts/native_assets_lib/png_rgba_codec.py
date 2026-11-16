@@ -13,7 +13,8 @@ CHUNK_FRAME_BYTES = 12
 EIGHT_BIT_DEPTH = 8
 RGB_COLOR_TYPE = 2
 RGBA_COLOR_TYPE = 6
-COLOR_TYPES_WITH_ALPHA_CHANNEL = (4, RGBA_COLOR_TYPE)
+GRAYSCALE_ALPHA_COLOR_TYPE = 4
+COLOR_TYPES_WITH_ALPHA_CHANNEL = (GRAYSCALE_ALPHA_COLOR_TYPE, RGBA_COLOR_TYPE)
 DEFLATE_COMPRESSION_METHOD = 0
 ADAPTIVE_FILTER_METHOD = 0
 NOT_INTERLACED = 0
@@ -46,16 +47,16 @@ def png_chunks(png):
     return chunks
 
 
-def png_image_header(png):
-    chunk_type, data = png_chunks(png)[0]
+def png_image_header(chunks):
+    _, data = chunks[0]
     require_png(len(data) == struct.calcsize(IMAGE_HEADER_LAYOUT), 'PNG IHDR has the wrong size')
     width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack(IMAGE_HEADER_LAYOUT, data)
     return {'width': width, 'height': height, 'bitDepth': bit_depth, 'colorType': color_type,
             'compression': compression, 'filterMethod': filter_method, 'interlace': interlace}
 
 
-def png_has_alpha_channel(png):
-    return png_image_header(png)['colorType'] in COLOR_TYPES_WITH_ALPHA_CHANNEL
+def png_has_alpha_channel(chunks):
+    return png_image_header(chunks)['colorType'] in COLOR_TYPES_WITH_ALPHA_CHANNEL
 
 
 def paeth_predictor(left, above, upper_left):
@@ -85,8 +86,8 @@ def unfiltered_row(filter_type, filtered, previous, bytes_per_pixel):
     return bytes(row)
 
 
-def decoded_rgb_png_pixels(png):
-    header = png_image_header(png)
+def decoded_rgb_png_pixels(chunks):
+    header = png_image_header(chunks)
     require_png((header['bitDepth'], header['colorType'], header['compression'], header['filterMethod'], header['interlace']) ==
                 (EIGHT_BIT_DEPTH, RGB_COLOR_TYPE, DEFLATE_COMPRESSION_METHOD, ADAPTIVE_FILTER_METHOD, NOT_INTERLACED),
                 f'Texture PNG without alpha must be 8-bit non-interlaced RGB, got {header}')
@@ -95,7 +96,7 @@ def decoded_rgb_png_pixels(png):
     require_png(0 < width and 0 < height and height * row_bytes <= MAX_DECODED_IMAGE_BYTES, 'PNG dimensions exceed the bounded image size')
     decompressor = zlib.decompressobj()
     try:
-        filtered = decompressor.decompress(b''.join(data for chunk_type, data in png_chunks(png) if chunk_type == IMAGE_DATA_CHUNK),
+        filtered = decompressor.decompress(b''.join(data for chunk_type, data in chunks if chunk_type == IMAGE_DATA_CHUNK),
                                            height * (row_bytes + 1) + 1)
     except zlib.error as error:
         raise FormatError('PNG image data does not inflate') from error
@@ -122,8 +123,8 @@ def encoded_rgba_png(width, height, rgba):
             png_chunk(IMAGE_DATA_CHUNK, zlib.compress(unfiltered_rows, ENCODER_COMPRESSION_LEVEL)) + png_chunk(IMAGE_END_CHUNK, b''))
 
 
-def rgba_png_of_rgb_png_and_alpha(png, width, height, alpha):
-    png_width, png_height, rgb = decoded_rgb_png_pixels(png)
+def rgba_png_of_rgb_png_and_alpha(chunks, width, height, alpha):
+    png_width, png_height, rgb = decoded_rgb_png_pixels(chunks)
     require_png((png_width, png_height) == (width, height), f'Texture PNG is {png_width} x {png_height}, native mip 0 is {width} x {height}')
     require_png(len(alpha) == width * height, 'Native alpha differs from the mip 0 texel count')
     rgba = bytearray(width * height * RGBA_BYTES_PER_PIXEL)

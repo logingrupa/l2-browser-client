@@ -44,7 +44,8 @@ DXT5_EVIDENCE = {
                     'fourCC': 'DXT5', 'width': 4, 'height': 4, 'bytes': 16},
     'policy': 'Preserve original color and alpha blocks without decoding, normal-map swizzling or alpha interpretation.',
 }
-REA_TEXTURE_NATIVE_DECODE = {'file': 'rea-in/20261113-roadmap/independent-decode-db5/texture-native.json',
+REA_TEXTURE_NATIVE_DECODE = {'root': 'C:/laragon/l2b-orchestration/rea-in', 'rootHost': 'DATABASE-PC', 'rootInRepository': False,
+                             'file': '20261113-roadmap/independent-decode-db5/texture-native.json',
                              'sha256': '5838dcd7dcf2d388b24642c0a2f5593634c015fed4fdf4520e312f9da87f1c71',
                              'check': 'every FX_E_T Texture mip width, height, byte count and payload SHA-256'}
 DXT3_EVIDENCE = {
