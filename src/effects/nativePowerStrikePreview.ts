@@ -11,12 +11,16 @@ export interface PowerStrikeSelection {
   isValid(): boolean;
 }
 
-export function createNativePowerStrikePreview(init: EffectToggle, shot: EffectToggle,
+interface ShotEffectToggle extends EffectToggle {
+  armNoTargetViewer(): void;
+}
+
+export function createNativePowerStrikePreview(init: EffectToggle, shot: ShotEffectToggle,
   selected: () => PowerStrikeSelection | null, casterAlive: () => boolean,
-  clearManual: () => Promise<void>, dispatch: (targetId: string) => void,
+  clearManual: () => Promise<void>, dispatch: (targetId: string | null) => void,
   subscribeCommands: (listener: (command: WorldCommand) => void) => () => void) {
   let disposed = false, pending = false, generation = 0, ownDispatch = false, requested = 0;
-  let target: PowerStrikeSelection | null = null, error: string | null = null;
+  let target: PowerStrikeSelection | null = null, error: string | null = null, noTargetViewer = false;
   let priorInit = false, priorShot = false;
   const listeners = new Set<() => void>();
   const publish = () => { for (const listener of listeners) listener(); };
@@ -37,46 +41,60 @@ export function createNativePowerStrikePreview(init: EffectToggle, shot: EffectT
     }
   });
   const stop = () => {
-    cancel("Preview stopped."); generation++; pending = false; target = null; error = null;
+    cancel("Preview stopped."); generation++; pending = false; target = null; error = null; noTargetViewer = false;
     void init.setEnabled(false); void shot.setEnabled(false); publish();
+  };
+  const selectionStillMatches = (choice: PowerStrikeSelection | null): boolean => {
+    if (choice === null) return true;
+    const latest = selected();
+    return choice.isValid() && latest?.isValid() === true && latest.id === choice.id && latest.rootUniqueId === choice.rootUniqueId;
+  };
+  const prepareAndDispatch = async (choice: PowerStrikeSelection | null) => {
+    const token = ++generation; target = choice; noTargetViewer = choice === null; error = null; pending = true;
+    priorInit = init.snapshot().enabled; priorShot = shot.snapshot().enabled; publish();
+    try {
+      await clearManual();
+      if (disposed || token !== generation) return;
+      await init.setEnabled(true);
+      if (disposed || token !== generation) return;
+      if (!init.snapshot().enabled || init.snapshot().status === "loading") throw new Error(init.snapshot().error ?? "Init effects are not ready.");
+      await shot.setEnabled(true);
+      if (disposed || token !== generation) return;
+      if (!shot.snapshot().enabled || shot.snapshot().status === "loading") throw new Error(shot.snapshot().error ?? "Shot effects are not ready.");
+      if (!casterAlive() || !selectionStillMatches(choice)) {
+        throw new Error(choice === null ? "The fighter died during preparation." : "The selected target changed during preparation. Select it and try again.");
+      }
+      pending = false; ownDispatch = true;
+      try {
+        if (choice === null) shot.armNoTargetViewer();
+        dispatch(choice?.id ?? null); requested++;
+      } finally { ownDispatch = false; }
+      publish();
+    } catch (failure) {
+      if (!disposed && token === generation) {
+        pending = false; error = failure instanceof Error ? failure.message : "Power Strike preview could not be prepared.";
+        if (!priorInit) void init.setEnabled(false);
+        if (!priorShot) void shot.setEnabled(false);
+        publish();
+      }
+    }
   };
   return {
     async start() {
       if (disposed || pending) return;
       const choice = selected();
       if (!casterAlive() || !choice?.isValid()) { error = "Select the living Greater Musveren before starting this preview."; publish(); return; }
-      const token = ++generation; target = choice; error = null; pending = true;
-      priorInit = init.snapshot().enabled; priorShot = shot.snapshot().enabled; publish();
-      try {
-        await clearManual();
-        if (disposed || token !== generation) return;
-        await init.setEnabled(true);
-        if (disposed || token !== generation) return;
-        if (!init.snapshot().enabled || init.snapshot().status === "loading") throw new Error(init.snapshot().error ?? "Init effects are not ready.");
-        await shot.setEnabled(true);
-        if (disposed || token !== generation) return;
-        if (!shot.snapshot().enabled || shot.snapshot().status === "loading") throw new Error(shot.snapshot().error ?? "Shot effects are not ready.");
-        const latest = selected();
-        if (!casterAlive() || !choice.isValid() || !latest?.isValid() || latest.id !== choice.id || latest.rootUniqueId !== choice.rootUniqueId) {
-          throw new Error("The selected target changed during preparation. Select it and try again.");
-        }
-        pending = false; ownDispatch = true;
-        try { dispatch(choice.id); requested++; }
-        finally { ownDispatch = false; }
-        publish();
-      } catch (failure) {
-        if (!disposed && token === generation) {
-          pending = false; error = failure instanceof Error ? failure.message : "Power Strike preview could not be prepared.";
-          if (!priorInit) void init.setEnabled(false);
-          if (!priorShot) void shot.setEnabled(false);
-          publish();
-        }
-      }
+      await prepareAndDispatch(choice);
+    },
+    async startNoTargetViewer() {
+      if (disposed || pending) return;
+      if (!casterAlive()) { error = "The fighter must be alive to play the no-target viewer."; publish(); return; }
+      await prepareAndDispatch(null);
     },
     stop,
     cancel,
     subscribe(listener: () => void) { listeners.add(listener); return () => listeners.delete(listener); },
-    snapshot() { return { pending, disposed, targetId: target?.id ?? null, targetName: target?.name ?? null,
+    snapshot() { return { pending, disposed, noTargetViewer, targetId: target?.id ?? null, targetName: target?.name ?? null,
       error, requested, damageDispatched: false, additionalSoundSelected: false }; },
     dispose() { if (disposed) return; stop(); disposed = true; unsubscribe(); publish(); listeners.clear(); },
   };

@@ -4,7 +4,7 @@ import type { NativeActorClock } from "../assets/native/NativeActor";
 import type { EntityPivotView } from "../entities/EntityRegistry";
 import { dispatchStageActor, type EffectBundle } from "./nativeEffectComponents";
 import type { NativePowerStrikeShotSource } from "./nativePowerStrikeSource";
-import { nativeEffectShotPlacement } from "./nativeEffectShotPlacement";
+import { nativeEffectSelfTargetViewerPlacement, nativeEffectShotPlacement, type NativeEffectShotPlacement } from "./nativeEffectShotPlacement";
 import { drawNativeSessionSeed } from "../assets/native/nativeSessionSeed";
 import { loadEmitterActorPlayback, type EmitterActorPlayback } from "./particles/render/emitterActorPlayback";
 
@@ -16,6 +16,7 @@ export interface NativeShotTargetView {
 }
 export interface NativeShotEffectFrame {
   readonly caster: EntityPivotView | null;
+  readonly casterCollisionRadius: number;
   readonly target: NativeShotTargetView | null;
   readonly targetId: string | null;
   readonly clock: NativeActorClock | null;
@@ -34,11 +35,14 @@ export function createNativeEffectShotPreview(scene: Scene, bundle: EffectBundle
   let target: NativeShotTargetView | null = null, observedSequence = -1, generation: number | null = null;
   let status: Status = "off", error: string | null = null, interruption: string | null = null;
   let running = false, fired = false, runs = 0, shots = 0, sourceSeconds = 0;
-  let placement: ReturnType<typeof nativeEffectShotPlacement> | null = null, emittedAtSourceSeconds: number | null = null;
+  let placement: NativeEffectShotPlacement | null = null, emittedAtSourceSeconds: number | null = null;
+  let noTargetViewerArmed = false, noTargetViewerRun = false;
   const casterPosition = new Vector3(), targetPosition = new Vector3(), listeners = new Set<() => void>();
   const publish = () => { for (const listener of listeners) listener(); };
   const change = (next: Status) => { if (status !== next) { status = next; publish(); } };
-  const clear = () => { playback?.dispose(); playback = null; caster = null; target = null; running = false; };
+  const clear = () => {
+    playback?.dispose(); playback = null; caster = null; target = null; running = false; noTargetViewerArmed = false; noTargetViewerRun = false;
+  };
   const hide = () => { playback?.stop(); running = false; };
   const cancel = (reason: string) => { interruption = reason; hide(); change("armed"); };
   const fail = (failure: unknown) => {
@@ -99,18 +103,24 @@ export function createNativeEffectShotPreview(scene: Scene, bundle: EffectBundle
           clock.elapsedSeconds > clock.durationSeconds + 1e-8)) throw new Error("The qualified source action clock is invalid.");
         if (current.sequence !== observedSequence) {
           observedSequence = current.sequence;
-          if (special && current.targetId !== null) {
+          const noTargetViewerRequested = noTargetViewerArmed;
+          noTargetViewerArmed = false;
+          if (special && current.targetId === null && noTargetViewerRequested) {
             hide(); placement = null; emittedAtSourceSeconds = null; fired = false; sourceSeconds = 0;
-            target = current.target; generation = current.sequence; interruption = null;
+            target = null; noTargetViewerRun = true; generation = current.sequence; interruption = null;
+            running = true; runs++; change("waiting");
+          } else if (special && current.targetId !== null) {
+            hide(); placement = null; emittedAtSourceSeconds = null; fired = false; sourceSeconds = 0;
+            target = current.target; noTargetViewerRun = false; generation = current.sequence; interruption = null;
             if (!target?.alive || !target.pivot.isValid() || target.pivot.entityId !== current.targetId ||
               !Number.isFinite(target.collisionRadius) || target.collisionRadius <= 0) { cancel("target-unavailable"); return; }
             running = true; runs++; change("waiting");
           } else if (running) { cancel("action-changed"); }
         }
         if (!running) return;
-        if (!target?.alive || !target.pivot.isValid() || !current.target?.alive ||
+        if (!noTargetViewerRun && (!target?.alive || !target.pivot.isValid() || !current.target?.alive ||
           !current.target.pivot.isValid() || target.pivot.root !== current.target.pivot.root ||
-          current.targetId !== target.pivot.entityId || current.target.collisionRadius !== target.collisionRadius) {
+          current.targetId !== target.pivot.entityId || current.target.collisionRadius !== target.collisionRadius)) {
           cancel("target-unavailable"); return;
         }
         if (!special) {
@@ -125,11 +135,12 @@ export function createNativeEffectShotPreview(scene: Scene, bundle: EffectBundle
         sourceSeconds = clock.elapsedSeconds;
         if (sourceSeconds < source.eventSeconds) return;
         if (!fired) {
-          if (!caster.getWorldPositionToRef(casterPosition) || !target.pivot.getWorldPositionToRef(targetPosition)) {
+          if (!caster.getWorldPositionToRef(casterPosition) || !noTargetViewerRun && !target!.pivot.getWorldPositionToRef(targetPosition)) {
             cancel("actor-pivot-unavailable"); return;
           }
-          placement = nativeEffectShotPlacement([casterPosition.x, casterPosition.y, casterPosition.z],
-            [targetPosition.x, targetPosition.y, targetPosition.z], target.collisionRadius);
+          const casterPoint = [casterPosition.x, casterPosition.y, casterPosition.z] as const;
+          placement = noTargetViewerRun ? nativeEffectSelfTargetViewerPlacement(casterPoint, current.casterCollisionRadius)
+            : nativeEffectShotPlacement(casterPoint, [targetPosition.x, targetPosition.y, targetPosition.z], target!.collisionRadius);
           playback.root.position.set(...placement.position); playback.root.rotationQuaternion!.set(...placement.quaternion);
           playback.start();
           fired = true; shots++; emittedAtSourceSeconds = sourceSeconds;
@@ -138,6 +149,7 @@ export function createNativeEffectShotPreview(scene: Scene, bundle: EffectBundle
         if (!playback.playing) { running = false; change("completed"); } else change("playing");
       } catch (failure) { fail(failure); }
     },
+    armNoTargetViewer() { if (!disposed && enabled) noTargetViewerArmed = true; },
     bounds() { return status === "playing" ? playback?.bounds() ?? null : null; },
     subscribe(listener: () => void) { listeners.add(listener); return () => listeners.delete(listener); },
     snapshot() {
@@ -146,7 +158,7 @@ export function createNativeEffectShotPreview(scene: Scene, bundle: EffectBundle
         targetId: target?.pivot.entityId ?? null, targetRootUniqueId: target?.pivot.root.uniqueId ?? null,
         targetProfileId: target?.profileId ?? null, emittedAtSourceSeconds,
         eventOffsetSeconds: emittedAtSourceSeconds === null ? null : emittedAtSourceSeconds - source.eventSeconds,
-        placement: placement && structuredClone(placement), playback: playback?.inspect() ?? null,
+        noTargetViewer: noTargetViewerRun, placement: placement && structuredClone(placement), playback: playback?.inspect() ?? null,
         nativePendingNotifyObserved: false, nativeSkillVerified: false, nativeAudioPolicyVerified: false };
     },
     dispose,

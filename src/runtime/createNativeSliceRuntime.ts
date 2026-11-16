@@ -247,7 +247,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     validateLifetime();
     registry.update(0);
     const effects = await createNativeSliceEffects({ scene, registry, catalogIndex, effectComponentRecords: servedCatalog.effectComponents,
-      adapter, fighter, musveren, specialAttackPreview, signal, validateLifetime, addRelease });
+      adapter, fighter, musveren, casterCollisionRadiusMetres: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
+      specialAttackPreview, signal, validateLifetime, addRelease });
     const { effectComponents, initEffect, shotEffect, skillCast } = effects;
     const materialOverrides = createNativeMaterialOverrides(scene, settings.materialOverrideEnabled ? {
       entityId: settings.materialEntityId ?? "local-player",

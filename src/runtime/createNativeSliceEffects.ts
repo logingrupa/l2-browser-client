@@ -33,6 +33,7 @@ export interface NativeSliceEffectInputs {
   adapter: NativeSliceAdapter;
   fighter: AssetPackage;
   musveren: NativeNpcProfile;
+  casterCollisionRadiusMetres: number;
   specialAttackPreview: { clip: string | null; reason: string | null };
   signal: AbortSignal;
   validateLifetime: () => void;
@@ -87,7 +88,7 @@ export async function createNativeSliceEffects(inputs: NativeSliceEffectInputs):
     const shot = createNativeEffectShotPreview(scene, effectBundle, shotSource.source, () => {
       const player = registry.localPlayer, targetId = player?.actionTargetId ?? null;
       const entity = targetId ? registry.entity(targetId) : null, pivot = targetId ? registry.actorPivot(targetId) : null;
-      return { caster: registry.actorPivot("local-player"), targetId,
+      return { caster: registry.actorPivot("local-player"), casterCollisionRadius: inputs.casterCollisionRadiusMetres, targetId,
         target: entity && pivot && targetId === "native-musveren" ? { pivot, collisionRadius: musverenShotTarget.collisionRadius, profileId: musverenShotTarget.profileId, alive: entity.health > 0 } : null,
         clock: registry.sourceClock("local-player"), sequence: player?.animationSequence ?? 0,
         action: player?.actionPreview ?? null, animation: player?.animation ?? "idle", alive: (player?.health ?? 0) > 0 };
@@ -101,7 +102,7 @@ export async function createNativeSliceEffects(inputs: NativeSliceEffectInputs):
       return entity && pivot ? { id: selectedOrOnlyNpcId, name: entity.displayName, rootUniqueId: pivot.root.uniqueId,
         isValid: () => pivot.isValid() && (registry.entity(selectedOrOnlyNpcId)?.health ?? 0) > 0 } : null;
     }, localPlayerAlive(registry), async () => { await effectComponents.select(null); },
-    targetId => adapter.dispatch({ type: "preview-action", action: "special-attack", targetId }),
+    targetId => adapter.dispatch(targetId === null ? { type: "preview-action", action: "special-attack" } : { type: "preview-action", action: "special-attack", targetId }),
     listener => adapter.subscribeCommands(listener));
     effects.powerStrike = powerStrike;
     addRelease(() => powerStrike.dispose());
