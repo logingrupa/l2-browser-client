@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { desktopViewport } from "./browserViewports";
 import { collectBrowserErrors } from "./browserErrors";
 import { captureStoreName, captureStoreRequirement, captureTileId, captureTileRecord, captureTileRequirement, openCaptureTile } from "./captureTileRoute";
+import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
 const alphaChangeRadians = .5;
 const radiusBeyondUpperLimitMetres = 1;
@@ -9,6 +10,7 @@ const framingGameMinutes = 720;
 
 test.skip(process.env.NATIVE_STORE_ROOT !== captureStoreName, captureStoreRequirement);
 test.skip(captureTileRecord === null, captureTileRequirement);
+test.skip(!environmentTimeTablesStaged(captureStoreName), environmentTimeTablesRequirement);
 
 async function readSnapshotCamera(page: Page) {
   return page.evaluate(() => {

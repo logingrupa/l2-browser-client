@@ -1,11 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { nativeEnvironmentSource } from "../../src/scene/world/nativeEnvironmentTables";
 import { readDayNightFixtureRows } from "../support/dayNightFixtures";
 import { collectBrowserErrors } from "./browserErrors";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
 import { captureStoreName, captureStoreRequirement, captureTileId, captureTileRecord, captureTileRequirement, openCaptureTile } from "./captureTileRoute";
+import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
 interface SkyColourEntry { readonly setupKey: string; readonly objectName: string; readonly section: string }
 interface ResolvedColourEntry extends SkyColourEntry { readonly colour: { readonly status: string; readonly value?: readonly number[]; readonly reason?: string } }
@@ -26,16 +24,10 @@ interface TimeOfDayReading {
 const serverGameMinutes = [0, 360, 720, 1080];
 const minutesPerHour = 60;
 const transitionGameMinutes = 720;
-const timeTablesProduct = "time-tables.json";
-const environmentDirectory = `l2/environments/${nativeEnvironmentSource.conversionManifestSha256}/conversion-manifest.json`;
-const conversionManifestPath = [resolve("artifacts/lane-store", captureStoreName, environmentDirectory), resolve("public", environmentDirectory)].find(path => existsSync(path)) ?? null;
-const conversionProducts = conversionManifestPath === null ? {} : (JSON.parse(readFileSync(conversionManifestPath, "utf8")) as { products?: Record<string, unknown> }).products ?? {};
-const timeTablesStaged = Object.hasOwn(conversionProducts, timeTablesProduct);
-const timeTablesRequirement = `environment-time-tables-unstaged: the staged environment export ${nativeEnvironmentSource.conversionManifestSha256.slice(0, 8)} has no ${timeTablesProduct}; the integration thread restages it and re-pins nativeEnvironmentSource`;
 
 test.skip(process.env.NATIVE_STORE_ROOT !== captureStoreName, captureStoreRequirement);
 test.skip(captureTileRecord === null, captureTileRequirement);
-test.skip(!timeTablesStaged, timeTablesRequirement);
+test.skip(!environmentTimeTablesStaged(captureStoreName), environmentTimeTablesRequirement);
 
 function fixtureColour(consumer: string, hour: number): readonly number[] {
   const row = readDayNightFixtureRows().find(candidate => candidate.consumer === consumer && candidate.hour === hour && candidate.environmentType === 0);

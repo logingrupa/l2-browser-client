@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
+import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
 interface PinnedManifestRecord { readonly manifest: string; readonly manifestSha256: string }
 interface TileCatalogRecord extends PinnedManifestRecord { readonly id: string }
@@ -62,6 +63,7 @@ function slotAtHour(hour: number, slotCount: number, outdoor: boolean): number {
 }
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=world");
+test.skip(!environmentTimeTablesStaged(laneName), environmentTimeTablesRequirement);
 test.skip(lightingResource === null, "the world lane store has no tile 20_21 with a lighting resource; run convert_tile.py --map 20_21 --step lighting, then --step manifest");
 
 const worldInspection = (page: Page) => page.evaluate(() => {

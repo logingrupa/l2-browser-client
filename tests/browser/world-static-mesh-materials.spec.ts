@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { desktopViewport } from "./browserViewports";
+import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
 interface TileCatalogRecord { readonly id: string; readonly manifest: string }
 interface TileManifest { readonly resources: readonly { readonly kind: string; readonly manifest: string }[] }
@@ -36,6 +37,7 @@ const evidenceFolder = resolve("artifacts/ui-evidence");
 const tileLoadTimeout = 300_000;
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=world");
+test.skip(!environmentTimeTablesStaged(laneName), environmentTimeTablesRequirement);
 test.skip(staticMeshMaterialsResource === null,
   "the world lane store has no tile 20_21 with a static-mesh-materials resource; run convert_tile.py --map 20_21 --step static-mesh-materials, then --step manifest");
 
