@@ -4,7 +4,8 @@ What a texture archive keeps and what the runtime uses. Native mips, palettes an
 
 ## Now
 
-- `assets:convert --kind texture` and `assets:migrate` write archives. `scripts/native_assets_lib/texture_mips.py` reads UE2 118/0 and UE123 licensee 0, 16, 18, 20, 23, 25, 27, 28 and 30 in P8, DXT1 and DXT5, each pair with an exact Elbera mip row in `tests/fixtures/texture-layouts/cross-checks.json`; other layouts and formats record `nativeTextureSource.status = unsupported` with `gapReason` `texture-licensee-unsupported:<v>/<lic>` or `texture-format-unsupported:<format>`. No recompression or generated mips.
+- `assets:convert --kind texture` and `assets:migrate` write archives. `scripts/native_assets_lib/texture_mips.py` reads UE2 118/0 and UE123 licensee 0, 16, 18, 20, 23, 25, 27, 28 and 30 in P8, DXT1, RGBA8 (5), DXT3 (7) and DXT5. P8, DXT1 and DXT5 each pair with an exact Elbera mip row in `tests/fixtures/texture-layouts/cross-checks.json`. RGBA8 and DXT3 have no Elbera row: RGBA8 is tight B, G, R, A rows (`engine.dll` `UTexture::GetFormatDesc`, pinned in `recipes/world/minimap-radar-route.json` `textureFormat5`), DXT3 is 16-byte BC2 blocks, and every FX_E_T Texture mip of both equals REA's independent decode `texture-native.json` (root `C:/laragon/l2b-orchestration/rea-in` on DATABASE-PC, file `20261113-roadmap/independent-decode-db5/texture-native.json`, SHA-256 `5838dcd7...1c71`). Other layouts and formats record `nativeTextureSource.status = unsupported` with `gapReason` `texture-licensee-unsupported:<v>/<lic>` or `texture-format-unsupported:<format>`. No recompression or generated mips.
+- Mip-0 alpha: UModel writes an RGB PNG when every mip-0 alpha is 255 or every one is 0. For an RGB PNG the converter decodes native mip-0 alpha (BC1 index 3 in three-colour blocks, BC2 4-bit replication, BC3 six or eight value palettes with truncating division, the RGBA8 fourth byte); if any texel is not 255 it writes UModel RGB plus that alpha as RGBA. `metadata.nativeAlpha.status` is `exporter-alpha`, `native-opaque`, `restored` or `unverified`; `unverified` (P8, or a layout or format without a native source) carries `gapReason` `texture-alpha-unverified:<reason>` and a limitation line.
 - Files: `texture.png` (mip-0 preview), `native-texture-source.json`, `native/texture-export.bin`, `native/mipNN.bin`, and `native/palette-export.bin` plus `native/palette.rgba` when a palette exists. DXT1 and DXT5 add `texture.dds` (original blocks) and `native-texture-dds.json` under `image.derivatives`. Model archives with `materialPolicy: preserve-native-graph` keep these files under `native-materials/textures/<identity>/`.
 - `scripts/native_assets_lib/texture_dds.py` writes the DDS; `scripts/native_texture_validation.py` rebuilds it from source and rejects a mismatch.
 - Terrain and flame materials upload decoded RGBA `RawTexture`. No DDS gain is measured.
@@ -17,7 +18,7 @@ What a texture archive keeps and what the runtime uses. Native mips, palettes an
 
 - Textures inside model GLBs are PNG derivatives; only texture archives and `preserve-native-graph` model archives keep native mips and DDS (CONV-02, PERF-02).
 - GPU compressed textures with measured residency, P8 compression, mobile transcoding (PERF-02).
-- DXT3 and other unsupported layouts (WORLD-01, CONV-02).
+- Other unsupported layouts and formats, P8 mip-0 alpha, and DDS for RGBA8 and DXT3 (WORLD-01, CONV-02). World and model material textures get the restored alpha but do not record `nativeAlpha`.
 - Colour space and terrain layer blending: MAT-01, MAT-02. Native sampling parity and DXT1 alpha: POL-04.
 
 ## Pointers
