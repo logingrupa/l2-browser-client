@@ -9,8 +9,8 @@ import { environmentFogSection, fogInfo9236Record } from "../support/tileLightin
 const [decoded] = decodeFogInfos([fogInfo9236Record()]);
 const fogInfo = decoded!.record!;
 const environmentRanges = decodeEnvironmentFogRanges({ sections: [environmentFogSection] })!;
-const location = fogInfo.location;
-const atDistance = (distance: number) => ({ x: location.x + distance, y: location.y, z: location.z });
+const sourceLocation = fogInfo.sourceLocation;
+const atDistance = (distance: number) => ({ x: sourceLocation.x + distance, y: sourceLocation.y, z: sourceLocation.z });
 
 describe("decoded L2FogInfo of 20_21 export 9236", () => {
   it("reads AffectRange, FogRange1 to 5, the Colors fog colours by hour and the Location", () => {
@@ -19,7 +19,7 @@ describe("decoded L2FogInfo of 20_21 export 9236", () => {
     expect(fogInfo.fogRanges).toEqual([2000, 4000, 6000, 8000, 10000].map(max => ({ min: 0, max })));
     expect(fogInfo.colours.map(colour => colour.time)).toEqual([0, 5, 6, 7, 19, 20, 23]);
     expect(fogInfo.colours[2]!.fogColourBytes).toEqual([107, 114, 97]);
-    expect(location).toEqual({ x: 28491.390625, y: 110465.5, z: -1361.5125732421875 });
+    expect(sourceLocation).toEqual({ x: 28491.390625, y: 110465.5, z: -1361.5125732421875 });
   });
 
   it("names an unresolved field or colour times that do not increase instead of decoding them", () => {

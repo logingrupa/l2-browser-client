@@ -35,7 +35,7 @@ function readRange(field: FogInfoField, label: string): FogRangeBounds {
   return { min: value.Min, max: value.Max };
 }
 
-function readLocation(field: FogInfoField, label: string): L2FogInfoRecord["location"] {
+function readLocation(field: FogInfoField, label: string): L2FogInfoRecord["sourceLocation"] {
   if (field.provenance === ueZeroProvenance && field.value === null) return { x: 0, y: 0, z: 0 };
   const value = field.value;
   requireFogInfo(isRecord(value) && locationAxes.every(axis => isFiniteNumber(value[axis])), label, "is not an X, Y, Z location.");
@@ -73,7 +73,7 @@ function readFogInfo(value: unknown, position: number): DecodedFogInfo {
     return { exportIndex, record: null, unresolvedReason: `lighting-fog-info-colour-times-not-increasing:${exportIndex}` };
   }
   return { exportIndex, unresolvedReason: null, record: {
-    exportIndex, location: readLocation(fields.get("Location")!, `${label}.Location`), affectRange: readRange(fields.get("AffectRange")!, `${label}.AffectRange`),
+    exportIndex, sourceLocation: readLocation(fields.get("Location")!, `${label}.Location`), affectRange: readRange(fields.get("AffectRange")!, `${label}.AffectRange`),
     fogRanges: fogRangeFields.map(name => readRange(fields.get(name)!, `${label}.${name}`)), colours } };
 }
 

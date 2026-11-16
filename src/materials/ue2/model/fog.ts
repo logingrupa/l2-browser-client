@@ -42,7 +42,7 @@ export interface FogInfoColourKey {
 
 export interface L2FogInfoRecord {
   readonly exportIndex: number;
-  readonly location: { readonly x: number; readonly y: number; readonly z: number };
+  readonly sourceLocation: { readonly x: number; readonly y: number; readonly z: number };
   readonly affectRange: FogRangeBounds;
   readonly fogRanges: readonly FogRangeBounds[];
   readonly colours: readonly FogInfoColourKey[];
@@ -127,7 +127,7 @@ export function localFogListRecord(fogInfos: readonly L2FogInfoRecord[], baselin
   let colour: FogColourBytes = baseline.colourBytes;
   for (const fogInfo of fogInfos) {
     const { x, y, z } = inputs.referencePosition;
-    const distance = Math.hypot(fogInfo.location.x - x, fogInfo.location.y - y, fogInfo.location.z - z);
+    const distance = Math.hypot(fogInfo.sourceLocation.x - x, fogInfo.sourceLocation.y - y, fogInfo.sourceLocation.z - z);
     const weight = fogInfoWeight(fogInfo.affectRange, distance, fogInfo.colours.length);
     const range = fogInfo.fogRanges[slot]!, target = fogInfoColourAtHour(fogInfo.colours, inputs.hour);
     start += weight * (range.min - start);

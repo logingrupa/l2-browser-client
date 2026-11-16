@@ -1,16 +1,21 @@
-import type { NativeStorePngPixels } from "../../../assets/native/decodeNativeStorePng";
 import type { MaterialSampler, MaterialStagePlan } from "./stagePlan";
 
 export type TerrainMaskChannel = "red" | "green" | "blue" | "alpha";
 
+export interface TerrainTexturePixels {
+  readonly width: number;
+  readonly height: number;
+  readonly rgba: Uint8Array<ArrayBuffer>;
+}
+
 export interface TerrainAlphaMap {
-  readonly pixels: NativeStorePngPixels;
+  readonly pixels: TerrainTexturePixels;
   readonly clampU: boolean;
   readonly clampV: boolean;
 }
 
 export interface PackedTerrainMask {
-  readonly pixels: NativeStorePngPixels;
+  readonly pixels: TerrainTexturePixels;
   readonly clampU: boolean;
   readonly clampV: boolean;
 }
@@ -33,7 +38,7 @@ export function singleTextureSampler(plan: MaterialStagePlan): MaterialSampler |
   return sampler.frameImages.length === 1 && sampler.textureCoordinateModifiers.length === 0 ? sampler : null;
 }
 
-export function alphaMapChannelsAreEqual(pixels: NativeStorePngPixels): boolean {
+export function alphaMapChannelsAreEqual(pixels: TerrainTexturePixels): boolean {
   const { rgba } = pixels;
   for (let start = 0; start < rgba.length; start += rgbaChannelCount) {
     const alpha = rgba[start + alphaChannelOffset];
@@ -43,7 +48,7 @@ export function alphaMapChannelsAreEqual(pixels: NativeStorePngPixels): boolean 
 }
 
 export function packTerrainAlphaMaps(alphaMaps: readonly TerrainAlphaMap[]): TerrainMaskPacking {
-  const maskTextures: { pixels: NativeStorePngPixels; clampU: boolean; clampV: boolean; used: number }[] = [];
+  const maskTextures: { pixels: TerrainTexturePixels; clampU: boolean; clampV: boolean; used: number }[] = [];
   const layerWeights = alphaMaps.map(alphaMap => {
     const { width, height, rgba } = alphaMap.pixels;
     if (rgba.length !== width * height * rgbaChannelCount) throw new RangeError(`Terrain alpha map holds ${rgba.length} bytes, not ${width} x ${height} RGBA.`);
