@@ -19,7 +19,7 @@
  "counts": {
   "characters": 14,
   "gapKeys": 14,
-  "modelsConverted": 9,
+  "modelsConverted": 14,
   "padding": 1,
   "pendingKeys": 0,
   "profilesWritten": 0,
@@ -28,6 +28,10 @@
  "hairFieldProof": "client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
  "hairgrpSourceSha256": "03df44930cd3752e0f67c99ad2f402028a4406d53a5e30978adc92b589c8fa59",
  "helmetgrpSourceSha256": "ace5b171bf7bd6203de614257a4a523fe07e6fb14abc19af351f7b51c1809237",
+ "idleFamilies": {
+  "path": "recipes/actors/character-idle-families.json",
+  "sha256": "873cca92d2f403d3363b10afd505cdf425775acb4eb2ae335a3ef6e0386777a5"
+ },
  "layoutRecordFields": {
   "hairgrp": [],
   "helmetgrp": [
@@ -55,7 +59,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -112,10 +116,6 @@
    },
    "gaps": [
     {
-     "field": "model",
-     "reason": "animation-reference-missing"
-    },
-    {
      "field": "hair",
      "reason": "hair-layout-undecoded"
     },
@@ -125,7 +125,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -141,7 +141,7 @@
     "status": "gap"
    },
    "key": "character:1",
-   "model": "gap",
+   "model": "converted",
    "padding": false,
    "parts": [
     {
@@ -182,10 +182,6 @@
    },
    "gaps": [
     {
-     "field": "model",
-     "reason": "animation-reference-missing"
-    },
-    {
      "field": "hair",
      "reason": "hair-layout-undecoded"
     },
@@ -195,7 +191,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -211,7 +207,7 @@
     "status": "gap"
    },
    "key": "character:2",
-   "model": "gap",
+   "model": "converted",
    "padding": false,
    "parts": [
     {
@@ -261,7 +257,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -327,7 +323,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -393,7 +389,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -459,7 +455,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -525,7 +521,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -582,10 +578,6 @@
    },
    "gaps": [
     {
-     "field": "model",
-     "reason": "converter-refused:Rigid attachment requires one verified root-only rigid skin"
-    },
-    {
      "field": "hair",
      "reason": "hair-layout-undecoded"
     },
@@ -595,7 +587,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -611,7 +603,7 @@
     "status": "gap"
    },
    "key": "character:8",
-   "model": "gap",
+   "model": "converted",
    "padding": false,
    "parts": [
     {
@@ -652,10 +644,6 @@
    },
    "gaps": [
     {
-     "field": "model",
-     "reason": "animation-reference-missing"
-    },
-    {
      "field": "hair",
      "reason": "hair-layout-undecoded"
     },
@@ -665,7 +653,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -681,7 +669,7 @@
     "status": "gap"
    },
    "key": "character:9",
-   "model": "gap",
+   "model": "converted",
    "padding": false,
    "parts": [
     {
@@ -731,7 +719,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -797,7 +785,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -863,7 +851,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -920,10 +908,6 @@
    },
    "gaps": [
     {
-     "field": "model",
-     "reason": "animation-reference-missing"
-    },
-    {
      "field": "hair",
      "reason": "hair-layout-undecoded"
     },
@@ -933,7 +917,7 @@
     },
     {
      "field": "profile",
-     "reason": "actor-default-unresolved:WaitAnimName"
+     "reason": "actor-default-unresolved:RunAnimName"
     }
    ],
    "hair": {
@@ -949,7 +933,7 @@
     "status": "gap"
    },
    "key": "character:13",
-   "model": "gap",
+   "model": "converted",
    "padding": false,
    "parts": [
     {
