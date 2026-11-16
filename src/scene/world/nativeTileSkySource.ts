@@ -4,12 +4,19 @@ import { isPlainRecord, nativeTileSha256Pattern } from "./nativeManifestRecordGu
 import { readNativeTileManifest } from "./nativeTileManifest";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 
+export interface NativeSkyBundleFile {
+  readonly resource: string;
+  readonly sha256: string;
+  readonly bytes: number;
+}
+
 export interface NativeTileSkyResource {
   readonly status: "resource";
   readonly tileId: string;
   readonly sourceId: string;
   readonly manifestSha256: string;
-  readonly glb: { readonly resource: string; readonly sha256: string; readonly bytes: number };
+  readonly glb: NativeSkyBundleFile;
+  readonly snapshot: NativeSkyBundleFile;
   readonly materialRoots: number;
   readonly gapReason: string | null;
 }
@@ -29,8 +36,19 @@ export type NativeTileSkySource = NativeTileSkyResource | NativeTileSkyGap | Nat
 
 const skyBundleKind = "native-sky-source-bundle";
 const skyStep = "sky";
-const maximumSkyGlbBytes = 64 * 1024 * 1024;
+const maximumSkyBundleFileBytes = 64 * 1024 * 1024;
 const maximumSkyMaterialRoots = 64;
+const skyGlbFileName = "sky.glb";
+const skySnapshotFileName = "sky.json";
+
+function pinnedSkyBundleFile(files: unknown, fileName: string, manifestResource: string, label: string): NativeSkyBundleFile {
+  const file = isPlainRecord(files) ? files[fileName] : undefined;
+  if (!isPlainRecord(file) || typeof file.sha256 !== "string" || !nativeTileSha256Pattern.test(file.sha256) || typeof file.bytes !== "number" ||
+    !Number.isSafeInteger(file.bytes) || file.bytes < 1 || file.bytes > maximumSkyBundleFileBytes) {
+    throw new Error(`${label} must pin ${fileName} with its SHA-256 and 1 to ${maximumSkyBundleFileBytes} bytes.`);
+  }
+  return { resource: manifestResource.replace(/manifest\.json$/, fileName), sha256: file.sha256, bytes: file.bytes };
+}
 
 function parseSkyBundleManifest(input: unknown, tileId: string, manifestResource: string, manifestSha256: string, gapReason: string | null): NativeTileSkyResource {
   const label = `Native tile ${tileId} sky manifest`;
@@ -43,13 +61,8 @@ function parseSkyBundleManifest(input: unknown, tileId: string, manifestResource
   if (typeof materialRoots !== "number" || !Number.isSafeInteger(materialRoots) || materialRoots < 1 || materialRoots > maximumSkyMaterialRoots) {
     throw new Error(`${label} must count 1 to ${maximumSkyMaterialRoots} material roots.`);
   }
-  const glb = isPlainRecord(files) ? files["sky.glb"] : undefined;
-  if (!isPlainRecord(glb) || typeof glb.sha256 !== "string" || !nativeTileSha256Pattern.test(glb.sha256) || typeof glb.bytes !== "number" ||
-    !Number.isSafeInteger(glb.bytes) || glb.bytes < 1 || glb.bytes > maximumSkyGlbBytes) {
-    throw new Error(`${label} must pin sky.glb with its SHA-256 and 1 to ${maximumSkyGlbBytes} bytes.`);
-  }
   return { status: "resource", tileId, sourceId: input.id, manifestSha256, materialRoots, gapReason,
-    glb: { resource: manifestResource.replace(/manifest\.json$/, "sky.glb"), sha256: glb.sha256, bytes: glb.bytes } };
+    glb: pinnedSkyBundleFile(files, skyGlbFileName, manifestResource, label), snapshot: pinnedSkyBundleFile(files, skySnapshotFileName, manifestResource, label) };
 }
 
 export async function readSelectedTileSkySource(location: Pick<Location, "search"> | undefined, signal: AbortSignal): Promise<NativeTileSkySource | null> {

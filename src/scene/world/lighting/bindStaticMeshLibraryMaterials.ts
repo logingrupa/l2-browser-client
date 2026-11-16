@@ -2,7 +2,8 @@ import type { Material } from "@babylonjs/core/Materials/material";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { createNativeMaterial, type LoadedNativeMaterial, type NativeMaterial, type NativeMaterialUniforms } from "../../../materials/ue2/babylon/material";
-import { joinStaticMeshSlot, readStaticMeshSlotSourceObject, type StaticMeshMaterialsLoad } from "../staticMeshLibraryMaterials";
+import { readNativeSourceReference } from "../nativeSourceReference";
+import { joinStaticMeshSlot, type StaticMeshMaterialsLoad } from "../staticMeshLibraryMaterials";
 
 export type StaticMeshSlotStatus = "library-compiled" | "library-diagnostic" | "program-gap";
 
@@ -89,7 +90,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
     return pending;
   };
   const slotSourceObject = (mesh: AbstractMesh) => {
-    if (!sourceObjectByMesh.has(mesh)) sourceObjectByMesh.set(mesh, readStaticMeshSlotSourceObject(mesh.material));
+    if (!sourceObjectByMesh.has(mesh)) sourceObjectByMesh.set(mesh, readNativeSourceReference(mesh.material));
     return sourceObjectByMesh.get(mesh)!;
   };
   const boundSlot = async (mesh: AbstractMesh): Promise<BoundStaticMeshSlot> => {

@@ -1,4 +1,3 @@
-import type { Material } from "@babylonjs/core/Materials/material";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 import { decodeNativeJsonResource } from "./loadNativeSection";
 import { hasExactKeys, isPlainRecord, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
@@ -34,7 +33,6 @@ const listingSchemaVersion = 1;
 const listingFields = ["kind", "schemaVersion", "tileId", "materials", "files"];
 const materialFields = ["sourceObject", "program", "rootPorted", "gapReasons"];
 const programPinFields = ["directory", "programSha256"];
-const sourceReferenceExtrasField = "nativeSourceReference";
 const maximumListedMaterials = 16_384;
 
 const sourceObjectKey = (sourceObject: string) => sourceObject.toLowerCase();
@@ -84,13 +82,6 @@ export function parseStaticMeshMaterialsListing(input: unknown, expectedTileId: 
     materialsBySourceObject.set(sourceObjectKey(entry.sourceObject), entry);
   }
   return { tileId: expectedTileId, materialsBySourceObject };
-}
-
-export function readStaticMeshSlotSourceObject(material: Material | null): string | null {
-  const metadata: unknown = material?.metadata;
-  const extras: unknown = isPlainRecord(metadata) && isPlainRecord(metadata.gltf) ? metadata.gltf.extras : undefined;
-  const reference = isPlainRecord(extras) ? extras[sourceReferenceExtrasField] : undefined;
-  return typeof reference === "string" && reference.trim() ? reference : null;
 }
 
 export function joinStaticMeshSlot(listing: StaticMeshMaterialsListing, sourceObject: string | null): StaticMeshSlotJoin {

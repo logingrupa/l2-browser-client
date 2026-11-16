@@ -6,12 +6,20 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
+import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
 import { AssetContainer } from "@babylonjs/core/assetContainer";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { loadNativeMaterial, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
+import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
+import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import { createNativeSkyPresentation, nativeSkySource } from "../../src/scene/world/nativeSkyPresentation";
+import { swatchTexturePng, syntheticSkyColourModifierProgram, textureImageFor } from "../support/materialProgramFixture";
 import { decodeJsonDocument, fixtureTileId, jsonBytes, readFixtureTileFiles, sha256Hex } from "../support/nativeTileFixtureStore";
 
 vi.mock("@babylonjs/core/Loading/sceneLoader", () => ({ LoadAssetContainerAsync: vi.fn() }));
+vi.mock("../../src/materials/ue2/babylon/loadNativeMaterial", async importOriginal =>
+  ({ ...await importOriginal<typeof import("../../src/materials/ue2/babylon/loadNativeMaterial")>(), loadNativeMaterial: vi.fn() }));
 
 function skyGlb(): Uint8Array<ArrayBuffer> {
   const text = new TextEncoder().encode(JSON.stringify({ asset: { version: "2.0" } }));
@@ -23,17 +31,32 @@ function skyGlb(): Uint8Array<ArrayBuffer> {
 
 type TileSky = "resource" | "gap" | "absent";
 
-function tileSkyStore(tileSky: TileSky, materialRoots: number) {
+const skyBackgroundRoot = "l2_skies.Shaders.SkybackgroundColor";
+const skyBackgroundProgramSha256 = "d".repeat(64);
+const skyBackgroundColourBgraHex = "ce9600ff";
+const whiteChipImage = textureImageFor(swatchTexturePng());
+const listedSkyBackground = { mapReference: "L2_Skies.Shaders.SkybackgroundColor", root: skyBackgroundRoot,
+  program: { directory: `native-materials/${skyBackgroundProgramSha256}`, programSha256: skyBackgroundProgramSha256 }, gapReasons: [] };
+
+function loadedSkyBackgroundProgram(materialId: string): LoadedNativeMaterial {
+  const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSkyColourModifierProgram(skyBackgroundRoot, whiteChipImage, skyBackgroundColourBgraHex))));
+  return { materialId, program, plan: compileMaterialStagePlan(program),
+    texturePixels: new Map([[whiteChipImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+}
+
+function tileSkyStore(tileSky: TileSky, materialRoots: number, listedMaterials: readonly unknown[] = []) {
   const fixture = readFixtureTileFiles(), tile = decodeJsonDocument(fixture.tile.bytes), glb = skyGlb(), responses = new Map<string, Uint8Array<ArrayBuffer>>();
   const sourceId = `interlude:${fixtureTileId}.Model1.SkyZoneInfo0`;
+  const skySnapshot = jsonBytes({ schemaVersion: 1, kind: "native-sky-source-snapshot", tileId: fixtureTileId, materials: listedMaterials });
   const skyManifest = jsonBytes({ schemaVersion: 1, kind: "native-sky-source-bundle", id: sourceId, tileId: fixtureTileId,
-    counts: { materialRoots }, files: { "sky.glb": { bytes: glb.byteLength, sha256: sha256Hex(glb) } } });
+    counts: { materialRoots }, files: { "sky.glb": { bytes: glb.byteLength, sha256: sha256Hex(glb) },
+      "sky.json": { bytes: skySnapshot.byteLength, sha256: sha256Hex(skySnapshot) } } });
   const skyManifestSha256 = sha256Hex(skyManifest), skyFolder = `/l2/skies/${skyManifestSha256}`;
   const gaps = tile.gaps as Record<string, unknown>[];
   if (tileSky !== "gap") tile.gaps = gaps.filter(row => row.step !== "sky");
   if (tileSky === "resource") {
     tile.resources = [{ kind: "sky", manifest: `${skyFolder}/manifest.json`, manifestSha256: skyManifestSha256, manifestBytes: skyManifest.byteLength }];
-    responses.set(`${skyFolder}/manifest.json`, skyManifest).set(`${skyFolder}/sky.glb`, glb);
+    responses.set(`${skyFolder}/manifest.json`, skyManifest).set(`${skyFolder}/sky.glb`, glb).set(`${skyFolder}/sky.json`, skySnapshot);
   }
   const tileBytes = jsonBytes(tile), tileSha256 = sha256Hex(tileBytes), tilePath = `/l2/tiles/${tileSha256}/tile.json`;
   responses.set(tilePath, tileBytes).set("/l2/catalog.json", jsonBytes({ schemaVersion: 1, models: [],
@@ -46,11 +69,18 @@ function tileSkyStore(tileSky: TileSky, materialRoots: number) {
   return { sourceId, skyManifestSha256 };
 }
 
-function containerWithMeshes(scene: Scene, count: number) {
+function containerWithMeshes(scene: Scene, count: number, sourceReferences: readonly string[] = []) {
   const container = new AssetContainer(scene);
   for (let index = 0; index < count; index++) {
     const mesh = MeshBuilder.CreateBox(`tile sky part ${index}`, {}, scene);
-    mesh.material = new StandardMaterial(`tile sky material ${index}`, scene);
+    const sourceReference = sourceReferences[index];
+    if (sourceReference === undefined) mesh.material = new StandardMaterial(`tile sky material ${index}`, scene);
+    else {
+      const gltfMaterial = new PBRMaterial(sourceReference, scene);
+      gltfMaterial.metadata = { gltf: { extras: { nativeSourceReference: sourceReference, sourceSnapshot: true } } };
+      mesh.material = gltfMaterial;
+      container.materials.push(gltfMaterial);
+    }
     container.meshes.push(mesh); container.rootNodes.push(mesh);
   }
   container.removeAllFromScene();
@@ -120,7 +150,24 @@ describe("stored native sky presentation lifetime", () => {
 describe("selected tile sky presentation", () => {
   let engine: NullEngine, scene: Scene;
   beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true; });
-  afterEach(() => { scene.dispose(); engine.dispose(); vi.unstubAllGlobals(); vi.mocked(LoadAssetContainerAsync).mockReset(); });
+  afterEach(() => { scene.dispose(); engine.dispose(); vi.unstubAllGlobals(); vi.mocked(LoadAssetContainerAsync).mockReset(); vi.mocked(loadNativeMaterial).mockReset(); });
+
+  it("draws a tile sky surface through the UE2 library program its sky snapshot lists, not the glTF PBR material", async () => {
+    tileSkyStore("resource", 1, [listedSkyBackground]);
+    vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 1, [skyBackgroundRoot]));
+    vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal);
+    const drawn = scene.meshes.find(mesh => mesh.name === "tile sky part 0")!.material;
+    expect(drawn).toBeInstanceOf(ShaderMaterial);
+    expect(drawn).not.toBeInstanceOf(PBRMaterial);
+    expect(drawn?.name).toBe(`UE2 material: ${skyBackgroundRoot}`);
+    expect(vi.mocked(loadNativeMaterial).mock.calls.map(([materialId]) => materialId)).toEqual([skyBackgroundProgramSha256]);
+    expect(sky?.inspection().librarySurfaces).toEqual([{ mesh: "tile sky part 0", sourceReference: skyBackgroundRoot,
+      programMaterialId: skyBackgroundProgramSha256, status: "library-compiled", reasons: [] }]);
+    sky?.dispose();
+    expect(scene.meshes).toHaveLength(0);
+    expect(scene.materials.some(material => material.name.startsWith("UE2 material:"))).toBe(false);
+  });
 
   it("presents the tile sky resource with one mesh per material root", async () => {
     const { sourceId, skyManifestSha256 } = tileSkyStore("resource", 2);

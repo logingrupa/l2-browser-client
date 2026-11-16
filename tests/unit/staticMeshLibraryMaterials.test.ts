@@ -10,8 +10,9 @@ import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProg
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import { bindStaticMeshLibraryMaterials, staticMeshVertexLightingUnportedReason } from "../../src/scene/world/lighting/bindStaticMeshLibraryMaterials";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
+import { readNativeSourceReference } from "../../src/scene/world/nativeSourceReference";
 import {
-  joinStaticMeshSlot, parseStaticMeshMaterialsListing, readStaticMeshSlotSourceObject, staticMeshMaterialsResourceAbsentReason, staticMeshSlotMaterialNoneReason,
+  joinStaticMeshSlot, parseStaticMeshMaterialsListing, staticMeshMaterialsResourceAbsentReason, staticMeshSlotMaterialNoneReason,
   staticMeshSlotMaterialUnlistedReason,
 } from "../../src/scene/world/staticMeshLibraryMaterials";
 import { swatchTexturePng, syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor, type FixtureProgram } from "../support/materialProgramFixture";
@@ -50,10 +51,10 @@ describe("static mesh slot to library program join", () => {
   });
 
   it("reads the slot material object from the glTF material extras the static mesh converter writes", () => {
-    expect(readStaticMeshSlotSourceObject(slotMaterial({ nativeSourceReference: portedEntry.sourceObject, nativeSectionIndex: 0 }))).toBe(portedEntry.sourceObject);
-    expect(readStaticMeshSlotSourceObject(slotMaterial({ nativeSourceReference: null, unboundSourceMaterial: "None" }))).toBeNull();
-    expect(readStaticMeshSlotSourceObject(slotMaterial(undefined))).toBeNull();
-    expect(readStaticMeshSlotSourceObject(null)).toBeNull();
+    expect(readNativeSourceReference(slotMaterial({ nativeSourceReference: portedEntry.sourceObject, nativeSectionIndex: 0 }))).toBe(portedEntry.sourceObject);
+    expect(readNativeSourceReference(slotMaterial({ nativeSourceReference: null, unboundSourceMaterial: "None" }))).toBeNull();
+    expect(readNativeSourceReference(slotMaterial(undefined))).toBeNull();
+    expect(readNativeSourceReference(null)).toBeNull();
   });
 });
 

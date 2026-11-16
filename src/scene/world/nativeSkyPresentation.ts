@@ -7,11 +7,13 @@ import type { Scene } from "@babylonjs/core/scene";
 import { sha256 } from "../../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
+import { drawNativeSessionSeed } from "../../assets/native/nativeSessionSeed";
+import { loadNativeMaterial } from "../../materials/ue2/babylon/loadNativeMaterial";
 import { validateSectionGlb } from "./loadNativeSection";
 import { selectNativeSkyLiteral, type NativeEnvironmentTables } from "./nativeEnvironmentTables";
+import { bindNativeSkyLibraryMaterials, loadNativeSkyMaterialsListing, type NativeSkySurface } from "./nativeSkyLibraryMaterials";
 import { createNativeSkyLiteralComparison } from "./nativeSkyLiteralComparison";
-import { readSelectedTileSkySource } from "./nativeTileSkySource";
-import { readNativeMaterialProgramPin } from "../../assets/native/nativeMaterialProgramPin";
+import { readSelectedTileSkySource, type NativeSkyBundleFile } from "./nativeTileSkySource";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 
 export const nativeSkySource = {
@@ -29,6 +31,7 @@ interface LoadedSkySource {
   readonly materialRoots: number;
   readonly tileId: string | null;
   readonly tileSkyGap: string | null;
+  readonly snapshot: NativeSkyBundleFile | null;
   readonly bytes: Uint8Array<ArrayBuffer>;
 }
 
@@ -48,14 +51,14 @@ async function loadSkySource(signal: AbortSignal, tileSelected: boolean): Promis
   if (!tileSelected) {
     const bytes = await fetchPinnedSkyGlb(signal);
     return bytes && { manifestSha256: nativeSkySource.manifestSha256, sourceId: nativeSkySource.sourceId, materialRoots: nativeSkySource.materialRoots,
-      tileId: null, tileSkyGap: null, bytes };
+      tileId: null, tileSkyGap: null, snapshot: null, bytes };
   }
   const tileSky = await readSelectedTileSkySource(globalThis.location, signal);
   if (tileSky === null || tileSky.status === "absent") return null;
   if (tileSky.status === "gap") throw new Error(`Native tile ${tileSky.tileId} sky is a gap: ${tileSky.reason}.`);
   const bytes = await fetchVerifiedNativeResource(tileSky.glb.resource, tileSky.glb.sha256, signal, tileSky.glb.bytes);
   return { manifestSha256: tileSky.manifestSha256, sourceId: tileSky.sourceId, materialRoots: tileSky.materialRoots, tileId: tileSky.tileId,
-    tileSkyGap: tileSky.gapReason, bytes };
+    tileSkyGap: tileSky.gapReason, snapshot: tileSky.snapshot, bytes };
 }
 
 export async function createNativeSkyPresentation(scene: Scene, signal: AbortSignal) {
@@ -66,7 +69,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
   let root: TransformNode | undefined = candidates[0], container: AssetContainer | undefined;
   const authored = !!root;
   let source: Omit<LoadedSkySource, "bytes"> = { manifestSha256: nativeSkySource.manifestSha256, sourceId: nativeSkySource.sourceId,
-    materialRoots: nativeSkySource.materialRoots, tileId: null, tileSkyGap: null };
+    materialRoots: nativeSkySource.materialRoots, tileId: null, tileSkyGap: null, snapshot: null };
   if (!scene.useRightHandedSystem) throw new Error("Native sky needs the world right-handed coordinate adapter.");
   if (root) {
     const marker = root.metadata.nativeSkyRoot;
@@ -100,10 +103,11 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     if (!authored) { container?.dispose(); skyRoot.dispose(); }
     throw new Error(`Sky snapshot requires one material mesh for each of its ${source.materialRoots} material roots.`);
   }
-  let librarySurfaces;
+  let librarySurfaces: NativeSkySurface[];
   try {
-    librarySurfaces = skyMeshes.map(mesh => ({ mesh: mesh.name, programMaterialId: readNativeMaterialProgramPin(mesh.material) }))
-      .map(surface => ({ ...surface, status: surface.programMaterialId === null ? "program-unconverted" as const : "library-environment-clock-unwired" as const }));
+    const listing = source.snapshot !== null && source.tileId !== null ? await loadNativeSkyMaterialsListing(source.snapshot, source.tileId, signal) : null;
+    librarySurfaces = await bindNativeSkyLibraryMaterials({ scene, meshes: skyMeshes, listing, sessionSeed: drawNativeSessionSeed(),
+      loadProgram: loadNativeMaterial, signal });
   } catch (error) {
     if (!authored) { container?.dispose(); skyRoot.dispose(); }
     throw error;
@@ -158,6 +162,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
         if (entry.mesh instanceof Mesh && entry.orientation !== null) entry.mesh.sideOrientation = entry.orientation;
       }
     } else { container?.dispose(); skyRoot.dispose(); }
+    for (const surface of librarySurfaces) surface.library?.dispose();
   };
   const onDispose = scene.onDisposeObservable.addOnce(dispose);
   signal.addEventListener("abort", dispose, { once: true });
@@ -165,7 +170,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     applyEnvironmentLiteral(data: NativeEnvironmentTables, file: string, key: string) {
       if (disposed) throw new Error("Sky presentation was disposed.");
       const literal = selectNativeSkyLiteral(data, file, key);
-      comparison ??= createNativeSkyLiteralComparison(skyMeshes);
+      comparison ??= createNativeSkyLiteralComparison(librarySurfaces);
       comparison.apply(literal);
     },
     restoreEnvironmentLiteral() { comparison?.restore(); },
@@ -175,7 +180,9 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     triangles: skyMeshes.reduce((n, mesh) => n + mesh.getTotalIndices() / 3, 0),
     texturesReady: materials.every(entry => entry.material.getActiveTextures().every(texture => texture.isReady())),
     mode: "source sky room; browser camera-follow background; optional literal color comparison",
-    comparison: comparison?.inspection() ?? null, librarySurfaces,
+    comparison: comparison?.inspection() ?? null,
+    librarySurfaces: librarySurfaces.map(surface => ({ mesh: surface.mesh.name, sourceReference: surface.sourceReference,
+      programMaterialId: surface.programMaterialId, status: surface.status, reasons: surface.reasons })),
     nativeTimeOfDay: "unverified", nativeCloudMotion: "unverified", nativeVisibleParity: "unverified",
   }) };
 }

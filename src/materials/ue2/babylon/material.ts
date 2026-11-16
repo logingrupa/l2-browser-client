@@ -14,6 +14,7 @@ import type { ResolvedMaterialBlend } from "../model/blendTable";
 import { DIAGNOSTIC_CONSTANTS } from "../model/constants/diagnosticConstants";
 import { FOG_DISABLED, type FogState } from "../model/fog";
 import type { MaterialLighting } from "../model/lighting";
+import type { ColourRgbUnits } from "../model/materialFieldValues";
 import { evaluateMaterialFrame, type MaterialFrameState } from "../model/materialFrame";
 import type { CompiledMaterialStagePlan } from "../model/stagePlan";
 import { babylonBlendStateForPair, blendFactorPairKey, type BabylonBlendState } from "./blendState";
@@ -66,6 +67,7 @@ export interface NativeMaterial {
   readonly material: ShaderMaterial;
   update(uniforms: NativeMaterialUniforms): void;
   setLightmap(lightmap: BaseTexture): void;
+  overrideColourSourceRgb(colourSourceNode: string, rgb: ColourRgbUnits | null): void;
   inspect(): NativeMaterialInspection;
   dispose(): void;
 }
@@ -133,6 +135,7 @@ function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, li
     material,
     update: uniforms => { lastUniforms = uniforms; },
     setLightmap: () => {},
+    overrideColourSourceRgb: colourSourceNode => { throw new Error(`UE2 diagnostic material ${diagnostic.root} has no colour source ${colourSourceNode}.`); },
     inspect: () => ({ materialId: loaded.materialId, root: diagnostic.root, status: "diagnostic", lighting, lightmapBound: false, reasons: [...diagnostic.reasons],
       unportedClass: diagnostic.unportedClass, blend: null, samplerCount: 0, colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
     dispose: () => material.dispose(true, false),
@@ -175,6 +178,14 @@ function bindFrame(material: ShaderMaterial, textures: readonly RawTexture[][], 
   frame.colourSourceValues.forEach((colour, colourSourceIndex) => material.setColor4(colourSourceUniformName(colourSourceIndex), new Color4(...colour)));
 }
 
+function frameWithColourSourceRgbOverrides(frame: MaterialFrameState, overrides: ReadonlyMap<number, ColourRgbUnits>): MaterialFrameState {
+  if (overrides.size === 0) return frame;
+  return { ...frame, colourSourceValues: frame.colourSourceValues.map((colour, colourSourceIndex) => {
+    const rgb = overrides.get(colourSourceIndex);
+    return rgb === undefined ? colour : [rgb[0], rgb[1], rgb[2], colour[3]] as const;
+  }) };
+}
+
 function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan, jitterStream: RandomStream, lighting: MaterialLighting): NativeMaterial {
   const babylonBlend = babylonBlendStateForPair(plan.blend.pair);
   if (!babylonBlend) return createDiagnosticMaterial(scene, loaded, lighting, [`babylon-blend-pair-unavailable:${blendFactorPairKey(plan.blend.pair)}`], null);
@@ -188,10 +199,16 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
   });
   material.doNotSerialize = true;
   applyBlendState(material, plan.blend, babylonBlend);
-  bindFrame(material, textures, initialFrame);
+  const colourSourceRgbOverrides = new Map<number, ColourRgbUnits>();
+  let evaluatedFrame: MaterialFrameState = initialFrame;
+  let lastFrame: MaterialFrameState = initialFrame;
+  const bindEvaluatedFrame = () => {
+    lastFrame = frameWithColourSourceRgbOverrides(evaluatedFrame, colourSourceRgbOverrides);
+    bindFrame(material, textures, lastFrame);
+  };
+  bindEvaluatedFrame();
   bindFogUniforms(material, plan.blend.fogFamily, FOG_DISABLED);
   let lastUniforms: NativeMaterialUniforms | null = null;
-  let lastFrame: MaterialFrameState = initialFrame;
   let lightmapBound = false;
   const { status: _status, ...blendRecord } = plan.blend;
   return {
@@ -199,15 +216,22 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
     update: uniforms => {
       const frame = evaluateMaterialFrame(loaded.program, plan, uniforms.levelSeconds, jitterStream);
       if (frame.status === "unported") throw new Error(`UE2 material ${plan.root}: ${frame.reason} appeared after creation.`);
-      bindFrame(material, textures, frame);
+      evaluatedFrame = frame;
+      bindEvaluatedFrame();
       bindFogUniforms(material, plan.blend.fogFamily, uniforms.fog);
       lastUniforms = uniforms;
-      lastFrame = frame;
     },
     setLightmap: lightmap => {
       if (lighting !== "lightmap") throw new Error(`UE2 material ${plan.root} was built ${lighting} and takes no lightmap.`);
       material.setTexture(lightmapSamplerName, lightmap);
       lightmapBound = true;
+    },
+    overrideColourSourceRgb: (colourSourceNode, rgb) => {
+      const colourSourceIndex = plan.colourSources.findIndex(source => source.node === colourSourceNode);
+      if (colourSourceIndex < 0) throw new Error(`UE2 material ${plan.root} has no colour source ${colourSourceNode}.`);
+      if (rgb === null) colourSourceRgbOverrides.delete(colourSourceIndex);
+      else colourSourceRgbOverrides.set(colourSourceIndex, rgb);
+      bindEvaluatedFrame();
     },
     inspect: () => ({
       materialId: loaded.materialId, root: plan.root, status: "compiled", lighting, lightmapBound, reasons: [], unportedClass: null,

@@ -2,6 +2,7 @@ import { COLOUR_CONSTANTS } from "./constants/combinerConstants";
 import { MaterialProgramError, programField, type MaterialFieldValue, type MaterialProgramNode } from "./materialProgram";
 
 export type ColourUnits = readonly [number, number, number, number];
+export type ColourRgbUnits = readonly [number, number, number];
 export interface RotatorUnits { readonly pitch: number; readonly yaw: number; readonly roll: number }
 export type MaterialReference =
   | { readonly kind: "none" }

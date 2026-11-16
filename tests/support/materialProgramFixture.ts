@@ -146,6 +146,17 @@ export function syntheticSwatchProgram(image: FixtureTextureImage): FixtureProgr
   ]);
 }
 
+export function syntheticSkyColourModifierProgram(root: string, image: FixtureTextureImage, colourBgraHex: string): FixtureProgram {
+  const texture = `${root}.WhiteChip`;
+  return programOf(root, [
+    reviewedNode(root, "Engine.ColorModifier", [
+      field("Material", nodeReference(texture)), field("Color", rawStruct("Color", colourBgraHex), "authored", "raw"),
+      field("RenderTwoSided", false), field("AlphaBlend", false),
+    ]),
+    swatchTextureNode(texture, image),
+  ]);
+}
+
 export function syntheticUnportedProgram(): FixtureProgram {
   return programOf("SyntheticSwatch.TriggeredOscillator", [unportedNode("SyntheticSwatch.TriggeredOscillator", "Engine.TexOscillatorTriggered")]);
 }
