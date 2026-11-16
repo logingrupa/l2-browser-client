@@ -63,8 +63,8 @@
   },
   "terrain": {
     "maskUvRule": "extrapolated",
-    "resource": "/l2/maps/36e26b87340df4ee7b227d48c1e9b20322c7874a81cf39d0a5ce6644b70d0ec7/native-tile-chunk-terrain/terrain.glb",
-    "sha256": "36e26b87340df4ee7b227d48c1e9b20322c7874a81cf39d0a5ce6644b70d0ec7"
+    "resource": "/l2/maps/d8956840a22bb6d08f0faae1ea6d5cf3846156317b56794081608dd2fdd1ce17/native-tile-chunk-terrain/terrain.glb",
+    "sha256": "d8956840a22bb6d08f0faae1ea6d5cf3846156317b56794081608dd2fdd1ce17"
   },
   "tileId": "00_00"
 }

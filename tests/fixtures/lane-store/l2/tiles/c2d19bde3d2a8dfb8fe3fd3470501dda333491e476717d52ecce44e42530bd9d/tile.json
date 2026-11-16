@@ -10,9 +10,9 @@
   "chunks": [
     {
       "chunkId": "chunk-0-0",
-      "manifest": "/l2/maps/5fe0af46259ebac9c28952c86190bba1e8c0bf36c6f5be62a4f2163ef83eaf38/native-tile-chunk-runtime/manifest.json",
+      "manifest": "/l2/maps/2a91d6c5fd7567e8dda2a6d8ab9347287ed9d0a8b38a4d3fa24c04f205558bc8/native-tile-chunk-runtime/manifest.json",
       "manifestBytes": 2032,
-      "manifestSha256": "5fe0af46259ebac9c28952c86190bba1e8c0bf36c6f5be62a4f2163ef83eaf38"
+      "manifestSha256": "2a91d6c5fd7567e8dda2a6d8ab9347287ed9d0a8b38a4d3fa24c04f205558bc8"
     }
   ],
   "frame": {

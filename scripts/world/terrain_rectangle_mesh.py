@@ -30,7 +30,8 @@ def build_terrain_rectangle_gltf(native, points, words, layers, region, mask_uv_
     quads_x, quads_y = region['quads']
     width, height = native['width'], native['height']
     seam_vertices = strip_vertices(native, seam_far_heights, region)
-    vertex_keys = [*rectangle_sample_grid(region), *sorted(seam_vertices, key=lambda key: (key[1], key[0]))]
+    seam_sample_keys = sorted(seam_vertices, key=lambda key: (key[1], key[0]))
+    vertex_keys = [*rectangle_sample_grid(region), *seam_sample_keys]
     vertex_index = {key: index for index, key in enumerate(vertex_keys)}
     positions, normals, mask_uv = [], [], []
     layer_uvs = [[] for _ in layers]
@@ -70,7 +71,8 @@ def build_terrain_rectangle_gltf(native, points, words, layers, region, mask_uv_
     builder.data.update(meshes=[{'name': region['object'], 'primitives': [{'attributes': attributes, 'indices': index_accessor, 'material': 0}],
                                 'extras': {'nativeObject': region['object'], 'nativeBounds': region['bounds'], 'sourceToGltf': SOURCE_TO_GLTF,
                                            'maskUvSet': MASK_UV_SET, 'baseLayerUvSet': BASE_LAYER_UV_SET if layers else None,
-                                           'nativeLayers': layers}}],
+                                           'nativeLayers': layers, 'nativeSampleGrid': {'offset': [origin_x, origin_y], 'quads': [quads_x, quads_y]},
+                                           'seamSampleKeys': [[x, y] for x, y in seam_sample_keys]}}],
                         materials=[{'name': NEUTRAL_INSPECTION_MATERIAL_NAME,
                                     'pbrMetallicRoughness': {'baseColorFactor': [.5, .5, .5, 1], 'metallicFactor': 0, 'roughnessFactor': 1}}],
                         nodes=[{'name': region['object'], 'mesh': 0}], scenes=[{'nodes': [0]}], scene=0)

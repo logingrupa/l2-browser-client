@@ -23,7 +23,7 @@ from world.tile_census import WORLD_LANE_NAME, WORLD_PART_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, read_raw_terrain_record, sealed_chunk_plan, serialized_location
 
-TERRAIN_CHUNK_STEP_ALGORITHM_VERSION = 3
+TERRAIN_CHUNK_STEP_ALGORITHM_VERSION = 4
 TERRAIN_STEP_NAME = 'terrain'
 TERRAIN_CHUNK_INDEX_PRODUCT_NAME = 'terrain-chunks.json'
 TERRAIN_CHUNK_RESOURCE_NAME = 'terrain.glb'
