@@ -113,7 +113,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   const advance = scene.onBeforeRenderObservable.add(() => {
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
     cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame);
-    terrainVertexLighting.update(hourlyEnvironment);
+    terrainVertexLighting.update(timeOfDay.manager.snapshot().lightingDirty, hourlyEnvironment);
   });
   const sessionSeed = drawNativeSessionSeed();
   const materialUniforms = (): NativeMaterialUniforms => {

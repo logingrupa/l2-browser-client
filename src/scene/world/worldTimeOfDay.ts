@@ -33,7 +33,6 @@ export interface WorldCelestialSample {
 
 export interface HourlyEnvironmentLighting {
   readonly hour: number;
-  readonly lightingDirty: boolean;
   readonly terrainAmbient: EnvironmentResult<RgbBytes>;
   readonly terrainLight: EnvironmentResult<NativePlane>;
   readonly staticMeshAmbient: EnvironmentResult<RgbBytes>;
@@ -95,7 +94,7 @@ export function startWorldTimeOfDay(scene: Scene, timeTables: NativeTimeTablesEx
     },
     hourlyEnvironmentLighting() {
       const hour = manager.hour(), blend = manager.blend();
-      return { hour, lightingDirty: manager.snapshot().lightingDirty,
+      return { hour,
         terrainAmbient: environmentColour(tables, blend, "TerrainAmbient", hour), terrainLight: environmentLightPlane(tables, blend, "HSVTerrainLight", hour),
         staticMeshAmbient: environmentColour(tables, blend, "StaticMeshAmbient", hour),
         staticMeshLight: environmentLightPlane(tables, blend, "HSVStaticMeshLight", hour),

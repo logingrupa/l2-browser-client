@@ -62,9 +62,9 @@ export function staticMeshLightListArrays(): TypedPayloadFixtureArray[] {
   ];
 }
 
-export function hourlyEnvironmentAt(hour: number, lightingDirty: boolean, blend: NativeEnvironmentBlend = settledBlend): HourlyEnvironmentLighting {
+export function hourlyEnvironmentAt(hour: number, blend: NativeEnvironmentBlend = settledBlend): HourlyEnvironmentLighting {
   const tables = readDayNightLoadedTables();
-  return { hour, lightingDirty,
+  return { hour,
     terrainAmbient: environmentColour(tables, blend, "TerrainAmbient", hour), terrainLight: environmentLightPlane(tables, blend, "HSVTerrainLight", hour),
     staticMeshAmbient: environmentColour(tables, blend, "StaticMeshAmbient", hour), staticMeshLight: environmentLightPlane(tables, blend, "HSVStaticMeshLight", hour),
     actorAmbient: environmentColour(tables, blend, "ActorAmbient", hour), bspAmbient: environmentColour(tables, blend, "BSPAmbient", hour) };

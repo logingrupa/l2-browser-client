@@ -17,7 +17,7 @@ const ambientOf = (row: HourlyLightingFixtureRow) => [...fixtureNumbers(row.outp
 
 describe("hourlyLightingTerms", () => {
   it.each(fixtureHours)("reproduces the DB-7 static mesh, actor and BSP rebuild ambient rows at hour %s", hour => {
-    const terms = hourlyLightingTerms(hourlyEnvironmentAt(hour, false));
+    const terms = hourlyLightingTerms(hourlyEnvironmentAt(hour));
     expect(terms.staticMesh.ambient).toMatchObject({ status: "resolved",
       value: ambientOf(rowAt(hour, row => row.surfaceType === "staticMesh" && row.status === "conditional-input-fixture")) });
     expect(terms.staticMesh.levelOfDetailSunTermAmbient).toMatchObject({ status: "resolved",
@@ -27,7 +27,7 @@ describe("hourlyLightingTerms", () => {
   });
 
   it("keeps BSP ambient out of the draw and names every device fact and DB-7 item it cannot claim", () => {
-    const terms = hourlyLightingTerms(hourlyEnvironmentAt(12, false));
+    const terms = hourlyLightingTerms(hourlyEnvironmentAt(12));
     expect(terms.bsp).toMatchObject({ rebuildAmbientBound: false, drawState: { deviceLighting: false, ambientSource: "baked-into-compressed-lightmap" } });
     expect(terms.terrainDrawState).toMatchObject({ deviceLighting: false, colourVertex: true, ambientSource: "baked-into-vertex-colour" });
     expect(terms.staticMesh.colour0).toMatchObject({ bound: false, reason: "ma-final-static-vertex" });
@@ -43,7 +43,7 @@ describe("hourlyLightingTerms", () => {
   });
 
   it("passes an environment type transition through as the named gap", () => {
-    const terms = hourlyLightingTerms(hourlyEnvironmentAt(12, true, { oldType: 0, targetType: 3, weight: 0.5 }));
+    const terms = hourlyLightingTerms(hourlyEnvironmentAt(12, { oldType: 0, targetType: 3, weight: 0.5 }));
     expect(terms.actor.ambient).toMatchObject({ status: "unresolved", reason: "env-color-transition-unresolved" });
     expect(terms.staticMesh.levelOfDetailSunTermAmbient).toMatchObject({ status: "unresolved", reason: "env-color-transition-unresolved" });
     expect(terms.bsp.rebuildAmbient).toEqual({ status: "unresolved", reason: "env-color-transition-unresolved" });

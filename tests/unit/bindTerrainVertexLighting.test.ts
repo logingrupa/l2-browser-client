@@ -48,7 +48,7 @@ describe("bindTerrainVertexLighting", () => {
     const mesh = terrainMesh(keyedExtras);
     const inputs = hourlyInputs([...terrainIntensityArrays(), ...terrainLightMaskArrays([0, 0, 0])]);
     const binding = bindTerrainVertexLighting(inputs.terrainIntensityMaps, inputs.terrainLightMasks);
-    binding.addChunk("chunk-0-0", [mesh], () => hourlyEnvironmentAt(hour, false));
+    binding.addChunk("chunk-0-0", [mesh], () => hourlyEnvironmentAt(hour));
     const expectedBgra = fixtureNumbers(row.output, "vertexBGRA");
     const inspection = binding.inspection();
     expect(inspection).toMatchObject({ gap: null, rebuildCount: 1, lastRebuildHour: hour, colouredMeshCount: 1, colouredVertexCount: 10,
@@ -66,15 +66,15 @@ describe("bindTerrainVertexLighting", () => {
     const mesh = terrainMesh(keyedExtras);
     const inputs = hourlyInputs(terrainIntensityArrays());
     const binding = bindTerrainVertexLighting(inputs.terrainIntensityMaps, inputs.terrainLightMasks);
-    binding.addChunk("chunk-0-0", [mesh], () => hourlyEnvironmentAt(0, false));
+    binding.addChunk("chunk-0-0", [mesh], () => hourlyEnvironmentAt(0));
     const coloursAtZero = Array.from(mesh.getVerticesData(VertexBuffer.ColorKind)!);
-    binding.update(() => hourlyEnvironmentAt(12, false));
+    binding.update(false, () => hourlyEnvironmentAt(12));
     expect(binding.inspection()).toMatchObject({ rebuildCount: 1, lastRebuildHour: 0 });
-    binding.update(() => hourlyEnvironmentAt(12, true));
+    binding.update(true, () => hourlyEnvironmentAt(12));
     expect(binding.inspection()).toMatchObject({ rebuildCount: 2, lastRebuildHour: 12, heldReason: null });
     expect(Array.from(mesh.getVerticesData(VertexBuffer.ColorKind)!)).not.toEqual(coloursAtZero);
     const coloursAtNoon = Array.from(mesh.getVerticesData(VertexBuffer.ColorKind)!);
-    binding.update(() => hourlyEnvironmentAt(18, true, { oldType: 0, targetType: 3, weight: 0.5 }));
+    binding.update(true, () => hourlyEnvironmentAt(18, { oldType: 0, targetType: 3, weight: 0.5 }));
     expect(binding.inspection()).toMatchObject({ rebuildCount: 2, lastRebuildHour: 12, heldReason: "env-color-transition-unresolved" });
     expect(Array.from(mesh.getVerticesData(VertexBuffer.ColorKind)!)).toEqual(coloursAtNoon);
   });
@@ -90,14 +90,14 @@ describe("bindTerrainVertexLighting", () => {
     const unstagedMesh = terrainMesh(keyedExtras);
     const unstaged = hourlyInputs([]);
     const unstagedBinding = bindTerrainVertexLighting(unstaged.terrainIntensityMaps, unstaged.terrainLightMasks);
-    unstagedBinding.addChunk("chunk-0-0", [unstagedMesh], () => hourlyEnvironmentAt(0, true));
-    unstagedBinding.update(() => hourlyEnvironmentAt(0, true));
+    unstagedBinding.addChunk("chunk-0-0", [unstagedMesh], () => hourlyEnvironmentAt(0));
+    unstagedBinding.update(true, () => hourlyEnvironmentAt(0));
     expect(unstagedBinding.inspection()).toMatchObject({ gap: "hourly-lighting-input-unstaged:TINT.time", rebuildCount: 0, probe: null, colouredMeshCount: 0 });
     expect(unstagedMesh.isVerticesDataPresent(VertexBuffer.ColorKind)).toBe(false);
     const unkeyedMesh = terrainMesh(null);
     const staged = hourlyInputs(terrainIntensityArrays());
     const binding = bindTerrainVertexLighting(staged.terrainIntensityMaps, staged.terrainLightMasks);
-    binding.addChunk("chunk-0-0", [unkeyedMesh], () => hourlyEnvironmentAt(0, true));
+    binding.addChunk("chunk-0-0", [unkeyedMesh], () => hourlyEnvironmentAt(0));
     expect(binding.inspection()).toMatchObject({ meshGaps: { [terrainSampleKeysUnstagedReason]: 1 }, colouredMeshCount: 0 });
     expect(unkeyedMesh.isVerticesDataPresent(VertexBuffer.ColorKind)).toBe(false);
     binding.removeChunk("chunk-0-0");

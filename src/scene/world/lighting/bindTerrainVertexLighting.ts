@@ -48,7 +48,7 @@ export interface TerrainVertexLightingInspection {
 export interface TerrainVertexLightingBinding {
   addChunk(chunkId: string, meshes: readonly AbstractMesh[], environment: () => HourlyEnvironmentLighting): void;
   removeChunk(chunkId: string): void;
-  update(environment: () => HourlyEnvironmentLighting): void;
+  update(lightingDirty: boolean, environment: () => HourlyEnvironmentLighting): void;
   inspection(): TerrainVertexLightingInspection;
 }
 
@@ -174,10 +174,8 @@ export function bindTerrainVertexLighting(intensityMaps: StagedLightingInput<Ter
       else colourChunk(keyedMeshes);
     },
     removeChunk(chunkId) { chunks.delete(chunkId); },
-    update(environment) {
-      if (maps === null) return;
-      const current = environment();
-      if (latched === null || current.lightingDirty) rebuild(current);
+    update(lightingDirty, environment) {
+      if (maps !== null && (latched === null || lightingDirty)) rebuild(environment());
     },
     inspection() {
       const keyedMeshes = keyedMeshesOf();
