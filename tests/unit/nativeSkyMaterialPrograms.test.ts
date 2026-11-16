@@ -9,10 +9,20 @@ import { FOG_DISABLED, type NativeMaterialUniforms } from "../../src/materials/u
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import { bindSkyMaterialPrograms } from "../../src/scene/world/nativeSkyMaterialPrograms";
-import { swatchTexturePng, syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor, type FixtureProgram } from "../support/materialProgramFixture";
+import type { SkyEnvironmentColour } from "../../src/scene/world/worldTimeOfDay";
+import { swatchTexturePng, syntheticColorModifierProgram, syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor,
+  type FixtureProgram } from "../support/materialProgramFixture";
+import { shippedSkyBindings } from "../support/worldTimeOfDayFixture";
 
 const compiledProgramSha256 = "a".repeat(64);
 const unportedProgramSha256 = "b".repeat(64);
+const skyColourProgramSha256 = "c".repeat(64);
+const otherSkyColourProgramSha256 = "e".repeat(64);
+const programsBySha256 = new Map<string, () => FixtureProgram>([
+  [skyColourProgramSha256, () => syntheticColorModifierProgram(swatchImage, "L2_Skies.Shaders.SkybackgroundColor")],
+  [otherSkyColourProgramSha256, () => syntheticColorModifierProgram(swatchImage, "L2_SkiesNight.Shaders.SkybackgroundColor")],
+  [unportedProgramSha256, syntheticUnportedProgram],
+]);
 const swatchImage = textureImageFor(swatchTexturePng());
 const releases: (() => void)[] = [];
 afterEach(() => { releases.splice(0).reverse().forEach(release => release()); });
@@ -39,7 +49,7 @@ function skyMeshes(pins: readonly (string | null)[]) {
     return mesh;
   });
   const loadProgram = vi.fn(async (materialId: string) =>
-    loadedProgram(materialId, materialId === compiledProgramSha256 ? syntheticSwatchProgram(swatchImage) : syntheticUnportedProgram()));
+    loadedProgram(materialId, programsBySha256.get(materialId)?.() ?? syntheticSwatchProgram(swatchImage)));
   return { scene, meshes, loadProgram };
 }
 
@@ -49,8 +59,8 @@ describe("tile sky surfaces through the UE2 material library", () => {
     const snapshotMaterials = sky.meshes.map(mesh => mesh.material);
     let levelSeconds = 0;
     const materialUniforms = vi.fn((): NativeMaterialUniforms => ({ levelSeconds, hour: 12, environmentType: 0, fog: FOG_DISABLED }));
-    const binding = await bindSkyMaterialPrograms({ scene: sky.scene, meshes: sky.meshes, sessionSeed: 7, materialUniforms, loadProgram: sky.loadProgram,
-      signal: new AbortController().signal });
+    const binding = await bindSkyMaterialPrograms({ scene: sky.scene, meshes: sky.meshes, sessionSeed: 7, materialUniforms, environmentColours: null,
+      loadProgram: sky.loadProgram, signal: new AbortController().signal });
     expect(binding.surfaces).toEqual([
       { mesh: "sky part 0", programMaterialId: compiledProgramSha256, status: "library-compiled", reasons: [] },
       { mesh: "sky part 1", programMaterialId: unportedProgramSha256, status: "library-diagnostic", reasons: expect.arrayContaining(["material-class-unported:Engine.GlowModifier"]) },
@@ -64,10 +74,7 @@ describe("tile sky surfaces through the UE2 material library", () => {
     levelSeconds = 3;
     sky.scene.onBeforeRenderObservable.notifyObservers(sky.scene);
     expect(materialUniforms.mock.calls.length).toBe(uniformReadsBeforeFrame + 1);
-    binding.showStoredSnapshotMaterials();
-    expect(sky.meshes[0]!.material).toBe(snapshotMaterials[0]);
-    binding.showProgramMaterials();
-    expect(sky.meshes[0]!.material).toBe(bound);
+    expect(binding.environmentColours()).toEqual([]);
     binding.dispose();
     expect(sky.meshes.map(mesh => mesh.material)).toEqual(snapshotMaterials);
     expect(sky.scene.materials.includes(bound!)).toBe(false);
@@ -75,10 +82,40 @@ describe("tile sky surfaces through the UE2 material library", () => {
 
   it("reports a pinned program without a tile clock as unwired and loads nothing", async () => {
     const sky = skyMeshes([compiledProgramSha256]);
-    const binding = await bindSkyMaterialPrograms({ scene: sky.scene, meshes: sky.meshes, sessionSeed: 7, materialUniforms: null,
+    const binding = await bindSkyMaterialPrograms({ scene: sky.scene, meshes: sky.meshes, sessionSeed: 7, materialUniforms: null, environmentColours: null,
       loadProgram: sky.loadProgram, signal: new AbortController().signal });
     expect(binding.surfaces).toEqual([{ mesh: "sky part 0", programMaterialId: compiledProgramSha256, status: "library-environment-clock-unwired", reasons: [] }]);
     expect(sky.loadProgram).not.toHaveBeenCalled();
     expect(sky.meshes[0]!.material).toBeInstanceOf(PBRMaterial);
+  });
+
+  it("writes the time-of-day sky colour into the SkybackgroundColor ColorModifier before the first frame and on every frame", async () => {
+    const sky = skyMeshes([skyColourProgramSha256, compiledProgramSha256]);
+    let skyBoxColour: SkyEnvironmentColour["colour"] = { status: "resolved", value: [66, 124, 176] };
+    const environmentColours = vi.fn((): readonly SkyEnvironmentColour[] => shippedSkyBindings.map(binding =>
+      ({ ...binding, colour: binding.setupKey === "SKYBOX" ? skyBoxColour : { status: "resolved", value: [1, 2, 3] } })));
+    const binding = await bindSkyMaterialPrograms({ scene: sky.scene, meshes: sky.meshes, sessionSeed: 7,
+      materialUniforms: () => ({ levelSeconds: 0, hour: 12, environmentType: 0, fog: FOG_DISABLED }), environmentColours,
+      loadProgram: sky.loadProgram, signal: new AbortController().signal });
+    expect(binding.environmentColours()[0]).toEqual({ ...shippedSkyBindings[0], materialNode: "L2_Skies.Shaders.SkybackgroundColor", writtenRgb: [66, 124, 176], reason: null });
+    expect(binding.environmentColours().slice(1).map(entry => entry.reason)).toEqual(Array(4).fill("sky-environment-material-absent"));
+    const callsBeforeFrame = environmentColours.mock.calls.length;
+    skyBoxColour = { status: "unresolved", reason: "env-color-transition-unresolved" };
+    sky.scene.onBeforeRenderObservable.notifyObservers(sky.scene);
+    expect(environmentColours.mock.calls.length).toBe(callsBeforeFrame + 1);
+    expect(binding.environmentColours()[0]).toMatchObject({ writtenRgb: null, reason: "env-color-transition-unresolved" });
+    binding.dispose();
+  });
+
+  it("refuses an Env.int sky object that two compiled sky surfaces name differently and disposes what it compiled", async () => {
+    const sky = skyMeshes([skyColourProgramSha256, otherSkyColourProgramSha256]);
+    const snapshotMaterials = sky.meshes.map(mesh => mesh.material);
+    const materialsBefore = sky.scene.materials.length;
+    await expect(bindSkyMaterialPrograms({ scene: sky.scene, meshes: sky.meshes, sessionSeed: 7,
+      materialUniforms: () => ({ levelSeconds: 0, hour: 12, environmentType: 0, fog: FOG_DISABLED }),
+      environmentColours: () => shippedSkyBindings.map(binding => ({ ...binding, colour: { status: "resolved", value: [0, 0, 0] } })),
+      loadProgram: sky.loadProgram, signal: new AbortController().signal })).rejects.toThrow("Sky environment binding SKYBOX=SkybackgroundColor matches 2 ColorModifier objects");
+    expect(sky.meshes.map(mesh => mesh.material)).toEqual(snapshotMaterials);
+    expect(sky.scene.materials.length).toBe(materialsBefore);
   });
 });

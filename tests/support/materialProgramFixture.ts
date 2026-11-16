@@ -146,6 +146,16 @@ export function syntheticSwatchProgram(image: FixtureTextureImage): FixtureProgr
   ]);
 }
 
+export function syntheticColorModifierProgram(image: FixtureTextureImage, colorModifierNode: string): FixtureProgram {
+  const root = `${colorModifierNode}FinalBlend`, texture = `${colorModifierNode}Texture`;
+  return programOf(root, [
+    overwritingFinalBlendNode(root, colorModifierNode),
+    reviewedNode(colorModifierNode, "Engine.ColorModifier", [field("Color", rawStruct("Color", "ce9600ff"), "authored", "raw"),
+      field("Material", nodeReference(texture)), field("AlphaBlend", false, "ue-zero"), field("RenderTwoSided", false, "ue-zero")]),
+    swatchTextureNode(texture, image),
+  ]);
+}
+
 export function oceanSTriggeredOscillatorNode(id: string, material: string, overrides: FixtureProgramField[] = []): FixtureProgramNode {
   const oceanSFields = [
     field("Material", nodeReference(material)), field("StopAfterPeriod", Math.fround(0.05)), field("VOscillationRate", Math.fround(0.05)),

@@ -12,7 +12,7 @@ import { MaterialProgramError, parseMaterialProgram, programNode } from "../../s
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import {
   enumValue, field, materialSwatchFixtureFiles, nodeReference, programOf, rawStruct, reviewedNode, sha256Hex, swatchTextureNode,
-  syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor, swatchTexturePng, type FixtureProgram,
+  syntheticColorModifierProgram, syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor, swatchTexturePng, type FixtureProgram,
 } from "../support/materialProgramFixture";
 
 const fixtureStoreRoot = new URL("../fixtures/lane-store/", import.meta.url);
@@ -157,6 +157,24 @@ describe("createNativeMaterial", () => {
     expect(inspection.uniforms).toEqual({ levelSeconds: 0.25, hour: 6.5, environmentType: 2, fog });
     expect(inspection.frame?.samplerMatrices).toEqual([[1, 0, 0.5, 0, 1, 0]]);
     expect(fog.fogEnd).toBe(900);
+  });
+
+  it("overrides only the RGB of a ColorModifier colour source on each update and keeps its authored alpha", () => {
+    const colorModifierNode = "SyntheticSky.SkybackgroundColor";
+    const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(syntheticColorModifierProgram(swatchImage, colorModifierNode)), testMaterialOptions);
+    const uniforms = { levelSeconds: 0, hour: 12, environmentType: 0, fog: FOG_DISABLED };
+    nativeMaterial.update(uniforms);
+    expect(nativeMaterial.inspect()).toMatchObject({ status: "compiled", colourSourceCount: 1 });
+    expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[0, 150 / 255, 206 / 255, 1]]);
+    nativeMaterial.overrideColourSourceRgb(colorModifierNode, [66 / 255, 124 / 255, 176 / 255]);
+    nativeMaterial.update(uniforms);
+    expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[66 / 255, 124 / 255, 176 / 255, 1]]);
+    nativeMaterial.overrideColourSourceRgb(colorModifierNode, null);
+    nativeMaterial.update(uniforms);
+    expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[0, 150 / 255, 206 / 255, 1]]);
+    expect(() => nativeMaterial.overrideColourSourceRgb("SyntheticSky.Other", [0, 0, 0])).toThrow(/has no ColorModifier colour source SyntheticSky.Other/);
+    const diagnostic = createNativeMaterial(nullScene(), loadedMaterial(syntheticUnportedProgram()), testMaterialOptions);
+    expect(() => diagnostic.overrideColourSourceRgb(colorModifierNode, [0, 0, 0])).toThrow(/diagnostic material/);
   });
 
   it("names the coordinate generators the binding cannot draw yet", () => {

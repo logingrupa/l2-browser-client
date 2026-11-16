@@ -1,6 +1,5 @@
 import type { DevSection } from "../ui/devSheet/DevSheet";
 import type { VariableInfo } from "../ui/devSheet/types";
-import { attachNativeSkyEnvironmentControls } from "../scene/world/nativeSkyEnvironmentControls";
 import { nativeSandboxPresentation } from "../scene/presentationConfiguration";
 import type { NativeSliceSheetTools } from "./nativeSliceSheet";
 import { attachScenePresentationGroup } from "./attachScenePresentationGroup";
@@ -41,19 +40,13 @@ function attachCameraGroup(section: DevSection, context: NativeSliceSheetContext
   tools.button(cameraGroup, "Culling off", () => tileVisibility.setCulling(false), { hint: "Draws every loaded section again; the default until PERF-02 measures culling.", variables: visibilityVariables });
 }
 
-function attachSkyGroup(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): void {
+function attachSkyGroup(section: DevSection, context: NativeSliceSheetContext): void {
   const { sky, skyFailure } = context.world;
   const skyGroup = section.group("sky", "Sky");
-  skyGroup.note(skyFailure ? `Sky preview unavailable: ${skyFailure}` : sky ? "Original sky geometry · stored colors." : "Original sky has not been staged.",
+  skyGroup.note(skyFailure ? `Sky preview unavailable: ${skyFailure}` : sky ? "Original sky geometry · time-of-day sky, haze and cloud colours." : "Original sky has not been staged.",
     { testId: "native-sky-status", tone: skyFailure ? "warning" : "info",
-      hint: "Original sky geometry with stored colors by default. The optional source-row comparison is temporary; native time-of-day, cloud motion and visual matching remain unverified.",
+      hint: "Original sky geometry. The sky, haze and cloud ColorModifier colours follow the DB-4 time of day; cloud motion and visual matching remain unverified.",
       variables: () => [{ name: "sky.status", value: () => sky ? "staged" : skyFailure ? "failed" : "not staged", values: "staged | failed | not staged", source: "createNativeSkyPresentation", status: "unverified" }] });
-  if (!sky) return;
-  const comparisonControls = attachNativeSkyEnvironmentControls(skyGroup.element, sky);
-  context.addRelease(() => comparisonControls.dispose());
-  const comparisonRoot = skyGroup.element.querySelector<HTMLElement>('[data-testid="sky-environment-comparison"]');
-  const comparisonNote = tools.describe.foldStaticNoteIntoDescription(comparisonRoot?.querySelectorAll<HTMLElement>("p")[1]);
-  tools.describe.element(comparisonRoot, { title: "Sky color comparison", description: comparisonNote || "Temporary source-row preview; stored sky materials stay unchanged." });
 }
 
 function attachFlameGroup(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): NativeSliceWorldSheet {
@@ -99,7 +92,7 @@ function attachDisplayGammaGroup(section: DevSection, displayGamma: DisplayGamma
 
 export function attachNativeSliceWorldSheet(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): NativeSliceWorldSheet {
   attachCameraGroup(section, context, tools);
-  attachSkyGroup(section, context, tools);
+  attachSkyGroup(section, context);
   attachDisplayGammaGroup(section, context.displayGamma);
   const flameSheet = attachFlameGroup(section, context, tools);
   attachScenePresentationGroup(section, nativeSandboxPresentation, { sceneName: "native sandbox scene", readoutTestId: "native-scene-presentation" });

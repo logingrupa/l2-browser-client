@@ -44,7 +44,7 @@ export type WorldTimeOfDayInspection =
 
 const millisecondsPerSecond = 1000;
 const worldTimeOfDayContexts = createSceneScopedContext<WorldTimeOfDay>("world time of day");
-export const worldTimeOfDayUnprovidedGap: WorldTimeOfDayGap = { status: "gap", reason: "environment-time-of-day-unprovided",
+const worldTimeOfDayUnprovidedGap: WorldTimeOfDayGap = { status: "gap", reason: "environment-time-of-day-unprovided",
   detail: "No world time of day was provided for this scene." };
 
 export function startWorldTimeOfDay(scene: Scene, timeTables: NativeTimeTablesExport, readRealSeconds: ReadRealSeconds): RunningWorldTimeOfDay {
