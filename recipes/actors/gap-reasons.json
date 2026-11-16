@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 12,
+  "listVersion": 13,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -25,6 +25,7 @@
     "skillsound-row-match-ambiguous:<count>",
     "skill-sound-caster-index-unresolved:<stage>",
     "skill-sound-member-unrouted:<ordinal>",
-    "skill-dispatch-candidate-runtime-unresolved"
+    "skill-dispatch-candidate-runtime-unresolved",
+    "skinned-part-bone-missing:<bones>"
   ]
 }

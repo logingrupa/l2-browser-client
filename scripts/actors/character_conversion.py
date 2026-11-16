@@ -5,6 +5,7 @@ from pathlib import Path
 from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, model_record_capacity, decoded_table_identity
 from actors.character_class_sources import read_character_class_sources
+from actors.character_head_part_routes import decoded_skeleton_summary, generated_with_head_part_routes
 from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, CLASS_SOURCES_ROUTE, GAP_STATUS, HAIRGRP_TABLE_NAME,
                                        HELMETGRP_TABLE_NAME, CharacterRequestError, build_character_request, character_gap_rows, character_key,
                                        chargrp_row_at, is_padding_row, resolve_character_actor_class)
@@ -99,10 +100,19 @@ class CharacterConversionRun:
                          for path in self.package_census.resolve_package_paths(material.split('=', 1)[1], TEXTURE_PACKAGE_SUFFIXES))
         return locked_input_records(sorted(paths))
 
+    def routed_head_parts(self, generated):
+        try:
+            return generated_with_head_part_routes(generated, lambda part: decoded_skeleton_summary(self.converter, part))
+        except ReferenceClientLockError:
+            raise
+        except ValueError as error:
+            reason = CONVERTER_REFUSED_REASON_PREFIX + path_free_reason(str(error), self.client_access.root, self.converter.output)
+            return {**generated, 'request': None, 'headParts': [], 'gaps': [{'field': 'parts', 'reason': reason}] + generated['gaps']}
+
     def unit_work(self, row_index):
         row = chargrp_row_at(self.sources.chargrp, row_index)
         class_resolution = resolve_character_actor_class(self.sources.classinfo, self.sources.class_sources, row_index)
-        generated = build_character_request(row, row_index, self.actor_class(class_resolution), self.sources)
+        generated = self.routed_head_parts(build_character_request(row, row_index, self.actor_class(class_resolution), self.sources))
         config = {'censusReason': self.units_by_key[character_key(row_index)]['reason'], 'classResolution': class_resolution,
                   'generated': generated, 'converterSha256': implementation_hash(), 'umodelSha256': UMODEL_SHA256,
                   'tableSources': {table: manifest_source_sha256(manifest) for table, manifest in

@@ -130,6 +130,20 @@ class CharacterConversionRunTests(unittest.TestCase):
                          [('character:2', CONVERTER_REFUSED_REASON_PREFIX + SYNTHETIC_REFUSAL)])
         self.assertEqual(self.catalog_model_ids(), [])
 
+    def test_a_head_part_skeleton_the_decoder_refuses_leaves_no_request_and_a_converter_refused_parts_gap(self):
+        run = SyntheticCharacterRun(self.project_root, self.client_root)
+
+        def refusing_package(package_name):
+            raise ValueError(f'{package_name} skeletal export has trailing bytes')
+        run.converter.package = refusing_package
+        head_part = {'package': 'magic', 'object': 'MMagic_m000_f', 'materials': [], 'rigidAttachment': {'bone': 'Bip01_head'}}
+        generated = {'request': {'parts': [{'package': 'Magic', 'object': 'MMagic_m005_u', 'materials': []}, head_part], 'limitations': []},
+                     'gaps': [{'field': 'hair', 'reason': 'hair-layout-undecoded'}]}
+        routed = run.routed_head_parts(generated)
+        self.assertIsNone(routed['request'])
+        self.assertEqual(routed['gaps'], [{'field': 'parts', 'reason': CONVERTER_REFUSED_REASON_PREFIX + 'Magic skeletal export has trailing bytes'},
+                                          {'field': 'hair', 'reason': 'hair-layout-undecoded'}])
+
     def test_a_padding_row_is_never_converted_or_sealed(self):
         [outcome] = self.converted_outcomes(FIRST_CONVERTER_SHA256, [0])
         self.assertEqual((outcome['key'], outcome['status'], outcome['outputs']), (None, PADDING_STATUS, []))
