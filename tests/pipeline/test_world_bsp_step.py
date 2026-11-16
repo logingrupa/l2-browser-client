@@ -5,27 +5,23 @@ import struct
 import sys
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
-from material_graph_fixture import build_synthetic_material_package
+from native_store.native_material_program_pins import NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD
 from native_store.pinned_store_verification import verify_pinned_store_files
 from native_store.tile_manifest_validation import validate_tile_chunk_manifest
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
 from synthetic_class_scripts import scratch_work_root
-from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
 from test_tile_manifest_step import synthetic_tile
-from world import surface_material_programs
 from world.bsp_chunk_geometry import (BspPolyFlags, BspSurfaceMaterial, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb,
                                       drawn_node_indices, load_bsp_poly_flags)
+from world.bsp_material_mapping_size import MaterialMappingSize
 from world.bsp_step import BSP_STEP_ALGORITHM_VERSION, BspGapRows, chunk_grid_nodes, drawable_chunk_nodes, sealed_bsp_chunks
-from world.bsp_surface_materials import convert_surface_material, program_blend_is_translucent
 from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model, require_level_model_ranges
 from world.raw_map_step import read_tile_map_lock_record
-from world.static_mesh_step import conversion_failure_reason
 from world.static_placement_plan import ChunkRectangle
 from world.native_material_listings import NativeMaterialListingError
 from world.tile_manifest_step import build_tile_chunk_manifest, tile_store_files
@@ -36,9 +32,6 @@ EVIDENCE = f'work/tile__{TILE_ID}/bsp/receipt.json'
 FLAGS = BspPolyFlags(visual_skip_mask=0x1 | 0x80 | 0x04000000, unlit_mask=0x00400000)
 MATERIAL = 'SyntheticTextures.Floor'
 OTHER_MATERIAL = 'syntheticTextures.Alpha'
-TEXTURED_MATERIAL_FIXTURE = 'shader-combiner-panner-texture.json'
-TEXTURED_MATERIAL = 'SyntheticMaterials.SkyShader'
-TEXTURED_MATERIAL_TEXTURE = 'SyntheticMaterials.SkyTexture'
 RECTANGLES = [ChunkRectangle('chunk-0-0', (0.0, 0.0), (1024.0, 1024.0)), ChunkRectangle('chunk-1-0', (1024.0, 0.0), (2048.0, 1024.0))]
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
 ORACLE_PATH = ROOT / 'recipes/world/oracle/20_20/expected.json'
@@ -46,14 +39,7 @@ SERVED_STORE = ROOT / 'public' / 'l2'
 
 
 def textured(identity, translucent=False):
-    png = b'\x89PNG\r\n\x1a\n' + struct.pack('>I4sII', 13, b'IHDR', 64, 32) + bytes(5)
-    return BspSurfaceMaterial(identity, png, 64, 32, translucent, None)
-
-
-def blend_root_program(class_name, field_name, members, ordinal):
-    root = {'id': 'Synthetic.Root', 'class': class_name, 'status': 'reviewed',
-            'fields': [{'field': field_name, 'value': {'ordinal': ordinal, 'name': members[ordinal]}}]}
-    return {'root': root['id'], 'nodes': [root]}
+    return BspSurfaceMaterial(identity, synthetic_png_bytes(), MaterialMappingSize(64, 32), translucent, None)
 
 
 def glb_document(glb):
@@ -103,27 +89,34 @@ class BspSectionTests(unittest.TestCase):
                                              synthetic_polygon(square_points(80, 0, 10), surface_flags=0x08000000)])
         self.assertEqual(drawn_node_indices(model, FLAGS, frozenset({2})), [0, 4])
 
-    def test_a_section_never_mixes_unlit_lightmap_texture_or_outdoor_class(self):
-        cases = ({'surface_flags': 0x00400000}, {'light_map': 3}, {'zones': (1, 2)})
+    def test_a_section_never_mixes_unlit_lightmap_texture_or_native_render_section(self):
+        cases = ({'surface_flags': 0x00400000}, {'light_map': 3}, {'section': 1})
         for second in cases:
             model = two_square_model(**second)
-            sections = build_chunk_sections(model, [0, 1], [MATERIAL, MATERIAL], FLAGS, {3: 4}, frozenset({0, 1}))
+            sections = build_chunk_sections(model, [0, 1], [MATERIAL, MATERIAL], FLAGS, {3: 4})
             self.assertEqual(len(sections), 2, second)
-        same = build_chunk_sections(two_square_model(), [0, 1], [MATERIAL, MATERIAL], FLAGS, {}, frozenset({0}))
+        same = build_chunk_sections(two_square_model(zones=(1, 2)), [0, 1], [MATERIAL, MATERIAL], FLAGS, {})
         self.assertEqual([section.nodes for section in same], [[0, 1]])
-        unresolved = build_chunk_sections(two_square_model(light_map=3), [0, 1], [MATERIAL, MATERIAL], FLAGS, {}, frozenset())
+        unresolved = build_chunk_sections(two_square_model(light_map=3), [0, 1], [MATERIAL, MATERIAL], FLAGS, {})
         self.assertEqual([section.key.lightmap for section in unresolved], [-1, None])
+
+    def test_every_section_record_names_its_native_render_section(self):
+        model = two_square_model(section=1)
+        sections = build_chunk_sections(model, [0, 1], [MATERIAL, MATERIAL], FLAGS, {})
+        _, section_records, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: textured(MATERIAL)})
+        self.assertEqual([record['nativeRenderSection'] for record in section_records], [0, 1])
+        self.assertTrue(all('outdoor' not in record for record in section_records))
 
     def test_sections_order_by_casefold_material_then_nodes_by_index(self):
         model = two_square_model()
-        sections = build_chunk_sections(model, [1, 0], [MATERIAL, OTHER_MATERIAL], FLAGS, {}, frozenset())
+        sections = build_chunk_sections(model, [1, 0], [MATERIAL, OTHER_MATERIAL], FLAGS, {})
         self.assertEqual([(section.key.material, section.nodes) for section in sections], [(OTHER_MATERIAL, [1]), (MATERIAL, [0])])
 
     def test_node_ranges_cover_every_triangle_once_and_stay_contiguous(self):
         polygons = [synthetic_polygon(square_points(0, 0, 100)), synthetic_polygon([(200, 0, 0), (300, 0, 0), (350, 50, 0), (300, 100, 0), (200, 100, 0)]),
                     synthetic_polygon(square_points(400, 0, 100), surface_flags=0x00400000)]
         model = build_synthetic_level_model(polygons)
-        sections = build_chunk_sections(model, [0, 1, 2], [MATERIAL] * 3, FLAGS, {}, frozenset())
+        sections = build_chunk_sections(model, [0, 1, 2], [MATERIAL] * 3, FLAGS, {})
         glb, section_records, node_ranges, triangles = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: textured(MATERIAL)})
         document = glb_document(glb)
         self.assertEqual((document['extras']['nativeBspSections'], document['extras']['nativeBspNodeRanges']), (section_records, node_ranges))
@@ -143,12 +136,37 @@ class BspSectionTests(unittest.TestCase):
 
     def test_an_unconverted_material_is_a_magenta_diagnostic(self):
         model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100))])
-        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {}, frozenset())
-        glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: BspSurfaceMaterial(MATERIAL, None, None, None, False, None)})
+        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {})
+        glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: BspSurfaceMaterial(MATERIAL, None, None, False, None)})
         document = glb_document(glb)
         self.assertEqual(document['materials'][0]['pbrMetallicRoughness']['baseColorFactor'], [1, 0, 1, 1])
         self.assertEqual(document['materials'][0]['extras']['unboundSourceMaterial'], MATERIAL)
         self.assertNotIn('TEXCOORD_0', document['meshes'][0]['primitives'][0]['attributes'])
+        self.assertNotIn('images', document)
+
+    def test_a_baked_material_without_a_mapping_size_is_a_magenta_diagnostic_without_image_or_program(self):
+        model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100))])
+        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {})
+        program_pin = {'directory': f'native-materials/{"a" * 64}', 'programSha256': 'a' * 64}
+        unmapped = BspSurfaceMaterial(MATERIAL, synthetic_png_bytes(), None, False, program_pin)
+        document = glb_document(chunk_bsp_glb(model, 'chunk-0-0', sections, {MATERIAL: unmapped})[0])
+        material = document['materials'][0]
+        self.assertEqual(material['pbrMetallicRoughness']['baseColorFactor'], [1, 0, 1, 1])
+        self.assertNotIn('baseColorTexture', material['pbrMetallicRoughness'])
+        self.assertEqual((material['extras']['unboundSourceMaterial'], material['extras'][NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD]), (MATERIAL, None))
+        self.assertNotIn('TEXCOORD_0', document['meshes'][0]['primitives'][0]['attributes'])
+        self.assertNotIn('images', document)
+        self.assertNotIn('textures', document)
+
+    def test_an_unbaked_material_with_a_mapping_size_still_writes_its_texture_coordinates(self):
+        model = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 100))])
+        sections = build_chunk_sections(model, [0], [MATERIAL], FLAGS, {})
+        glb, _, _, _ = chunk_bsp_glb(model, 'chunk-0-0', sections,
+                                     {MATERIAL: BspSurfaceMaterial(MATERIAL, None, MaterialMappingSize(64, 32), False, None)})
+        document = glb_document(glb)
+        attributes = document['meshes'][0]['primitives'][0]['attributes']
+        self.assertEqual(document['accessors'][attributes['TEXCOORD_0']]['count'], 4)
+        self.assertEqual(document['materials'][0]['pbrMetallicRoughness']['baseColorFactor'], [1, 0, 1, 1])
         self.assertNotIn('images', document)
 
 
@@ -180,97 +198,6 @@ class BspNodeGapRowTests(unittest.TestCase):
                            {**SOURCE_IDENTITY, 'object': '00_00.Brush9'})])
 
 
-class SurfaceMaterialTests(unittest.TestCase):
-    def textured_surface_outcome(self, convert_texture):
-        package = build_synthetic_material_package(TEXTURED_MATERIAL_FIXTURE)
-        map_sources = SimpleNamespace(paths={'syntheticmaterials': ['textures/SyntheticMaterials.utx']}, get=lambda relative: package)
-        converted_references = []
-
-        def texture(work, reference):
-            converted_references.append(reference)
-            return convert_texture(reference), {}, reference
-
-        converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'), texture=texture,
-                                    material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
-        store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
-        with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
-            outcome = convert_surface_material(TEXTURED_MATERIAL, map_sources, converter, store_root, None, store_root)
-        program_path = store_root / outcome.material.program['directory'] / 'program.json'
-        return outcome, json.loads(program_path.read_bytes()), store_root, converted_references
-
-    def test_every_reviewed_texture_node_is_converted_and_pinned_by_its_png_in_the_store(self):
-        png = synthetic_png_bytes()
-        outcome, program, store_root, converted_references = self.textured_surface_outcome(lambda reference: png)
-        png_sha256 = hashlib.sha256(png).hexdigest()
-        image = {'path': f'/l2/native-materials/textures/{png_sha256}/texture.png', 'sha256': png_sha256, 'bytes': len(png)}
-        self.assertEqual(converted_references, [TEXTURED_MATERIAL_TEXTURE])
-        self.assertEqual({node['id']: node['image'] for node in program['nodes'] if node['class'] == 'Engine.Texture'},
-                         {TEXTURED_MATERIAL_TEXTURE: image})
-        self.assertEqual((store_root / image['path'].removeprefix('/l2/')).read_bytes(), png)
-        self.assertEqual(sorted(record['path'] for record in outcome.store_outputs),
-                         sorted([f'{outcome.material.program["directory"]}/graph.json', f'{outcome.material.program["directory"]}/program.json',
-                                 image['path'].removeprefix('/l2/')]))
-        self.assertEqual(outcome.material.png, png)
-
-    def test_a_texture_that_fails_conversion_keeps_a_null_image_and_its_conversion_gap_reason(self):
-        failure = ValueError('UModel failed or reported an error; inspect export.log')
-
-        def refuse(reference):
-            raise failure
-
-        outcome, program, _, _ = self.textured_surface_outcome(refuse)
-        self.assertEqual([node['image'] for node in program['nodes'] if node['class'] == 'Engine.Texture'], [None])
-        self.assertIn(conversion_failure_reason(failure), outcome.gap_reasons)
-        self.assertEqual([record['path'].rsplit('/', 1)[1] for record in outcome.store_outputs], ['graph.json', 'program.json'])
-
-    def test_an_unported_material_class_gets_its_gap_reason_and_no_substitute_texture(self):
-        package = build_synthetic_material_package('unported-classes-and-features.json')
-        map_sources = SimpleNamespace(paths={'syntheticunported': ['textures/SyntheticUnported.utx']}, get=lambda relative: package)
-        converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'),
-                                    texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
-                                    material_texture=lambda *arguments: self.fail('an unported root must not be textured'))
-        store_root = scratch_work_root(self, 'bsp-store-')
-        texture_declarations = [{'field': 'USize', 'declaredType': 'int', 'declaringClass': 'Engine.Texture', 'enumMembers': None,
-                                 'classDefault': {'field': 'USize', 'value': None, 'provenance': 'ue-zero', 'declaringClass': 'Engine.Texture'}}]
-        with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value={'Engine.Texture': texture_declarations}):
-            outcome = convert_surface_material('SyntheticUnported.TriggeredOscillator', map_sources, converter, store_root, None, store_root)
-        self.assertIsNone(outcome.material.png)
-        self.assertIn('material-class-unported:Engine.TexOscillatorTriggered', outcome.gap_reasons)
-        self.assertTrue(outcome.material.program['directory'].startswith('native-materials/'))
-
-    def test_only_the_depth_writing_shader_and_final_blend_members_are_opaque(self):
-        output_blending = ('OB_Normal', 'OB_Masked', 'OB_Modulate', 'OB_Translucent', 'OB_Invisible', 'OB_Brighten', 'OB_Darken')
-        frame_buffer_blending = ('FB_Overwrite', 'FB_Modulate', 'FB_AlphaBlend', 'FB_AlphaModulate_MightNotFogCorrectly', 'FB_Translucent',
-                                 'FB_Darken', 'FB_Brighten', 'FB_Invisible', 'FB_Add')
-        shader = {member: program_blend_is_translucent(blend_root_program('Engine.Shader', 'OutputBlending', output_blending, ordinal))
-                  for ordinal, member in enumerate(output_blending)}
-        final_blend = {member: program_blend_is_translucent(blend_root_program('Engine.FinalBlend', 'FrameBufferBlending', frame_buffer_blending,
-                                                                                ordinal))
-                       for ordinal, member in enumerate(frame_buffer_blending)}
-        self.assertEqual({member for member, translucent in shader.items() if not translucent}, {'OB_Normal', 'OB_Masked'})
-        self.assertEqual({member for member, translucent in final_blend.items() if not translucent}, {'FB_Overwrite'})
-
-    def test_an_ob_normal_shader_with_an_opacity_input_blends_like_the_runtime_and_is_translucent(self):
-        program = blend_root_program('Engine.Shader', 'OutputBlending', ('OB_Normal',), 0)
-        program['nodes'][0]['fields'].append({'field': 'Opacity', 'value': {'node': 'Synthetic.OpacityTexture'}})
-        self.assertTrue(program_blend_is_translucent(program))
-        program['nodes'][0]['fields'][-1] = {'field': 'Opacity', 'value': {'externalObject': 'Other.OpacityTexture'}}
-        self.assertTrue(program_blend_is_translucent(program))
-        program['nodes'][0]['fields'][-1] = {'field': 'Opacity', 'value': None}
-        self.assertFalse(program_blend_is_translucent(program))
-
-    def test_a_root_without_a_blend_field_is_opaque(self):
-        self.assertFalse(program_blend_is_translucent(blend_root_program('Engine.Texture', 'OutputBlending', ('OB_Translucent',), 0)))
-        program = blend_root_program('Engine.Shader', 'OutputBlending', ('OB_Translucent',), 0)
-        program['nodes'][0]['fields'] = []
-        self.assertFalse(program_blend_is_translucent(program))
-
-    def test_a_missing_material_export_is_a_decode_failure(self):
-        map_sources = SimpleNamespace(paths={}, get=lambda relative: None)
-        outcome = convert_surface_material('Missing.Material', map_sources, None, None, None, None)
-        self.assertEqual((outcome.material.png, outcome.gap_reasons), (None, ['decode-failed:FormatError:material package missing or ambiguous']))
-
-
 class BspManifestTests(unittest.TestCase):
     def chunk_plan_entry(self):
         return {'chunkId': 'chunk-0-0', 'sectorRange': {'firstColumn': 0, 'lastColumn': 3, 'firstRow': 0, 'lastRow': 3},
@@ -296,7 +223,7 @@ class BspManifestTests(unittest.TestCase):
         self.assertEqual((manifest['bsp'], row['status'], row['reason']), (None, 'gap', 'bsp-chunk-without-nodes'))
 
     def test_the_step_version_is_pinned(self):
-        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 5)
+        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 6)
 
 
 def material_file(relative, payload):

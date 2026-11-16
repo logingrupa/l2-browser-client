@@ -12,6 +12,7 @@ MATERIAL_PROGRAM_SCHEMA_VERSION = 1
 MATERIAL_PROGRAM_KIND = 'ue2-material-program'
 CORE_OBJECT_CLASS = 'Core.Object'
 BYTE_PROPERTY_TYPE = 1
+UNSET_ENUM_ORDINAL = 0
 PROGRAM_PROVENANCE_OF_CLASS_DEFAULT = {'authored': 'class-default', 'class-default': 'class-default', 'ue-zero': 'ue-zero'}
 UNCONFIRMED_ENUM_MEMBERS = {('Engine.FinalBlend', 'FrameBufferBlending'): ('FB_Add',)}
 TRIGGER_IGNORING_ENUM_MEMBERS = {('Engine.MaterialSequence', 'TriggerAction'): 'MSTA_Ignore'}
@@ -81,6 +82,8 @@ def authored_field_value(tags, declaration, node_id):
 
 def class_default_field_value(declaration, node_id):
     value, members = declaration['classDefault']['value'], declaration['enumMembers']
+    if members and value is None:
+        return enum_value(UNSET_ENUM_ORDINAL, members, node_id, declaration['field'])
     if members and type(value) is int:
         return enum_value(value, members, node_id, declaration['field'])
     if members and isinstance(value, dict) and set(value) == {'symbol'} and value['symbol'] in members:

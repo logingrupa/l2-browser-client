@@ -138,7 +138,7 @@ describe("static mesh slots through the UE2 material library", () => {
       { sourceObject: portedEntry.sourceObject, status: "library-compiled", programMaterialId: portedProgramSha256, reasons: [], meshes: 2 },
       { sourceObject: unportedEntry.sourceObject, status: "program-gap", programMaterialId: null, reasons: [unportedReason], meshes: 1 },
       { sourceObject: diagnosticEntry.sourceObject, status: "library-diagnostic", programMaterialId: diagnosticProgramSha256,
-        reasons: ["material-class-unported:Engine.TexOscillatorTriggered"], meshes: 1 },
+        reasons: ["material-class-unported:Engine.GlowModifier"], meshes: 1 },
     ]);
     binding.dispose();
   });

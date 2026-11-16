@@ -7,7 +7,7 @@ import { sha256, type AssetPackage } from "../../src/assets/package/readAssetPac
 
 const programSha256 = "ab".repeat(32);
 const portedObject = "LineageNpcsTex.e_teleporter_FHuman.e_teleporter_FHuman_m00_t00_b00";
-const unportedObject = "LineageNpcsTex.Synthetic.TriggeredOscillator";
+const unportedObject = "LineageNpcsTex.Synthetic.UnportedGlow";
 const signal = () => new AbortController().signal;
 
 function listing(fields: Record<string, unknown> = {}) {
@@ -43,8 +43,8 @@ afterEach(() => { vi.unstubAllGlobals(); });
 describe("the actor material program listing", () => {
   it("parses a ported program and an unported root with its reasons", () => {
     expect(parseActorMaterialProgramListing(listing(), portedObject)).toEqual({ sourceObject: portedObject, programMaterialId: programSha256, rootPorted: true, gapReasons: [] });
-    expect(parseActorMaterialProgramListing(listing({ sourceObject: unportedObject, rootPorted: false, gapReasons: ["material-class-unported:Engine.TexOscillatorTriggered"] }), unportedObject))
-      .toMatchObject({ rootPorted: false, gapReasons: ["material-class-unported:Engine.TexOscillatorTriggered"] });
+    expect(parseActorMaterialProgramListing(listing({ sourceObject: unportedObject, rootPorted: false, gapReasons: ["material-class-unported:Engine.GlowModifier"] }), unportedObject))
+      .toMatchObject({ rootPorted: false, gapReasons: ["material-class-unported:Engine.GlowModifier"] });
   });
 
   it.each([
@@ -76,11 +76,11 @@ describe("the slot to program join of the materialPrograms catalog slice", () =>
   });
 
   it("names the gap reasons of an unported root, an unlisted object, a slot without an object and a listing that differs from its pin", async () => {
-    const unported = listing({ sourceObject: unportedObject, rootPorted: false, gapReasons: ["material-class-unported:Engine.TexOscillatorTriggered"] });
+    const unported = listing({ sourceObject: unportedObject, rootPorted: false, gapReasons: ["material-class-unported:Engine.GlowModifier"] });
     const { records, served } = await servedListings([listing(), unported]);
     served.set(records[0]!.manifest, new TextEncoder().encode("{}"));
     const programs = actorMaterialProgramsOfCatalog({ materialPrograms: records });
-    expect(await programs.joinSlot(unportedObject, signal())).toEqual({ kind: "gap", sourceObject: unportedObject, reasons: ["material-class-unported:Engine.TexOscillatorTriggered"] });
+    expect(await programs.joinSlot(unportedObject, signal())).toEqual({ kind: "gap", sourceObject: unportedObject, reasons: ["material-class-unported:Engine.GlowModifier"] });
     expect(await programs.joinSlot("Other.Material", signal())).toEqual({ kind: "gap", sourceObject: "Other.Material", reasons: [actorSlotMaterialUnlistedReason] });
     expect(await programs.joinSlot(null, signal())).toEqual({ kind: "gap", sourceObject: null, reasons: [actorSlotMaterialNoneReason] });
     const tampered = await programs.joinSlot(portedObject, signal());

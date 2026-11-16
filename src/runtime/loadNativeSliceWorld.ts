@@ -9,11 +9,15 @@ import { createNativeFlameReplayClock } from "../scene/world/nativeFlameReplayCl
 import type { NativeFlameReplayTime } from "../scene/world/nativeFlameMaterials";
 import type { SceneStartupProgress } from "../scene/guardSceneStartup";
 import { createNativeSkyPresentation, type NativeSkyPresentation } from "../scene/world/nativeSkyPresentation";
+import { loadWorldTimeOfDay, provideWorldTimeOfDay, type WorldTimeOfDay } from "../scene/world/worldTimeOfDay";
 import type { NativeSliceWorldSource } from "./nativeSliceWorldSource";
 import type { NativeSliceSettings } from "./createNativeSliceRuntime";
 import { failureText } from "./settledTasks";
 
 export type NativeFlameReplayClock = ReturnType<typeof createNativeFlameReplayClock>;
+
+const millisecondsPerSecond = 1000;
+const readPerformanceSeconds = () => performance.now() / millisecondsPerSecond;
 
 export class NativeSliceFlames {
   presentation: NativeFlamePresentation | undefined;
@@ -52,6 +56,7 @@ export interface NativeSliceWorld {
   origin: Vector3;
   worldFailure: string | undefined;
   flames: NativeSliceFlames;
+  timeOfDay: WorldTimeOfDay;
   sky: NativeSkyPresentation | null;
   skyFailure: string | null;
   release: () => void;
@@ -62,7 +67,6 @@ export interface NativeSliceWorldOptions {
   onProgress?: (progress: SceneStartupProgress) => void;
   validateLifetime: () => void;
 }
-
 
 async function prepareFlames(scene: Scene, section: NativeSection, settings: NativeSliceSettings, flames: NativeSliceFlames,
   signal: AbortSignal, options: NativeSliceWorldOptions): Promise<void> {
@@ -99,6 +103,10 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
   let origin = settings.origin, worldFailure: string | undefined;
   let releaseWorldSource: (() => void) | undefined;
   try {
+    const timeOfDay = await loadWorldTimeOfDay(scene, worldLifetime.signal, readPerformanceSeconds);
+    if (timeOfDay.status === "running") releases.push(() => timeOfDay.dispose());
+    releases.push(provideWorldTimeOfDay(scene, timeOfDay));
+    options.validateLifetime();
     try {
       options.onProgress?.({ stage: "assets", detail: "Preparing native terrain and scenery…" });
       const sourced = await worldSource(scene, camera, worldLifetime.signal);
@@ -138,14 +146,15 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
     if (section) {
       try {
         options.onProgress?.({ stage: "assets", detail: "Preparing original sky geometry and textures…" });
-        sky = await createNativeSkyPresentation(scene, worldLifetime.signal);
+        sky = await createNativeSkyPresentation(scene, worldLifetime.signal, section.materialUniforms ?? null,
+          timeOfDay.status === "running" ? () => timeOfDay.skyEnvironmentColours() : null);
         if (sky) releases.push(() => sky?.dispose());
       } catch (error) {
         options.validateLifetime();
         skyFailure = failureText(error, "Original sky preview failed.");
       }
     }
-    return { section, movers, origin, worldFailure, flames, sky, skyFailure, release };
+    return { section, movers, origin, worldFailure, flames, timeOfDay, sky, skyFailure, release };
   } catch (error) {
     release();
     throw error;

@@ -1,4 +1,4 @@
-import type { EnvironmentFogRanges, FogColourBytes, FogInfoColourKey, FogRangeBounds, L2FogInfoRecord } from "../../../materials/ue2/model/fog";
+import type { FogColourBytes, FogInfoColourKey, FogRangeBounds, L2FogInfoRecord } from "../../../materials/ue2/model/fog";
 import { FOG_RANGE_SLOT_COUNT } from "../../../materials/ue2/model/fog";
 import { TileLightingDecodeError } from "./tileLightingDecodeError";
 
@@ -17,7 +17,6 @@ const unresolvedProvenance = "unresolved";
 const ueZeroProvenance = "ue-zero";
 const fogRangeFields = Array.from({ length: FOG_RANGE_SLOT_COUNT }, (_, slot) => `FogRange${slot + 1}`);
 const requiredFogInfoFields = ["Location", "AffectRange", ...fogRangeFields, "Colors"];
-const environmentFogSection = "FOG";
 const colourChannels = ["R", "G", "B"] as const;
 const locationAxes = ["X", "Y", "Z"] as const;
 
@@ -79,20 +78,4 @@ function readFogInfo(value: unknown, position: number): DecodedFogInfo {
 
 export function decodeFogInfos(values: readonly unknown[]): DecodedFogInfo[] {
   return values.map(readFogInfo);
-}
-
-function sectionNumber(properties: readonly unknown[], key: string): number | null {
-  const property = properties.find(entry => isRecord(entry) && entry.key === key);
-  return isRecord(property) && isFiniteNumber(property.value) ? property.value : null;
-}
-
-export function decodeEnvironmentFogRanges(setup: unknown): EnvironmentFogRanges | null {
-  const sections = isRecord(setup) && Array.isArray(setup.sections) ? setup.sections : [];
-  const fog = sections.find(section => isRecord(section) && section.section === environmentFogSection);
-  if (!isRecord(fog) || !Array.isArray(fog.properties)) return null;
-  const properties = fog.properties as unknown[];
-  const read = (prefix: string) => Array.from({ length: FOG_RANGE_SLOT_COUNT }, (_, slot) => sectionNumber(properties, `${prefix}${slot + 1}`));
-  const startRanges = read("StartRange"), endRanges = read("EndRange");
-  if ([...startRanges, ...endRanges].some(value => value === null)) return null;
-  return { startRanges: startRanges as number[], endRanges: endRanges as number[] };
 }

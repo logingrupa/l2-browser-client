@@ -42,7 +42,7 @@ export const castPicker: SandboxPickerFactory = {
     });
     group.idEntry({
       label: "Cast skill by ID", testId: "sandbox-cast-skill", submitText: "Cast", hint, variables: nameCombobox.variables,
-      fields: [{ name: "skillId", label: "Skill ID", minimum: 0 }, { name: "level", label: "Level", minimum: minimumSkillLevel }],
+      fields: [{ name: "skillId", label: "Skill ID", kind: "integer", minimum: 0 }, { name: "level", label: "Level", kind: "integer", minimum: minimumSkillLevel }],
       onSubmit: values => { if (lifetime.active()) castSkill({ skillId: submittedInteger(values, "skillId"), level: submittedInteger(values, "level") }); },
     });
     return lifetime.release;

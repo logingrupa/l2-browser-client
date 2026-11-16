@@ -2,7 +2,7 @@ import { BLEND_CONSTANTS, type NamedBlendPair } from "./constants/blendConstants
 import type { BlendFactorPair, FogFamily } from "./constants/blendFactorTypes";
 import { FOG_CONSTANTS } from "./constants/fogConstants";
 import { readEnumOrdinal, readNumberField, readReferenceField } from "./materialFieldValues";
-import { MaterialProgramError, programField, programNode, type MaterialProgram, type MaterialProgramNode } from "./materialProgram";
+import { MaterialProgramError, programField, programNode, TEXTURE_COORDINATE_MODIFIER_CLASSES, type MaterialProgram, type MaterialProgramNode } from "./materialProgram";
 
 export type BlendSource = "final-blend" | "shader" | "texture" | "non-blending-root";
 
@@ -40,9 +40,7 @@ export interface ParticleDrawStyleBlend {
 }
 
 const modifierInnerField = "Material";
-const modifierClasses = new Set([
-  "Engine.ColorModifier", "Engine.TexPanner", "Engine.TexRotator", "Engine.TexOscillator", "Engine.TexScaler", "Engine.TexEnvMap", "Engine.TexCoordSource",
-]);
+const modifierClasses = new Set<string>(["Engine.ColorModifier", ...TEXTURE_COORDINATE_MODIFIER_CLASSES]);
 const invisiblePair: BlendFactorPair = { source: "zero", destination: "one" };
 const maximumModifierDepth = 128;
 

@@ -6,10 +6,11 @@ from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.material_resources import write_material_program_record
 from native_assets_lib.texture_package_118 import read_unreal_package
-from native_catalog.ue2 import FormatError, Reader
+from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import sha256_hex
 from native_store.store_paths import StorePathError, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
+from world.bsp_material_mapping_size import mapping_size_outcome, reference_client_class_default_value, surface_material_identities
 from world.level_model import LevelModelLayoutError, read_level_model
 from world.level_zones import read_level_zones, sky_zone_indices, zone_actor_export
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
@@ -25,14 +26,15 @@ from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
 from world.struct_property_tag_rules import read_struct_property_tag_rules
-from world.struct_property_values import decoded_binary_struct
+from world.struct_property_values import decode_binary_struct_hex
+from world.surface_material_programs import material_gap_row_status
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
 from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row
 
-SKY_STEP_ALGORITHM_VERSION = 3
+SKY_STEP_ALGORITHM_VERSION = 4
 SKY_STEP_NAME = 'sky'
 SKY_PRODUCT_NAME = 'sky.json'
 SKY_BUNDLE_KIND = 'native-sky-source-bundle'
@@ -46,13 +48,13 @@ UNPORTED_NODE_STATUS = 'unported'
 AUTHORED_PROVENANCE = 'authored'
 SKY_ROOT_PRESENTATION_FIELDS = ('Color', 'AlphaBlend', 'RenderTwoSided')
 COLOR_STRUCT_NAME = 'Color'
-RGBA_CHANNEL_NAMES = ('R', 'G', 'B', 'A')
-SOURCE_COLOR_ORDER = 'Core.dll binary Color struct B, G, R, A; recipes/world/struct-property-tag-rules.json'
+RGBA_CHANNEL_ORDER = ('R', 'G', 'B', 'A')
+SOURCE_COLOR_ORDER = ('serialized FColor bytes B, G, R, A; recipes/world/struct-property-tag-rules.json binary Color from Core.dll 9462f87a '
+                      'SerializeBin, research Q6 binary-member-order')
 SKY_LIMITATIONS = ['Frozen authored sky source state; no native visible-pixel parity is established.',
                    'Native runtime sky camera projection, parallax, far-plane/depth composition and live zone binding are unobserved.',
                    'Texture panner rates and stored matrices are retained in the material programs; no invented clock, phase or animation is applied.',
-                   'Source ColorModifier bytes are B, G, R, A and read through the Core.dll struct rules. Native time-of-day tint updates, sun, moon and '
-                   'lens-flare behavior are not reproduced.',
+                   'Source ColorModifier bytes are B, G, R, A (research Q6 binary-member-order). Native time-of-day tint updates, sun, moon and lens-flare behavior are not reproduced.',
                    'GLB source preview maps stored color/alpha declarations to unlit factors; native Shader/ColorModifier blending and BSP two-sided '
                    'precedence remain unverified.',
                    'Original mip blocks are preserved; PNG is an ordinary BC1/BC3 decode of mip 0, without alpha/channel repair, recoloring or generated '
@@ -68,15 +70,22 @@ class SkyMaterialPackages:
     def __init__(self, client):
         self.client, self.map_sources, self.packages = client, MapSources(client), {}
 
-    def resolve(self, identity):
-        candidates = self.map_sources.paths.get(identity.split('.')[0].casefold(), [])
-        if len(candidates) != 1:
-            raise FormatError(f'sky material package of {identity} is missing or ambiguous: {candidates}')
-        relative = candidates[0]
+    @property
+    def paths(self):
+        return self.map_sources.paths
+
+    def get(self, relative):
         if relative not in self.packages:
             path = require_lock_equal_client_path(self.client, relative)
             self.packages[relative] = read_unreal_package(path.read_bytes(), path.name)
-        package = self.packages[relative]
+        return self.packages[relative]
+
+    def resolve(self, identity):
+        candidates = self.paths.get(identity.split('.')[0].casefold(), [])
+        if len(candidates) != 1:
+            raise FormatError(f'sky material package of {identity} is missing or ambiguous: {candidates}')
+        relative = candidates[0]
+        package = self.get(relative)
         matches = [item for item in package.exports if item['object'].casefold() == identity.casefold()]
         if len(matches) != 1:
             raise FormatError(f'sky material export {identity} is missing or ambiguous in {relative}')
@@ -139,11 +148,10 @@ def presentation_field_gap(fields):
     return None
 
 
-def authored_color_rgba(color_value):
-    payload = bytes.fromhex(color_value['rawHex'])
+def authored_colour_rgba(color_value):
     layout = read_struct_property_tag_rules().binary_struct_layout(COLOR_STRUCT_NAME)
-    channels = decoded_binary_struct(Reader(payload, 0, len(payload)), layout, COLOR_STRUCT_NAME)
-    return [channels[channel] for channel in RGBA_CHANNEL_NAMES]
+    channels = decode_binary_struct_hex(color_value['rawHex'], layout)
+    return [channels[channel] for channel in RGBA_CHANNEL_ORDER]
 
 
 def alpha_source(field):
@@ -154,6 +162,7 @@ class SkyRootConversion:
     def __init__(self, client, store_root, class_work_root, gaps):
         self.packages, self.store_root, self.gaps = SkyMaterialPackages(client), store_root, gaps
         self.class_work_root, self.class_scripts = class_work_root, ReferenceClientClassScripts(client)
+        self.class_default_value = reference_client_class_default_value(self.class_work_root, self.class_scripts)
         self.texture_files, self.material_files, self.materials = {}, {}, []
 
     def add_texture_files(self, files):
@@ -194,10 +203,15 @@ class SkyRootConversion:
             return None
         if drawn_texture['object'] not in products:
             return None
+        mapping_size, mapping_gap_reasons = mapping_size_outcome(identity, self.packages, self.class_default_value)
+        for reason in mapping_gap_reasons:
+            self.gaps.add(material_gap_row_status(reason), reason, root_export['object'])
+        if mapping_size is None:
+            return None
         receipt, files = products[drawn_texture['object']]
         self.add_texture_files(files)
-        return SkyRootSurface(root_export['object'], identity, authored_color_rgba(fields['Color']['value']), fields['AlphaBlend']['value'],
-                              alpha_source(fields['AlphaBlend']), fields['RenderTwoSided']['value'], receipt)
+        return SkyRootSurface(root_export['object'], identity, authored_colour_rgba(fields['Color']['value']), fields['AlphaBlend']['value'],
+                              alpha_source(fields['AlphaBlend']), fields['RenderTwoSided']['value'], receipt, mapping_size)
 
 
 def sky_counts(parts):
@@ -243,12 +257,14 @@ def convert_tile_sky(project_root, client, tile_id, lock_record, package, level,
         gaps.add(GAP_STATUS, SKY_LOCATION_UNRESOLVED_REASON, sky_actor['object'])
         return TileSkyConversion(None, None, [], [])
     conversion = SkyRootConversion(client, lane_store_root(project_root, WORLD_LANE_NAME), lane_work_root(project_root, WORLD_LANE_NAME), gaps)
-    roots = [root for identity in sky_zone_material_identities(package, level.model, zone_index) if (root := conversion.convert(identity)) is not None]
+    material_of_surface = surface_material_identities(package, level.model, conversion.class_work_root, conversion.class_scripts)
+    roots = [root for identity in sky_zone_material_identities(material_of_surface, level.model, zone_index)
+             if (root := conversion.convert(identity)) is not None]
     package_paths = sorted(conversion.packages.packages)
     material_files = [conversion.material_files[path] for path in sorted(conversion.material_files)]
     if not roots:
         return TileSkyConversion(None, None, material_files, package_paths)
-    parts = build_sky_zone_parts(package, level.model, zone_index, roots)
+    parts = build_sky_zone_parts(package, material_of_surface, level.model, zone_index, roots)
     snapshot = sky_snapshot(tile_id, level, zone_index, sky_actor, location, actor_properties_record, parts, conversion.materials, lock_record)
     files, counts = sky_bundle_files(snapshot, conversion.texture_files)
     return TileSkyConversion(files, counts, material_files, package_paths)

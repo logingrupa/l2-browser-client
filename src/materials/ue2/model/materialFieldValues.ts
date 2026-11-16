@@ -2,7 +2,6 @@ import { COLOUR_CONSTANTS } from "./constants/combinerConstants";
 import { MaterialProgramError, programField, type MaterialFieldValue, type MaterialProgramNode } from "./materialProgram";
 
 export type ColourUnits = readonly [number, number, number, number];
-export type ColourRgbUnits = readonly [number, number, number];
 export interface RotatorUnits { readonly pitch: number; readonly yaw: number; readonly roll: number }
 export type MaterialReference =
   | { readonly kind: "none" }
@@ -23,9 +22,11 @@ function isValueRecord(value: MaterialFieldValue): value is { readonly [member: 
 
 function typedFieldReader<Value>(unsetPropertyValue: () => Value, decodeSetValue: (value: SetFieldValue, refuse: RefuseField) => Value): MaterialFieldReader<Value> {
   return (node, fieldName) => {
-    const setValue = programField(node, fieldName)?.value ?? null;
-    if (setValue === null) return unsetPropertyValue();
-    return decodeSetValue(setValue, message => { throw new MaterialProgramError(`Material program: ${node.id}.${fieldName} ${message}`); });
+    const refuse: RefuseField = message => { throw new MaterialProgramError(`Material program: ${node.id}.${fieldName} ${message}`); };
+    const field = programField(node, fieldName);
+    if (field === null) return refuse(`is not a field of ${node.class}.`);
+    if (field.value === null) return unsetPropertyValue();
+    return decodeSetValue(field.value, refuse);
   };
 }
 

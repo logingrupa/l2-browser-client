@@ -6,9 +6,11 @@ docs/parts/player-characters/character-census.json text eol=lf
 recipes/world/bsp-model-licensee-rules.json text eol=lf
 recipes/world/struct-property-tag-rules.json text eol=lf
 recipes/world/minimap-radar-route.json text eol=lf
+recipes/world/environment-native-rules.json text eol=lf
 recipes/data/table-layouts/*.xml text eol=lf
 tests/fixtures/golden/** -text
 tests/fixtures/lane-store/** -text
 tests/fixtures/typed-payload/** -text
 scripts/vendor/** -text
 tests/fixtures/material-programs/** -text
+tests/fixtures/environment/** -text

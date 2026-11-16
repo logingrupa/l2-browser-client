@@ -16,6 +16,8 @@ LIGHT_CLASS_IMPORT, FOG_INFO_CLASS_IMPORT, LEVEL_INFO_CLASS_IMPORT, INSTANCE_CLA
 PROPERTY_NAMES = ['LightBrightness']
 SCENE_LIGHTS = ((1, b'\x05', 0), (2, b'\x0a\x01', 1))
 ENVIRONMENT_LIGHTS = ((1, b'\xff', 1),)
+INSTANCE_COLOURS = bytes((27, 27, 27, 255, 1, 2, 3, 4))
+INSTANCE_COLOUR_REVISION = 2
 SECTOR_LIGHTS = ((1, b'\x03\x00'),)
 SECTOR_SHADOW_MAPS = (bytes(range(17)) * 17, bytes(range(17, 34)) * 17)
 SECTOR_TEXTURE_INFO_WORDS = 3
@@ -46,7 +48,8 @@ def light_entry_bytes(entries):
 
 
 def static_mesh_instance_body(offset, names):
-    return (compact(names['None']) + compact(2) + bytes(8) + struct.pack('<i', 0) + light_entry_bytes(SCENE_LIGHTS)
+    return (compact(names['None']) + compact(len(INSTANCE_COLOURS) // 4) + INSTANCE_COLOURS + struct.pack('<i', INSTANCE_COLOUR_REVISION)
+            + light_entry_bytes(SCENE_LIGHTS)
             + light_entry_bytes(ENVIRONMENT_LIGHTS) + compact(0) + compact(0))
 
 

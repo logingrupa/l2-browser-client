@@ -1,0 +1,8 @@
+{
+  "file": "SyntheticEngine.u",
+  "packageVersion": 123,
+  "licensee": 28,
+  "exports": [
+    {"name": "DefaultTexture", "class": "Engine.Texture", "properties": [{"name": "USize", "int": 64}, {"name": "VSize", "int": 32}]}
+  ]
+}

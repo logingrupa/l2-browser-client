@@ -2,9 +2,11 @@ import { COMBINER_CONSTANTS } from "./constants/combinerConstants";
 import { blendFactorsForMaterial, type MaterialBlend, type ResolvedMaterialBlend } from "./blendTable";
 import { fieldIsUnported, readBooleanField, readEnumOrdinal, readNumberField, readReferenceField, type MaterialReference } from "./materialFieldValues";
 import { fadeColourGapReason } from "./modifiers";
-import { programNode, type MaterialProgram, type MaterialProgramNode, type MaterialTextureImage } from "./materialProgram";
+import { programNode, TEXTURE_COORDINATE_MODIFIER_CLASSES, type MaterialProgram, type MaterialProgramNode, type MaterialTextureImage } from "./materialProgram";
 
 export type ColourSourceKind = "constant-colour" | "fade-colour" | "color-modifier";
+
+type CombinerMaterialSlot = "material1" | "material2";
 
 export type ColourExpression =
   | { readonly kind: "texture"; readonly samplerIndex: number }
@@ -16,7 +18,9 @@ export type ColourExpression =
       readonly colourOperation: number;
       readonly alphaOperation: number;
       readonly colourMultiplier: 1 | 2 | 4;
-      readonly invertMask: boolean;
+      readonly firstEmittedMaterial: CombinerMaterialSlot;
+      readonly alphaComplementedMaterial: CombinerMaterialSlot | null;
+      readonly maskAlphaComplemented: boolean;
       readonly material1: ColourExpression;
       readonly material2: ColourExpression;
       readonly mask: ColourExpression | null;
@@ -29,7 +33,6 @@ export type ColourExpression =
       readonly specularityMask: ColourExpression | null;
       readonly selfIllumination: ColourExpression | null;
       readonly selfIlluminationMask: ColourExpression | null;
-      readonly modulateSpecular2X: boolean;
     };
 
 export interface MaterialSampler {
@@ -68,7 +71,7 @@ export interface DiagnosticMaterialStagePlan {
 
 export type MaterialStagePlan = CompiledMaterialStagePlan | DiagnosticMaterialStagePlan;
 
-const textureCoordinateModifierClasses = new Set(["Engine.TexPanner", "Engine.TexRotator", "Engine.TexOscillator", "Engine.TexScaler", "Engine.TexCoordSource", "Engine.TexEnvMap"]);
+const textureCoordinateModifierClasses = new Set<string>(TEXTURE_COORDINATE_MODIFIER_CLASSES);
 const clampModeOrdinal = 1;
 const maximumCompileDepth = 64;
 const maximumAnimationFrames = 256;
@@ -88,19 +91,28 @@ function fail(state: CompileState, reason: string): ColourExpression {
   return { kind: "white" };
 }
 
+function isReviewedTexture(node: MaterialProgramNode): boolean {
+  return node.status === "reviewed" && node.class === "Engine.Texture";
+}
+
 function animationFrames(state: CompileState, first: MaterialProgramNode): MaterialProgramNode[] | null {
   const frames = [first];
-  for (let reference = readReferenceField(first, "AnimNext"); reference.kind !== "none"; reference = readReferenceField(frames.at(-1)!, "AnimNext")) {
+  let reference = readReferenceField(first, "AnimNext");
+  while (reference.kind !== "none") {
     if (reference.kind === "external") {
       fail(state, `material-reference-external:${reference.object}`);
       return null;
     }
-    if (reference.nodeId === first.id) return frames;
-    if (frames.some(frame => frame.id === reference.nodeId) || frames.length >= maximumAnimationFrames) {
+    const nextNodeId = reference.nodeId;
+    if (nextNodeId === first.id) return frames;
+    if (frames.some(frame => frame.id === nextNodeId) || frames.length >= maximumAnimationFrames) {
       fail(state, `texture-animation-chain-unclosed:${first.id}`);
       return null;
     }
-    frames.push(programNode(state.program, reference.nodeId));
+    const nextFrame = programNode(state.program, nextNodeId);
+    frames.push(nextFrame);
+    if (!isReviewedTexture(nextFrame)) return frames;
+    reference = readReferenceField(nextFrame, "AnimNext");
   }
   return frames;
 }
@@ -108,7 +120,7 @@ function animationFrames(state: CompileState, first: MaterialProgramNode): Mater
 function compileTexture(state: CompileState, node: MaterialProgramNode, modifiers: readonly string[]): ColourExpression {
   const frames = animationFrames(state, node);
   if (!frames) return { kind: "white" };
-  const unreviewedFrame = frames.find(frame => frame.status !== "reviewed" || frame.class !== "Engine.Texture");
+  const unreviewedFrame = frames.find(frame => !isReviewedTexture(frame));
   if (unreviewedFrame) return fail(state, `texture-animation-frame-unreviewed:${unreviewedFrame.id}`);
   const missingImage = frames.find(frame => frame.image === null);
   if (missingImage) return fail(state, `texture-image-absent:${missingImage.id}`);
@@ -149,32 +161,54 @@ function compileShader(state: CompileState, node: MaterialProgramNode, modifiers
     specularityMask: compileReference(state, node, "SpecularityMask", modifiers, depth),
     selfIllumination: compileReference(state, node, "SelfIllumination", modifiers, depth),
     selfIlluminationMask: compileReference(state, node, "SelfIlluminationMask", modifiers, depth),
-    modulateSpecular2X: readBooleanField(node, "ModulateSpecular2X"),
   };
 }
 
 const combinerColourOperationCount = 8;
 const combinerAlphaOperationCount = 5;
-const maskReadingColourOperations = new Set([5, 6, 7]);
 const absentCombinerMaterial: ColourExpression = { kind: COMBINER_CONSTANTS.absentMaterial.runtimeDefault };
+
+function maskAliasedMaterial(node: MaterialProgramNode): CombinerMaterialSlot | null {
+  const mask = readReferenceField(node, "Mask");
+  if (mask.kind !== "node") return null;
+  const maskIsField = (fieldName: string) => {
+    const material = readReferenceField(node, fieldName);
+    return material.kind === "node" && material.nodeId === mask.nodeId;
+  };
+  if (maskIsField("Material1")) return "material1";
+  if (maskIsField("Material2")) return "material2";
+  return null;
+}
+
+function firstEmittedMaterial(material1: ColourExpression, material2: ColourExpression, invertMask: boolean, maskAlias: CombinerMaterialSlot | null): CombinerMaterialSlot {
+  const material1IsBitmap = material1.kind === "texture", material2IsBitmap = material2.kind === "texture";
+  if (material1IsBitmap && !material2IsBitmap) return "material2";
+  if (material1IsBitmap && material2IsBitmap && invertMask && maskAlias === "material2") return "material2";
+  return "material1";
+}
 
 function compileCombiner(state: CompileState, node: MaterialProgramNode, modifiers: readonly string[], depth: number): ColourExpression {
   const colourOperation = readEnumOrdinal(node, "CombineOperation");
   const alphaOperation = readEnumOrdinal(node, "AlphaOperation");
   if (colourOperation >= combinerColourOperationCount) return fail(state, `material-combiner-operation-unknown:CombineOperation=${colourOperation}`);
   if (alphaOperation >= combinerAlphaOperationCount) return fail(state, `material-combiner-operation-unknown:AlphaOperation=${alphaOperation}`);
-  if (maskReadingColourOperations.has(colourOperation) && readReferenceField(node, "Mask").kind === "none") {
-    return fail(state, `material-combiner-mask-absent:${node.id}`);
-  }
+  const material1 = compileReference(state, node, "Material1", modifiers, depth) ?? absentCombinerMaterial;
+  const material2 = compileReference(state, node, "Material2", modifiers, depth) ?? absentCombinerMaterial;
+  const mask = compileReference(state, node, "Mask", modifiers, depth);
+  const invertMask = readBooleanField(node, "InvertMask");
+  const maskAlias = maskAliasedMaterial(node);
+  const firstEmitted = firstEmittedMaterial(material1, material2, invertMask, maskAlias);
   return {
     kind: "combiner",
     colourOperation,
     alphaOperation,
     colourMultiplier: readBooleanField(node, "Modulate4X") ? 4 : readBooleanField(node, "Modulate2X") ? 2 : 1,
-    invertMask: readBooleanField(node, "InvertMask"),
-    material1: compileReference(state, node, "Material1", modifiers, depth) ?? absentCombinerMaterial,
-    material2: compileReference(state, node, "Material2", modifiers, depth) ?? absentCombinerMaterial,
-    mask: compileReference(state, node, "Mask", modifiers, depth),
+    firstEmittedMaterial: firstEmitted,
+    alphaComplementedMaterial: invertMask && maskAlias === firstEmitted ? firstEmitted : null,
+    maskAlphaComplemented: invertMask && mask !== null && (maskAlias !== null || mask.kind !== "colour-source"),
+    material1,
+    material2,
+    mask,
   };
 }
 

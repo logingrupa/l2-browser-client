@@ -10,30 +10,29 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
-from reference_client_guard import require_reference_client
 from world.bsp_lightmaps import read_bsp_lightmaps
 from world.bsp_step import sealed_bsp_chunks
 from world.bsp_visibility_step import tile_node_ranges
 from world.collision_step import sealed_collision
-from world.environment_program import environment_lock_input_records, read_environment_program
 from world.level_model import LevelModelLayoutError, read_level_model
 from world.level_zones import read_level_zones
 from world.light_actors import read_lighting_actors, read_static_mesh_light_lists, reference_client_class_chains
-from world.lighting_payload import (bsp_lightmap_arrays, lighting_records_array, static_mesh_light_list_arrays, terrain_lighting_arrays,
-                                    typed_payload_byte_count)
+from world.lighting_payload import (bsp_lightmap_arrays, lighting_records_array, static_mesh_light_list_arrays, terrain_intensity_map_arrays,
+                                    terrain_lighting_arrays, typed_payload_byte_count)
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
 from world.struct_property_tag_rules import read_struct_property_tag_rules
+from world.terrain_intensity_maps import read_terrain_intensity_maps
 from world.terrain_lighting import read_terrain_lighting
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 
-LIGHTING_STEP_ALGORITHM_VERSION = 3
+LIGHTING_STEP_ALGORITHM_VERSION = 4
 LIGHTING_STEP_NAME = 'lighting'
 LIGHTING_PRODUCT_NAME = 'lighting.json'
 TILE_LIGHTING_FOLDER = 'native-tile-lighting'
@@ -41,7 +40,8 @@ LIGHTING_RECORDS_KIND = 'native-tile-lighting-records'
 LIGHTING_RECORDS_SCHEMA_VERSION = 1
 LIGHTING_RULES_PATH = Path(__file__).resolve().parents[2] / 'recipes' / 'world' / 'lighting-rules.json'
 APPLIED_LIGHTING_RULES = ('lightmap-render-section-texture', 'lightmap-record-layout', 'lightmap-page-layout', 'lightmap-render-vertex-uv',
-                          'bsp-lightmap-slot', 'static-mesh-instance-layout', 'terrain-sector-lighting-layout', 'time-slot-center')
+                          'bsp-lightmap-slot', 'bsp-section-sun-affect', 'static-mesh-instance-layout', 'terrain-sector-lighting-layout',
+                          'terrain-intensity-map-layout', 'time-slot-center')
 LIGHTING_PAYLOAD_TOO_LARGE_REASON = 'lighting-payload-too-large'
 WATER_VOLUME_UNLINKED_REASON_PREFIX = 'lighting-water-volume-unlinked:'
 CLASS_CHAIN_UNRESOLVED_REASON_PREFIX = 'lighting-class-chain-unresolved:'
@@ -82,7 +82,7 @@ def lighting_unit(project_root, tile_id, lock_record):
     collision_fingerprint, collision = sealed_collision(project_root, tile_id, lock_record)
     config = {'chunksFingerprint': chunks_fingerprint, 'bspFingerprint': bsp_fingerprint, 'collisionFingerprint': collision_fingerprint,
               'rulesSha256': sha256_hex(canonical_json_bytes(load_lighting_rules())), 'structPropertyRulesSha256': read_struct_property_tag_rules().sha256}
-    inputs = sorted([*locked_input_records([tile_map_path(tile_id)]), *environment_lock_input_records()], key=lambda record: record['path'])
+    inputs = locked_input_records([tile_map_path(tile_id)])
     ledger = lighting_ledger(project_root)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     return LightingUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, raw_products, chunk_plan, bsp, collision)
@@ -128,36 +128,37 @@ def water_volume_links(water_volumes, collision):
     return links, reasons
 
 
-def lighting_records(actors, zones, water_volumes, program, rules):
+def lighting_records(actors, zones, water_volumes, rules):
     return {'schemaVersion': LIGHTING_RECORDS_SCHEMA_VERSION, 'kind': LIGHTING_RECORDS_KIND, 'lights': [light.to_record() for light in actors.lights],
             'fogInfos': [fog_info.to_record() for fog_info in actors.fog_infos],
             'levelInfos': [level_info.to_record() for level_info in actors.level_infos], 'zones': [zone.to_record() for zone in zones],
-            'waterVolumes': water_volumes, 'environmentProgram': program, 'rules': rules['rows']}
+            'waterVolumes': water_volumes, 'rules': rules['rows']}
 
 
-def tile_lighting_payload(package, client, unit, class_defaults):
+def tile_lighting_payload(package, unit, class_defaults):
     model = read_level_model(package).model
+    zones = read_level_zones(package, model, class_defaults)
     lightmaps = read_bsp_lightmaps(package, model)
-    bsp_arrays, reasons, bsp_counts = bsp_lightmap_arrays(package, lightmaps, model, tile_node_ranges(unit.bsp, unit.chunk_plan))
+    bsp_arrays, reasons, bsp_counts = bsp_lightmap_arrays(package, lightmaps, model, tile_node_ranges(unit.bsp, unit.chunk_plan), zones)
     actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))
     class_chains = reference_client_class_chains(class_defaults)
     lighting_actors = read_lighting_actors(package, model, actors, class_chains)
     light_lists = read_static_mesh_light_lists(package, actors)
-    sectors = read_terrain_lighting(package, native_terrain(package))
-    program = read_environment_program(require_reference_client(client))
+    terrain = native_terrain(package)
+    sectors, intensity_maps = read_terrain_lighting(package, terrain), read_terrain_intensity_maps(package, terrain)
     water_volumes, water_reasons = water_volume_links(lighting_actors.water_volumes, unit.collision)
-    records = lighting_records(lighting_actors, read_level_zones(package, model, class_defaults), water_volumes, program, load_lighting_rules())
-    arrays = [*bsp_arrays, *static_mesh_light_list_arrays(light_lists), *terrain_lighting_arrays(sectors), lighting_records_array(records)]
+    records = lighting_records(lighting_actors, zones, water_volumes, load_lighting_rules())
+    arrays = [*bsp_arrays, *static_mesh_light_list_arrays(light_lists), *terrain_lighting_arrays(sectors), *terrain_intensity_map_arrays(intensity_maps),
+              lighting_records_array(records)]
     counts = {'bspLightmaps': bsp_counts, 'lights': len(lighting_actors.lights), 'fogInfos': len(lighting_actors.fog_infos),
               'levelInfos': len(lighting_actors.level_infos), 'zones': len(records['zones']),
               'waterVolumes': len(records['waterVolumes']), 'staticMeshLightLists': len(light_lists),
               'staticMeshSceneLights': sum(len(light_list.scene_lights) for light_list in light_lists),
               'staticMeshEnvironmentLights': sum(len(light_list.environment_lights) for light_list in light_lists),
               'terrainSectors': len(sectors), 'terrainSectorLights': sum(len(sector.lights) for sector in sectors),
-              'terrainShadowMaps': sum(len(sector.shadow_maps) for sector in sectors),
-              'environmentTypes': len(program['environmentTypes']), 'unresolvedEnvironmentFiles': program['unresolved']}
+              'terrainShadowMaps': sum(len(sector.shadow_maps) for sector in sectors), 'terrainIntensityMaps': len(intensity_maps.times)}
     chain_reasons = class_chain_unresolved_reasons(lighting_actors.unresolved_classes)
-    return arrays, sorted({*reasons, *program['unresolved'], *water_reasons, *chain_reasons}), counts
+    return arrays, sorted({*reasons, *water_reasons, *chain_reasons}), counts
 
 
 def run_lighting_step(project_root, client_root, tile_id):
@@ -177,7 +178,7 @@ def run_lighting_step(project_root, client_root, tile_id):
     package = read_locked_map_package(client, tile_id, lock_record)
     class_defaults = ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client))
     try:
-        arrays, reasons, counts = tile_lighting_payload(package, client, unit, class_defaults)
+        arrays, reasons, counts = tile_lighting_payload(package, unit, class_defaults)
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, LIGHTING_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except FormatError as error:

@@ -9,12 +9,12 @@ import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 import { drawNativeSessionSeed } from "../../assets/native/nativeSessionSeed";
 import { loadNativeMaterial } from "../../materials/ue2/babylon/loadNativeMaterial";
+import type { NativeMaterialUniforms } from "../../materials/ue2/babylon/material";
 import { validateSectionGlb } from "./loadNativeSection";
-import { selectNativeSkyLiteral, type NativeEnvironmentTables } from "./nativeEnvironmentTables";
-import { bindNativeSkyLibraryMaterials, loadNativeSkyMaterialsListing, type NativeSkySurface } from "./nativeSkyLibraryMaterials";
-import { createNativeSkyLiteralComparison } from "./nativeSkyLiteralComparison";
+import { bindNativeSkyLibraryMaterials, loadNativeSkyMaterialsListing, type NativeSkyLibraryBinding } from "./nativeSkyLibraryMaterials";
 import { readSelectedTileSkySource, type NativeSkyBundleFile } from "./nativeTileSkySource";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
+import type { SkyEnvironmentColour } from "./worldTimeOfDay";
 
 export const nativeSkySource = {
   manifestSha256: "f7a0b5ef1463d0b5fe47b210585e00d6011be3c3e3bddfec76df0eb08042f80b",
@@ -61,7 +61,8 @@ async function loadSkySource(signal: AbortSignal, tileSelected: boolean): Promis
     tileSkyGap: tileSky.gapReason, snapshot: tileSky.snapshot, bytes };
 }
 
-export async function createNativeSkyPresentation(scene: Scene, signal: AbortSignal) {
+export async function createNativeSkyPresentation(scene: Scene, signal: AbortSignal, materialUniforms: (() => NativeMaterialUniforms) | null,
+  environmentColours: (() => readonly SkyEnvironmentColour[]) | null) {
   signal.throwIfAborted();
   const tileSelected = selectedNativeTileIdentity(globalThis.location) !== null;
   const candidates = tileSelected ? [] : scene.transformNodes.filter(node => node.metadata?.nativeSkyRoot);
@@ -103,11 +104,13 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     if (!authored) { container?.dispose(); skyRoot.dispose(); }
     throw new Error(`Sky snapshot requires one material mesh for each of its ${source.materialRoots} material roots.`);
   }
-  let librarySurfaces: NativeSkySurface[];
+  const materials = [...new Set(skyMeshes.map(mesh => mesh.material!))].map(material => ({ material,
+    fog: material.fogEnabled, depthWrite: material.disableDepthWrite }));
+  let libraryBinding: NativeSkyLibraryBinding;
   try {
     const listing = source.snapshot !== null && source.tileId !== null ? await loadNativeSkyMaterialsListing(source.snapshot, source.tileId, signal) : null;
-    librarySurfaces = await bindNativeSkyLibraryMaterials({ scene, meshes: skyMeshes, listing, sessionSeed: drawNativeSessionSeed(),
-      loadProgram: loadNativeMaterial, signal });
+    libraryBinding = await bindNativeSkyLibraryMaterials({ scene, meshes: skyMeshes, listing, sessionSeed: drawNativeSessionSeed(), materialUniforms,
+      environmentColours, loadProgram: loadNativeMaterial, signal });
   } catch (error) {
     if (!authored) { container?.dispose(); skyRoot.dispose(); }
     throw error;
@@ -116,11 +119,8 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
   const savedRoot = { position: skyRoot.position.clone(), z: skyRoot.scaling.z };
   const savedMeshes = skyMeshes.map(mesh => ({ mesh, group: mesh.renderingGroupId, pickable: mesh.isPickable,
     active: mesh.alwaysSelectAsActiveMesh, orientation: mesh instanceof Mesh ? mesh.sideOrientation : null }));
-  const materials = [...new Set(skyMeshes.map(mesh => mesh.material!))].map(material => ({ material,
-    fog: material.fogEnabled, depthWrite: material.disableDepthWrite }));
   const autoClear = { ...scene.getAutoClearDepthStencilSetup(1) };
   let disposed = false;
-  let comparison: ReturnType<typeof createNativeSkyLiteralComparison> | undefined;
   const drawWorldMeshAfterSkyRoom = (mesh: AbstractMesh) => {
     if (skySet.has(mesh) || mesh.renderingGroupId !== 0 || worldGroups.has(mesh)) return;
     worldGroups.set(mesh, 0); mesh.renderingGroupId = 1;
@@ -148,7 +148,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
   });
   const dispose = () => {
     if (disposed) return; disposed = true;
-    comparison?.dispose();
+    libraryBinding.dispose();
     signal.removeEventListener("abort", dispose);
     scene.onDisposeObservable.remove(onDispose); scene.onBeforeCameraRenderObservable.remove(followCameraAndSeparateMeshesAddedBeforeDraw); scene.onNewMeshAddedObservable.remove(added);
     meshesNotifiedSinceLastDraw.clear();
@@ -162,28 +162,18 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
         if (entry.mesh instanceof Mesh && entry.orientation !== null) entry.mesh.sideOrientation = entry.orientation;
       }
     } else { container?.dispose(); skyRoot.dispose(); }
-    for (const surface of librarySurfaces) surface.library?.dispose();
   };
   const onDispose = scene.onDisposeObservable.addOnce(dispose);
   signal.addEventListener("abort", dispose, { once: true });
   return { dispose,
-    applyEnvironmentLiteral(data: NativeEnvironmentTables, file: string, key: string) {
-      if (disposed) throw new Error("Sky presentation was disposed.");
-      const literal = selectNativeSkyLiteral(data, file, key);
-      comparison ??= createNativeSkyLiteralComparison(librarySurfaces);
-      comparison.apply(literal);
-    },
-    restoreEnvironmentLiteral() { comparison?.restore(); },
     inspection: () => ({ status: disposed ? "disposed" : "source-snapshot", authored,
     manifestSha256: source.manifestSha256, sourceId: source.sourceId, tileId: source.tileId, tileSkyGap: source.tileSkyGap,
     meshes: skyMeshes.length, vertices: skyMeshes.reduce((n, mesh) => n + mesh.getTotalVertices(), 0),
     triangles: skyMeshes.reduce((n, mesh) => n + mesh.getTotalIndices() / 3, 0),
-    texturesReady: materials.every(entry => entry.material.getActiveTextures().every(texture => texture.isReady())),
-    mode: "source sky room; browser camera-follow background; optional literal color comparison",
-    comparison: comparison?.inspection() ?? null,
-    librarySurfaces: librarySurfaces.map(surface => ({ mesh: surface.mesh.name, sourceReference: surface.sourceReference,
-      programMaterialId: surface.programMaterialId, status: surface.status, reasons: surface.reasons })),
-    nativeTimeOfDay: "unverified", nativeCloudMotion: "unverified", nativeVisibleParity: "unverified",
+    texturesReady: skyMeshes.every(mesh => mesh.material?.getActiveTextures().every(texture => texture.isReady()) ?? true),
+    mode: "source sky room; browser camera-follow background",
+    librarySurfaces: libraryBinding.surfaces, environmentColours: libraryBinding.environmentColours(),
+    nativeCloudMotion: "unverified", nativeVisibleParity: "unverified",
   }) };
 }
 

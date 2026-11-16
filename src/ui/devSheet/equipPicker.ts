@@ -29,7 +29,7 @@ export const equipPicker: SandboxPickerFactory = {
     const bodyPartEntry = group.idEntry({
       label: "Body part slot", testId: "sandbox-equip-body-part", submitText: "Use slot",
       hint: "Builds the slot for a decoded body_part value through equipmentSlotForBodyPart. The meaning of each body_part value is not decoded.",
-      fields: [{ name: "bodyPart", label: "body_part value", minimum: 0 }],
+      fields: [{ name: "bodyPart", label: "body_part value", kind: "integer", minimum: 0 }],
       onSubmit: values => {
         if (!lifetime.active()) return;
         const bodyPart = submittedInteger(values, "bodyPart");
@@ -60,7 +60,7 @@ export const equipPicker: SandboxPickerFactory = {
     });
     group.idEntry({
       label: "Equip item by ID", testId: "sandbox-equip-item", submitText: "Equip", hint, variables: nameCombobox.variables,
-      fields: [{ name: "itemId", label: "Item ID", minimum: 0 }],
+      fields: [{ name: "itemId", label: "Item ID", kind: "integer", minimum: 0 }],
       onSubmit: values => { if (lifetime.active()) equipItem(submittedInteger(values, "itemId")); },
     });
     return lifetime.release;

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { desktopViewport } from "./browserViewports";
 import { collectBrowserErrors } from "./browserErrors";
 import { captureStoreName, captureStoreRequirement, captureTileId, captureTileRecord, captureTileRequirement, openCaptureTile } from "./captureTileRoute";
+import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
 const alphaChangeRadians = .5;
 const radiusBeyondUpperLimitMetres = 1;
@@ -9,6 +10,7 @@ const framingGameMinutes = 720;
 
 test.skip(process.env.NATIVE_STORE_ROOT !== captureStoreName, captureStoreRequirement);
 test.skip(captureTileRecord === null, captureTileRequirement);
+test.skip(!environmentTimeTablesStaged(captureStoreName), environmentTimeTablesRequirement);
 
 async function readSnapshotCamera(page: Page) {
   return page.evaluate(() => {
@@ -42,7 +44,7 @@ async function setCameraPose(page: Page, pose: { target: number[]; alpha: number
 test.describe("sandbox framing for side-by-side halves", () => {
   test.use({ viewport: desktopViewport });
 
-  test("setCameraPose round-trips the snapshot camera read-out and refuses a radius beyond the limit; set-environment moves the clock through the adapter", async ({ page }) => {
+  test("setCameraPose round-trips the snapshot camera read-out and refuses a radius beyond the limit; set-server-time moves the world time of day through the adapter", async ({ page }) => {
     test.setTimeout(300_000);
     const errors = collectBrowserErrors(page);
     await openCaptureTile(page);
@@ -59,15 +61,15 @@ test.describe("sandbox framing for side-by-side halves", () => {
     }
 
     const environmentBefore = await readEnvironmentInspection(page);
-    if (!environmentBefore.clock) throw new Error(`Tile ${captureTileId} has no environment clock: ${environmentBefore.lastRejectedEvent ?? "no lighting resource"}.`);
-    const currentEnvironmentType = environmentBefore.clock.environmentType;
-    await page.evaluate(([gameMinutes, environmentType]) => {
-      window.__nativeSlice!.dispatch({ type: "set-environment", gameMinutes, environmentType });
-    }, [framingGameMinutes, currentEnvironmentType] as const);
+    if (environmentBefore.timeOfDay.status !== "running") throw new Error(`Tile ${captureTileId} has no world time of day: ${environmentBefore.timeOfDay.reason}.`);
+    await page.evaluate(gameMinutes => {
+      window.__nativeSlice!.dispatch({ type: "set-server-time", gameMinutes });
+    }, framingGameMinutes);
     const environmentAfter = await readEnvironmentInspection(page);
     expect(environmentAfter.appliedEventCount).toBe(environmentBefore.appliedEventCount + 1);
+    expect(environmentAfter.ignoredEventCount).toBe(environmentBefore.ignoredEventCount);
     expect(environmentAfter.rejectedEventCount).toBe(environmentBefore.rejectedEventCount);
-    expect(environmentAfter.clock).toMatchObject({ source: "environment-event", environmentType: currentEnvironmentType });
+    expect(environmentAfter.timeOfDay).toMatchObject({ status: "running", snapshot: { clock: { hourSource: "server-time" } } });
     expect(errors).toEqual([]);
   });
 });

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
+import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
 interface TileCatalogRecord { readonly id: string; readonly manifest: string }
 interface TileManifestFile {
@@ -38,6 +39,7 @@ const maximumHops = 60;
 const chunksPerTileEdge = 4;
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=world");
+test.skip(!environmentTimeTablesStaged(laneName), environmentTimeTablesRequirement);
 test.skip(startTileIds.length === 0, "the world lane holds none of 18_24, 18_10, 20_10, 18_22, 19_16 or 20_21");
 
 function globalChunkPosition(cellId: string): [number, number] {

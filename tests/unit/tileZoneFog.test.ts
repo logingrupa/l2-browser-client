@@ -3,12 +3,11 @@ import { FOG_CONSTANTS } from "../../src/materials/ue2/model/constants/fogConsta
 import {
   environmentFogBaseline, fogInfoColourAtHour, fogInfoWeight, fogRangeSlot, localFogListRecord, type L2FogInfoRecord,
 } from "../../src/materials/ue2/model/fog";
-import { decodeEnvironmentFogRanges, decodeFogInfos } from "../../src/scene/world/lighting/tileFogInfoRecords";
-import { environmentFogSection, fogInfo9236Record } from "../support/tileLightingFixture";
+import { decodeFogInfos } from "../../src/scene/world/lighting/tileFogInfoRecords";
+import { environmentFogRanges, fogInfo9236Record } from "../support/tileLightingFixture";
 
 const [decoded] = decodeFogInfos([fogInfo9236Record()]);
 const fogInfo = decoded!.record!;
-const environmentRanges = decodeEnvironmentFogRanges({ sections: [environmentFogSection] })!;
 const sourceLocation = fogInfo.sourceLocation;
 const atDistance = (distance: number) => ({ x: sourceLocation.x + distance, y: sourceLocation.y, z: sourceLocation.z });
 
@@ -31,16 +30,11 @@ describe("decoded L2FogInfo of 20_21 export 9236", () => {
       { Time: 5, FogColor: { R: 1, G: 2, B: 3, A: 0 } }] } : field);
     expect(decodeFogInfos([repeated])[0]!.unresolvedReason).toBe("lighting-fog-info-colour-times-not-increasing:9236");
   });
-
-  it("reads the Env.int [FOG] StartRange and EndRange multipliers", () => {
-    expect(environmentRanges).toEqual({ startRanges: [1, 1.5, 2, 2.5, 4], endRanges: [4, 5, 6, 7, 10] });
-    expect(decodeEnvironmentFogRanges({ sections: [] })).toBeNull();
-  });
 });
 
 describe("L2FogInfo selection by the Q12 answer", () => {
   it("matches the replay checker example: d 3500, hour 5.5, CR 4 gives start 1024, end 5096 and colour (107, 112, 108)", () => {
-    const baseline = environmentFogBaseline(environmentRanges, 4);
+    const baseline = environmentFogBaseline(environmentFogRanges, 4);
     expect(baseline).toEqual({ colourBytes: [127, 127, 127], startSourceUnits: 2048, endSourceUnits: 8192 });
     expect(localFogListRecord([fogInfo], baseline, { hour: 5.5, terrainClipRange: 4, referencePosition: atDistance(3500) }))
       .toEqual({ colourBytes: [107, 112, 108], startSourceUnits: 1024, endSourceUnits: 5096 });
@@ -48,7 +42,7 @@ describe("L2FogInfo selection by the Q12 answer", () => {
 
   it("selects FogRange1 below CR 5, FogRange2 from 5, and FogRange5 from 8, on each side of a boundary", () => {
     expect([4.999, 5, 5.999, 6, 6.999, 7, 7.999, 8, 12].map(fogRangeSlot)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4]);
-    expect(environmentFogBaseline(environmentRanges, 8)).toMatchObject({ startSourceUnits: 4 * 2048, endSourceUnits: 10 * 2048 });
+    expect(environmentFogBaseline(environmentFogRanges, 8)).toMatchObject({ startSourceUnits: 4 * 2048, endSourceUnits: 10 * 2048 });
   });
 
   it("takes the fog colour of the first hour pair that holds the hour, both ends inclusive, wraps the last pair past 24 and is black without a match", () => {
@@ -68,7 +62,7 @@ describe("L2FogInfo selection by the Q12 answer", () => {
 
   it("blends each actor in list order over the earlier result without normalising", () => {
     const near: L2FogInfoRecord = { ...fogInfo, affectRange: { min: 10000, max: 20000 } };
-    const baseline = environmentFogBaseline(environmentRanges, 4);
+    const baseline = environmentFogBaseline(environmentFogRanges, 4);
     const both = localFogListRecord([near, near], baseline, { hour: 6, terrainClipRange: 4, referencePosition: atDistance(0) });
     expect(both).toEqual({ colourBytes: [107, 114, 97], startSourceUnits: 0, endSourceUnits: 2000 });
   });

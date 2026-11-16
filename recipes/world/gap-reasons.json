@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 21,
+  "listVersion": 22,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -12,8 +12,12 @@
     "placement-class-unsupported:<class>",
     "placement-material-override-unsupported",
     "static-mesh-reference-unresolved",
+    "static-mesh-colour-stream-layout-unreviewed:<version>",
+    "static-mesh-colour-stream-join-mismatch",
     "bsp-node-outside-chunk-grid",
     "bsp-chunk-without-nodes",
+    "material-mapping-size-zero",
+    "material-mapping-size-class-unported:<class>",
     "collision-transform-field-unreadable:<field>",
     "bsp-visibility-model-unreadable:<field>",
     "bsp-visibility-solidity-disagreement",
@@ -32,7 +36,6 @@
     "music-derivative-encoder-unpinned",
     "lighting-lightmap-index-invalid:<index>",
     "lighting-payload-too-large",
-    "environment-program-unresolved:<file>",
     "lighting-water-volume-unlinked:<class>",
     "lighting-class-chain-unresolved:<class>",
     "object-gaps:<count>",

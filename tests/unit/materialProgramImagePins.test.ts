@@ -7,6 +7,10 @@ const texturedProgramFixturePath = "tests/fixtures/material-programs/textured-pr
 const materialProgramPythonPath = "scripts/native_assets_lib/material_program.py";
 const textureNodeId = "SyntheticMaterials.SkyTexture";
 const pannerNodeId = "SyntheticMaterials.SkyPanner";
+const textureFieldsTheSyntheticClassDefaultsOmit = [
+  ["VSize", "const int", "Engine.BitmapMaterial"], ["UClampMode", "BitmapMaterial.ETexClampMode", "Engine.BitmapMaterial"],
+  ["VClampMode", "BitmapMaterial.ETexClampMode", "Engine.BitmapMaterial"], ["MaxFrameRate", "float", "Engine.Texture"],
+] as const;
 
 type JsonObject = Record<string, unknown>;
 
@@ -17,6 +21,12 @@ function texturedProgramDocument(): JsonObject {
 function withTextureNode(document: JsonObject, replaceTextureNode: (node: JsonObject) => JsonObject): JsonObject {
   const nodes = document.nodes as JsonObject[];
   return { ...document, nodes: nodes.map(node => node.id === textureNodeId ? replaceTextureNode(node) : node) };
+}
+
+function withEveryDeclaredTextureFieldTheRuntimeReads(document: JsonObject): JsonObject {
+  const unsetFields = textureFieldsTheSyntheticClassDefaultsOmit.map(([field, declaredType, declaringClass]) =>
+    ({ field, declaredType, declaringClass, provenance: "ue-zero", status: "typed", value: null, valueDeclaringClass: declaringClass }));
+  return withTextureNode(document, node => ({ ...node, fields: [...(node.fields as JsonObject[]), ...unsetFields] }));
 }
 
 function pythonIntegerConstant(source: string, name: string): number {
@@ -34,7 +44,7 @@ describe("texture image pins the pipeline writes into program.json", () => {
   });
 
   it("compiles the pinned Texture node to one sampler whose frame image is the pin", () => {
-    const document = texturedProgramDocument();
+    const document = withEveryDeclaredTextureFieldTheRuntimeReads(texturedProgramDocument());
     const pinnedImage = (document.nodes as JsonObject[]).find(node => node.id === textureNodeId)!.image;
     const plan = compileMaterialStagePlan(parseMaterialProgram(document));
     expect(plan.status).toBe("compiled");
@@ -44,8 +54,12 @@ describe("texture image pins the pipeline writes into program.json", () => {
       textureCoordinateModifiers: [pannerNodeId] });
   });
 
+  it("refuses to compile the Texture node while it lacks a declared field the runtime reads", () => {
+    expect(() => compileMaterialStagePlan(parseMaterialProgram(texturedProgramDocument()))).toThrow(/SkyTexture\.MaxFrameRate is not a field of Engine\.Texture/);
+  });
+
   it("names the Texture node texture-image-absent when the same program carries no pin", () => {
-    const unpinned = withTextureNode(texturedProgramDocument(), node => ({ ...node, image: null }));
+    const unpinned = withTextureNode(withEveryDeclaredTextureFieldTheRuntimeReads(texturedProgramDocument()), node => ({ ...node, image: null }));
     expect(compileMaterialStagePlan(parseMaterialProgram(unpinned))).toMatchObject({ status: "diagnostic", reasons: [`texture-image-absent:${textureNodeId}`] });
   });
 

@@ -1,6 +1,6 @@
 import { evaluateFogState, type CameraZoneFogRecord, type FogRangeRecord, type FogState } from "../../materials/ue2/babylon/material";
 import { FOG_CONSTANTS } from "../../materials/ue2/model/constants/fogConstants";
-import { environmentFogBaseline, localFogListRecord } from "../../materials/ue2/model/fog";
+import { environmentFogBaseline, localFogListRecord, type EnvironmentFogRanges } from "../../materials/ue2/model/fog";
 import type { Vector3 } from "../../shared/math/vector3";
 import type { TileVisibilityFrame } from "./bspVisibility/core/tileVisibilityFrame";
 import type { CollisionWorld } from "./movement/core/collisionWorld";
@@ -18,6 +18,7 @@ export interface CameraEnvironmentSources {
   readonly cameraSourcePosition: Vector3 | null;
   readonly collision: CameraEnvironmentCollision | null;
   readonly records: TileLightingRecords;
+  readonly environmentFogRanges: EnvironmentFogRanges | null;
   readonly hour: number;
 }
 
@@ -50,7 +51,7 @@ function cameraZoneFog(cameraZone: number, records: TileLightingRecords, gaps: s
 }
 
 function localFogList(sources: CameraEnvironmentSources, gaps: string[]): FogRangeRecord | null {
-  const { fogInfos, environmentFogRanges } = sources.records;
+  const { records: { fogInfos }, environmentFogRanges } = sources;
   if (fogInfos.length === 0) return null;
   for (const fogInfo of fogInfos) if (fogInfo.unresolvedReason !== null) gaps.push(fogInfo.unresolvedReason);
   const terrainClipRange = FOG_CONSTANTS.terrainClipRange.runtimeDefault;

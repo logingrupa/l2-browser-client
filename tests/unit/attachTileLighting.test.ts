@@ -11,6 +11,8 @@ import type { NativeBspSection } from "../../src/scene/world/nativeBspResources"
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import { staticMeshMaterialsResourceAbsentReason } from "../../src/scene/world/staticMeshLibraryMaterials";
 import { terrainMaterialsResourceAbsentReason } from "../../src/scene/world/terrainLayerMaterials";
+import { provideWorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
+import { provideDayNightTimeOfDay } from "../support/worldTimeOfDayFixture";
 
 vi.mock("../../src/scene/world/lighting/loadTileLighting", async () => {
   const { tileLightingModel } = await import("../support/tileLightingFixture");
@@ -56,6 +58,7 @@ describe("attachTileLighting", () => {
   it("keeps a terrain chunk's material and names the absent terrain-materials resource, and leaves no per-frame observer after dispose", async () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
+    provideDayNightTimeOfDay(scene);
     scene.activeCamera = new FreeCamera("camera", Vector3.Zero(), scene);
     const terrainMesh = new Mesh("terrain-mesh", scene);
     const observersBefore = scene.onBeforeRenderObservable.observers.length;
@@ -74,6 +77,7 @@ describe("attachTileLighting", () => {
   it("attaches lighting on a scene that has no camera yet", async () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
+    provideDayNightTimeOfDay(scene);
     const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
     expect(attached.inspection()).toHaveProperty("cameraEnvironment");
     attached.dispose();
@@ -84,11 +88,14 @@ describe("attachTileLighting", () => {
   it("plans the lightmaps of a chunk added after attach, drops them when it is removed and plans them again when it returns", async () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
+    const timeOfDay = provideDayNightTimeOfDay(scene);
     const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(0);
     const staticMesh = new Mesh("late static mesh", scene);
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
+    expect((attached.inspection() as TileLightingRuntimeInspection).environment).toEqual(timeOfDay.sample());
+    expect(attached.materialUniforms!()).toMatchObject({ hour: 12, environmentType: 0 });
     expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots).toMatchObject({ gap: staticMeshMaterialsResourceAbsentReason, meshCount: 1,
       statusCounts: { "library-compiled": 0, "library-diagnostic": 0, "program-gap": 1 } });
     attached.removeChunk(lateChunkId);
@@ -97,6 +104,21 @@ describe("attachTileLighting", () => {
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
     attached.dispose();
+    scene.dispose();
+    engine.dispose();
+  });
+
+  it("reports the world time-of-day gap instead of lighting the tile when no hour exists", async () => {
+    const engine = new NullEngine();
+    const scene = new Scene(engine);
+    const observersBefore = scene.onBeforeRenderObservable.observers.length;
+    const unprovided = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    expect(unprovided.inspection()).toEqual({ gap: "environment-time-of-day-unprovided" });
+    expect(unprovided.materialUniforms).toBeNull();
+    provideWorldTimeOfDay(scene, { status: "gap", reason: "environment-time-tables-unstaged", detail: "not staged" });
+    const unstaged = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    expect(unstaged.inspection()).toEqual({ gap: "environment-time-tables-unstaged" });
+    expect(scene.onBeforeRenderObservable.observers.length).toBe(observersBefore);
     scene.dispose();
     engine.dispose();
   });

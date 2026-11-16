@@ -13,7 +13,8 @@ from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_inp
 from world.bsp_chunk_geometry import (BSP_POLY_FLAGS_PATH, BspPolygonError, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb, chunk_bsp_record,
                                       drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon)
 from world.bsp_lightmaps import lightmap_texture_of_record, read_bsp_lightmaps
-from world.bsp_surface_materials import convert_surface_material, surface_material_identities
+from world.bsp_material_mapping_size import surface_material_identities
+from world.bsp_surface_materials import convert_surface_material
 from world.level_model import LevelModelLayoutError, read_level_model, reviewed_level_model_layout
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
@@ -22,12 +23,12 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles
-from world.surface_material_programs import material_package_paths, world_material_sources
+from world.surface_material_programs import material_gap_row_status, world_material_sources
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-BSP_STEP_ALGORITHM_VERSION = 5
+BSP_STEP_ALGORITHM_VERSION = 6
 BSP_STEP_NAME = 'bsp'
 BSP_CHUNKS_PRODUCT_NAME = 'bsp-chunks.json'
 CHUNK_BSP_FOLDER = 'native-tile-chunk-bsp'
@@ -129,10 +130,9 @@ def drawable_chunk_nodes(model, package, nodes_by_chunk, gaps):
     return kept
 
 
-def surface_materials(identities, client, project_root):
-    sources = world_material_sources(client, project_root)
+def surface_materials(identities, sources):
     return {identity: convert_surface_material(identity, *sources)
-            for identity in sorted(identities, key=lambda identity: (identity.casefold(), identity))}, sources.map_sources
+            for identity in sorted(identities, key=lambda identity: (identity.casefold(), identity))}
 
 
 def write_chunk_glbs(project_root, chunk_glbs):
@@ -153,18 +153,18 @@ def material_store_outputs(project_root, material_files):
     return [{**record, 'path': (store_root / record['path']).relative_to(store_root.parent).as_posix()} for record in material_files]
 
 
-def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps):
+def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, lightmap_textures, gaps):
     records, glbs = {}, {}
     materials = {identity: outcome.material for identity, outcome in outcomes.items()}
     for chunk in chunk_plan['chunks']:
         chunk_id, node_indices = chunk['chunkId'], kept_nodes.get(chunk['chunkId'], [])
         used = sorted({identities[level.model.nodes[index].i_surf] for index in node_indices})
-        material_gaps = [gaps.add(GAP_STATUS if reason.startswith('material-') else FAILED_STATUS, reason, identity)
+        material_gaps = [gaps.add(material_gap_row_status(reason), reason, identity)
                          for identity in used for reason in outcomes[identity].gap_reasons]
         if not node_indices:
             records[chunk_id] = chunk_bsp_record(chunk_id, None, None, None, 0, [], [], 0, [])
             continue
-        sections = build_chunk_sections(level.model, node_indices, identities, flags, lightmap_textures, outdoor_zones)
+        sections = build_chunk_sections(level.model, node_indices, identities, flags, lightmap_textures)
         glb, section_records, node_ranges, triangle_count = chunk_bsp_glb(level.model, chunk_id, sections, materials)
         glbs[chunk_id] = glb
         records[chunk_id] = chunk_bsp_record(chunk_id, '/l2/' + chunk_bsp_store_path(sha256_hex(glb)), sha256_hex(glb), glb, len(node_indices),
@@ -187,11 +187,13 @@ def run_bsp_step(project_root, client_root, tile_id):
                             receipt_evidence)
     client = Path(client_root).resolve()
     package = read_locked_map_package(client, tile_id, lock_record)
+    class_work_root, class_scripts = lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client)
     try:
         level = read_level_model(package)
         rectangles = chunk_rectangles(chunk_plan, native_terrain(package))
-        zones = read_level_zones(package, level.model, ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client)))
+        zones = read_level_zones(package, level.model, ClassDefaults(class_work_root, class_scripts))
         lightmap_textures = lightmap_texture_of_record(read_bsp_lightmaps(package, level.model), level.model)
+        identities = surface_material_identities(package, level.model, class_work_root, class_scripts)
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, BSP_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except ValueError as error:
@@ -201,16 +203,17 @@ def run_bsp_step(project_root, client_root, tile_id):
     drawn = drawn_node_indices(level.model, flags, sky_zones)
     nodes_by_chunk = chunk_grid_nodes(level.model, package, drawn, rectangles, gaps)
     kept_nodes = drawable_chunk_nodes(level.model, package, nodes_by_chunk, gaps)
-    identities = surface_material_identities(package, level.model)
     used_identities = {identities[level.model.nodes[index].i_surf] for indices in kept_nodes.values() for index in indices}
-    outcomes, map_sources = surface_materials(used_identities, client, project_root)
-    inputs = locked_input_records(sorted({tile_map_path(tile_id), *material_package_paths(map_sources, used_identities)}))
+    sources = world_material_sources(client, project_root)
+    outcomes = surface_materials(used_identities, sources)
+    inputs = locked_input_records(sorted({tile_map_path(tile_id), *sources.map_sources.dependencies}))
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
-    records, glbs = chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps)
+    records, glbs = chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, lightmap_textures, gaps)
     gap_rows, material_files = gaps.rows(), surface_material_files(outcomes)
     product = {'tileId': tile_id, 'levelModel': level.binding['model'], 'nodeCount': len(level.model.nodes), 'drawnNodeCount': len(drawn),
                'outdoorZones': sorted(outdoor_zones), 'skyZones': sorted(sky_zones), 'chunks': records,
                'materials': [{'identity': identity, 'program': outcome.material.program, 'textured': outcome.material.png is not None,
+                              'mappingSize': None if outcome.material.mapping_size is None else list(outcome.material.mapping_size),
                               'translucent': outcome.material.translucent, 'gapReasons': outcome.gap_reasons}
                              for identity, outcome in sorted(outcomes.items())],
                'materialFiles': material_files, 'gapRows': gap_rows}

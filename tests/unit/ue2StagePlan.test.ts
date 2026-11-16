@@ -18,10 +18,11 @@ function referenceField(name: string, nodeId: string | undefined): FixtureProgra
   return nodeId === undefined ? field(name, null, "ue-zero") : field(name, nodeReference(nodeId));
 }
 
-function combinerNode(id: string, colourOperation: number, inputs: { material1?: string; material2?: string; mask?: string }) {
+function combinerNode(id: string, colourOperation: number, inputs: { material1?: string; material2?: string; mask?: string; invertMask?: boolean }) {
   return reviewedNode(id, "Engine.Combiner", [
     field("CombineOperation", enumValue(colourOperation, `CO_${colourOperation}`)), field("AlphaOperation", enumValue(3, "AO_Use_Alpha_From_Material1")),
     referenceField("Material1", inputs.material1), referenceField("Material2", inputs.material2), referenceField("Mask", inputs.mask),
+    field("InvertMask", inputs.invertMask ?? false),
   ]);
 }
 
@@ -84,6 +85,50 @@ describe("compileMaterialStagePlan absent inputs", () => {
   });
 });
 
+describe("compileMaterialStagePlan Combiner inputs", () => {
+  const secondTextureId = "Synthetic.SecondTexture";
+  const nestedId = "Synthetic.Nested";
+  const constantId = "Synthetic.Constant";
+  const inputNodes = [
+    swatchTextureNode(textureId, image), swatchTextureNode(secondTextureId, image),
+    combinerNode(nestedId, 0, { material1: textureId, material2: secondTextureId }), reviewedNode(constantId, "Engine.ConstantColor", []),
+  ];
+
+  it.each([0, 1, 2, 3, 4, 5, 6, 7])("compiles CombineOperation %i with Mask=None and no stand-in mask", colourOperation => {
+    const plan = stagePlanOf("Synthetic.Combiner", [combinerNode("Synthetic.Combiner", colourOperation, { material1: textureId, material2: secondTextureId }), ...inputNodes]);
+    expect(plan.status === "compiled" && plan.expression).toMatchObject({ kind: "combiner", colourOperation, mask: null });
+  });
+
+  it.each([
+    ["two textures", textureId, secondTextureId, "material1"],
+    ["a texture Material1 and a Combiner Material2", textureId, nestedId, "material2"],
+    ["a texture Material1 and a ConstantColor Material2", textureId, constantId, "material2"],
+    ["a Combiner Material1 and a texture Material2", nestedId, textureId, "material1"],
+    ["a ConstantColor Material1 and a Combiner Material2", constantId, nestedId, "material1"],
+  ])("emits %s first as %s", (_, material1, material2, firstEmittedMaterial) => {
+    const plan = stagePlanOf("Synthetic.Combiner", [combinerNode("Synthetic.Combiner", 7, { material1, material2 }), ...inputNodes]);
+    expect(plan.status === "compiled" && plan.expression).toMatchObject({ kind: "combiner", firstEmittedMaterial });
+  });
+
+  it.each([
+    ["two textures with Mask = Material2 and InvertMask", { material1: textureId, material2: secondTextureId, mask: secondTextureId, invertMask: true }, "material2", "material2", true],
+    ["two textures with Mask = Material2 without InvertMask", { material1: textureId, material2: secondTextureId, mask: secondTextureId, invertMask: false }, "material1", null, false],
+    ["two textures with Mask = Material1 and InvertMask", { material1: textureId, material2: secondTextureId, mask: textureId, invertMask: true }, "material1", "material1", true],
+    ["a texture Material1, a Combiner Material2 and Mask = Material2 with InvertMask", { material1: textureId, material2: nestedId, mask: nestedId, invertMask: true }, "material2", "material2", true],
+    ["a Combiner Material1, an appended texture Material2 and Mask = Material2 with InvertMask", { material1: nestedId, material2: textureId, mask: textureId, invertMask: true }, "material1", null, true],
+    ["two textures with a ConstantColor Mask and InvertMask", { material1: textureId, material2: secondTextureId, mask: constantId, invertMask: true }, "material1", null, false],
+    ["a texture Material1, a Combiner Material2 and a separate texture Mask with InvertMask", { material1: textureId, material2: nestedId, mask: secondTextureId, invertMask: true }, "material2", null, true],
+  ] as const)("compiles %s to the DB-1 emit order and InvertMask routing", (_, inputs, firstEmittedMaterial, alphaComplementedMaterial, maskAlphaComplemented) => {
+    const plan = stagePlanOf("Synthetic.Combiner", [combinerNode("Synthetic.Combiner", 5, inputs), ...inputNodes]);
+    expect(plan.status === "compiled" && plan.expression).toMatchObject({ kind: "combiner", firstEmittedMaterial, alphaComplementedMaterial, maskAlphaComplemented });
+  });
+
+  it("keeps a texture Mask as an expression of its own", () => {
+    const plan = stagePlanOf("Synthetic.Combiner", [combinerNode("Synthetic.Combiner", 5, { material1: textureId, material2: nestedId, mask: secondTextureId }), ...inputNodes]);
+    expect(plan.status === "compiled" && plan.expression).toMatchObject({ kind: "combiner", mask: { kind: "texture" }, firstEmittedMaterial: "material2" });
+  });
+});
+
 describe("compileMaterialStagePlan diagnostics", () => {
   const animatedTexture = (id: string, animationNext: FixtureProgramField["value"]) => withField(swatchTextureNode(id, image), field("AnimNext", animationNext));
 
@@ -112,11 +157,6 @@ describe("compileMaterialStagePlan diagnostics", () => {
     const unknownAlpha = withField(combinerNode("Synthetic.Combiner", 0, { material1: textureId }), field("AlphaOperation", enumValue(5, "AO_5")));
     expect(stagePlanOf("Synthetic.Combiner", [unknownAlpha, swatchTextureNode(textureId, image)]))
       .toMatchObject({ status: "diagnostic", reasons: ["material-combiner-operation-unknown:AlphaOperation=5"] });
-  });
-
-  it.each([5, 6, 7])("names a Combiner whose CombineOperation %i reads a Mask it does not have", colourOperation => {
-    const plan = stagePlanOf("Synthetic.Combiner", [combinerNode("Synthetic.Combiner", colourOperation, { material1: textureId, material2: textureId }), swatchTextureNode(textureId, image)]);
-    expect(plan).toMatchObject({ status: "diagnostic", reasons: ["material-combiner-mask-absent:Synthetic.Combiner"] });
   });
 
   it("names a graph deeper than the compile depth limit", () => {

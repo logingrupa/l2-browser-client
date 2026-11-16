@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -11,9 +13,11 @@ from native_catalog.ue2 import FormatError
 from native_store.gap_rows import load_gap_reason_patterns
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
-from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, LIGHT_CLASS, LIGHTING_CLASS_DEFAULTS, SCENE_LIGHTS, SECTOR_LIGHTS,
-                                            SECTOR_SHADOW_MAPS, read_synthetic_chain, synthetic_actor_rows, synthetic_lighting_package)
-from support.lightmap_tail_fixture import (build_lightmap_tail, lightmap_model_and_package, lightmap_node, page_mip_bytes, render_section_bytes)
+from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, INSTANCE_COLOUR_REVISION, INSTANCE_COLOURS, LIGHT_CLASS, LIGHTING_CLASS_DEFAULTS,
+                                            SCENE_LIGHTS, SECTOR_LIGHTS, SECTOR_SHADOW_MAPS, read_synthetic_chain, synthetic_actor_rows,
+                                            synthetic_lighting_package)
+from support.lightmap_tail_fixture import (FIXTURE_COMPRESSED_REVISION, FIXTURE_PAGE_REVISION, FIXTURE_TEXTURE_FORMAT, build_lightmap_tail,
+                                           lightmap_model_and_package, lightmap_node, lightmap_zone, page_mip_bytes, render_section_bytes)
 from support.water_volume_fixture import (PHYSICS_VOLUME_CLASS, SYNTHETIC_CHUNK_ID, WATER_VOLUME_CLASS, synthetic_volume_actor, synthetic_volume_context,
                                           synthetic_volume_map)
 from world.collision_step import volume_records
@@ -33,18 +37,20 @@ SHARED_STATUSES = {'ue2-data', 'unconfirmed', 'confirmed-interlude', 'corrected-
 RULE_FIELDS = {'id', 'value', 'provenance', 'status', 'interludeEvidence', 'runtimeDefault'}
 METADATA = {'sourceSha256': '0' * 64, 'converterVersion': 'lighting_step.py:1'}
 SQUARE_UVS = ((0.0, 0.0), (0.25, 0.0), (0.25, 0.25), (0.0, 0.25))
+DB7_EXPECTATIONS_PATH = ROOT / 'tests/fixtures/environment/hourly-lighting-db7-converter-expectations.json'
+SUN_ZONES = (lightmap_zone(False), lightmap_zone(True))
 
 
 def node_range(node, first_index):
     return {'chunk': 0, 'node': node, 'primitive': 0, 'firstIndex': first_index, 'indexCount': 6}
 
 
-def three_surface_lightmaps(section_texture=0):
+def three_surface_lightmaps(section_texture=0, front_zones=(0, 0, 0)):
     vertex_uvs = [(u + 0.25 * node, v) for node in range(3) for u, v in SQUARE_UVS]
     tail = build_lightmap_tail([render_section_bytes(vertex_uvs, 3, section_texture)],
                                [(surface, (128 * surface, 0, 128, 128)) for surface in range(3)],
                                [([0, 1, 2], [page_mip_bytes(11), page_mip_bytes(97)])])
-    nodes = [lightmap_node(node, 0, 4 * node, 4) for node in range(3)]
+    nodes = [lightmap_node(node, 0, 4 * node, 4, front_zone) for node, front_zone in enumerate(front_zones)]
     model, package = lightmap_model_and_package(tail, nodes, 3)
     return package, model, vertex_uvs
 
@@ -57,9 +63,14 @@ class BspLightmapPayloadTests(unittest.TestCase):
     def test_two_pages_keep_their_texels_and_hours_and_every_node_range_gets_its_uvs(self):
         package, model, vertex_uvs = three_surface_lightmaps()
         lightmaps = read_bsp_lightmaps(package, model)
-        arrays, reasons, counts = bsp_lightmap_arrays(package, lightmaps, model, [node_range(node, 6 * node) for node in range(3)])
+        arrays, reasons, counts = bsp_lightmap_arrays(package, lightmaps, model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES)
         named = arrays_by_name(arrays)
         self.assertEqual(reasons, [])
+        self.assertEqual((named['LMPG.revision'].values, named['LMPG.compressedRevision'].values), ((FIXTURE_PAGE_REVISION,) * 2,
+                                                                                                    (FIXTURE_COMPRESSED_REVISION,) * 2))
+        self.assertEqual((named['LMPG.format'].values, named['LMPG.width'].values, named['LMPG.height'].values),
+                         ((FIXTURE_TEXTURE_FORMAT,) * 2, (512, 512), (512, 512)))
+        self.assertEqual((named['LMSC.sunAffect'].values, counts['sunAffectedSections']), ((0,), 0))
         self.assertEqual(bytes(named['LMPG.texels'].values), b''.join(page_mip_bytes(11) + page_mip_bytes(97)))
         self.assertEqual(named['LMPG.texelStart'].values, (0, 131072, 163840, 294912, 327680))
         self.assertEqual((named['LMPG.hourStart'].values, named['LMPG.hourEnd'].values), ((0.0, 12.0), (12.0, 24.0)))
@@ -76,7 +87,7 @@ class BspLightmapPayloadTests(unittest.TestCase):
     def test_a_section_texture_past_the_page_list_is_a_named_gap_with_no_uvs(self):
         package, model, _ = three_surface_lightmaps(section_texture=5)
         lightmaps = read_bsp_lightmaps(package, model)
-        arrays, reasons, counts = bsp_lightmap_arrays(package, lightmaps, model, [node_range(node, 6 * node) for node in range(3)])
+        arrays, reasons, counts = bsp_lightmap_arrays(package, lightmaps, model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES)
         named = arrays_by_name(arrays)
         self.assertEqual(reasons, ['lighting-lightmap-index-invalid:5'])
         self.assertEqual(named['LMNR.texture'].values, (NO_LIGHTMAP,) * 3)
@@ -87,6 +98,35 @@ class BspLightmapPayloadTests(unittest.TestCase):
         lightmaps = read_bsp_lightmaps(package, model)
         self.assertEqual(node_lightmap_texture(lightmaps, lightmap_node(NO_LIGHTMAP, 0, 0, 4)), (NO_LIGHTMAP, None))
         self.assertEqual(node_lightmap_texture(lightmaps, lightmap_node(7, 0, 0, 4)), (None, 'lighting-lightmap-index-invalid:7'))
+
+    def test_each_record_reads_its_texture_index_zone_level_and_revision_from_its_own_bytes(self):
+        package, model, _ = three_surface_lightmaps()
+        lightmaps = read_bsp_lightmaps(package, model)
+        self.assertEqual([(record.texture_index, record.surface, record.zone_index, record.tag, record.revision) for record in lightmaps.records],
+                         [(0, surface, 0, 5, 0) for surface in range(3)])
+
+    def test_a_record_that_names_another_texture_than_the_page_listing_it_is_refused(self):
+        package, model, _ = three_surface_lightmaps()
+        damaged = bytearray(package.data)
+        damaged[package.data.index(bytes((0, 2, 0, 0x40, 4)))] = 1
+        package.data = bytes(damaged)
+        with self.assertRaisesRegex(FormatError, 'names texture 1'):
+            read_bsp_lightmaps(package, model)
+
+    def test_a_section_is_sun_affected_when_any_node_front_zone_is_and_unresolved_only_without_one(self):
+        unresolved_zone = lightmap_zone(None, unresolved=True)
+        cases = (((0, 0, 0), SUN_ZONES, 0), ((0, 1, 0), SUN_ZONES, 1), ((0, 1, 2), (*SUN_ZONES, unresolved_zone), 1),
+                 ((0, 2, 0), (*SUN_ZONES, unresolved_zone), -1))
+        for front_zones, zones, expected in cases:
+            with self.subTest(front_zones=front_zones):
+                package, model, _ = three_surface_lightmaps(front_zones=front_zones)
+                arrays, _, _ = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, [], zones)
+                self.assertEqual(arrays_by_name(arrays)['LMSC.sunAffect'].values, (expected,))
+
+    def test_a_node_front_zone_outside_the_level_zones_is_refused(self):
+        package, model, _ = three_surface_lightmaps(front_zones=(0, 0, 9))
+        with self.assertRaisesRegex(FormatError, 'zone 9 outside the 2 level zones'):
+            bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, [], SUN_ZONES)
 
     def test_a_mip_whose_skip_position_disagrees_is_refused(self):
         package, model, _ = three_surface_lightmaps()
@@ -128,6 +168,8 @@ class LightingActorTests(unittest.TestCase):
                          list(ENVIRONMENT_LIGHTS))
         named = arrays_by_name(static_mesh_light_list_arrays(light_lists))
         self.assertEqual((named['SMLL.actorExportIndex'].values, named['SMLL.instanceExportIndex'].values), ((9,), (4,)))
+        self.assertEqual((bytes(named['SMIC.bytes'].values), named['SMIC.revision'].values, named['SMLL.colorCount'].values),
+                         (INSTANCE_COLOURS, (INSTANCE_COLOUR_REVISION,), (2,)))
         self.assertEqual((named['SMSC.light'].values, bytes(named['SMSC.bits'].values)), ((1, 2), b'\x05\x0a\x01'))
         self.assertEqual((named['SMSC.bitStart'].values, named['SMEN.hour'].values), ((0, 1, 3), (12.0,)))
 
@@ -137,7 +179,8 @@ class LightingActorTests(unittest.TestCase):
         self.assertEqual(sector.shadow_maps, SECTOR_SHADOW_MAPS)
         named = arrays_by_name(terrain_lighting_arrays([sector]))
         self.assertEqual(bytes(named['TSHM.bytes'].values), b''.join(SECTOR_SHADOW_MAPS))
-        self.assertEqual((named['TSHM.hour'].values, named['TSEC.shadowMapStart'].values), ((6.0, 18.0), (0, 2)))
+        self.assertEqual((named['TSHM.byteStart'].values, named['TSEC.shadowMapStart'].values), ((0, 289, 578), (0, 2)))
+        self.assertNotIn('TSHM.hour', named)
 
     def test_an_export_that_is_not_a_terrain_sector_is_refused(self):
         with self.assertRaisesRegex(FormatError, 'not a terrain sector'):
@@ -183,10 +226,10 @@ class LightingActorTests(unittest.TestCase):
 class LightingRegistrationTests(unittest.TestCase):
     def test_the_step_kind_and_reasons_are_registered(self):
         self.assertIn(LIGHTING_STEP_NAME, TILE_STEP_NAMES)
-        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 3)
+        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 4)
         self.assertIn('lighting', load_tile_manifest_vocabulary().resource_kinds)
         patterns = load_gap_reason_patterns()
-        for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large', 'environment-program-unresolved:<file>',
+        for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large',
                        'lighting-water-volume-unlinked:<class>', 'lighting-class-chain-unresolved:<class>'):
             self.assertIn(reason, patterns)
 
@@ -209,13 +252,51 @@ class LightingRegistrationTests(unittest.TestCase):
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')
 class RealClientLightmapTests(unittest.TestCase):
-    def test_every_lit_node_of_20_21_has_uvs_inside_its_record_rectangle(self):
+    @classmethod
+    def setUpClass(cls):
         from world.level_model import read_level_model
-        from world.lighting_payload import lightmap_node_ranges
-        from world.raw_map_step import read_tile_map_lock_record
         from world.tile_chunk_plan import read_locked_map_package
-        package = read_locked_map_package(REFERENCE_CLIENT, '20_21', read_tile_map_lock_record('20_21'))
-        model = read_level_model(package).model
+        cls.package = read_locked_map_package(REFERENCE_CLIENT, '20_21', read_tile_map_lock_record('20_21'))
+        cls.model = read_level_model(cls.package).model
+        cls.expected = json.loads(DB7_EXPECTATIONS_PATH.read_text(encoding='utf-8'))
+
+    def test_the_20_21_lightmap_records_and_atlas_children_match_the_db7_decode(self):
+        lightmaps = read_bsp_lightmaps(self.package, self.model)
+        expected = self.expected['bsp']
+        records = lightmaps.records
+        self.assertEqual(len(records), expected['recordCount'])
+        self.assertEqual({'textureIndex': [record.texture_index for record in records], 'surface': [record.surface for record in records],
+                          'zoneIndex': [record.zone_index for record in records], 'level': [record.tag for record in records],
+                          'revision': [record.revision for record in records]}, expected['records'])
+        self.assertEqual([len(texture.pages) for texture in lightmaps.textures], expected['groupCounts'])
+        self.assertEqual([{'group': page.texture, 'slot': page.slot, 'revision': page.revision, 'format': page.texture_format, 'width': page.width,
+                           'height': page.height, 'compressedRevision': page.compressed_revision} for page in lightmaps.pages],
+                         expected['atlasChildren'])
+
+    def test_the_20_21_intensity_maps_carry_the_db7_times_and_samples(self):
+        from world.native_terrain_sectors import native_terrain
+        from world.terrain_intensity_maps import read_terrain_intensity_maps
+        expected = self.expected['terrain']
+        intensity_maps = read_terrain_intensity_maps(self.package, native_terrain(self.package))
+        self.assertEqual((list(intensity_maps.times), intensity_maps.width, intensity_maps.height),
+                         (expected['times'], expected['width'], expected['height']))
+        self.assertEqual([hashlib.sha256(values).hexdigest() for values in intensity_maps.intensities], expected['intensitySha256'])
+        sample = expected['sample']
+        self.assertEqual([values[sample['y'] * intensity_maps.width + sample['x']] for values in intensity_maps.intensities], sample['values'])
+
+    def test_static_mesh_actor_1905_keeps_the_db7_instance_colours_and_hourly_masks(self):
+        from world.light_actors import read_static_mesh_light_list
+        expected = self.expected['staticMesh']['instance']
+        light_list = read_static_mesh_light_list(self.package, expected['actorExportIndex'], expected['instanceExportIndex'])
+        self.assertEqual((light_list.color_count, list(light_list.instance_colours[:4]), light_list.instance_colour_revision),
+                         (expected['colourCount'], expected['vertex0Bgra'], expected['revision']))
+        self.assertEqual(len(light_list.scene_lights), expected['sceneLightCount'])
+        self.assertEqual([{'light': entry.light_reference, 'maskHex': entry.visibility_bits.hex(), 'flag': entry.applied}
+                          for entry in light_list.environment_lights], expected['environmentLights'])
+
+    def test_every_lit_node_of_20_21_has_uvs_inside_its_record_rectangle(self):
+        from world.lighting_payload import lightmap_node_ranges
+        package, model = self.package, self.model
         lightmaps = read_bsp_lightmaps(package, model)
         self.assertEqual((len(lightmaps.sections), len(lightmaps.records), len(lightmaps.textures), len(lightmaps.pages)), (43, 1888, 9, 30))
         ranges, reasons = lightmap_node_ranges(package, lightmaps, model, [node_range(index, 0) for index in range(len(model.nodes))])

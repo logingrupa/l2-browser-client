@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 from typing import NamedTuple
 
@@ -18,7 +19,6 @@ SOURCE_FRAME_UNITS_TO_METRES = 0.01
 SOURCE_FRAME_AXIS_ORDER = (0, 2, 1)
 UNSIGNED_32_BIT_MASK = 0xFFFFFFFF
 NO_LIGHTMAP = -1
-OUTDOOR_FRONT_ZONE_SIDE = 1
 MINIMUM_POLYGON_VERTICES = 3
 UNBOUND_MATERIAL_COLOUR = [1, 0, 1, 1]
 UNLIT_MATERIAL_EXTENSION = 'KHR_materials_unlit'
@@ -38,7 +38,7 @@ class BspSectionKey(NamedTuple):
     material: str
     unlit: bool
     lightmap: object
-    outdoor: bool
+    native_render_section: int
 
 
 class BspSection(NamedTuple):
@@ -49,8 +49,7 @@ class BspSection(NamedTuple):
 class BspSurfaceMaterial(NamedTuple):
     identity: str
     png: object
-    width: object
-    height: object
+    mapping_size: object
     translucent: bool
     program: object
 
@@ -110,27 +109,23 @@ def node_lightmap_texture(node, lightmap_texture_of_record):
     return lightmap_texture_of_record.get(node.i_light_map)
 
 
-def node_section_key(model, node, material_of_surface, flags, lightmap_texture_of_record, outdoor_zones):
+def node_section_key(model, node, material_of_surface, flags, lightmap_texture_of_record):
     surface = model.surfs[node.i_surf]
     return BspSectionKey(material_of_surface[node.i_surf], bool(unsigned_flags(surface.flags) & flags.unlit_mask),
-                         node_lightmap_texture(node, lightmap_texture_of_record), node.i_zone[OUTDOOR_FRONT_ZONE_SIDE] in outdoor_zones)
+                         node_lightmap_texture(node, lightmap_texture_of_record), node.i_section)
 
 
 def section_order(key):
     lightmap_order = (key.lightmap is None, NO_LIGHTMAP if key.lightmap is None else key.lightmap)
-    return key.material.casefold(), key.material, key.unlit, lightmap_order, key.outdoor
+    return key.material.casefold(), key.material, key.unlit, lightmap_order, key.native_render_section
 
 
-def build_chunk_sections(model, node_indices, material_of_surface, flags, lightmap_texture_of_record, outdoor_zones):
+def build_chunk_sections(model, node_indices, material_of_surface, flags, lightmap_texture_of_record):
     nodes_by_key = {}
     for index in sorted(node_indices):
-        key = node_section_key(model, model.nodes[index], material_of_surface, flags, lightmap_texture_of_record, outdoor_zones)
+        key = node_section_key(model, model.nodes[index], material_of_surface, flags, lightmap_texture_of_record)
         nodes_by_key.setdefault(key, []).append(index)
     return [BspSection(key, nodes_by_key[key]) for key in sorted(nodes_by_key, key=section_order)]
-
-
-def difference(first, second):
-    return [first[axis] - second[axis] for axis in range(3)]
 
 
 def dot(first, second):
@@ -160,34 +155,58 @@ def source_point_to_scene(point):
     return [f32(point[axis] * SOURCE_FRAME_UNITS_TO_METRES) for axis in SOURCE_FRAME_AXIS_ORDER]
 
 
-def source_texture_uv(model, surface, point, material):
-    relative = difference(point, model.points[surface.p_base])
-    return [f32(dot(relative, model.vectors[surface.v_texture_u]) / material.width),
-            f32(dot(relative, model.vectors[surface.v_texture_v]) / material.height)]
+def texture_projection_origin_term(base, axis):
+    return f32((-base[1] * axis[1] + -base[0] * axis[0]) + -base[2] * axis[2])
+
+
+def texture_projection(point, axis, origin_term):
+    return f32(((point[1] * axis[1] + point[0] * axis[0]) + point[2] * axis[2]) + origin_term)
+
+
+def round_half_up_by_floor(value):
+    return math.floor(value + 0.5)
+
+
+def recentred_by_rounded_mean(coordinates):
+    total = 0.0
+    for coordinate in coordinates:
+        total = f32(total + coordinate)
+    shift = round_half_up_by_floor(f32(total / len(coordinates)))
+    return [f32(coordinate - shift) for coordinate in coordinates]
+
+
+def node_texture_coordinates(model, surface, points, mapping_size):
+    base = model.points[surface.p_base]
+    coordinates_by_axis = []
+    for vector_index, divisor in ((surface.v_texture_u, mapping_size.u), (surface.v_texture_v, mapping_size.v)):
+        axis = model.vectors[vector_index]
+        origin_term = texture_projection_origin_term(base, axis)
+        coordinates_by_axis.append(recentred_by_rounded_mean([f32(texture_projection(point, axis, origin_term) / divisor) for point in points]))
+    return [list(pair) for pair in zip(*coordinates_by_axis)]
 
 
 def section_geometry(model, section, material, primitive, node_ranges):
     positions, normals, uvs, indices = [], [], [], []
     for node_index in section.nodes:
         node = model.nodes[node_index]
-        surface = model.surfs[node.i_surf]
         points = node_source_polygon(model, node)
         first_vertex, first_index = len(positions), len(indices)
         indices.extend(fan_triangle_indices(points, node.plane[:3], first_vertex, node_index))
         for point in points:
             positions.append(source_point_to_scene(point))
             normals.append([f32(node.plane[axis]) for axis in SOURCE_FRAME_AXIS_ORDER])
-            if material.png is not None:
-                uvs.append(source_texture_uv(model, surface, point, material))
+        if material.mapping_size is not None:
+            uvs.extend(node_texture_coordinates(model, model.surfs[node.i_surf], points, material.mapping_size))
         node_ranges.append({'node': node_index, 'primitive': primitive, 'firstIndex': first_index, 'indexCount': len(indices) - first_index})
     return positions, normals, uvs, indices
 
 
 def gltf_material_record(builder, material, unlit, image_of_identity):
+    mapped = material.mapping_size is not None
     record = {'name': material.identity, 'pbrMetallicRoughness': {'metallicFactor': 0, 'roughnessFactor': 1},
-              'extras': {'nativeSourceReference': material.identity, NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD: material.program,
+              'extras': {'nativeSourceReference': material.identity, NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD: material.program if mapped else None,
                          'translucent': material.translucent}}
-    if material.png is None:
+    if material.png is None or not mapped:
         record['pbrMetallicRoughness']['baseColorFactor'] = list(UNBOUND_MATERIAL_COLOUR)
         record['extras']['unboundSourceMaterial'] = material.identity
     else:
@@ -212,14 +231,15 @@ def chunk_bsp_glb(model, chunk_id, sections, materials_by_identity):
             gltf_materials.append(gltf_material_record(builder, material, section.key.unlit, image_of_identity))
         positions, normals, uvs, indices = section_geometry(model, section, material, primitive, node_ranges)
         attributes = {'POSITION': builder.accessor(positions, len(positions), 'VEC3'), 'NORMAL': builder.accessor(normals, len(normals), 'VEC3')}
-        if uvs:
+        if material.mapping_size is not None:
             attributes['TEXCOORD_0'] = builder.accessor(uvs, len(uvs), 'VEC2')
         index_accessor = builder.accessor(indices, len(indices), 'SCALAR', 5125)
         meshes.append({'name': f'{chunk_id}.section-{primitive}', 'primitives': [{'attributes': attributes, 'indices': index_accessor,
                                                                                   'material': material_index_of_key[material_key]}]})
         nodes.append({'name': f'{chunk_id}.section-{primitive}', 'mesh': primitive})
         section_records.append({'primitive': primitive, 'material': section.key.material, 'unlit': section.key.unlit,
-                                'lightmap': section.key.lightmap, 'outdoor': section.key.outdoor, 'translucent': material.translucent})
+                                'lightmap': section.key.lightmap, 'nativeRenderSection': section.key.native_render_section,
+                                'translucent': material.translucent})
     if image_of_identity:
         builder.data['samplers'] = [{'wrapS': 10497, 'wrapT': 10497}]
     if any(UNLIT_MATERIAL_EXTENSION in material.get('extensions', {}) for material in gltf_materials):

@@ -1,0 +1,15 @@
+{
+  "file": "SyntheticSizedMaterials.utx",
+  "packageVersion": 123,
+  "licensee": 28,
+  "exports": [
+    {
+      "name": "SizedShader",
+      "class": "Engine.Shader",
+      "properties": [
+        {"name": "Diffuse", "importedObject": "SyntheticSizedTextures.Wide", "importedClass": "Engine.Texture"},
+        {"name": "OutputBlending", "byte": 0}
+      ]
+    }
+  ]
+}

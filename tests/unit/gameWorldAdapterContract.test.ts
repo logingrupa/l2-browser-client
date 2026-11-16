@@ -18,10 +18,14 @@ describe("GameWorldAdapter contract", () => {
     expectTypeOf<WorldCommand["type"]>().toEqualTypeOf<
       | "set-animation" | "preview-action" | "set-locomotion" | "move-local" | "spawn-npc"
       | "despawn" | "set-paused" | "equip-item" | "cast-skill" | "set-health" | "spawn-character" | "play-clip"
-      | "report-position" | "cannot-move" | "set-environment"
+      | "report-position" | "cannot-move" | "set-server-time" | "set-environment-ssq-info" | "set-environment-red-sky"
     >();
-    expectTypeOf<Extract<WorldCommand, { readonly type: "set-environment" }>>()
-      .toEqualTypeOf<{ readonly type: "set-environment"; readonly gameMinutes: number; readonly environmentType: number }>();
+    expectTypeOf<Extract<WorldCommand, { readonly type: "set-server-time" }>>()
+      .toEqualTypeOf<{ readonly type: "set-server-time"; readonly gameMinutes: number }>();
+    expectTypeOf<Extract<WorldCommand, { readonly type: "set-environment-ssq-info" }>>()
+      .toEqualTypeOf<{ readonly type: "set-environment-ssq-info"; readonly first: number; readonly second: number }>();
+    expectTypeOf<Extract<WorldCommand, { readonly type: "set-environment-red-sky" }>>()
+      .toEqualTypeOf<{ readonly type: "set-environment-red-sky"; readonly timeoutSeconds: number }>();
     expectTypeOf<Extract<WorldCommand, { readonly type: "spawn-character" }>>()
       .toEqualTypeOf<{ readonly type: "spawn-character"; readonly characterTemplateIndex: number }>();
     expectTypeOf<Extract<WorldCommand, { readonly type: "play-clip" }>>()
@@ -31,7 +35,7 @@ describe("GameWorldAdapter contract", () => {
   it("enumerates the full event set", () => {
     expectTypeOf<WorldEvent["type"]>().toEqualTypeOf<
       | "spawn" | "update" | "despawn" | "skill-cast"
-      | "command-rejected" | "environment" | "move" | "stop" | "correct" | "teleport"
+      | "command-rejected" | "server-time" | "environment-ssq-info" | "environment-red-sky" | "move" | "stop" | "correct" | "teleport"
     >();
   });
 

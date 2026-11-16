@@ -9,11 +9,10 @@ RENDER_VERTEX_LIGHTMAP_UV_OFFSET = 20
 LIGHTMAP_ATLAS_EDGE = 512
 LIGHTMAP_PROJECTION_FLOAT_COUNT = 25
 LIGHTMAP_SHADOW_MASK_TRAILER_INTEGERS = 7
-LIGHTMAP_RECORD_TRAILER_BYTES = 5
-LIGHTMAP_PAGE_HEADER_INTEGERS = 3
+LIGHTMAP_PAGE_CACHE_IDENTITY_BYTES = 8
 LIGHTMAP_PAGE_MIPS = ((512, 131072), (256, 32768))
-LIGHTMAP_PAGE_FOOTER_BYTES = 13
 MAXIMUM_LIGHTMAP_PAGES_PER_TEXTURE = 8
+MAXIMUM_LIGHTMAP_TEXTURES = 200_000
 MAXIMUM_RENDER_SECTIONS = 100_000
 MAXIMUM_RENDER_VERTICES = 4_000_000
 MAXIMUM_LIGHTMAP_RECORDS = 200_000
@@ -34,22 +33,26 @@ class RenderSection(NamedTuple):
 
 
 class LightmapRecord(NamedTuple):
+    texture_index: int
     surface: int
-    atlas_field: int
+    zone_index: int
     rectangle: tuple
     projection: tuple
     shadow_mask_count: int
     tag: int
-    trailer: bytes
+    revision: int
 
 
 class LightmapPage(NamedTuple):
     texture: int
     slot: int
     slot_count: int
-    header: tuple
+    revision: int
     mips: tuple
-    footer: bytes
+    texture_format: int
+    width: int
+    height: int
+    compressed_revision: int
 
 
 class LightmapTexture(NamedTuple):
@@ -62,7 +65,6 @@ class BspLightmaps(NamedTuple):
     sections: tuple
     records: tuple
     textures: tuple
-    lead_byte: int | None
     unwalked_tail_bytes: int
 
     @property
@@ -136,7 +138,7 @@ def skip_shadow_masks(reader, record_index, rectangle):
 
 
 def read_lightmap_record(reader, record_index, surface_count):
-    surface, atlas_field = reader.compact(), reader.compact()
+    texture_index, surface, zone_index = reader.compact(), reader.compact(), reader.compact()
     rectangle = tuple(reader.compact() for _ in range(4))
     x, y, width, height = rectangle
     if not 0 <= surface < surface_count:
@@ -146,7 +148,7 @@ def read_lightmap_record(reader, record_index, surface_count):
     projection = struct.unpack(f'<{LIGHTMAP_PROJECTION_FLOAT_COUNT}f', reader.take(4 * LIGHTMAP_PROJECTION_FLOAT_COUNT))
     shadow_mask_count = skip_shadow_masks(reader, record_index, rectangle)
     tag = reader.compact()
-    return LightmapRecord(surface, atlas_field, rectangle, projection, shadow_mask_count, tag, bytes(reader.take(LIGHTMAP_RECORD_TRAILER_BYTES)))
+    return LightmapRecord(texture_index, surface, zone_index, rectangle, projection, shadow_mask_count, tag, reader.number('i'))
 
 
 def read_record_index_array(reader, record_count, label):
@@ -162,7 +164,8 @@ def read_record_index_array(reader, record_count, label):
 def read_lightmap_page(reader, texture_index, slot, slot_count, record_count):
     tag = reader.compact()
     members = read_record_index_array(reader, record_count, f'lightmap texture {texture_index} page {slot}')
-    header = tuple(reader.number('i') for _ in range(LIGHTMAP_PAGE_HEADER_INTEGERS))
+    reader.take(LIGHTMAP_PAGE_CACHE_IDENTITY_BYTES)
+    revision = reader.number('i')
     mips = []
     for edge, byte_count in LIGHTMAP_PAGE_MIPS:
         skip_position, declared_bytes = reader.number('i'), reader.compact()
@@ -171,8 +174,11 @@ def read_lightmap_page(reader, texture_index, slot, slot_count, record_count):
         mips.append(bytes(reader.take(declared_bytes)))
         if reader.position != skip_position:
             raise FormatError(f'lightmap texture {texture_index} page {slot} mip {edge} ends at {reader.position}, not its skip position {skip_position}')
-    footer = bytes(reader.take(LIGHTMAP_PAGE_FOOTER_BYTES))
-    return tag, members, LightmapPage(texture_index, slot, slot_count, header, tuple(mips), footer)
+    texture_format, width, height, compressed_revision = reader.number('B'), reader.number('i'), reader.number('i'), reader.number('i')
+    edge = LIGHTMAP_PAGE_MIPS[0][0]
+    if (width, height) != (edge, edge):
+        raise FormatError(f'lightmap texture {texture_index} page {slot} declares {width}x{height}, not the {edge}x{edge} of its first mip')
+    return tag, members, LightmapPage(texture_index, slot, slot_count, revision, tuple(mips), texture_format, width, height, compressed_revision)
 
 
 def read_lightmap_texture(reader, texture_index, first_record, record_count):
@@ -192,17 +198,31 @@ def read_lightmap_texture(reader, texture_index, first_record, record_count):
     return tags, LightmapTexture(first_record, len(members), tuple(pages))
 
 
+def require_record_texture_indices(records, textures):
+    for texture_index, texture in enumerate(textures):
+        for record_index in range(texture.first_record, texture.first_record + texture.record_count):
+            if records[record_index].texture_index != texture_index:
+                raise FormatError(f'lightmap record {record_index} names texture {records[record_index].texture_index}, '
+                                  f'but texture {texture_index} lists it')
+
+
 def read_lightmap_textures(reader, end, records):
+    texture_count = reader.compact()
+    if not 0 <= texture_count <= MAXIMUM_LIGHTMAP_TEXTURES:
+        raise FormatError(f'lightmap texture count {texture_count} is outside 0..{MAXIMUM_LIGHTMAP_TEXTURES}')
     textures, tags, first_record = [], {record.tag for record in records}, 0
-    while reader.position < end:
-        texture_tags, texture = read_lightmap_texture(reader, len(textures), first_record, len(records))
+    for texture_index in range(texture_count):
+        texture_tags, texture = read_lightmap_texture(reader, texture_index, first_record, len(records))
         tags |= texture_tags
         textures.append(texture)
         first_record += texture.record_count
+    if reader.position != end:
+        raise FormatError(f'{texture_count} lightmap textures end at {reader.position}, not at the model end {end}')
     if first_record != len(records):
         raise FormatError(f'lightmap textures cover {first_record} records of {len(records)}')
     if len(tags) > 1:
         raise FormatError(f'lightmap records and pages disagree on the tile tag: {sorted(tags)}')
+    require_record_texture_indices(records, textures)
     return tuple(textures)
 
 
@@ -216,11 +236,10 @@ def read_bsp_lightmaps(package, model):
     if record_count == 0:
         if any(node.i_light_map != NO_LIGHTMAP for node in model.nodes):
             raise FormatError('the model holds no lightmap records but a node points at one')
-        return BspLightmaps(sections, (), (), None, end - reader.position)
-    lead_byte = reader.number('B')
+        return BspLightmaps(sections, (), (), end - reader.position)
     records = tuple(read_lightmap_record(reader, index, len(model.surfs)) for index in range(record_count))
     textures = read_lightmap_textures(reader, end, records)
-    return BspLightmaps(sections, records, textures, lead_byte, 0)
+    return BspLightmaps(sections, records, textures, 0)
 
 
 def node_lightmap_texture(lightmaps, node):

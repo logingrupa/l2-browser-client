@@ -150,3 +150,12 @@ class StructPropertyDecoder:
 
 def decode_property_tags(package, tags, owner_class, declared_types, rules):
     return StructPropertyDecoder(package, declared_types, rules).tag_values(tags, PropertyScope(owner_class, None), '', 0)
+
+
+def decode_binary_struct_hex(raw_hex, layout):
+    payload = bytes.fromhex(raw_hex)
+    reader = Reader(payload)
+    values = decoded_binary_struct(reader, layout, layout.name)
+    if reader.position != reader.end:
+        raise StructPropertyValueError(f'binary {layout.name} holds {reader.end} bytes, its layout reads {layout.byte_count}')
+    return values

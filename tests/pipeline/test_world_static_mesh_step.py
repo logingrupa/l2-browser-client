@@ -17,9 +17,10 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
 from world import static_mesh_step
+from world.static_mesh_colour_streams import ColourStreamOutcome
 from world.static_mesh_step import (STATIC_MESH_STEP_ALGORITHM_VERSION, ConvertedStaticMesh, StaticMeshAssignment, StaticMeshUnit,
                                     assign_static_placements, placeable_requests, placement_accounting_difference, run_static_mesh_step,
-                                    static_mesh_ledger, static_mesh_outcomes, static_meshes_product)
+                                    static_mesh_ledger, static_mesh_outcomes, static_meshes_product, with_colour_streams)
 from world.freeze_world_oracle import matrix_canonical_sha256
 from world.light_actors import ClassChains, reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
@@ -84,11 +85,15 @@ def converted_mesh(package, name):
     payload = f'synthetic archive {package}.{name}'.encode()
     archive_sha256 = hashlib.sha256(payload).hexdigest()
     glb = f'synthetic model {package}.{name}'.encode()
+    colour_streams = f'synthetic colour streams {package}.{name}'.encode()
     store_files = {f'{archive_sha256}/asset.l2asset': (f'{archive_sha256}/asset.l2asset', payload),
-                   f'{archive_sha256}/model.glb': (f'{archive_sha256}/model.glb', glb)}
+                   f'{archive_sha256}/model.glb': (f'{archive_sha256}/model.glb', glb),
+                   f'{archive_sha256}/colour-streams.json': (f'{archive_sha256}/colour-streams.json', colour_streams)}
     record = {'id': f'interlude:{package}.{name}', 'sourceObject': f'{package}.{name}',
               'archive': {'file': f'{archive_sha256}/asset.l2asset', 'sha256': archive_sha256, 'bytes': len(payload)},
-              'model': {'file': f'{archive_sha256}/model.glb', 'sha256': hashlib.sha256(glb).hexdigest(), 'bytes': len(glb)}}
+              'model': {'file': f'{archive_sha256}/model.glb', 'sha256': hashlib.sha256(glb).hexdigest(), 'bytes': len(glb)},
+              'colourStreams': {'file': f'{archive_sha256}/colour-streams.json', 'sha256': hashlib.sha256(colour_streams).hexdigest(),
+                                'bytes': len(colour_streams)}}
     return ConvertedStaticMesh(record, store_files)
 
 
@@ -213,8 +218,20 @@ class StaticMeshOutcomeTests(unittest.TestCase):
                                               {'kind': 'model', 'package': 'staticmeshes/Rock_S.usx', 'object': 'Rock_S.Broken'}])
         self.assertEqual(converter.output, lane_work_root(self.project_root, 'world') / 'static-mesh-converter')
         self.assertIsInstance(outcomes['Rock_S.Rock'], ConvertedStaticMesh)
+        self.assertEqual(outcomes['Rock_S.Rock'].model_record['colourStreams'], {'gapReason': 'static-mesh-colour-stream-layout-unreviewed:123/28'})
         self.assertEqual(outcomes['Rock_S.Broken'], ('failed', 'decode-failed:ValueError:UModel cannot safely select this duplicate leaf name'))
         self.assertEqual(outcomes['Bad_S.Rock'], ('failed', 'decode-failed:header too short'))
+
+    def test_a_joined_colour_stream_sidecar_sits_next_to_its_model_and_names_its_hash(self):
+        converted = converted_mesh('Rock_S', 'Rock')
+        bare = ConvertedStaticMesh({key: value for key, value in converted.model_record.items() if key != 'colourStreams'},
+                                   {key: value for key, value in converted.store_files.items() if not key.endswith('/colour-streams.json')})
+        joined = with_colour_streams(bare, ColourStreamOutcome(b'{"kind":"sidecar"}', None))
+        archive_sha256 = converted.model_record['archive']['sha256']
+        self.assertEqual(joined.model_record['colourStreams'], {'file': f'{archive_sha256}/colour-streams.json',
+                                                                'sha256': hashlib.sha256(b'{"kind":"sidecar"}').hexdigest(), 'bytes': 18})
+        self.assertEqual(joined.store_files[f'{archive_sha256}/colour-streams.json'], (f'{archive_sha256}/colour-streams.json', b'{"kind":"sidecar"}'))
+        self.assertNotIn(f'{archive_sha256}/colour-streams.json', bare.store_files)
 
     def test_a_failure_reason_keeps_the_sentence_and_drops_machine_paths(self):
         requests = [mesh_request('Rock_S', 'Payload'), mesh_request('Rock_S', 'Hung')]
@@ -295,6 +312,18 @@ class StaticMeshAssignmentTests(unittest.TestCase):
         self.assertEqual(product['chunks']['chunk-1-1'], {'models': [], 'gapRows': []})
         self.assertEqual([row['sourceIdentity']['object'] for row in product['unplacedGapRows']], [f'{TILE_ID}.StaticMeshActor17'])
         self.assertEqual(json_bytes(product), json_bytes(static_meshes_product(TILE_ID, self.chunk_plan, self.assignment(), synthetic_outcomes())))
+
+    def test_a_placed_model_without_colour_streams_adds_one_listed_gap_row_naming_the_model(self):
+        outcomes = synthetic_outcomes()
+        rock = outcomes['Rock_S.Rock']
+        outcomes['Rock_S.Rock'] = with_colour_streams(rock, ColourStreamOutcome(None, 'static-mesh-colour-stream-join-mismatch'))
+        product = static_meshes_product(TILE_ID, self.chunk_plan, self.assignment(), outcomes)
+        rows = [row for row in product['gapRows'] if row['reason'] == 'static-mesh-colour-stream-join-mismatch']
+        self.assertEqual([(row['sourceIdentity']['object'], row['status']) for row in rows], [('Rock_S.Rock', 'gap')])
+        validate_gap_row(rows[0], load_gap_reason_patterns())
+        self.assertEqual(len(product['gapRows']), len(self.assignment().gap_rows()) + 1)
+        self.assertEqual(product['chunks']['chunk-0-0']['gapRows'], static_meshes_product(TILE_ID, self.chunk_plan, self.assignment(),
+                                                                                           synthetic_outcomes())['chunks']['chunk-0-0']['gapRows'])
 
     def test_a_shuffled_actor_list_writes_the_same_product(self):
         native = synthetic_native()
@@ -398,8 +427,9 @@ class RunStaticMeshStepTests(unittest.TestCase):
         for model in product['models']:
             self.assertTrue((store_root / model['archive']['file']).is_file())
             self.assertTrue((store_root / model['model']['file']).is_file())
+            self.assertTrue((store_root / model['colourStreams']['file']).is_file())
         self.assertFalse((store_root / 'catalog.json').exists())
-        self.assertEqual(sorted(output['path'].split('/')[0] for output in receipt['outputs']), ['l2', 'l2', 'l2', 'l2', 'work'])
+        self.assertEqual(sorted(output['path'].split('/')[0] for output in receipt['outputs']), ['l2'] * 6 + ['work'])
 
     def test_a_second_run_is_a_ledger_skip_and_a_forced_rebuild_writes_the_same_product(self):
         first_row, _, step_directory = self.run_step(synthetic_tile_actors(), synthetic_outcomes())

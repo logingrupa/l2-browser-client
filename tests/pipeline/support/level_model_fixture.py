@@ -23,9 +23,10 @@ def polygon_plane(points):
 
 def synthetic_polygon(points, *, material=1, surface_flags=0, light_map=INDEX_NONE, zones=(1, 1), node_flags=0, front=INDEX_NONE,
                       back=INDEX_NONE, coplanar=INDEX_NONE, collision_bound=INDEX_NONE, render_bound=INDEX_NONE, actor=2,
-                      texture_u=(1.0, 0.0, 0.0), texture_v=(0.0, 1.0, 0.0)):
+                      texture_u=(1.0, 0.0, 0.0), texture_v=(0.0, 1.0, 0.0), section=0):
     return {'points': [tuple(float(value) for value in point) for point in points], 'material': material, 'surfaceFlags': surface_flags,
-            'lightMap': light_map, 'zones': tuple(zones), 'nodeFlags': node_flags, 'front': front, 'back': back, 'coplanar': coplanar,
+            'lightMap': light_map, 'zones': tuple(zones), 'section': section, 'nodeFlags': node_flags, 'front': front, 'back': back,
+            'coplanar': coplanar,
             'collisionBound': collision_bound, 'renderBound': render_bound, 'actor': actor, 'textureU': texture_u, 'textureV': texture_v}
 
 
@@ -36,7 +37,7 @@ def synthetic_zone(actor_reference=0):
 def synthetic_node(polygon, surface_index, vertex_pool, plane):
     return SimpleNamespace(plane=plane, zone_mask=ALL_ZONES_MASK, flags=polygon['nodeFlags'], i_vert_pool=vertex_pool, i_surf=surface_index,
                            i_back=polygon['back'], i_front=polygon['front'], i_plane=polygon['coplanar'],
-                           num_vertices=len(polygon['points']), i_zone=polygon['zones'], i_section=0, i_vert_offset=0,
+                           num_vertices=len(polygon['points']), i_zone=polygon['zones'], i_section=polygon['section'], i_vert_offset=0,
                            i_light_map=polygon['lightMap'], i_collision_bound=polygon['collisionBound'],
                            i_render_bound=polygon['renderBound'], exclusive_sphere=(0.0, 0.0, 0.0, 0.0), reserved=bytes(16),
                            i_leaf=(INDEX_NONE, INDEX_NONE))

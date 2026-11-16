@@ -24,6 +24,7 @@ TEXTURE_PROPERTY_NAMES = ['Format', 'USize', 'VSize']
 BYTE_PROPERTY_KIND = 1
 INTEGER_PROPERTY_KIND = 2
 DXT1_FORMAT = 3
+RGB8_FORMAT = 4
 RGBA8_FORMAT = 5
 REFERENCE_CLIENT_ROOT = Path('E:/Lineage2-client')
 UI_PACKAGE_PATH = 'systextures/L2UI_CH3.utx'
@@ -119,11 +120,11 @@ class TextureSource118Tests(unittest.TestCase):
             read_texture_source_118(package, package.exports[0])
 
     def test_a_format_without_a_reviewed_block_wrapper_is_a_listed_format_gap(self):
-        package = read_unreal_package(package_118_bytes(format_id=RGBA8_FORMAT), PACKAGE_FILENAME)
-        self.assertNotIn(RGBA8_FORMAT, FORMATS)
+        package = read_unreal_package(package_118_bytes(format_id=RGB8_FORMAT), PACKAGE_FILENAME)
+        self.assertNotIn(RGB8_FORMAT, FORMATS)
         with self.assertRaises(UnsupportedTextureSource) as caught:
             read_texture_source_118(package, package.exports[0])
-        self.assertEqual(caught.exception.reason, 'texture-format-unsupported:5')
+        self.assertEqual(caught.exception.reason, 'texture-format-unsupported:4')
         self.assertTrue(is_listed_reason(caught.exception.reason, load_gap_reason_patterns(ROOT)))
 
     def test_a_table_layout_package_is_not_read_as_118(self):
@@ -162,7 +163,7 @@ class ConverterFormatGapTests(unittest.TestCase):
         except (OSError, ValueError) as error:
             self.skipTest(f'locked reference client {REFERENCE_CLIENT_ROOT} is unavailable: {error}')
 
-    def test_an_rgba8_ui_texture_keeps_its_named_format_gap_in_the_converter_metadata(self):
+    def test_an_rgba8_ui_texture_keeps_its_native_source_and_a_dds_gap_in_the_converter_metadata(self):
         package = read_unreal_package(self.access.require_equal_file(UI_PACKAGE_PATH).read_bytes(), 'L2UI_CH3.utx')
         item = first_texture_with_format(package, RGBA8_FORMAT)
         with tempfile.TemporaryDirectory() as temporary:
@@ -170,7 +171,7 @@ class ConverterFormatGapTests(unittest.TestCase):
             converter = Converter(REFERENCE_CLIENT_ROOT, project_root / 'artifacts' / 'texture-format-gap', UMODEL, project_root=project_root)
             conversion = converter.convert({'kind': 'texture', 'package': 'L2UI_CH3', 'object': item['object']})
         native_source = conversion['metadata']['nativeTextureSource']
-        self.assertEqual((native_source['status'], native_source['gapReason']), ('unsupported', 'texture-format-unsupported:5'))
+        self.assertEqual((native_source['status'], native_source['format']['name']), ('preserved', 'RGBA8'))
         self.assertEqual(conversion['metadata']['nativeTextureDDS']['status'], 'unsupported')
 
 

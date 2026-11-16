@@ -1,94 +1,229 @@
 import { describe, expect, it } from "vitest";
 import { buildFragmentChain } from "../../src/materials/ue2/babylon/fragmentChain";
-import { combineAlpha, combineColour, combinerMaskValue, evaluateColourExpression } from "../../src/materials/ue2/model/combiner";
+import { combineAlpha, combineColour, evaluateColourExpression, routedMaskAlpha, type CombinerOperands } from "../../src/materials/ue2/model/combiner";
 import { COMBINER_CONSTANTS } from "../../src/materials/ue2/model/constants/combinerConstants";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import type { ColourUnits } from "../../src/materials/ue2/model/materialFieldValues";
-import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
-import { combinerSwatchCases, combinerSwatchInputRgba, syntheticCombinerSwatchProgram } from "../support/materialProgramFixture";
+import { compileMaterialStagePlan, type ColourExpression, type CompiledMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
+import {
+  combinerSwatchCases, combinerSwatchInputRgba, swatchInputRgbaByTextureNode, syntheticCombinerSwatchProgram, syntheticWaterShaderProgram,
+  waterShaderSwatchInputRgba, type FixtureProgram,
+} from "../support/materialProgramFixture";
 
-const bytes = (...channels: number[]): ColourUnits => channels.map(channel => channel / 255) as unknown as ColourUnits;
-const first = bytes(128, 64, 255, 200);
-const second = bytes(255, 128, 200, 100);
-const mask = bytes(10, 51, 90, 30);
-const greenMask = 51 / 255;
+const bytes = (...channels: readonly number[]): ColourUnits => [channels[0]! / 255, channels[1]! / 255, channels[2]! / 255, channels[3]! / 255];
+const material1 = bytes(...combinerSwatchInputRgba.material1);
+const material2 = bytes(...combinerSwatchInputRgba.material2);
+const mask = bytes(...combinerSwatchInputRgba.mask);
+const maskAlpha = mask[3];
+const withMask: CombinerOperands = { material1, material2, firstEmitted: material1, routedMaskAlpha: maskAlpha };
+const withoutMask: CombinerOperands = { material1, material2, firstEmitted: material1, routedMaskAlpha: null };
+const swappedWithoutMask: CombinerOperands = { material1, material2, firstEmitted: material2, routedMaskAlpha: null };
+const blendBytes = (weight: number) => [0, 1, 2].map(channel => combinerSwatchInputRgba.material2[channel]! * weight + combinerSwatchInputRgba.material1[channel]! * (1 - weight));
+const material2AddMaterial2AlphaTimesMaterial1 = [0, 1, 2].map(channel => combinerSwatchInputRgba.material2[channel]! + material2[3] * combinerSwatchInputRgba.material1[channel]!);
+const withModulateAlphaAddColourCap = true;
+
+function expectColourBytes(colour: readonly number[], expectedBytes: readonly number[]): void {
+  colour.forEach((channel, index) => expect(channel * 255).toBeCloseTo(Math.min(255, Math.max(0, expectedBytes[index]!)), 6));
+}
+
+function compiledPlan(program: FixtureProgram): CompiledMaterialStagePlan {
+  const plan = compileMaterialStagePlan(parseMaterialProgram(JSON.parse(JSON.stringify(program))));
+  if (plan.status !== "compiled") throw new Error(`program did not compile: ${plan.reasons.join(", ")}`);
+  return plan;
+}
+
+function samplerTexelsOf(plan: CompiledMaterialStagePlan): ColourUnits[] {
+  return plan.samplers.map(sampler => bytes(...swatchInputRgbaByTextureNode[sampler.textureNode]!));
+}
 
 describe("Combiner colour operations", () => {
   it.each([
-    [0, [128, 64, 255]],
-    [1, [255, 128, 200]],
-    [3, [255, 192, 255]],
-    [4, [0, 0, 55]],
-    [5, [128 * greenMask + 255 * (1 - greenMask), 64 * greenMask + 128 * (1 - greenMask), 255 * greenMask + 200 * (1 - greenMask)]],
-    [6, [128 + 255 * greenMask, 64 + 128 * greenMask, 255]],
-    [7, [10, 51, 90]],
-  ])("operation %i gives its documented byte result", (operation, expectedBytes) => {
-    const colour = combineColour(operation, first, second, combinerMaskValue(mask, false), mask, 1);
-    colour.forEach((channel, index) => expect(channel * 255).toBeCloseTo(Math.min(255, expectedBytes[index]!), 6));
+    ["with a Mask", 0, withMask, [128, 64, 255]],
+    ["with a Mask", 1, withMask, [255, 128, 200]],
+    ["with a Mask", 3, withMask, [383, 192, 455]],
+    ["with a Mask", 4, withMask, [127, 64, -55]],
+    ["with a Mask", 5, withMask, blendBytes(maskAlpha)],
+    ["with a Mask", 6, withMask, material2AddMaterial2AlphaTimesMaterial1],
+    ["with a Mask", 7, withMask, [128, 64, 255]],
+    ["without a Mask", 0, withoutMask, [128, 64, 255]],
+    ["without a Mask", 1, withoutMask, [255, 128, 200]],
+    ["without a Mask", 3, withoutMask, [383, 192, 455]],
+    ["without a Mask", 4, withoutMask, [127, 64, -55]],
+    ["without a Mask", 5, withoutMask, blendBytes(material1[3])],
+    ["without a Mask", 6, withoutMask, material2AddMaterial2AlphaTimesMaterial1],
+    ["without a Mask", 7, withoutMask, [128, 64, 255]],
+    ["swapped without a Mask", 5, swappedWithoutMask, blendBytes(material2[3])],
+    ["swapped without a Mask", 6, swappedWithoutMask, material2AddMaterial2AlphaTimesMaterial1],
+    ["swapped without a Mask", 7, swappedWithoutMask, [255, 128, 200]],
+  ] as const)("%s, operation %i gives the DB-1 byte result", (_, operation, operands, expectedBytes) => {
+    expectColourBytes(combineColour(operation, operands, 1, withModulateAlphaAddColourCap), expectedBytes);
   });
 
-  it("multiplies and doubles under Modulate2X, clamping in the byte domain", () => {
-    const colour = combineColour(2, first, second, null, null, 2);
-    expect(colour[0]).toBe(1);
-    expect(colour[1] * 255).toBeCloseTo((64 / 255) * (128 / 255) * 2 * 255, 6);
-    expect(colour[2]).toBe(1);
-    expect(combineColour(2, bytes(40, 40, 40, 255), bytes(40, 40, 40, 255), null, null, 4)[0] * 255).toBeCloseTo((40 / 255) * (40 / 255) * 4 * 255, 6);
-    expect(combineColour(2, bytes(40, 40, 40, 255), bytes(40, 40, 40, 255), null, null, 1)[0] * 255).toBeCloseTo((40 / 255) * (40 / 255) * 255, 6);
+  it("multiplies by 1, 2 under Modulate2X and 4 under Modulate4X, clamping in the byte domain", () => {
+    const dark = bytes(40, 40, 40, 255);
+    const darkOperands: CombinerOperands = { material1: dark, material2: dark, firstEmitted: dark, routedMaskAlpha: null };
+    expect(combineColour(2, withoutMask, 2, withModulateAlphaAddColourCap)[0]).toBe(1);
+    expect(combineColour(2, withoutMask, 2, withModulateAlphaAddColourCap)[1] * 255).toBeCloseTo((64 / 255) * (128 / 255) * 2 * 255, 6);
+    expect(combineColour(2, darkOperands, 4, withModulateAlphaAddColourCap)[0] * 255).toBeCloseTo((40 / 255) * (40 / 255) * 4 * 255, 6);
+    expect(combineColour(2, darkOperands, 1, withModulateAlphaAddColourCap)[0] * 255).toBeCloseTo((40 / 255) * (40 / 255) * 255, 6);
   });
 
-  it("reads the mask from the green channel and inverts it with InvertMask", () => {
-    expect(combinerMaskValue(mask, false)).toBeCloseTo(greenMask, 9);
-    expect(combinerMaskValue(mask, true)).toBeCloseTo(1 - greenMask, 9);
+  it("adds Material1 and Material2 for operation 6 without D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR", () => {
+    expectColourBytes(combineColour(6, withMask, 1, false), [383, 192, 455]);
+  });
+
+  it("routes the Mask alpha and its complement with InvertMask", () => {
+    expect(routedMaskAlpha(mask, false)).toBeCloseTo(30 / 255, 9);
+    expect(routedMaskAlpha(mask, true)).toBeCloseTo(225 / 255, 9);
   });
 
   it("refuses an operation outside the table", () => {
-    expect(() => combineColour(8, first, second, null, null, 1)).toThrow(RangeError);
-    expect(() => combineAlpha(5, first, second, null)).toThrow(RangeError);
+    expect(() => combineColour(8, withMask, 1, withModulateAlphaAddColourCap)).toThrow(RangeError);
+    expect(() => combineAlpha(5, withMask)).toThrow(RangeError);
   });
 });
 
 describe("Combiner alpha operations", () => {
   it.each([
-    [0, greenMask],
-    [1, (200 / 255) * (100 / 255)],
-    [2, 1],
-    [3, 200 / 255],
-    [4, 100 / 255],
-  ])("operation %i gives its documented result", (operation, expected) => {
-    expect(combineAlpha(operation, first, second, combinerMaskValue(mask, false))).toBeCloseTo(expected, 9);
+    ["with a Mask", withMask, 30 / 255],
+    ["with an inverted Mask", { ...withMask, routedMaskAlpha: routedMaskAlpha(mask, true) }, 225 / 255],
+    ["without a Mask", withoutMask, 200 / 255],
+    ["swapped without a Mask", swappedWithoutMask, 100 / 255],
+  ] as const)("operation 0 %s keeps the prepared alpha", (_, operands, expected) => {
+    expect(combineAlpha(0, operands)).toBeCloseTo(expected, 9);
   });
 
-  it("gives alpha 0 for AO_Use_Mask without a Mask", () => {
-    expect(combineAlpha(0, first, second, null)).toBe(0);
+  it.each(([["with a Mask", withMask], ["without a Mask", withoutMask], ["swapped without a Mask", swappedWithoutMask]] as const).flatMap(([label, operands]) => [
+    [label, 1, operands, (200 / 255) * (100 / 255)],
+    [label, 2, operands, 1],
+    [label, 3, operands, 200 / 255],
+    [label, 4, operands, 100 / 255],
+  ] as const))("%s, alpha operation %i reads Material1 and Material2 alpha", (_, operation, operands, expected) => {
+    expect(combineAlpha(operation, operands)).toBeCloseTo(expected, 9);
+  });
+});
+
+describe("Combiner InvertMask routing", () => {
+  const texture = (samplerIndex: number): ColourExpression => ({ kind: "texture", samplerIndex });
+  const twoTextureCombiner = (
+    colourOperation: number, alphaOperation: number, mask: ColourExpression | null,
+    routing: Pick<Extract<ColourExpression, { kind: "combiner" }>, "firstEmittedMaterial" | "alphaComplementedMaterial" | "maskAlphaComplemented">,
+    material1Expression: ColourExpression = texture(0), material2Expression: ColourExpression = texture(1),
+  ): Extract<ColourExpression, { kind: "combiner" }> => ({
+    kind: "combiner", colourOperation, alphaOperation, colourMultiplier: 1, material1: material1Expression, material2: material2Expression, mask, ...routing,
+  });
+  const constantMask = bytes(10, 20, 30, 64);
+  const inputs = { samplerTexels: [material1, material2], colourSourceValues: [constantMask], usesDiffuseAlpha: true };
+  const evaluate = (expression: ColourExpression) => evaluateColourExpression(expression, inputs);
+
+  it("keeps the alpha of a ConstantColor Mask uninverted for operation 5 and alpha operation 0", () => {
+    const result = evaluate(twoTextureCombiner(5, 0, { kind: "colour-source", colourSourceIndex: 0 }, { firstEmittedMaterial: "material1", alphaComplementedMaterial: null, maskAlphaComplemented: false }));
+    expectColourBytes(result.slice(0, 3), blendBytes(64 / 255));
+    expect(result[3]).toBeCloseTo(64 / 255, 9);
+  });
+
+  it("passes the complement into Material1 when the Mask aliases it, for alpha operations 1 to 4", () => {
+    const material1Expression = texture(0);
+    const routing = { firstEmittedMaterial: "material1", alphaComplementedMaterial: "material1", maskAlphaComplemented: true } as const;
+    const alphaOf = (alphaOperation: number) => evaluate(twoTextureCombiner(0, alphaOperation, material1Expression, routing, material1Expression))[3];
+    expect(alphaOf(1)).toBeCloseTo((100 / 255) * (1 - 200 / 255), 9);
+    expect(alphaOf(2)).toBeCloseTo(100 / 255 + 1 - 200 / 255, 9);
+    expect(alphaOf(3)).toBeCloseTo(1 - 200 / 255, 9);
+    expect(alphaOf(4)).toBeCloseTo(100 / 255, 9);
+    expect(alphaOf(0)).toBeCloseTo(1 - 200 / 255, 9);
+  });
+
+  it("emits Material2 first with its complemented alpha when two textures have InvertMask and Mask = Material2", () => {
+    const material2Expression = texture(1);
+    const routing = { firstEmittedMaterial: "material2", alphaComplementedMaterial: "material2", maskAlphaComplemented: true } as const;
+    const swapped = (colourOperation: number, alphaOperation: number) => evaluate(twoTextureCombiner(colourOperation, alphaOperation, material2Expression, routing, texture(0), material2Expression));
+    expectColourBytes(swapped(7, 4).slice(0, 3), [255, 128, 200]);
+    expectColourBytes(swapped(6, 4).slice(0, 3), [0, 1, 2].map(channel => combinerSwatchInputRgba.material2[channel]! + (1 - material2[3]) * combinerSwatchInputRgba.material1[channel]!));
+    expect(swapped(7, 4)[3]).toBeCloseTo(1 - 100 / 255, 9);
+    expect(swapped(7, 3)[3]).toBeCloseTo(200 / 255, 9);
+  });
+
+  it("writes the complemented child alpha into the fragment chain", () => {
+    const material1Expression = texture(0);
+    const swatchPlan = compiledPlan(syntheticCombinerSwatchProgram(combinerSwatchCases[0]!));
+    const fragmentSourceOf = (alphaComplementedMaterial: "material1" | null) => buildFragmentChain({
+      ...swatchPlan,
+      expression: twoTextureCombiner(0, 3, material1Expression, { firstEmittedMaterial: "material1", alphaComplementedMaterial, maskAlphaComplemented: true }, material1Expression),
+    }, "unlit").fragmentSource;
+    expect(fragmentSourceOf("material1")).toMatch(/vec4 ue2Value\d+ = vec4\(ue2Value0\.rgb, 1\.0 - ue2Value0\.a\);/);
+    expect(fragmentSourceOf(null)).not.toMatch(/1\.0 - ue2Value0\.a\);/);
   });
 });
 
 describe("the combiner swatch programs of the GPU pixel oracle", () => {
-  const swatchInputBytes = Object.fromEntries(Object.entries(combinerSwatchInputRgba).map(([input, rgba]) => [input, bytes(...rgba)]));
-
-  it("cover every colour operation 0-7 and every alpha operation 0-4", () => {
+  it("cover every colour operation 0-7, every alpha operation 0-4, Mask=None and the swapped order", () => {
     expect([...new Set(combinerSwatchCases.map(swatchCase => swatchCase.colourOperation))].sort()).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
     expect([...new Set(combinerSwatchCases.map(swatchCase => swatchCase.alphaOperation))].sort()).toEqual([0, 1, 2, 3, 4]);
+    expect(combinerSwatchCases.filter(swatchCase => swatchCase.mask === "none" && swatchCase.material2 === "nested-combiner").map(swatchCase => swatchCase.colourOperation)).toEqual([5, 6, 7]);
   });
 
-  it.each(combinerSwatchCases)("compile colour operation $colourOperation and alpha operation $alphaOperation to the CPU combiner result", swatchCase => {
-    const plan = compileMaterialStagePlan(parseMaterialProgram(JSON.parse(JSON.stringify(syntheticCombinerSwatchProgram(swatchCase)))));
-    if (plan.status !== "compiled") throw new Error(`combiner swatch program did not compile: ${plan.reasons.join(", ")}`);
-    const samplerTexels = plan.samplers.map(sampler => swatchInputBytes[sampler.textureNode.split(".")[1]!]!);
-    const evaluated = evaluateColourExpression(plan.expression, { samplerTexels, colourSourceValues: [], usesDiffuseAlpha: false });
-    const { material1, material2, mask } = swatchInputBytes as Record<"material1" | "material2" | "mask", ColourUnits>;
-    const maskValue = combinerMaskValue(mask, false);
-    const colour = combineColour(swatchCase.colourOperation, material1, material2, maskValue, mask, swatchCase.modulate2X ? 2 : 1);
-    expect(evaluated).toEqual([...colour, combineAlpha(swatchCase.alphaOperation, material1, material2, maskValue)]);
+  it.each(combinerSwatchCases)("compile colour operation $colourOperation, alpha operation $alphaOperation, mask $mask, Material2 $material2 to the CPU combiner result", swatchCase => {
+    const plan = compiledPlan(syntheticCombinerSwatchProgram(swatchCase));
+    const evaluated = evaluateColourExpression(plan.expression, { samplerTexels: samplerTexelsOf(plan), colourSourceValues: [], usesDiffuseAlpha: false });
+    const operands: CombinerOperands = {
+      material1, material2, firstEmitted: swatchCase.material2 === "nested-combiner" ? material2 : material1,
+      routedMaskAlpha: swatchCase.mask === "mask-texture" ? maskAlpha : null,
+    };
+    const colour = combineColour(swatchCase.colourOperation, operands, swatchCase.modulate2X ? 2 : 1, withModulateAlphaAddColourCap);
+    evaluated.forEach((channel, index) => expect(channel).toBeCloseTo([...colour, combineAlpha(swatchCase.alphaOperation, operands)][index]!, 12));
   });
 
   it("emit the combiner clamp bounds from the combiner.result-clamp row", () => {
-    const plan = compileMaterialStagePlan(parseMaterialProgram(JSON.parse(JSON.stringify(syntheticCombinerSwatchProgram(combinerSwatchCases[3]!)))));
-    if (plan.status !== "compiled") throw new Error("combiner swatch program did not compile");
+    const plan = compiledPlan(syntheticCombinerSwatchProgram(combinerSwatchCases[3]!));
     const [resultMinimum, resultMaximum] = COMBINER_CONSTANTS.resultClamp.runtimeDefault;
     const combinerStatement = buildFragmentChain(plan, "unlit").fragmentSource.split("\n").find(line => line.includes("= clamp(vec4("));
     expect(combinerStatement).toMatch(/^\s*vec4 ue2Value\d+ = clamp\(vec4\(.+\), /);
     expect(combinerStatement?.endsWith(`, ${resultMinimum.toFixed(1)}, ${resultMaximum.toFixed(1)});`)).toBe(true);
+  });
+});
+
+describe("the WaterShader01 five-stage chain", () => {
+  const oceanS = bytes(...waterShaderSwatchInputRgba.oceanS);
+  const oscillator = bytes(...waterShaderSwatchInputRgba.TexOscillator0);
+  const base = bytes(...waterShaderSwatchInputRgba.base1);
+  const rgbOf = (colour: ColourUnits) => [colour[0], colour[1], colour[2]];
+
+  it("blends SRCALPHA, INVSRCALPHA without depth write and evaluates to the DB-1 water arithmetic", () => {
+    const plan = compiledPlan(syntheticWaterShaderProgram());
+    expect(plan.blend).toMatchObject({ source: "shader", pair: { source: "source-alpha", destination: "inverse-source-alpha" }, depthWrite: false });
+    const inputs = { samplerTexels: samplerTexelsOf(plan), colourSourceValues: [], usesDiffuseAlpha: true };
+    const shader = plan.expression as Extract<ColourExpression, { kind: "shader" }>;
+    const reflection = shader.diffuse as Extract<ColourExpression, { kind: "combiner" }>;
+    const com = reflection.material2 as Extract<ColourExpression, { kind: "combiner" }>;
+    const stage0Colour = rgbOf(oceanS), stage0Alpha = oceanS[3];
+    const stage1Colour = stage0Colour.map((channel, index) => channel * oscillator[index]!), stage1Alpha = stage0Alpha;
+    const stage2Colour = stage1Colour.map((channel, index) => channel + base[index]!), stage2Alpha = base[3] * stage1Alpha;
+    const stage3Colour = stage2Colour.map((channel, index) => channel + stage2Alpha * oscillator[index]!), stage3Alpha = oscillator[3] * stage2Alpha;
+    const stage4Colour = stage3Colour, stage4Alpha = base[3];
+    const stages: readonly [ColourExpression, readonly number[]][] = [
+      [com.material1, [...stage1Colour, stage1Alpha]],
+      [com, [...stage2Colour, stage2Alpha]],
+      [reflection, [...stage3Colour, stage3Alpha]],
+      [shader, [...stage4Colour, stage4Alpha]],
+    ];
+    for (const [expression, expected] of stages) {
+      evaluateColourExpression(expression, inputs).forEach((channel, index) => expect(channel).toBeCloseTo(expected[index]!, 12));
+    }
+    expect(stage4Colour.every(channel => channel < 1)).toBe(true);
+  });
+});
+
+describe("combiner constants rows", () => {
+  it("name the DB-1 replay of D3DDrv.dll for the corrected mask channel and operation forms and drop the missing-mask alpha", () => {
+    for (const row of [COMBINER_CONSTANTS.maskChannel, COMBINER_CONSTANTS.maskNamedOperations, COMBINER_CONSTANTS.operationForms]) {
+      expect(row.status).toBe("corrected-interlude");
+      expect(row.interludeEvidence).toMatch(/^D3DDrv\.dll 05622dde .*0x10014a24.*DB-1 combiner-stage-semantics cb9b11ac, replayed 2026-11-15/);
+    }
+    expect(COMBINER_CONSTANTS.maskChannel.runtimeDefault).toBe("alpha");
+    expect(COMBINER_CONSTANTS.firstEmittedMaterial.status).toBe("confirmed-interlude");
+    expect(COMBINER_CONSTANTS.modulateAlphaAddColourCap).toMatchObject({ runtimeDefault: true, status: "unconfirmed" });
+    expect(COMBINER_CONSTANTS.resultClamp.status).toBe("unconfirmed");
+    expect(Object.keys(COMBINER_CONSTANTS)).not.toContain("missingMaskAlpha");
   });
 });
 
@@ -98,9 +233,9 @@ describe("evaluateColourExpression", () => {
     const constant = bytes(255, 128, 64, 255);
     const result = evaluateColourExpression({
       kind: "shader",
-      diffuse: { kind: "combiner", colourOperation: 2, alphaOperation: 3, colourMultiplier: 2, invertMask: false,
+      diffuse: { kind: "combiner", colourOperation: 2, alphaOperation: 3, colourMultiplier: 2, firstEmittedMaterial: "material2", alphaComplementedMaterial: null, maskAlphaComplemented: false,
         material1: { kind: "texture", samplerIndex: 0 }, material2: { kind: "colour-source", colourSourceIndex: 0 }, mask: null },
-      opacity: null, specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null, modulateSpecular2X: false,
+      opacity: null, specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null,
     }, { samplerTexels: [texel], colourSourceValues: [constant], usesDiffuseAlpha: true });
     expect(result[0] * 255).toBeCloseTo(200, 6);
     expect(result[1] * 255).toBeCloseTo((150 / 255) * (128 / 255) * 2 * 255, 6);
@@ -112,7 +247,7 @@ describe("evaluateColourExpression", () => {
     const shader = (opacity: boolean) => ({
       kind: "shader" as const, diffuse: { kind: "texture" as const, samplerIndex: 0 },
       opacity: opacity ? { kind: "colour-source" as const, colourSourceIndex: 0 } : null,
-      specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null, modulateSpecular2X: false,
+      specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null,
     });
     const inputs = { samplerTexels: [bytes(10, 20, 30, 40)], colourSourceValues: [bytes(0, 0, 0, 90)] };
     expect(evaluateColourExpression(shader(false), { ...inputs, usesDiffuseAlpha: false })[3]).toBe(1);

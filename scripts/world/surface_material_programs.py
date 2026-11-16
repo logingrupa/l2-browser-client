@@ -62,6 +62,10 @@ def resolve_material_export(map_sources, identity):
     return package, matches[0]
 
 
+def material_gap_row_status(reason):
+    return GAP_STATUS if reason.startswith(MATERIAL_GAP_REASON_PREFIX) else FAILED_STATUS
+
+
 def root_program_node(program):
     return next(node for node in program['nodes'] if node['id'] == program['root'])
 

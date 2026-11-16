@@ -14,7 +14,7 @@ from native_assets_lib.lineage_material_prefix import MATERIAL_PREFIX_EVIDENCE, 
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_assets_lib.texture_mips import REVIEWED_VERSIONS, read_texture_source_for_layout
 from native_assets_lib.texture_package_118 import read_unreal_package
-from native_assets_lib.texture_source_reader import FORMATS, P8_FORMAT_ID, UnsupportedTextureSource
+from native_assets_lib.texture_source_reader import DXT1_FORMAT_ID, DXT5_FORMAT_ID, FORMATS, P8_FORMAT_ID, UnsupportedTextureSource
 from native_catalog.ue2 import FormatError
 from native_store.store_paths import REPOSITORY_ROOT, lane_work_root
 from reference_client_guard import require_reference_client
@@ -33,6 +33,7 @@ SELECTION_RULE = 'first Texture export in export order whose Format has a review
 ROW_FIELDS = ('converterNativeMipsEqual', 'elberaMipSha256', 'failingCheck', 'format', 'licensee', 'lockSha256', 'materialPrefix',
               'object', 'ourMipSha256', 'package', 'packageVersion', 'selection', 'status', 'tool')
 RECOMPUTED_FIELDS = tuple(field for field in ROW_FIELDS if field != 'converterNativeMipsEqual')
+LAYOUT_CROSS_CHECK_FORMAT_IDS = (P8_FORMAT_ID, DXT1_FORMAT_ID, DXT5_FORMAT_ID)
 
 
 class TextureLayoutCrossCheckError(ValueError):
@@ -49,9 +50,9 @@ def has_unique_texture_leaf_name(package, item):
     return sum(1 for other in package.exports if other['className'] == TEXTURE_CLASS_NAME and other['name'].casefold() == item['name'].casefold()) == 1
 
 
-def first_reviewed_format_texture(package):
+def first_layout_cross_check_texture(package):
     for item in package.exports:
-        if item['className'] == TEXTURE_CLASS_NAME and texture_format_id(package, item) in FORMATS and has_unique_texture_leaf_name(package, item):
+        if item['className'] == TEXTURE_CLASS_NAME and texture_format_id(package, item) in LAYOUT_CROSS_CHECK_FORMAT_IDS and has_unique_texture_leaf_name(package, item):
             return item
     raise TextureLayoutCrossCheckError(f'{package.filename} holds no Texture export with a reviewed format and a unique leaf name')
 
@@ -90,7 +91,7 @@ def failing_check(rule_failure, our_hashes, our_error, elbera_hashes, elbera_err
 def texture_layout_cross_check_row(access, relative_path):
     path, lock_sha256 = access.require_equal_file_with_sha256(relative_path)
     package = read_unreal_package(path.read_bytes(), PurePosixPath(relative_path).name)
-    item = first_reviewed_format_texture(package)
+    item = first_layout_cross_check_texture(package)
     our_hashes = our_error = elbera_hashes = elbera_error = None
     try:
         our_hashes = [sha256_hex_digest(payload) for payload in our_texture_mip_payloads(package, item)]

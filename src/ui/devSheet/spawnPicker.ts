@@ -46,13 +46,13 @@ export const spawnPicker: SandboxPickerFactory = {
     });
     group.idEntry({
       label: "Spawn NPC by ID", testId: "sandbox-spawn-npc", submitText: "Spawn", hint, variables: nameCombobox.variables,
-      fields: [{ name: "npcId", label: "NPC ID", minimum: 0 }],
+      fields: [{ name: "npcId", label: "NPC ID", kind: "integer", minimum: 0 }],
       onSubmit: values => { if (lifetime.active()) spawnNpc(submittedInteger(values, "npcId")); },
     });
     const characterEntry = group.idEntry({
       label: "Spawn character", testId: "sandbox-spawn-character", submitText: "Spawn", variables: nameCombobox.variables,
       hint: "Dispatches spawn-character with a chargrp template index. A converted table:chargrp bounds the index by its record count.",
-      fields: [{ name: "characterTemplateIndex", label: "Chargrp index", minimum: 0 }],
+      fields: [{ name: "characterTemplateIndex", label: "Chargrp index", kind: "integer", minimum: 0 }],
       onSubmit: values => {
         if (!lifetime.active()) return;
         const characterTemplateIndex = submittedInteger(values, "characterTemplateIndex");

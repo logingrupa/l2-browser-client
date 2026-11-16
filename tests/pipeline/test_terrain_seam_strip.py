@@ -127,6 +127,15 @@ class SeamStripGeometryTests(unittest.TestCase):
             normal = vertex_normal(self.points, synthetic_topology_words(self.native)['EdgeTurnBitmap'], 17, 17, 16, row)
             self.assertEqual(arrays['NORMAL'][81 + row], float32_gltf_normal(normal))
 
+    def test_every_vertex_names_its_heightmap_sample_by_the_native_grid_then_the_seam_keys(self):
+        record, arrays = self.with_strip['chunk-1-0']
+        extras = arrays['extras']
+        self.assertEqual(extras['nativeSampleGrid'], {'offset': [8, 0], 'quads': [8, 8]})
+        self.assertEqual(extras['seamSampleKeys'], [[17, row] for row in range(9)])
+        self.assertEqual(len(arrays['POSITION']), 9 * 9 + len(extras['seamSampleKeys']))
+        self.assertEqual(arrays['POSITION'][10], float32_gltf_point(self.points[1 * 17 + 9]))
+        self.assertEqual(self.without_strip['chunk-1-0'][1]['extras']['seamSampleKeys'], [])
+
     def test_an_inner_chunk_and_a_strip_without_neighbour_heights_are_unchanged(self):
         self.assertEqual(self.with_strip['chunk-0-0'], self.without_strip['chunk-0-0'])
         self.assertEqual(self.without_strip['chunk-1-1'][0]['seamStripQuads'], 0)

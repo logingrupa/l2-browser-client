@@ -8,7 +8,7 @@ from actors.npc_store_records import converted_model_store_files_and_record
 from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.static_materials import REVIEWED_VERSIONS, static_material_layout_unreviewed_reason
-from native_catalog.ue2 import FormatError
+from native_catalog.ue2 import FormatError, Package
 from native_store.catalog_writer import add_store_file, sha256_hex
 from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_file_publish import publish_store_files
@@ -19,13 +19,14 @@ from static_material_package_census import STATIC_MESH_PACKAGE_CENSUS_RELATIVE_P
 from world.light_actors import reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
+from world.static_mesh_colour_streams import COLOUR_STREAMS_FILE_NAME, static_mesh_colour_stream_outcome
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actor_subclass_actors, static_mesh_actors
 from world.tile_census import WORLD_LANE_NAME, read_package_header
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-STATIC_MESH_STEP_ALGORITHM_VERSION = 3
+STATIC_MESH_STEP_ALGORITHM_VERSION = 4
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
 STATIC_MESH_CONVERTER_FOLDER = 'static-mesh-converter'
@@ -137,6 +138,31 @@ def model_sort_key(model_record):
     return model_record['sourceObject'].casefold(), model_record['sourceObject']
 
 
+class StaticMeshPackages:
+    def __init__(self, reference_client):
+        self.reference_client, self.loaded = reference_client, {}
+
+    def __call__(self, relative):
+        if relative not in self.loaded:
+            path, sha256 = self.reference_client.require_equal_file_with_sha256(relative)
+            self.loaded[relative] = (Package(path.read_bytes(), path.name), {'path': relative, 'sha256': sha256})
+        return self.loaded[relative]
+
+
+def with_colour_streams(converted, outcome):
+    if outcome.gap_reason is not None:
+        return converted._replace(model_record={**converted.model_record, 'colourStreams': {'gapReason': outcome.gap_reason}})
+    relative = f'{converted.model_record["model"]["file"].rsplit("/", 1)[0]}/{COLOUR_STREAMS_FILE_NAME}'
+    store_files = dict(converted.store_files)
+    add_store_file(store_files, relative, outcome.payload)
+    colour_streams = {'file': relative, 'sha256': sha256_hex(outcome.payload), 'bytes': len(outcome.payload)}
+    return ConvertedStaticMesh({**converted.model_record, 'colourStreams': colour_streams}, store_files)
+
+
+def model_glb_bytes(converted):
+    return converted.store_files[converted.model_record['model']['file'].casefold()][1]
+
+
 def convert_static_mesh(converter, request):
     result = convert_under_request_lock(converter, {'kind': 'model', 'package': request['package'], 'object': request['object']})
     store_files, record = converted_model_store_files_and_record(None, Path(result['file']))
@@ -200,19 +226,23 @@ def placeable_requests(plan, requests_by_reference):
 
 def static_mesh_outcomes(project_root, client, requests):
     reference_client = require_reference_client(client)
-    gate_by_package, outcomes = {}, {}
+    header_by_package, outcomes, packages = {}, {}, StaticMeshPackages(reference_client)
     converter = None
     for request in requests:
-        if request['package'] not in gate_by_package:
-            gate_by_package[request['package']] = package_gate_reason(read_package_header(reference_client, request['package']))
-        gate = gate_by_package[request['package']]
+        if request['package'] not in header_by_package:
+            header_by_package[request['package']] = read_package_header(reference_client, request['package'])
+        header = header_by_package[request['package']]
+        gate = package_gate_reason(header)
         if gate is not None:
             outcomes[request['object']] = gate
             continue
         converter = converter or Converter(client, lane_work_root(project_root, WORLD_LANE_NAME) / STATIC_MESH_CONVERTER_FOLDER, UMODEL,
                                            project_root=project_root)
         try:
-            outcomes[request['object']] = convert_static_mesh(converter, request)
+            converted = convert_static_mesh(converter, request)
+            colour_streams = static_mesh_colour_stream_outcome((header['packageVersion'], header['licensee']), packages, request,
+                                                               model_glb_bytes(converted))
+            outcomes[request['object']] = with_colour_streams(converted, colour_streams)
         except MODEL_CONVERSION_ERRORS as error:
             outcomes[request['object']] = (FAILED_STATUS, conversion_failure_reason(error))
     return outcomes
@@ -227,6 +257,12 @@ def chunk_model_records(placements, models_by_id):
              'placements': placements_by_model[model['id']]} for model in models]
 
 
+def colour_stream_gap_rows(assignment, models):
+    return [tile_step_row(assignment.tile_id, STATIC_MESH_STEP_NAME, GAP_STATUS, model['colourStreams']['gapReason'],
+                          {**assignment.source_identity, 'object': model['sourceObject']}, assignment.evidence)
+            for model in models if 'gapReason' in model['colourStreams']]
+
+
 def static_meshes_product(tile_id, chunk_plan, assignment, mesh_outcomes):
     converted = [outcome for outcome in mesh_outcomes.values() if isinstance(outcome, ConvertedStaticMesh)]
     placed_model_ids = {placement['modelId'] for placements in assignment.placed_by_chunk.values() for placement in placements}
@@ -234,8 +270,9 @@ def static_meshes_product(tile_id, chunk_plan, assignment, mesh_outcomes):
     chunks = {chunk['chunkId']: {'models': chunk_model_records(assignment.placed_by_chunk.get(chunk['chunkId'], []), models_by_id),
                                  'gapRows': assignment.chunk_gap_rows(chunk['chunkId'])}
               for chunk in chunk_plan['chunks']}
-    return {'tileId': tile_id, 'models': sorted(models_by_id.values(), key=model_sort_key), 'chunks': chunks,
-            'unplacedGapRows': assignment.chunk_gap_rows(None), 'gapRows': assignment.gap_rows()}
+    models = sorted(models_by_id.values(), key=model_sort_key)
+    return {'tileId': tile_id, 'models': models, 'chunks': chunks, 'unplacedGapRows': assignment.chunk_gap_rows(None),
+            'gapRows': assignment.gap_rows() + colour_stream_gap_rows(assignment, models)}
 
 
 def placement_accounting_difference(actors, class_chains, assignment):

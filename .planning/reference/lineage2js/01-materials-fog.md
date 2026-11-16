@@ -98,37 +98,38 @@ Both Modulates fog toward 127/255, neutral under `2 * src * dst`. AlphaModulate,
 
 ### Combiner operations
 
-`m` is the mask value, or `1 - m` with InvertMask. `c1, a1` come from Material1 and `c2, a2` from Material2, white when absent.
+Interlude rules from DB-1 (D3DDrv.dll 05622dde, `combiner-stage-semantics` cb9b11ac, replayed 2026-11-15). Forms are in Material terms; the builder swaps stage arguments itself. `M1`, `M2` come from Material1 and Material2, white when absent (null Material2 is open). `F` is the child emitted first: Material2 when Material1 is a bitmap and Material2 is not, or when both are bitmaps with InvertMask and Mask identical to Material2, else Material1. `m` is the Mask alpha, `1 - alpha` with InvertMask on a bitmap or child-alias Mask, never on a ConstantColor or FadeColor Mask; a Mask feeds only alpha arguments. A Mask identical to `F` with InvertMask complements `F.a` wherever `M1.a` or `M2.a` is read.
 
 | Op | Colour |
 |---|---|
-| 0 Use_Color_From_Material1 | `c1` |
-| 1 Use_Color_From_Material2 | `c2` |
-| 2 Multiply | `c1 * c2 * k`, `k` = 1, 2 with Modulate2X, 4 with Modulate4X |
-| 3 Add | `c1 + c2` |
-| 4 Subtract | `c1 - c2` |
-| 5 AlphaBlend_With_Mask | `c1 * m + c2 * (1 - m)` |
-| 6 Add_With_Mask_Modulation | `c1 + c2 * m` (from the name, unconfirmed) |
-| 7 Use_Color_From_Mask | `Mask.rgb` (from the name, unconfirmed) |
+| 0 Use_Color_From_Material1 | `M1.rgb` |
+| 1 Use_Color_From_Material2 | `M2.rgb` |
+| 2 Multiply | `M1 * M2 * k`, `k` = 4 with Modulate4X, else 2 with Modulate2X, else 1 |
+| 3 Add | `M1 + M2` |
+| 4 Subtract | `M2 - M1` |
+| 5 AlphaBlend_With_Mask | `M2 * m + M1 * (1 - m)`, `m = F.a` with Mask=None |
+| 6 Add_With_Mask_Modulation | `M2.rgb + M2.a * M1.rgb` with D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR (row `combiner.modulate-alpha-add-colour-cap`), else `M1 + M2` |
+| 7 Use_Color_From_Mask | `F.rgb`; the builder has no colour case |
 
-Alpha ops: 0 Use_Mask `m`, 1 Multiply `a1 * a2`, 2 Add `a1 + a2`, 3 From1 `a1`, 4 From2 `a2`. The reference implements only 3 and 4.
-- Clamp each result to [0, 1], an unconfirmed fixed-function assumption.
-- The mask channel is one constant, `combiner.mask-channel`.
-- With no Mask, a colour op that reads it is a diagnostic. AO_Use_Mask with no Mask gives alpha 0, as the flame owner writes for Default_Flame01 (`src/scene/world/nativeMaterialGraph.ts:213-214` on native-world-slice). That rule is open.
+Alpha ops: 0 Use_Mask `m`, or `F.a` with Mask=None; 1 Multiply `M1.a * M2.a`; 2 Add `M1.a + M2.a`; 3 From1 `M1.a`; 4 From2 `M2.a`. The reference implements only 3 and 4.
+- Mask=None is accepted by every operation (0x10014a24); no white or zero mask is substituted.
+- Clamp each result to [0, 1]: unconfirmed, DB-1 leaves gpu-clamp-and-precision open.
+- Open: native rejection of two non-bitmap children and of AO1-AO4 with a separate Mask, the Modulate2X compatibility path, InvertMask with a Mask identical to the appended bitmap that cannot be reordered (AO1-AO4), and CO6 in the swapped order with a separate Mask.
 - A Combiner is a full node anywhere, root included.
 
 ### UV modifiers
 
-`t` is level seconds. Each sampler gets one 3x3 matrix per frame, the CPU product of its chain, outermost first as in the reference: `uv' = M_inner * ... * M_outer * uv`. A three-modifier fixture and an L2.exe swatch pin the order.
+`t` is level seconds. Each sampler gets one 3x3 matrix per frame, the CPU product of its chain, outermost first as in the reference: `uv' = M_inner * ... * M_outer * uv`. DB-2 confirms it on the CPU path: D3DDrv 0x10011ca0 stores `M_outer * M_inner` in row vectors (ocean-s * ocn_rot); the GL2Shader route is not traced.
 
 - TexPanner translates by `t * PanRate * (dir.x, dir.y)`, `dir` the PanDirection rotator as a unit vector.
 - TexRotator converts rotator units through `src/shared/math/rotator.ts`, for now exact `angle = units * pi / 32768`. Fixed uses Rotation, ConstantlyRotating `angle * t`, Oscillating adds `A * sin(2*pi*(frac(t * rate / 65535) + phase))`, about `(UOffset / USize, VOffset / VSize)`.
-- TexOscillator per axis: `o = A * sin(w * frac(t * rate) + 2*pi*phase)`, `w = 2*pi` for Pan and Stretch, `pi/2` for StretchRepeat. Pan adds `o`. Stretch and StretchRepeat use `u' = (u - k) * (1 + o) + k`, `k = UOffset / USize`. Jitter draws an offset of amplitude `A` per update from `tex-jitter`.
+- TexOscillator per axis: `o = A * sin(w * frac(t * rate) + 2*pi*phase)`, `w = 2*pi` for Pan and Stretch, `pi/2` for StretchRepeat. Pan adds `o`. Stretch and StretchRepeat use `u' = (u - k) * (1 + o) + k`, `k = UOffset / USize`. Jitter draws an offset of amplitude `A` per update from `tex-jitter`. DB-2 confirms Pan, `A * sin(2*pi*(frac(t * rate) + phase))`, and that an unset type is OT_Pan; Stretch, a nonzero StretchRepeat and Jitter stay unconfirmed.
+- TexOscillatorTriggered runs the TexOscillator matrix at `tau = TriggeredTime < 0 ? 0 : min(t - TriggeredTime, D)`, `D = StopAfterPeriod / max(UOscillationRate, VOscillationRate)` (DB-2). The client starts cold, TriggeredTime 0: ocean-s holds V +0.047552824 at t 0 and +0.040450849 from t 1. A level Reset gives TriggeredTime -1 and holds tau 0; whether a map resets it is open (`uv.triggered-oscillator-start-state`).
 - TexScaler has UScale, VScale, UOffset and VOffset, with no reference, so a swatch decides their order.
 - TexEnvMap: camera space `(View * R).xy * 0.5 + 0.5`, world space `R.xy * 0.5 + 0.5` (EnvMapType 0), cubemaps sample `R`. The reference flips camera-space cube lookups by `(-1, 1, -1)`.
 - TexCoordSource selects any UV channel the mesh has.
 
-The reference multiplies TexRotator and TexOscillator results by the serialized `M`, and uses identity for TexPanner, whose GetMatrix rebuilds `M`. Do not apply `M` on top without evidence.
+The reference multiplies TexRotator and TexOscillator results by the serialized `M`, and uses identity for TexPanner, whose GetMatrix rebuilds `M`. Do not apply `M` on top without evidence. DB-2 shows TexOscillator GetMatrix rebuilds `M` from identity.
 
 ### Colour sources and animated textures
 
@@ -216,7 +217,7 @@ The last pass applies `out = clamp((C + 0.5) * x^(1/G) + (B - C) * 32768 / 65535
 ### Edge cases
 
 - Lighting data stays in source units (about 1 cm, Z up), as `asset.json` records, and light math runs there. Presentation converts once through `src/world/sourceFrame.ts`: `world = (x, z, y) * 0.01`, `source = (X, Z, Y) * 100`, right-handed, Y up.
-- Triggered modifiers such as TexOscillatorTriggered (FX_E_T.utx) need a server Trigger (ARCH-01). They stay `material-class-unported:<class>` until a typed adapter record exists.
+- TexOscillatorTriggered (FX_E_T.utx) is reviewed and evaluated untriggered (261115-t7o). Trigger (RTA_Retrigger restarts the window) and Reset need a server or level trigger (ARCH-01) and are not ported. Combiner Trigger and Reset reach only FallbackMaterial, not Material1, Material2 or Mask (DB-2).
 
 ## Data inputs
 
@@ -279,10 +280,10 @@ The last pass applies `out = clamp((C + 0.5) * x^(1/G) + (B - C) * 32768 / 65535
 | terrain.sun-term | per Terrain layers and lighting | `terrain.ts:150-151,203-210` | unconfirmed | reference |
 | terrain.mask-uv | 20_20 mask rule in Terrain layers and lighting | `scripts/native_map_geometry.py:339,361` on native-world-slice; `un-terrain-sector.ts:305-306` | unconfirmed | as listed |
 | terrain.layer-matrix | serialized TextureMatrix, checked against TextureRotation, UScale, VScale, UPan, VPan, TextureMapAxis, LayerRotation | `lineage2js/src/assets/unreal/un-terrain-info.ts:525-592`; `scripts/native_map_geometry.py:405-424` | ue2-data | serialized matrix |
-| uv.modifiers | TexPanner, TexOscillator, TexEnvMap, FadeColor and AnimNext formulas | `shader-mesh-static.vs:407-444,752-796`; `un-material.ts:305-312,793-807`; `shader-mesh-static.fs:542-558`; `src/scene/world/nativeFlameMaterials.ts:75,91-108` on native-world-slice | unconfirmed | reference |
+| uv.modifiers | TexPanner, TexOscillator, TexEnvMap, FadeColor and AnimNext formulas | `shader-mesh-static.vs:407-444,752-796`; `un-material.ts:305-312,793-807`; `shader-mesh-static.fs:542-558`; `src/scene/world/nativeFlameMaterials.ts:75,91-108` on native-world-slice | unconfirmed; TexOscillator Pan, the chain order and the TexOscillatorTriggered window confirmed-interlude (DB-2) | reference |
 | uv.rotator-conversion | exact `units * pi / 32768` or the float32 sine table, one choice per use in `src/shared/math/rotator.ts` | `shader-mesh-static.vs:407-416` | unconfirmed | exact until the Core.dll SinTab re-derivation |
-| combiner.mask-channel | green in the reference | `shader-mesh-static.fs:653-660` | unknown | green |
-| colour.byte-order | B, G, R, A (reference, nativeMaterialGraph.ts:219) or R, G, B, A (native_sky.py:166) | `lineage2js/src/assets/unreal/un-color.ts:37-43`; `src/scene/world/nativeMaterialGraph.ts:219`; `scripts/native_sky.py:166` on native-world-slice | unknown | B, G, R, A until the R != B fixture |
+| combiner.mask-channel | alpha (the reference reads green) | DB-1 mask-routing, D3DDrv.dll 05622dde | corrected-interlude | alpha |
+| colour.byte-order | B, G, R, A | `lineage2js/src/assets/unreal/un-color.ts:37-43`; research Q6 binary-member-order, Core.dll 9462f87a SerializeBin, `struct-property-tags.json` 573e1265 | confirmed-interlude | B, G, R, A |
 | gamma.ramp | formula in Display gamma; G = 0 off | `lineage2js/src/rendering/display-gamma.ts:7,53-57` (C4 D3DDrv UpdateGamma) | unconfirmed | reference |
 | gamma.setting | Option.ini [Video] Gamma=1.200000, TerrainClippingRange=0; [ClippingRange] Terrain=8.0; no Brightness or Contrast keys | client `system/Option.ini`, read-only | ue2-data | G = 1.2 |
 | gamma.brightness-contrast | reference defaults Brightness 0.8, Contrast 0.7, Gamma 0.8; steps 1.2, 1.0, 0.8, 0.6, 0.4 | `lineage2js/src/assets/unreal/conf-files/un-conf-system.ts:40-44`; `display-gamma.ts:5` | unconfirmed | B 0.8, C 0.7 until l2.ini and user.ini decode |
@@ -484,7 +485,6 @@ In `src/materials/ue2/babylon/**`:
 - Fog: unit 2000 or 2048? What selects the preset? View z or radial distance, vertex or table fog? Which source wins in sun-affected zones, where the reference uses zone fog only with streaming off?
 - Do time tables wrap to T=0? What rule covers timeenv3 SkyBoxColor NUM=1 and the duplicate [HSVTerrainLight]?
 - Terrain: shadow maps lerped or switched? Layer 0 masked? Which alpha channel per format? What does bUseAlpha change?
-- Combiner: which mask channel? What do AO_Use_Mask and mask colour ops do with Mask None?
 - TexRotator: yaw only or pitch, yaw and roll summed? 65535 or 65536? Phase scale? Is the serialized M only a cache?
 - In Interlude, what are Jitter's random source and rate, the LT_Strobe and LT_Flicker rates, TexScaler's scale and offset order, MaterialSequence timing and loops, and VertexColor's effect?
 - After the axis swap, does the camera-space env map need the (-1, 1, -1) flip?

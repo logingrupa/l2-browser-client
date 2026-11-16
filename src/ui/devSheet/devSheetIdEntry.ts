@@ -1,14 +1,25 @@
 import type { DevIdEntry, DevIdEntryField, DevIdEntryOptions } from "./types";
 
 const integerInputPattern = /^\d{1,9}$/;
+const clockInputPattern = /^(\d{2}):(\d{2})$/;
+const hoursPerDay = 24;
+const minutesPerHour = 60;
 
 let idEntrySequence = 0;
 
 type FieldReading = { readonly value: number } | { readonly rejection: string };
 
+function readClockField(field: DevIdEntryField, text: string): FieldReading {
+  const match = clockInputPattern.exec(text);
+  const hours = Number(match?.[1]), minutes = Number(match?.[2]);
+  if (match === null || hours >= hoursPerDay || minutes >= minutesPerHour) return { rejection: `${field.label} must be HH:MM from 00:00 to 23:59.` };
+  return { value: hours * minutesPerHour + minutes };
+}
+
 function readIdEntryField(field: DevIdEntryField, rawText: string): FieldReading {
   const text = rawText.trim();
   if (!text) return { rejection: `${field.label} is required.` };
+  if (field.kind === "clock") return readClockField(field, text);
   if (!integerInputPattern.test(text)) return { rejection: `${field.label} must be a whole number of at most 9 digits.` };
   const value = Number(text);
   if (!Number.isSafeInteger(value)) return { rejection: `${field.label} must be a safe whole number.` };
@@ -28,7 +39,8 @@ export function createDevIdEntry(options: DevIdEntryOptions, infoButton: HTMLEle
     const row = document.createElement("div"); row.className = "dev-row"; row.dataset.layout = "inline";
     const input = document.createElement("input");
     input.type = "text"; input.name = field.name; input.id = `dev-id-entry-${sequence}-${field.name}`;
-    input.autocomplete = "off"; input.spellcheck = false; input.inputMode = "numeric";
+    input.autocomplete = "off"; input.spellcheck = false;
+    if (field.kind === "integer") input.inputMode = "numeric";
     if (options.testId) input.dataset.testid = `${options.testId}-${field.name}`;
     const label = document.createElement("label"); label.className = "dev-row-label"; label.htmlFor = input.id; label.textContent = field.label;
     const cell = document.createElement("div"); cell.className = "dev-row-control"; cell.append(input);

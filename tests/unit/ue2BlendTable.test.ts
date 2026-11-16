@@ -107,10 +107,16 @@ describe("material constants rows", () => {
 
   it("keep every other reference factor unconfirmed and cite NATIVE_FLAMES for the Interlude OB_Brighten and OB_Translucent pairs", () => {
     const blendRows = Object.values(MATERIAL_CONSTANT_TABLES.blend);
-    const decidedRowIds = ["blend.ob-brighten-translucent", "blend.enum-ordinals", "blend.non-blending-root", "blend.ptds-pairs"];
-    for (const row of blendRows.filter(row => !decidedRowIds.includes(row.id))) {
+    const rowsWithOwnStatus = new Set(["blend.ob-brighten-translucent", "blend.enum-ordinals", "blend.non-blending-root", "blend.ptds-pairs", "blend.ob-normal-opacity"]);
+    for (const row of blendRows.filter(row => !rowsWithOwnStatus.has(row.id))) {
       expect(row.status).toBe("unconfirmed");
     }
     expect(MATERIAL_CONSTANT_TABLES.blend.outputBlendingInterludePairs.provenance).toContain("docs/NATIVE_FLAMES.md:9");
+  });
+
+  it("confirm the OB_Normal with Opacity pair from the DB-1 replay of D3DDrv.dll", () => {
+    expect(MATERIAL_CONSTANT_TABLES.blend.normalWithOpacityPair).toMatchObject({
+      status: "confirmed-interlude", interludeEvidence: expect.stringMatching(/^D3DDrv\.dll 05622dde .*DB-1 combiner-stage-semantics cb9b11ac, replayed 2026-11-15/),
+    });
   });
 });

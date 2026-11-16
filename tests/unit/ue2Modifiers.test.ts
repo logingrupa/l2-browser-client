@@ -1,21 +1,22 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { COLOUR_CONSTANTS } from "../../src/materials/ue2/model/constants/combinerConstants";
 import { evaluateNativeFlameFade, selectNativeFlameFrame } from "../../src/scene/world/nativeFlameMaterials";
 import type { NativeFlamePlan } from "../../src/scene/world/nativeMaterialGraph";
 import { createRandomStream, deriveStreamSeed, randomRange } from "../../src/shared/random";
 import { evaluateMaterialFrame } from "../../src/materials/ue2/model/materialFrame";
 import { parseMaterialProgram, programNode, type MaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import {
-  colourSourceValue, fadeColourBytes, IDENTITY_TEXTURE_COORDINATE_MATRIX, textureCoordinateChainMatrix, textureCoordinateModifierMatrix,
-  type TextureCoordinateMatrix,
+  colourSourceValue, fadeColourBytes, IDENTITY_TEXTURE_COORDINATE_MATRIX, multiplyTextureCoordinateMatrices, texOscillatorTriggeredMatrix,
+  textureCoordinateChainMatrix, textureCoordinateModifierMatrix, type TextureCoordinateMatrix,
 } from "../../src/materials/ue2/model/modifiers";
+import { COLOUR_CONSTANTS } from "../../src/materials/ue2/model/constants/combinerConstants";
+import { TEXTURE_COORDINATE_CONSTANTS } from "../../src/materials/ue2/model/constants/textureCoordinateConstants";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import { selectTextureFrame } from "../../src/materials/ue2/model/textureFrames";
 import {
-  enumValue, field, nodeReference, programOf, rawStruct, reviewedNode, swatchTextureNode, swatchTexturePng, textureImageFor, unportedNode,
-  type FixtureProgramField, type FixtureProgramNode,
+  enumValue, field, nodeReference, oceanSTriggeredOscillatorNode, programOf, rawStruct, reviewedNode, swatchTextureNode, swatchTexturePng, textureImageFor,
+  unportedNode, type FixtureProgramField, type FixtureProgramNode,
 } from "../support/materialProgramFixture";
 
 const image = textureImageFor(swatchTexturePng());
@@ -136,13 +137,154 @@ describe("texture coordinate modifiers", () => {
       .toEqual({ status: "unported", reason: "material-feature-unported:EnvMapType" });
   });
 
-  it("reports a triggered modifier unported instead of evaluating it", () => {
-    const program = parseMaterialProgram(JSON.parse(JSON.stringify(programOf("Synthetic.Triggered", [unportedNode("Synthetic.Triggered", "Engine.TexOscillatorTriggered")]))));
-    expect(textureCoordinateModifierMatrix(programNode(program, "Synthetic.Triggered"), context(1)))
-      .toEqual({ status: "unported", reason: "material-class-unported:Engine.TexOscillatorTriggered" });
+  it("TexOscillator evaluates the converter's unset oscillation type, member 0 OT_Pan, and reports a missing type unported", () => {
+    const unsetFields = (oscillationType: ReturnType<typeof enumValue> | null) => [
+      field("UOscillationType", oscillationType, "ue-zero"), field("UOscillationRate", 0.5), field("UOscillationPhase", 0.125), field("UOscillationAmplitude", 0.2),
+      field("VOscillationType", oscillationType, "ue-zero"), field("VOscillationRate", 0), field("VOscillationPhase", 0), field("VOscillationAmplitude", 0)];
+    const levelSeconds = 0.75;
+    const converted = programWith([modifier("Synthetic.Oscillator", "Engine.TexOscillator", unsetFields(enumValue(0, "OT_Pan")))]);
+    expectMatrix(evaluated(converted, "Synthetic.Oscillator", levelSeconds), [1, 0, 0.2 * Math.sin(2 * Math.PI * (levelSeconds * 0.5 + 0.125)), 0, 1, 0]);
+    const typeless = programWith([modifier("Synthetic.Oscillator", "Engine.TexOscillator", unsetFields(null))]);
+    expect(textureCoordinateModifierMatrix(programNode(typeless, "Synthetic.Oscillator"), context(levelSeconds)))
+      .toEqual({ status: "unported", reason: "material-feature-unported:UOscillationType" });
+  });
+
+  it("TexRotator evaluates the converter's unset rotation type, member 0 TR_FixedRotation", () => {
+    const fixedRotator = programWith([modifier("Synthetic.Rotator", "Engine.TexRotator", [
+      field("TexRotationType", enumValue(0, "TR_FixedRotation"), "ue-zero"), field("Rotation", rotator(0, 16384, 0), "authored", "raw")])]);
+    expect(textureCoordinateModifierMatrix(programNode(fixedRotator, "Synthetic.Rotator"), context(5)).status).toBe("evaluated");
+  });
+
+  it("reports an unported class unported instead of evaluating it, and a triggered MaterialSequence stays unported", () => {
+    const program = parseMaterialProgram(JSON.parse(JSON.stringify(programOf("Synthetic.Glow", [unportedNode("Synthetic.Glow", "Engine.GlowModifier")]))));
+    expect(textureCoordinateModifierMatrix(programNode(program, "Synthetic.Glow"), context(1)))
+      .toEqual({ status: "unported", reason: "material-class-unported:Engine.GlowModifier" });
     const sequence = parseMaterialProgram(JSON.parse(JSON.stringify(programOf("Synthetic.Sequence", [reviewedNode("Synthetic.Sequence", "Engine.MaterialSequence", [
       field("TriggerAction", enumValue(2, "MSTA_Pause"), "authored", "unported"), field("Loop", true, "class-default")])]))));
     expect(compileMaterialStagePlan(sequence)).toMatchObject({ status: "diagnostic", reasons: expect.arrayContaining(["material-feature-unported:TriggerAction"]) });
+  });
+});
+
+const oceanSId = "Synthetic.ocean-s";
+const oceanRotatorId = "Synthetic.ocn_rot";
+const db2Tolerance = 2e-7;
+const coldOceanVOffsetAtStart = 0.047552824;
+const coldOceanVOffsetAfterWindow = 0.040450849;
+const coldOceanVOffsetAtQuarterSecond = 0.046193976;
+const coldOceanVOffsetAtHalfSecond = 0.044550326;
+const resetTriggeredTime = -1;
+const db2OrderChildFixtureColumnMatrix: TextureCoordinateMatrix = [0.75, 0.5, 0, -0.5, 0.75, 0];
+const db2OrderNativeResultColumnMatrix: TextureCoordinateMatrix = [0.75, 0.5, 0.02377641201019287, -0.5, 0.75, 0.03566461801528931];
+const oceanRotatorAuthoredCachedRows = [[0.9238795042037964, 0.3826834261417389, 0], [-0.3826834261417389, 0.9238795042037964, 0], [0, 0, 1]] as const;
+
+function oceanProgram(overrides: FixtureProgramField[] = []): MaterialProgram {
+  return programWith([
+    oceanSTriggeredOscillatorNode(oceanSId, oceanRotatorId, overrides),
+    modifier(oceanRotatorId, "Engine.TexRotator", [field("TexRotationType", enumValue(0, "TR_FixedRotation")), field("Rotation", rotator(0, 4096, 0), "authored", "raw")]),
+  ]);
+}
+
+function oceanContext(levelSeconds: number) {
+  return { levelSeconds, textureWidth: 256, textureHeight: 256, jitterStream: createRandomStream(jitterSeed) };
+}
+
+function oceanMatrix(program: MaterialProgram, levelSeconds: number) {
+  return textureCoordinateModifierMatrix(programNode(program, oceanSId), oceanContext(levelSeconds));
+}
+
+function rowVectorTransform(rows: readonly (readonly number[])[], u: number, v: number): readonly [number, number] {
+  return [u * rows[0]![0]! + v * rows[1]![0]! + rows[2]![0]!, u * rows[0]![1]! + v * rows[1]![1]! + rows[2]![1]!];
+}
+
+function rowVectorProduct(first: readonly (readonly number[])[], second: readonly (readonly number[])[]): number[][] {
+  return first.map(row => second[0]!.map((_, column) => row.reduce((sum, value, index) => sum + value * second[index]![column]!, 0)));
+}
+
+describe("TexOscillatorTriggered in its untriggered state", () => {
+  it("cold ocean-s holds the initial phase at level time 0 within 2e-7", () => {
+    const evaluation = oceanMatrix(oceanProgram(), 0);
+    if (evaluation.status !== "evaluated") throw new Error(evaluation.reason);
+    expect(evaluation.matrix.slice(0, 5)).toEqual([1, 0, 0, 0, 1]);
+    expect(Math.abs(evaluation.matrix[5] - coldOceanVOffsetAtStart)).toBeLessThanOrEqual(db2Tolerance);
+  });
+
+  it.each([1, 2.5, 100])("cold ocean-s holds V +0.040450849 from the end of its one-second window at t = %f", levelSeconds => {
+    const evaluation = oceanMatrix(oceanProgram(), levelSeconds);
+    if (evaluation.status !== "evaluated") throw new Error(evaluation.reason);
+    expect(evaluation.matrix.slice(0, 5)).toEqual([1, 0, 0, 0, 1]);
+    expect(Math.abs(evaluation.matrix[5] - coldOceanVOffsetAfterWindow)).toBeLessThanOrEqual(db2Tolerance);
+  });
+
+  it.each([[0.25, coldOceanVOffsetAtQuarterSecond], [0.5, coldOceanVOffsetAtHalfSecond]])(
+    "cold ocean-s inside its window at t = %f gives the DB-2 fixture V offset %f within 2e-7", (levelSeconds, expectedVOffset) => {
+      const evaluation = oceanMatrix(oceanProgram(), levelSeconds);
+      if (evaluation.status !== "evaluated") throw new Error(evaluation.reason);
+      expect(evaluation.matrix.slice(0, 5)).toEqual([1, 0, 0, 0, 1]);
+      expect(Math.abs(evaluation.matrix[5] - expectedVOffset)).toBeLessThanOrEqual(db2Tolerance);
+    });
+
+  it.each([0, 1, 60])("ocean-s after Reset, TriggeredTime -1, holds the initial phase V +0.047552824 at t = %f", levelSeconds => {
+    const evaluation = texOscillatorTriggeredMatrix(programNode(oceanProgram(), oceanSId), oceanContext(levelSeconds), resetTriggeredTime);
+    if (evaluation.status !== "evaluated") throw new Error(evaluation.reason);
+    expect(evaluation.matrix.slice(0, 5)).toEqual([1, 0, 0, 0, 1]);
+    expect(Math.abs(evaluation.matrix[5] - coldOceanVOffsetAtStart)).toBeLessThanOrEqual(db2Tolerance);
+  });
+
+  it("reports a window with no positive oscillation rate unported", () => {
+    expect(oceanMatrix(oceanProgram([field("VOscillationRate", 0)]), 3)).toEqual({ status: "unported", reason: "material-feature-unported:StopAfterPeriod" });
+  });
+
+  it("applies ocean-s before its child as DB-2's order fixture from D3DDrv 0x10011f42 to 0x100121b7 does", () => {
+    const oceanS = oceanMatrix(oceanProgram(), 0);
+    if (oceanS.status !== "evaluated") throw new Error(oceanS.reason);
+    const combined = multiplyTextureCoordinateMatrices(db2OrderChildFixtureColumnMatrix, oceanS.matrix);
+    combined.forEach((value, index) => expect(Math.abs(value - db2OrderNativeResultColumnMatrix[index]!)).toBeLessThanOrEqual(db2Tolerance));
+    const reversed = multiplyTextureCoordinateMatrices(oceanS.matrix, db2OrderChildFixtureColumnMatrix);
+    expect(Math.abs(reversed[2] - db2OrderNativeResultColumnMatrix[2])).toBeGreaterThan(1e-3);
+  });
+
+  it("composes ocean-s with ocn_rot's authored cached M in row vectors, which is not traced TexRotator output", () => {
+    const program = oceanProgram();
+    const chain = textureCoordinateChainMatrix(program, [oceanSId, oceanRotatorId], oceanContext(0));
+    if (chain.status !== "evaluated") throw new Error(chain.reason);
+    const oceanRows = [[1, 0, 0], [0, 1, 0], [0, coldOceanVOffsetAtStart, 1]];
+    const nativeOrder = rowVectorProduct(oceanRows, oceanRotatorAuthoredCachedRows);
+    const reversedOrder = rowVectorProduct(oceanRotatorAuthoredCachedRows, oceanRows);
+    for (const [u, v] of [[0, 0], [1, 0], [0.25, 0.75]] as const) {
+      const actual = transformedCoordinates(chain.matrix, u, v);
+      const expected = rowVectorTransform(nativeOrder, u, v);
+      actual.forEach((value, index) => expect(Math.abs(value - expected[index]!)).toBeLessThanOrEqual(1e-6));
+    }
+    const reversed = rowVectorTransform(reversedOrder, 0, 0);
+    expect(Math.abs(transformedCoordinates(chain.matrix, 0, 0)[0] - reversed[0])).toBeGreaterThan(1e-3);
+  });
+
+  it("compiles ocean-s as a texture coordinate modifier and evaluates its sampler matrix per frame", () => {
+    const program = oceanProgram();
+    const plan = compileMaterialStagePlan(program);
+    if (plan.status !== "compiled") throw new Error(plan.reasons.join(", "));
+    expect(plan.samplers.map(sampler => sampler.textureCoordinateModifiers)).toEqual([[oceanSId, oceanRotatorId]]);
+    const frame = evaluateMaterialFrame(program, plan, 2, createRandomStream(jitterSeed));
+    if (frame.status !== "evaluated") throw new Error(frame.reason);
+    const expectedChain = textureCoordinateChainMatrix(program, [oceanSId, oceanRotatorId], { ...context(2), textureWidth: 4, textureHeight: 4 });
+    if (expectedChain.status !== "evaluated") throw new Error(expectedChain.reason);
+    expect(frame.samplerMatrices).toEqual([expectedChain.matrix]);
+  });
+
+  it("keeps the rows: the window and the pan form confirmed from DB-2, the start state unconfirmed until map resets are known", () => {
+    expect(TEXTURE_COORDINATE_CONSTANTS.triggeredOscillatorWindow).toMatchObject({
+      id: "uv.triggered-oscillator-window", status: "confirmed-interlude",
+      interludeEvidence: expect.stringMatching(/^Engine\.dll 4dd2f63c .*0x1030b94c.*0x105e1270.*0x105df780.*DB-2 tex-oscillator-triggered 053c115e/),
+    });
+    expect(TEXTURE_COORDINATE_CONSTANTS.oscillatorPanForm).toMatchObject({ id: "uv.oscillator-pan", status: "confirmed-interlude" });
+    expect(TEXTURE_COORDINATE_CONSTANTS.chainOrder).toMatchObject({
+      id: "uv.chain-order", status: "confirmed-interlude", interludeEvidence: expect.stringMatching(/^D3DDrv\.dll 05622dde .*0x10011ca0/),
+    });
+    expect(TEXTURE_COORDINATE_CONSTANTS.oscillatorForm.status).toBe("unconfirmed");
+    const startState = TEXTURE_COORDINATE_CONSTANTS.triggeredOscillatorStartState;
+    expect(startState).toMatchObject({ id: "uv.triggered-oscillator-start-state", status: "unconfirmed", value: 0, runtimeDefault: 0, interludeEvidence: null });
+    expect(startState.provenance).toContain("Reset sets TriggeredTime -1");
+    expect(startState.provenance).toContain("map-reset-reachability, unresolved");
   });
 });
 
@@ -177,7 +319,14 @@ describe("colour sources", () => {
       rules: { structDispatch: { binary: { structs: { name: string; members: { name: string }[] }[] } } } };
     const colourStruct = structRules.rules.structDispatch.binary.structs.find(binaryStruct => binaryStruct.name === "Color");
     expect(colourStruct?.members.map(member => member.name)).toEqual([...COLOUR_CONSTANTS.byteOrder.runtimeDefault]);
-    expect(COLOUR_CONSTANTS.byteOrder).toMatchObject({ status: "confirmed-interlude", interludeEvidence: expect.stringMatching(/^Core\.dll 9462f87a /) });
+  });
+
+  it("reads a serialized Color as B, G, R, A, the order Q6 confirms from Core.dll SerializeBin", () => {
+    const program = parseMaterialProgram(JSON.parse(JSON.stringify(programOf("Synthetic.SkyColour", [
+      reviewedNode("Synthetic.SkyColour", "Engine.ColorModifier", [field("Color", rawStruct("Color", "ce9600ff"), "authored", "raw")])]))));
+    expect(colourSourceValue(programNode(program, "Synthetic.SkyColour"), 0)).toEqual([0, 150 / 255, 206 / 255, 1]);
+    expect(COLOUR_CONSTANTS.byteOrder).toMatchObject({ id: "colour.byte-order", status: "confirmed-interlude", runtimeDefault: ["B", "G", "R", "A"],
+      interludeEvidence: expect.stringMatching(/^Core\.dll 9462f87a SerializeBin .*research Q6 struct-property-tags\.json 573e1265/) });
   });
 });
 

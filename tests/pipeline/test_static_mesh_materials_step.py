@@ -17,6 +17,7 @@ from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
+from support.mapping_size_class_defaults import use_synthetic_mapping_class_defaults
 from test_material_program_images import synthetic_png_bytes
 from world import locked_input_receipt, material_texture_images, static_mesh_materials_step, surface_material_programs
 from world.bsp_surface_materials import convert_surface_material
@@ -31,7 +32,7 @@ SOURCE_IDENTITY = {'path': f'maps/{TILE_ID}.unr', 'sha256': hashlib.sha256(b'syn
 EVIDENCE = f'work/tile__{TILE_ID}/static-mesh-materials/receipt.json'
 TEXTURED_MATERIAL = 'SyntheticMaterials.SkyShader'
 TEXTURED_MATERIAL_TEXTURE = 'SyntheticMaterials.SkyTexture'
-UNPORTED_MATERIAL = 'SyntheticUnported.TriggeredOscillator'
+UNPORTED_MATERIAL = 'SyntheticUnported.UnportedGlow'
 MISSING_MATERIAL = 'Missing.Material'
 TEXTURED_PROGRAM_SHA256_BEFORE_THE_SHARED_MODULE = '41d9dfc981ca17f3d6d8608a7b8e353a35a383dcf2133c7cdfa17b9dc851ed0b'
 MESHES_FINGERPRINT = 'd' * 64
@@ -117,12 +118,12 @@ class StaticMeshMaterialsStepTests(unittest.TestCase):
         unported = next(entry for entry in self.listing_of(sealed)['materials'] if entry['sourceObject'] == UNPORTED_MATERIAL)
         self.assertFalse(unported['rootPorted'])
         self.assertTrue(unported['program']['directory'].startswith('native-materials/'))
-        self.assertIn('material-class-unported:Engine.TexOscillatorTriggered', unported['gapReasons'])
+        self.assertIn('material-class-unported:Engine.GlowModifier', unported['gapReasons'])
         missing = next(entry for entry in self.listing_of(sealed)['materials'] if entry['sourceObject'] == MISSING_MATERIAL)
         self.assertEqual((missing['program'], missing['rootPorted'], missing['gapReasons']),
                          (None, False, ['decode-failed:FormatError:material package missing or ambiguous']))
         rows = {(row['sourceIdentity'].get('object'), row['status'], row['reason']) for row in sealed['gapRows']}
-        self.assertIn((UNPORTED_MATERIAL, 'gap', 'material-class-unported:Engine.TexOscillatorTriggered'), rows)
+        self.assertIn((UNPORTED_MATERIAL, 'gap', 'material-class-unported:Engine.GlowModifier'), rows)
         self.assertIn((MISSING_MATERIAL, 'failed', 'decode-failed:FormatError:material package missing or ambiguous'), rows)
         patterns = load_gap_reason_patterns()
         for gap_row in sealed['gapRows']:
@@ -181,6 +182,7 @@ class SharedProgramPathTests(unittest.TestCase):
         converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-bytes-'), texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
                                     material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
         store_root = scratch_work_root(self, 'bsp-bytes-store-') / 'l2'
+        use_synthetic_mapping_class_defaults(self)
         with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
             outcome = convert_surface_material(TEXTURED_MATERIAL, map_sources, converter, store_root, None, store_root)
         self.assertEqual(outcome.material.program['programSha256'], TEXTURED_PROGRAM_SHA256_BEFORE_THE_SHARED_MODULE)

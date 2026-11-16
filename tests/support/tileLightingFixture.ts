@@ -33,10 +33,7 @@ export function fogInfo9236Record() {
   ] };
 }
 
-export const environmentFogSection = { section: "FOG", line: 52, occurrence: 0, properties: [
-  ...[1, 1.5, 2, 2.5, 4].map((value, slot) => ({ key: `StartRange${slot + 1}`, kind: "number", value })),
-  ...[4, 5, 6, 7, 10].map((value, slot) => ({ key: `EndRange${slot + 1}`, kind: "number", value })),
-  { key: "FogSpeed", kind: "integer", value: 1 }] };
+export const environmentFogRanges = { startRanges: [1, 1.5, 2, 2.5, 4], endRanges: [4, 5, 6, 7, 10] };
 
 export function tileLightingRecordsDocument() {
   const zone = (zoneIndex: number, provenance: string, distanceFog: boolean) => ({ zoneIndex, unresolved: provenance === "unresolved",
@@ -46,10 +43,7 @@ export function tileLightingRecordsDocument() {
       fieldRecord("DistanceFogEnd", provenance === "unresolved" ? null : 20000, provenance)],
     sunAffect: fieldRecord("bSunAffect", provenance === "unresolved" ? null : true, provenance === "unresolved" ? provenance : "class-default") });
   return { schemaVersion: 1, kind: "native-tile-lighting-records", lights: [], fogInfos: [fogInfo9236Record()], levelInfos: [], rules: [],
-    waterVolumes: [{ exportIndex: 8 }], zones: [zone(0, "unresolved", false), zone(1, "authored", true), zone(2, "authored", false)],
-    environmentProgram: { schemaVersion: 1, kind: "native-environment-program", setup: { sections: [environmentFogSection] }, unresolved: [],
-      setupValues: { StartTime: { key: "StartTime", value: 12 }, TimeRatio: { key: "TimeRatio", value: 6 }, TimeEnvFileNum: { key: "TimeEnvFileNum", value: 4 } },
-      environmentTypes: [0, 1, 2, 3].map(environmentType => ({ environmentType, sections: [] })) } };
+    waterVolumes: [{ exportIndex: 8 }], zones: [zone(0, "unresolved", false), zone(1, "authored", true), zone(2, "authored", false)] };
 }
 
 export function tileLightingArrays(records: unknown = tileLightingRecordsDocument()): TypedPayloadFixtureArray[] {

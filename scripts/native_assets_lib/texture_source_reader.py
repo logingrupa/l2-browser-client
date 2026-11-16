@@ -5,11 +5,14 @@ from native_assets_lib.lineage_material_prefix import NO_MATERIAL_PREFIX, SHADER
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_catalog.ue2 import FormatError, Reader
 
-FORMATS = {0: 'P8', 3: 'DXT1', 8: 'DXT5'}
+FORMATS = {0: 'P8', 3: 'DXT1', 5: 'RGBA8', 7: 'DXT3', 8: 'DXT5'}
 P8_FORMAT_ID = 0
+DXT1_FORMAT_ID = 3
+RGBA8_FORMAT_ID = 5
+DXT3_FORMAT_ID = 7
 DXT5_FORMAT_ID = 8
-DXT1_BLOCK_BYTES = 8
-DXT5_BLOCK_BYTES = 16
+RGBA8_PIXEL_ORDER = ('B', 'G', 'R', 'A')
+BLOCK_BYTES_BY_FORMAT = {DXT1_FORMAT_ID: 8, DXT3_FORMAT_ID: 16, DXT5_FORMAT_ID: 16}
 MAX_DIMENSION = 4096
 MAX_MIPS = 16
 MAX_MIP_BITS = 12
@@ -41,6 +44,25 @@ DXT5_EVIDENCE = {
                     'fourCC': 'DXT5', 'width': 4, 'height': 4, 'bytes': 16},
     'policy': 'Preserve original color and alpha blocks without decoding, normal-map swizzling or alpha interpretation.',
 }
+REA_TEXTURE_NATIVE_DECODE = {'root': 'C:/laragon/l2b-orchestration/rea-in', 'rootHost': 'DATABASE-PC', 'rootInRepository': False,
+                             'file': '20261113-roadmap/independent-decode-db5/texture-native.json',
+                             'sha256': '5838dcd7dcf2d388b24642c0a2f5593634c015fed4fdf4520e312f9da87f1c71',
+                             'check': 'every FX_E_T Texture mip width, height, byte count and payload SHA-256'}
+DXT3_EVIDENCE = {
+    'formatEnum': {'file': 'Unreal/UnrealMaterial/UnMaterial2.h', 'lines': [281, 291], 'numericValue': DXT3_FORMAT_ID, 'name': 'TEXF_DXT3'},
+    'blockLayout': {'standard': 'BC2', 'width': 4, 'height': 4, 'bytes': BLOCK_BYTES_BY_FORMAT[DXT3_FORMAT_ID]},
+    'mipSizes': REA_TEXTURE_NATIVE_DECODE,
+    'policy': 'Preserve original color and alpha blocks without decoding.',
+}
+RGBA8_EVIDENCE = {
+    'formatEnum': {'file': 'Unreal/UnrealMaterial/UnMaterial2.h', 'lines': [281, 291], 'numericValue': RGBA8_FORMAT_ID, 'name': 'TEXF_RGBA8'},
+    'pixelOrder': {'binary': 'system/engine.dll', 'function': 'UTexture::GetFormatDesc', 'address': '0x10335e90',
+                   'pixelOrderAddress': '0x10331600', 'order': list(RGBA8_PIXEL_ORDER), 'bytesPerPixel': len(RGBA8_PIXEL_ORDER),
+                   'recipe': 'recipes/world/minimap-radar-route.json textureFormat5'},
+    'mipSizes': REA_TEXTURE_NATIVE_DECODE,
+    'policy': 'Preserve original tight pixel rows without channel reordering.',
+}
+FORMAT_EVIDENCE = {'dxt3': (DXT3_FORMAT_ID, DXT3_EVIDENCE), 'dxt5': (DXT5_FORMAT_ID, DXT5_EVIDENCE), 'rgba8': (RGBA8_FORMAT_ID, RGBA8_EVIDENCE)}
 
 
 class UnsupportedTextureSource(ValueError):
@@ -183,8 +205,9 @@ def read_native_palette(package, tags, format_id, files):
 def expected_mip_bytes(format_id, width, height):
     if format_id == P8_FORMAT_ID:
         return width * height
-    block_bytes = DXT5_BLOCK_BYTES if format_id == DXT5_FORMAT_ID else DXT1_BLOCK_BYTES
-    return max(1, (width + 3) // 4) * max(1, (height + 3) // 4) * block_bytes
+    if format_id == RGBA8_FORMAT_ID:
+        return width * height * len(RGBA8_PIXEL_ORDER)
+    return max(1, (width + 3) // 4) * max(1, (height + 3) // 4) * BLOCK_BYTES_BY_FORMAT[format_id]
 
 
 def read_native_mip_levels(package, reader, format_id, dimensions, property_bits, count, files):
@@ -249,8 +272,9 @@ def read_native_texture_source(package, item, layout):
     require_texture_source(reader.position == reader.end, 'Unconsumed native texture bytes')
     palette = read_native_palette(package, tags, format_id, files)
     layout = copy.deepcopy(layout)
-    if format_id == DXT5_FORMAT_ID:
-        layout['evidence']['dxt5'] = copy.deepcopy(DXT5_EVIDENCE)
+    for evidence_name, (evidence_format_id, evidence) in FORMAT_EVIDENCE.items():
+        if format_id == evidence_format_id:
+            layout['evidence'][evidence_name] = copy.deepcopy(evidence)
     metadata = {'schemaVersion': 1, 'kind': 'native-texture-source', 'source': source, 'layout': layout,
                 'format': {'id': format_id, 'name': FORMATS[format_id],
                            'propertyStatus': 'authored' if format_authored else 'omitted-native-zero-default'},

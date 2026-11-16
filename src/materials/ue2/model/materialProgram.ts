@@ -1,7 +1,10 @@
+export const TEXTURE_COORDINATE_MODIFIER_CLASSES = [
+  "Engine.TexPanner", "Engine.TexRotator", "Engine.TexOscillator", "Engine.TexOscillatorTriggered", "Engine.TexScaler", "Engine.TexEnvMap", "Engine.TexCoordSource",
+] as const;
+
 export const REVIEWED_MATERIAL_CLASSES = [
   "Engine.Shader", "Engine.Combiner", "Engine.FinalBlend", "Engine.ColorModifier", "Engine.FadeColor", "Engine.ConstantColor",
-  "Engine.TexPanner", "Engine.TexRotator", "Engine.TexOscillator", "Engine.TexScaler", "Engine.TexEnvMap", "Engine.TexCoordSource",
-  "Engine.MaterialSequence", "Engine.Texture",
+  ...TEXTURE_COORDINATE_MODIFIER_CLASSES, "Engine.MaterialSequence", "Engine.Texture",
 ] as const;
 
 export type ReviewedMaterialClass = (typeof REVIEWED_MATERIAL_CLASSES)[number];

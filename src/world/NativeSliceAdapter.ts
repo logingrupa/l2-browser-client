@@ -176,8 +176,14 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       case "cannot-move":
         if (player) this.stopAtReportedPosition(player, command);
         break;
-      case "set-environment":
-        this.emit({ type: "environment", gameMinutes: command.gameMinutes, environmentType: command.environmentType });
+      case "set-server-time":
+        this.emit({ type: "server-time", gameMinutes: command.gameMinutes });
+        break;
+      case "set-environment-ssq-info":
+        this.emit({ type: "environment-ssq-info", first: command.first, second: command.second });
+        break;
+      case "set-environment-red-sky":
+        this.emit({ type: "environment-red-sky", timeoutSeconds: command.timeoutSeconds });
         break;
       default: {
         const unhandledCommand: never = command;

@@ -12,7 +12,7 @@ import { MaterialProgramError, parseMaterialProgram, programNode } from "../../s
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import {
   enumValue, field, materialSwatchFixtureFiles, nodeReference, programOf, rawStruct, reviewedNode, sha256Hex, swatchTextureNode,
-  syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor, swatchTexturePng, type FixtureProgram,
+  syntheticSkyColourModifierProgram, syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor, swatchTexturePng, type FixtureProgram,
 } from "../support/materialProgramFixture";
 
 const fixtureStoreRoot = new URL("../fixtures/lane-store/", import.meta.url);
@@ -52,6 +52,8 @@ describe("parseMaterialProgram", () => {
     const shader = programNode(program, "SyntheticSwatch.SwatchShader");
     expect(shader.fields.map(programField => [programField.field, programField.provenance])).toEqual([
       ["Diffuse", "authored"], ["Opacity", "ue-zero"], ["OutputBlending", "ue-zero"], ["TwoSided", "ue-zero"], ["DetailScale", "class-default"],
+      ["Specular", "ue-zero"], ["SpecularityMask", "ue-zero"], ["SelfIllumination", "ue-zero"], ["SelfIlluminationMask", "ue-zero"], ["Detail", "ue-zero"],
+      ["AlphaRef", "ue-zero"],
     ]);
     expect(programNode(program, "SyntheticSwatch.SwatchTexture").image).toEqual(swatchImage);
   });
@@ -80,7 +82,7 @@ describe("parseMaterialProgram", () => {
     expect(() => parsed(dangling)).toThrow(/references SyntheticSwatch\.Missing/);
     const unported = syntheticUnportedProgram();
     unported.nodes[0]!.gapReasons = [];
-    expect(() => parsed(unported)).toThrow(/unported without material-class-unported:Engine\.TexOscillatorTriggered/);
+    expect(() => parsed(unported)).toThrow(/unported without material-class-unported:Engine\.GlowModifier/);
   });
 
   it("decodes a raw Rotator struct as the converter writes it", () => {
@@ -133,8 +135,8 @@ describe("createNativeMaterial", () => {
 
   it("renders an unported class as the named magenta diagnostic", () => {
     const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(syntheticUnportedProgram()), testMaterialOptions);
-    expect(nativeMaterial.inspect()).toMatchObject({ status: "diagnostic", unportedClass: "Engine.TexOscillatorTriggered",
-      reasons: expect.arrayContaining(["material-class-unported:Engine.TexOscillatorTriggered"]) });
+    expect(nativeMaterial.inspect()).toMatchObject({ status: "diagnostic", unportedClass: "Engine.GlowModifier",
+      reasons: expect.arrayContaining(["material-class-unported:Engine.GlowModifier"]) });
   });
 
   it("renders a Modulate pair Babylon has no preset for as a named diagnostic", () => {
@@ -156,6 +158,23 @@ describe("createNativeMaterial", () => {
     expect(inspection.uniforms).toEqual({ levelSeconds: 0.25, hour: 6.5, environmentType: 2, fog });
     expect(inspection.frame?.samplerMatrices).toEqual([[1, 0, 0.5, 0, 1, 0]]);
     expect(fog.fogEnd).toBe(900);
+  });
+
+  it("overrides only the RGB of a ColorModifier colour source, keeps it on later updates and keeps its authored alpha", () => {
+    const colorModifierNode = "SyntheticSky.SkybackgroundColor";
+    const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(syntheticSkyColourModifierProgram(colorModifierNode, swatchImage, "ce9600ff")), testMaterialOptions);
+    const uniforms = { levelSeconds: 0, hour: 12, environmentType: 0, fog: FOG_DISABLED };
+    nativeMaterial.update(uniforms);
+    expect(nativeMaterial.inspect()).toMatchObject({ status: "compiled", colourSourceCount: 1 });
+    expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[0, 150 / 255, 206 / 255, 1]]);
+    nativeMaterial.overrideColourSourceRgb(colorModifierNode, [66 / 255, 124 / 255, 176 / 255]);
+    nativeMaterial.update(uniforms);
+    expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[66 / 255, 124 / 255, 176 / 255, 1]]);
+    nativeMaterial.update(uniforms);
+    expect(nativeMaterial.inspect().frame?.colourSourceValues).toEqual([[66 / 255, 124 / 255, 176 / 255, 1]]);
+    expect(() => nativeMaterial.overrideColourSourceRgb("SyntheticSky.Other", [0, 0, 0])).toThrow(/has no ColorModifier colour source SyntheticSky.Other/);
+    const diagnostic = createNativeMaterial(nullScene(), loadedMaterial(syntheticUnportedProgram()), testMaterialOptions);
+    expect(() => diagnostic.overrideColourSourceRgb(colorModifierNode, [0, 0, 0])).toThrow(/diagnostic material/);
   });
 
   it("names the coordinate generators the binding cannot draw yet", () => {

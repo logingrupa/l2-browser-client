@@ -13,7 +13,7 @@ function mountIdEntry(overrides: Partial<DevIdEntryOptions> = {}) {
   const onSubmit = vi.fn();
   const entry = createDevIdEntry({
     label: "Cast skill", testId: "cast", submitText: "Cast",
-    fields: [{ name: "skillId", label: "Skill ID", minimum: 0 }, { name: "level", label: "Level", minimum: 1 }],
+    fields: [{ name: "skillId", label: "Skill ID", kind: "integer", minimum: 0 }, { name: "level", label: "Level", kind: "integer", minimum: 1 }],
     onSubmit, ...overrides,
   }, null);
   const form = entry.element as unknown as FakeElement;
@@ -52,6 +52,19 @@ describe("developer sheet ID entry", () => {
     expect(message.textContent).toBe("Level must be at least 1.");
   });
 
+  it.each([["00:00", 0], ["06:00", 360], [" 18:30 ", 1110], ["23:59", 1439]])("submits clock %j as %i whole minutes", (accepted, minutes) => {
+    const { onSubmit, submit } = mountIdEntry({ fields: [{ name: "clock", label: "Game time", kind: "clock" }] });
+    submit({ clock: accepted });
+    expect(onSubmit).toHaveBeenCalledWith({ clock: minutes });
+  });
+
+  it.each(["24:00", "12:60", "6:00", "1200", "12:5", "-1:00", ""])("rejects clock %j before submitting", rejected => {
+    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "clock", label: "Game time", kind: "clock" }] });
+    submit({ clock: rejected });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(message.textContent).toBe(rejected === "" ? "Game time is required." : "Game time must be HH:MM from 00:00 to 23:59.");
+  });
+
   it("is reachable from a sheet group with a hover-card info button", () => {
     const host = dom.document.createElement("section"); host.className = "world-interface";
     const canvas = dom.document.createElement("canvas");
@@ -64,7 +77,7 @@ describe("developer sheet ID entry", () => {
       const onSubmit = vi.fn();
       const group = sheet.section("sandbox", { title: "Sandbox" }).group("spawn-npc", "Spawn NPC");
       const entry = group.idEntry({ label: "Spawn NPC", testId: "spawn", submitText: "Spawn", hint: "Dispatches spawn-npc.",
-        fields: [{ name: "npcId", label: "NPC ID", minimum: 0 }], onSubmit });
+        fields: [{ name: "npcId", label: "NPC ID", kind: "integer", minimum: 0 }], onSubmit });
       const form = entry.element as unknown as FakeElement;
       expect((group.element as unknown as FakeElement).contains(form)).toBe(true);
       expect(form.querySelector(".dev-id-entry-actions .dev-info")).not.toBeNull();

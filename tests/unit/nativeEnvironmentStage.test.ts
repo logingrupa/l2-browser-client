@@ -10,8 +10,6 @@ const { planNativeEnvironmentStage, applyNativeEnvironmentStage, stageNativeEnvi
 const roots: string[] = [];
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const json = (value: unknown) => Buffer.from(JSON.stringify(value, null, 2) + "\n");
-const actual = resolve("artifacts/native-parity/research/sky-environment-conversion-20261107/converted");
-const actualPin = "e10827c4e98daeed18062c9e85117a1f862a3e6dfcaad08638798f887081183d";
 
 async function temporary() {
   const root = await fs.mkdtemp(join(tmpdir(), "native-environment-stage-test-")); roots.push(root); return root;
@@ -28,18 +26,18 @@ async function tree(root: string): Promise<Record<string, { bytes: Buffer; mtime
   await visit(root, ""); return result;
 }
 
-/** Small synthetic converted product, not an additional native source identity.
- * Declared NUM=1 deliberately retains two physical rows without precedence. */
-async function fixture() {
-  const root = await temporary(), inputDir = join(root, "converted"), outputDir = join(root, "public/l2/environments");
-  await fs.mkdir(inputDir);
-  const lines = ["[EnvSetup]\r\n", "SKYBOX=SkybackgroundColor\r\n", "[SkyBoxColor]\r\n", "NUM=1\r\n",
-    "COLOR1=(T=0,R=40,G=49,B=70)\r\n", "COLOR2=(T=12,R=66,G=124,B=176)\r\n"];
-  const decoded = Buffer.from(lines.join("")), encrypted = Buffer.from(decoded.map(byte => byte ^ 0xac));
-  const original = Buffer.concat([Buffer.from("Lineage2Ver111", "utf16le"), encrypted, Buffer.alloc(20)]);
-  const source = { name: "Fixture.int", originalBytes: original.length, originalSha256: hash(original) };
+interface FixtureRecord {
+  readonly recordIndex: number;
+  readonly line: number;
+  readonly sourceOffset: number;
+  readonly key?: string;
+  readonly valueAscii?: string;
+  readonly valueSourceOffset?: number;
+}
+
+function sourceRecords(lines: readonly string[]) {
   let offset = 0, section = "", sectionIndex = 0;
-  const records = lines.map((text, index) => {
+  return lines.map((text, index) => {
     const bytes = Buffer.from(text), body = text.trimEnd();
     const common = { recordIndex: index, line: index + 1, decodedOffset: offset, sourceOffset: offset + 28,
       bytes: bytes.length, rawHex: bytes.toString("hex"), hex: Buffer.from(body).toString("hex") };
@@ -49,28 +47,51 @@ async function fixture() {
     return { ...common, kind: "property", section, sectionIndex, key, valueAscii, valueHex: Buffer.from(valueAscii).toString("hex"),
       valueDecodedOffset, valueSourceOffset: valueDecodedOffset + 28 };
   });
+}
+
+function timeTableRow(record: FixtureRecord, keyNumber: number, values: Record<string, number>) {
+  return { key: record.key!, keyNumber, recordIndex: record.recordIndex, line: record.line, sourceOffset: record.sourceOffset,
+    valueSourceOffset: record.valueSourceOffset!, raw: record.valueAscii!, values, defaultedFields: [] as string[], unresolved: [] as string[] };
+}
+
+function unlocatedSetting(key: string, value: unknown, source: string, unresolved: string | null) {
+  return { key, value, source, recordIndex: null as number | null, valueSourceOffset: null as number | null, raw: null as string | null, unresolved };
+}
+
+async function fixture() {
+  const root = await temporary(), inputDir = join(root, "converted"), outputDir = join(root, "public/l2/environments");
+  await fs.mkdir(inputDir);
+  const lines = ["[EnvSetup]\r\n", "TimeRatio=6\r\n", "[SkyBoxColor]\r\n", "NUM=2\r\n",
+    "COLOR1=(T=0,R=40,G=49,B=70)\r\n", "COLOR2=(T=12,R=66,G=124,B=176)\r\n"];
+  const decoded = Buffer.from(lines.join("")), encrypted = Buffer.from(decoded.map(byte => byte ^ 0xac));
+  const original = Buffer.concat([Buffer.from("Lineage2Ver111", "utf16le"), encrypted, Buffer.alloc(20)]);
+  const source = { name: "Fixture.int", originalBytes: original.length, originalSha256: hash(original) };
+  const records = sourceRecords(lines) as unknown as FixtureRecord[];
+  const timeRatio = records[1]!;
   const tables = {
-    schemaVersion: 1, kind: "native-environment-source-tables", tableCount: 1, physicalColorRows: 2,
-    tables: [{ file: source.name, originalSha256: source.originalSha256, decodedSha256: hash(decoded), section: "SkyBoxColor",
-      sectionIndex: 2, headerLine: 3, headerSourceOffset: records[2]!.sourceOffset, envTypeDeclarations: [],
-      declaredNum: 1, numDeclarations: [records[3]], physicalColorRows: 2, declaredNumMatchesPhysicalRows: false,
-      rows: [4, 5].map((index, rowIndex) => {
-        const raw = records[index]!;
-        if (!("key" in raw)) throw Error("Expected fixture property record");
-        return { key: raw.key, tLiteral: rowIndex ? 12 : 0, rgb: rowIndex ? [66, 124, 176] : [40, 49, 70], typed: true,
-          line: raw.line, sourceOffset: raw.sourceOffset, decodedOffset: raw.decodedOffset, valueSourceOffset: raw.valueSourceOffset,
-          rawValue: raw.valueAscii, recordIndex: index };
-      }), otherProperties: [], typedComplete: true, runtimeConsumedRows: null }],
-    envSetupDeclarations: [{ file: source.name, ...records[1] }], duplicateSectionHeaders: [],
-    anomalies: [{ file: source.name, kind: "declared-count-mismatch", sectionIndex: 2, declaredNum: 1, physicalColorRows: 2 }],
-    typedComplete: true, selection: { nativeEnvironmentType: null, nativeTime: null, interpolation: null,
-      numConsumption: null, duplicateSectionPrecedence: null, liveColorWriter: null },
+    schemaVersion: 1, kind: "native-environment-time-tables", rules: { path: "recipes/world/environment-native-rules.json", canonicalSha256: "d".repeat(64) },
+    setup: { file: source.name, section: "EnvSetup",
+      values: { TimeRatio: { key: "TimeRatio", value: 6 as unknown, source: "file", recordIndex: timeRatio.recordIndex as number | null,
+        valueSourceOffset: timeRatio.valueSourceOffset! as number | null, raw: timeRatio.valueAscii! as string | null, unresolved: null as string | null },
+      IsClock: unlocatedSetting("IsClock", true, "native-default", null) },
+      bindings: { SKYBOX: unlocatedSetting("SKYBOX", "SkybackgroundColor", "native-default", null),
+        HAZERING: unlocatedSetting("HAZERING", null, "unresolved", "environment-setup-value-missing:HAZERING"),
+        NumCloudColor: unlocatedSetting("NumCloudColor", null, "unresolved", "environment-setup-value-missing:NumCloudColor"), CLOUD: [] },
+      timeEnvironmentFiles: [] },
+    environmentTypes: [{ file: source.name, originalSha256: source.originalSha256, decodedSha256: hash(decoded), environmentType: 0,
+      environmentTypeSource: "native-default", environmentTypeRecordIndex: null, mergedDuplicateSections: [],
+      tables: [{ section: "SkyBoxColor", kind: "rgb", sectionPresent: true, num: 2, numRecordIndex: 3, numSourceOffset: records[3]!.valueSourceOffset!,
+        rows: [timeTableRow(records[4]!, 1, { T: 0, R: 40, G: 49, B: 70 }), timeTableRow(records[5]!, 2, { T: 12, R: 66, G: 124, B: 176 })],
+        unresolved: [] as string[] }],
+      unresolved: [] as string[] }],
+    tableCount: 1, rowCount: 2, unresolved: ["environment-setup-value-missing:HAZERING", "environment-setup-value-missing:NumCloudColor"],
+    typedComplete: false,
   };
   const ordered = { schemaVersion: 1, kind: "native-environment-ordered-records", sourceFileCount: 1, propertyRecords: 4,
     offsetSpace: "synthetic fixture", files: [{ ...source, decodedBytes: decoded.length, decodedSha256: hash(decoded), records }] };
   const products = new Map([
     ["original/Fixture.int", original], ["decoded/Fixture.int.bin", decoded], ["decoded/Fixture.int.txt", decoded],
-    ["environment-records.json", json(ordered)], ["sky-tables.json", json(tables)],
+    ["environment-records.json", json(ordered)], ["time-tables.json", json(tables)],
   ]);
   const manifest = { schemaVersion: 1, kind: "native-environment-conversion", implementation: { "fixture.py": "a".repeat(64) },
     inputs: [source], products: Object.fromEntries([...products].map(([name, bytes]) => [name, { bytes: bytes.length, sha256: hash(bytes) }])),
@@ -94,19 +115,19 @@ afterEach(async () => {
 });
 
 describe("immutable converted environment browser staging", () => {
-  it("plans read-only, stages exact table bytes with provenance, and repeat/verify-only preserve every mtime", async () => {
+  it("plans read-only, stages exact time table bytes with provenance, and repeat/verify-only preserve every mtime", async () => {
     const f = await fixture(), input = await tree(f.inputDir), plan = await planNativeEnvironmentStage(f.options);
     expect(await tree(f.inputDir)).toEqual(input); expect(existsSync(f.outputDir)).toBe(false);
     const result = await applyNativeEnvironmentStage(plan);
-    expect(result).toMatchObject({ status: "staged", writes: 3, tableCount: 1, physicalColorRows: 2, originalFilesStaged: false });
+    expect(result).toMatchObject({ status: "staged", writes: 3, tableCount: 1, rowCount: 2, originalFilesStaged: false });
     expect(basename(result.outputDir)).toBe(hash(await fs.readFile(join(f.inputDir, "manifest.json"))));
     const staged = await tree(result.outputDir);
-    expect(Object.keys(staged).sort()).toEqual(["conversion-manifest.json", "manifest.json", "sky-tables.json"]);
-    expect(staged["sky-tables.json"]!.bytes).toEqual(input["sky-tables.json"]!.bytes);
+    expect(Object.keys(staged).sort()).toEqual(["conversion-manifest.json", "manifest.json", "time-tables.json"]);
+    expect(staged["time-tables.json"]!.bytes).toEqual(input["time-tables.json"]!.bytes);
     expect(staged["conversion-manifest.json"]!.bytes).toEqual(input["manifest.json"]!.bytes);
     const browser = JSON.parse(staged["manifest.json"]!.bytes.toString());
-    expect(browser).toMatchObject({ kind: "native-environment-browser-source", sources: f.manifest.inputs,
-      selection: f.tables.selection, sourceVerification: { sourceRecordAndTableJoinsVerifiedOffline: true, originalFilesStaged: false, decodedFilesStaged: false } });
+    expect(browser).toMatchObject({ kind: "native-environment-browser-source", sources: f.manifest.inputs, rowCount: 2, unresolved: f.tables.unresolved,
+      sourceVerification: { sourceRecordAndTableJoinsVerifiedOffline: true, originalFilesStaged: false, decodedFilesStaged: false } });
     expect(await stageNativeEnvironment(f.options)).toMatchObject({ status: "preserved", writes: 0 });
     expect(await stageNativeEnvironment({ ...f.options, verifyOnly: true })).toMatchObject({ status: "verified", writes: 0 });
     expect(await tree(result.outputDir)).toEqual(staged); expect(await tree(f.inputDir)).toEqual(input);
@@ -117,7 +138,7 @@ describe("immutable converted environment browser staging", () => {
     expect(existsSync(f.outputDir)).toBe(false);
   });
 
-  it.each(["decoded/Fixture.int.txt", "original/Fixture.int", "sky-tables.json"])("verifies every declared payload before writes: %s", async path => {
+  it.each(["decoded/Fixture.int.txt", "original/Fixture.int", "time-tables.json"])("verifies every declared payload before writes: %s", async path => {
     const f = await fixture(); await f.write(path, Buffer.from("changed payload"));
     await expect(stageNativeEnvironment(f.options)).rejects.toThrow("hash/size mismatch"); expect(existsSync(f.outputDir)).toBe(false);
   });
@@ -146,24 +167,28 @@ describe("immutable converted environment browser staging", () => {
     await expect(stageNativeEnvironment(f.options)).rejects.toThrow("source-record identity mismatch");
   });
 
-  it("rejects a fabricated typed color or missing physical row rather than normalizing NUM", async () => {
-    const f = await fixture(); f.tables.tables[0]!.rows[0]!.rgb = [1, 2, 3]; await f.updateProduct("sky-tables.json", f.tables);
-    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("typed color differs");
-    f.tables.tables[0]!.rows[0]!.rgb = [40, 49, 70]; f.tables.tables[0]!.rows.pop(); f.tables.tables[0]!.physicalColorRows = 1; f.tables.physicalColorRows = 1;
-    await f.updateProduct("sky-tables.json", f.tables);
-    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("rows omitted or reordered");
+  it("rejects a time table row that differs from its source record, rows out of key order and changed counts", async () => {
+    const f = await fixture(), table = f.tables.environmentTypes[0]!.tables[0]!;
+    table.rows[0]!.raw = "(T=0,R=1,G=2,B=3)"; await f.updateProduct("time-tables.json", f.tables);
+    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("differs from its source record");
+    table.rows[0]!.raw = "(T=0,R=40,G=49,B=70)"; table.rows.reverse(); await f.updateProduct("time-tables.json", f.tables);
+    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("ascending key numbers");
+    table.rows.reverse(); f.tables.rowCount = 3; await f.updateProduct("time-tables.json", f.tables);
+    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("counts differ");
   });
 
-  it("rejects non-null native selection and changed material setup declarations", async () => {
-    const f = await fixture(); const tables = f.tables as any;
-    tables.selection.nativeTime = 12; await f.updateProduct("sky-tables.json", tables);
-    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("selected native policy");
-    tables.selection.nativeTime = null; tables.envSetupDeclarations[0].valueAscii = "guessed"; await f.updateProduct("sky-tables.json", tables);
-    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("setup declarations differ");
+  it("rejects a setup value claimed from the file without a source record and a typedComplete that hides unresolved reasons", async () => {
+    const f = await fixture();
+    f.tables.setup.values.IsClock.source = "file"; await f.updateProduct("time-tables.json", f.tables);
+    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("claims a value without a source record");
+    f.tables.setup.values.IsClock.source = "native-default"; f.tables.setup.values.TimeRatio.raw = "60"; await f.updateProduct("time-tables.json", f.tables);
+    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("differs from its source record");
+    f.tables.setup.values.TimeRatio.raw = "6"; f.tables.typedComplete = true; await f.updateProduct("time-tables.json", f.tables);
+    await expect(stageNativeEnvironment(f.options)).rejects.toThrow("unsupported time tables");
   });
 
   it("refuses changed or partial existing destinations without overwriting bytes", async () => {
-    const f = await fixture(), result = await stageNativeEnvironment(f.options), table = join(result.outputDir, "sky-tables.json");
+    const f = await fixture(), result = await stageNativeEnvironment(f.options), table = join(result.outputDir, "time-tables.json");
     await fs.writeFile(table, "authored conflict"); const before = await tree(result.outputDir);
     await expect(stageNativeEnvironment(f.options)).rejects.toThrow("immutable staged file differs"); expect(await tree(result.outputDir)).toEqual(before);
     await fs.unlink(table); const partial = await tree(result.outputDir);
@@ -178,17 +203,5 @@ describe("immutable converted environment browser staging", () => {
     await fs.mkdir(planned.summary.outputDir, { recursive: true });
     await expect(applyNativeEnvironmentStage(planned)).rejects.toThrow("destination changed after planning");
     expect(await fs.readdir(planned.summary.outputDir)).toEqual([]);
-  });
-
-  it.skipIf(!existsSync(actual))("retains all 20 actual tables/500 rows and source anomalies from the pinned conversion", async () => {
-    const output = join(await temporary(), "stage"), inputBefore = await tree(actual);
-    const result = await stageNativeEnvironment({ inputDir: actual, outputDir: output, expectedManifestSha256: actualPin });
-    expect(result).toMatchObject({ sourceProductsVerified: 17, sourceFilesVerified: 5, tableCount: 20, physicalColorRows: 500 });
-    const bytes = await fs.readFile(join(result.outputDir, "sky-tables.json"));
-    expect(bytes).toEqual(inputBefore["sky-tables.json"]!.bytes);
-    const tables = JSON.parse(bytes.toString());
-    expect(tables.tables.find((row: any) => row.file === "timeenv3.int" && row.section === "SkyBoxColor"))
-      .toMatchObject({ declaredNum: 1, physicalColorRows: 25, declaredNumMatchesPhysicalRows: false });
-    expect(tables.duplicateSectionHeaders).toHaveLength(4); expect(await tree(actual)).toEqual(inputBefore);
   });
 });

@@ -40,9 +40,13 @@ function declare(builder: ChainBuilder, expression: string): string {
   return name;
 }
 
-function maskValue(mask: string, invertMask: boolean): string {
+function routedMaskAlpha(mask: string, maskAlphaComplemented: boolean): string {
   const channel = maskChannelSwizzle[COMBINER_CONSTANTS.maskChannel.runtimeDefault];
-  return invertMask ? `(1.0 - ${mask}.${channel})` : `${mask}.${channel}`;
+  return maskAlphaComplemented ? `(1.0 - ${mask}.${channel})` : `${mask}.${channel}`;
+}
+
+function declareComplementedAlpha(builder: ChainBuilder, material: string): string {
+  return declare(builder, `vec4(${material}.rgb, 1.0 - ${material}.a)`);
 }
 
 interface EmittedCombiner {
@@ -50,31 +54,30 @@ interface EmittedCombiner {
   readonly alphaOperation: number;
   readonly material1: string;
   readonly material2: string;
-  readonly mask: string | null;
-  readonly invertMask: boolean;
+  readonly firstEmitted: string;
+  readonly preparedAlpha: string;
   readonly modulateMultiplier: number;
 }
 
 function combinerColour(combiner: EmittedCombiner): string {
-  const { material1, material2, mask } = combiner;
-  const maskWeight = mask === null ? null : maskValue(mask, combiner.invertMask);
+  const { material1, material2, preparedAlpha } = combiner;
   switch (combiner.combineOperation) {
     case 0: return `${material1}.rgb`;
     case 1: return `${material2}.rgb`;
     case 2: return `${material1}.rgb * ${material2}.rgb * ${glslFloat(combiner.modulateMultiplier)}`;
     case 3: return `${material1}.rgb + ${material2}.rgb`;
-    case 4: return `${material1}.rgb - ${material2}.rgb`;
-    case 5: return `${material1}.rgb * ${maskWeight} + ${material2}.rgb * (1.0 - ${maskWeight})`;
-    case 6: return `${material1}.rgb + ${material2}.rgb * ${maskWeight}`;
-    case 7: return `${mask}.rgb`;
+    case 4: return `${material2}.rgb - ${material1}.rgb`;
+    case 5: return `${material2}.rgb * ${preparedAlpha} + ${material1}.rgb * (1.0 - ${preparedAlpha})`;
+    case 6: return COMBINER_CONSTANTS.modulateAlphaAddColourCap.runtimeDefault ? `${material2}.rgb + ${material2}.a * ${material1}.rgb` : `${material1}.rgb + ${material2}.rgb`;
+    case 7: return `${combiner.firstEmitted}.rgb`;
     default: throw new RangeError(`Combiner colour operation ${combiner.combineOperation} has no fragment rule.`);
   }
 }
 
 function combinerAlpha(combiner: EmittedCombiner): string {
-  const { material1, material2, mask } = combiner;
+  const { material1, material2 } = combiner;
   switch (combiner.alphaOperation) {
-    case 0: return mask === null ? glslFloat(COMBINER_CONSTANTS.missingMaskAlpha.runtimeDefault) : maskValue(mask, combiner.invertMask);
+    case 0: return combiner.preparedAlpha;
     case 1: return `${material1}.a * ${material2}.a`;
     case 2: return `${material1}.a + ${material2}.a`;
     case 3: return `${material1}.a`;
@@ -84,13 +87,19 @@ function combinerAlpha(combiner: EmittedCombiner): string {
 }
 
 function emitCombiner(builder: ChainBuilder, expression: Extract<ColourExpression, { kind: "combiner" }>): string {
+  const material1Value = emitExpression(builder, expression.material1, true);
+  const material2Value = emitExpression(builder, expression.material2, true);
+  const material1 = expression.alphaComplementedMaterial === "material1" ? declareComplementedAlpha(builder, material1Value) : material1Value;
+  const material2 = expression.alphaComplementedMaterial === "material2" ? declareComplementedAlpha(builder, material2Value) : material2Value;
+  const firstEmitted = expression.firstEmittedMaterial === "material2" ? material2 : material1;
+  const mask = expression.mask ? emitExpression(builder, expression.mask, true) : null;
   const combiner: EmittedCombiner = {
     combineOperation: expression.colourOperation,
     alphaOperation: expression.alphaOperation,
-    material1: emitExpression(builder, expression.material1, true),
-    material2: emitExpression(builder, expression.material2, true),
-    mask: expression.mask ? emitExpression(builder, expression.mask, true) : null,
-    invertMask: expression.invertMask,
+    material1,
+    material2,
+    firstEmitted,
+    preparedAlpha: mask === null ? `${firstEmitted}.a` : routedMaskAlpha(mask, expression.maskAlphaComplemented),
     modulateMultiplier: expression.colourMultiplier,
   };
   const [resultMinimum, resultMaximum] = COMBINER_CONSTANTS.resultClamp.runtimeDefault;
@@ -105,9 +114,7 @@ function emitShader(builder: ChainBuilder, expression: Extract<ColourExpression,
   if (expression.specular) {
     const specular = emitExpression(builder, expression.specular, false);
     const specularMask = expression.specularityMask ? `${emitExpression(builder, expression.specularityMask, true)}.a` : "1.0";
-    shaded = declare(builder, expression.modulateSpecular2X
-      ? `vec4(${shaded}.rgb * 2.0 * ${specular}.rgb, ${shaded}.a)`
-      : `vec4(${shaded}.rgb + ${specularMask} * ${specular}.rgb, ${shaded}.a)`);
+    shaded = declare(builder, `vec4(${shaded}.rgb + ${specularMask} * ${specular}.rgb, ${shaded}.a)`);
   } else if (expression.selfIllumination && expression.selfIlluminationMask) {
     const selfIllumination = emitExpression(builder, expression.selfIllumination, false);
     const selfIlluminationMask = emitExpression(builder, expression.selfIlluminationMask, true);

@@ -76,7 +76,7 @@
       "class": "Engine.TexOscillatorTriggered",
       "exportCount": 2,
       "packageCount": 1,
-      "status": "material-class-unported"
+      "status": "reviewed"
     },
     {
       "class": "Engine.TexPanner",

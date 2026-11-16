@@ -13,8 +13,8 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 import native_assets
 from native_assets import implementation_source_paths
 
-REAL_STORE_CONVERTER_OUTPUT_VERSION = 'c4bf8e6cf5f61bddf65a35e6fb65f6af34199e0589b978930aeb92d2f15a2bd8'
-RECORDED_CONVERTER_SOURCE_DIGEST = 'a2321966fe9a00d7ee0416f2fbd1d966aac4907fc4e6f8b7e0bbf7d28aefa20a'
+CONVERTER_OUTPUT_VERSION_OF_THIS_CHECKOUT = 'eccc7503fb98617b806c9590975e220a0ad08be6b6d7f4e84b4a8ac74aaba1e1'
+RECORDED_CONVERTER_SOURCE_DIGEST = '51e0116f377a964944fb7417f5b0a63a44aa86547a51d6e2dfb07ab058aa9a0d'
 CONVERTER_RELATIVE_PATH = 'native_assets.py'
 
 LOADED_SCRIPT_MODULES_PROGRAM = '''
@@ -92,21 +92,21 @@ class TemporaryScriptsRootTestCase(unittest.TestCase):
 
 
 class ConverterImplementationHashTests(TemporaryScriptsRootTestCase):
-    def test_the_version_is_the_value_the_real_store_is_sealed_under(self):
-        self.assertEqual(native_assets.CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE, REAL_STORE_CONVERTER_OUTPUT_VERSION)
+    def test_the_version_is_the_raised_lane_value(self):
+        self.assertEqual(native_assets.CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE, CONVERTER_OUTPUT_VERSION_OF_THIS_CHECKOUT)
 
     def test_implementation_hash_reads_no_file(self):
         with patch.object(native_assets, 'hash_file', side_effect=AssertionError('implementation_hash hashed a file')) as hash_file, \
                 patch.object(native_assets, 'implementation_source_paths',
                              side_effect=AssertionError('implementation_hash listed the converter sources')) as source_paths:
-            self.assertEqual(native_assets.implementation_hash(), REAL_STORE_CONVERTER_OUTPUT_VERSION)
+            self.assertEqual(native_assets.implementation_hash(), CONVERTER_OUTPUT_VERSION_OF_THIS_CHECKOUT)
         self.assertEqual((hash_file.call_count, source_paths.call_count), (0, 0))
 
     def test_changed_bytes_and_flipped_line_endings_leave_the_version_unchanged(self):
         for folder_name, changed_bytes in (('appended-byte', with_one_byte_appended_to_the_converter), ('crlf', with_crlf_line_endings)):
             copies = copied_converter_sources(self.temporary_root / folder_name, changed_bytes)
             with patch.object(native_assets, 'implementation_source_paths', return_value=copies):
-                self.assertEqual(native_assets.implementation_hash(), REAL_STORE_CONVERTER_OUTPUT_VERSION)
+                self.assertEqual(native_assets.implementation_hash(), CONVERTER_OUTPUT_VERSION_OF_THIS_CHECKOUT)
 
 
 class ConverterSourceGuardTests(TemporaryScriptsRootTestCase):

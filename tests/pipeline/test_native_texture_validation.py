@@ -8,6 +8,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+from native_assets_lib.png_rgba_codec import encoded_rgba_png
 from native_assets_lib.texture_mips import build_texture_source
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
 from native_texture_validation import verify_texture_products
@@ -31,7 +32,7 @@ class TextureValidationTests(unittest.TestCase):
         tool = root / 'tool.exe'
         tool.write_bytes(b'not executed; PNG export stub only')
         preview = root / 'preview.png'
-        preview.write_bytes(b'\x89PNG\r\n\x1a\n')
+        preview.write_bytes(encoded_rgba_png(4, 4, bytes(64)))
         with patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes())):
             converter = Converter(client, root / 'artifacts' / 'output', tool, project_root=root)
         original_builder = build_texture_dds

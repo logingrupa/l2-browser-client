@@ -12,10 +12,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
+from support.mapping_size_class_defaults import SYNTHETIC_DEFAULT_MATERIAL, use_synthetic_mapping_class_defaults
+from world.bsp_material_mapping_size import MaterialMappingSize, surface_material_identities
+from world.terrain_coordinates import f32
 from world.sky_geometry import SKY_GLB_GENERATOR, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
 from world.sky_materials import SkyTextureUnsupported, external_reference_reasons, single_graph_texture_export
-from world.sky_step import SKY_STEP_ALGORITHM_VERSION, SKY_STEP_NAME, alpha_source, authored_color_rgba, presentation_field_gap, sky_bundle_files, \
+from world.sky_step import SKY_STEP_ALGORITHM_VERSION, SKY_STEP_NAME, alpha_source, authored_colour_rgba, presentation_field_gap, sky_bundle_files, \
     tile_sky_row
 from world.tile_step_gap_rows import TileStepGapRows
 from world.tile_manifest_step import PENDING_TILE_STEPS, pending_steps_after_sealed, tile_level_gap_rows, tile_resources
@@ -28,6 +31,7 @@ SOURCE_IDENTITY = {'path': f'maps/{TILE_ID}.unr', 'sha256': hashlib.sha256(b'syn
 EVIDENCE = f'work/tile__{TILE_ID}/sky/receipt.json'
 SKY_ZONE = 1
 OBJECT_NAMES = {1: 'Sky_T.Shaders.Haze', 3: 'Sky_T.Shaders.Back', 4: 'SKY_T.SHADERS.HAZE', 2: f'{TILE_ID}.BrushActor0'}
+TEXTURE_SIZED_MAPPING = MaterialMappingSize(64, 32)
 
 
 def object_name(index):
@@ -38,6 +42,16 @@ def glb_chunks(glb):
     json_length = struct.unpack_from('<I', glb, 12)[0]
     binary_length = struct.unpack_from('<I', glb, 20 + json_length)[0]
     return json.loads(glb[20:20 + json_length]), glb[28 + json_length:28 + json_length + binary_length]
+
+
+def without_texture_coordinate_values(document, binary):
+    blanked = bytearray(binary)
+    for mesh in document['meshes']:
+        accessor = document['accessors'][mesh['primitives'][0]['attributes']['TEXCOORD_0']]
+        view = document['bufferViews'][accessor['bufferView']]
+        start = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
+        blanked[start:start + accessor['count'] * 8] = bytes(accessor['count'] * 8)
+    return document, bytes(blanked)
 
 
 def texture_receipt(name):
@@ -53,38 +67,51 @@ def synthetic_sky_model():
                                        zones=(synthetic_zone(), synthetic_zone(5)))
 
 
-def root_surface(identity, texture_name):
-    return SkyRootSurface(identity, identity, [206, 150, 0, 255], True, 'serialized', False, texture_receipt(texture_name))
+def root_surface(identity, texture_name, mapping_size=TEXTURE_SIZED_MAPPING):
+    return SkyRootSurface(identity, identity, [206, 150, 0, 255], True, 'serialized', False, texture_receipt(texture_name), mapping_size)
+
+
+def synthetic_material_of_surface(test_case):
+    use_synthetic_mapping_class_defaults(test_case)
+    return surface_material_identities(SimpleNamespace(object_name=object_name), synthetic_sky_model(), None, None)
+
+
+def sky_zone_parts(test_case, roots):
+    package = SimpleNamespace(object_name=object_name)
+    return build_sky_zone_parts(package, synthetic_material_of_surface(test_case), synthetic_sky_model(), SKY_ZONE, roots)
 
 
 class SkyZoneGeometryTests(unittest.TestCase):
     def test_material_roots_keep_first_node_order_and_fold_case(self):
-        package = SimpleNamespace(object_name=object_name)
-        self.assertEqual(sky_zone_material_identities(package, synthetic_sky_model(), SKY_ZONE), ['Sky_T.Shaders.Haze', 'Sky_T.Shaders.Back'])
+        self.assertEqual(sky_zone_material_identities(synthetic_material_of_surface(self), synthetic_sky_model(), SKY_ZONE),
+                         ['Sky_T.Shaders.Haze', 'Sky_T.Shaders.Back', SYNTHETIC_DEFAULT_MATERIAL])
 
-    def test_parts_draw_every_sky_zone_node_of_their_root_with_reversed_fans_and_stored_uvs(self):
-        package = SimpleNamespace(object_name=object_name)
-        parts = build_sky_zone_parts(package, synthetic_sky_model(), SKY_ZONE, [root_surface('Sky_T.Shaders.Haze', 'Ring')])
-        [part] = parts
+    def test_parts_draw_every_sky_zone_node_of_their_root_with_reversed_fans_and_recentred_uvs(self):
+        [part] = sky_zone_parts(self, [root_surface('Sky_T.Shaders.Haze', 'Ring')])
         self.assertEqual([node_range['node'] for node_range in part['nodeRanges']], [0, 2])
         self.assertEqual(part['indices'][:6], [0, 2, 1, 0, 3, 2])
         self.assertEqual(part['positions'][3:6], [struct.unpack('<f', struct.pack('<f', 0.64))[0], 0.0, 0.0])
-        self.assertEqual(part['uvs'][2:4], [1.0, 0.0])
+        self.assertEqual(part['mappingSize'], [64, 32])
+        self.assertEqual(part['uvs'][:8], [-1.0, -1.0, 0.0, -1.0, 0.0, 1.0, -1.0, 1.0])
 
-    def test_a_sky_zone_node_without_a_material_is_skipped_by_every_root(self):
-        package = SimpleNamespace(object_name=object_name)
-        roots = [root_surface('Sky_T.Shaders.Haze', 'Ring'), root_surface('Sky_T.Shaders.Back', 'Chip')]
-        parts = build_sky_zone_parts(package, synthetic_sky_model(), SKY_ZONE, roots)
-        self.assertEqual([[node_range['node'] for node_range in part['nodeRanges']] for part in parts], [[0, 2], [1]])
+    def test_a_sky_node_drops_the_rounded_non_integer_mean_of_its_mapping_size_coordinates(self):
+        [part] = sky_zone_parts(self, [root_surface('Sky_T.Shaders.Haze', 'Ring', MaterialMappingSize(40, 256))])
+        recentred_u = f32(f32(64 / 40) - 1)
+        self.assertEqual(part['uvs'][:8], [-1.0, 0.0, recentred_u, 0.0, recentred_u, 0.25, -1.0, 0.25])
+
+    def test_a_sky_zone_node_without_a_material_draws_with_the_material_class_default(self):
+        roots = [root_surface('Sky_T.Shaders.Haze', 'Ring'), root_surface('Sky_T.Shaders.Back', 'Chip'),
+                 root_surface(SYNTHETIC_DEFAULT_MATERIAL, 'Default')]
+        parts = sky_zone_parts(self, roots)
+        self.assertEqual([[node_range['node'] for node_range in part['nodeRanges']] for part in parts], [[0, 2], [1], [4]])
 
     def test_the_root_translation_is_minus_the_sky_zone_location_in_browser_axes(self):
         self.assertEqual(sky_root_translation_metres([100.0, 200.0, 300.0]), [-1.0, -3.0, -2.0])
 
     def test_the_glb_holds_one_child_node_and_one_material_per_root(self):
-        package = SimpleNamespace(object_name=object_name)
         roots = [root_surface('Sky_T.Shaders.Haze', 'Ring'), root_surface('Sky_T.Shaders.Back', 'Chip')]
         snapshot = {'id': f'interlude:{TILE_ID}.Model1.SkyZoneInfo0', 'rootTranslationMetres': [0.0, 0.0, 0.0],
-                    'parts': build_sky_zone_parts(package, synthetic_sky_model(), SKY_ZONE, roots)}
+                    'parts': sky_zone_parts(self, roots)}
         document, binary = glb_chunks(build_sky_glb(snapshot, {'Ring.png': b'ring-png', 'Chip.png': b'chip-png'}))
         self.assertEqual(document['nodes'][0]['children'], [1, 2])
         self.assertEqual([material['name'] for material in document['materials']], ['Sky_T.Shaders.Haze', 'Sky_T.Shaders.Back'])
@@ -93,9 +120,8 @@ class SkyZoneGeometryTests(unittest.TestCase):
         self.assertEqual(document['materials'][0]['pbrMetallicRoughness']['baseColorFactor'], [206 / 255, 150 / 255, 0, 1])
 
     def test_only_the_position_accessor_carries_bounds_like_the_served_sky(self):
-        package = SimpleNamespace(object_name=object_name)
         snapshot = {'id': f'interlude:{TILE_ID}.Model1.SkyZoneInfo0', 'rootTranslationMetres': [0.0, 0.0, 0.0],
-                    'parts': build_sky_zone_parts(package, synthetic_sky_model(), SKY_ZONE, [root_surface('Sky_T.Shaders.Haze', 'Ring')])}
+                    'parts': sky_zone_parts(self, [root_surface('Sky_T.Shaders.Haze', 'Ring')])}
         document, _ = glb_chunks(build_sky_glb(snapshot, {'Ring.png': b'ring-png'}))
         attributes = document['meshes'][0]['primitives'][0]['attributes']
         accessors = document['accessors']
@@ -115,9 +141,9 @@ class SkyMaterialTests(unittest.TestCase):
         self.assertEqual(presentation_field_gap({key: value for key, value in complete.items() if key != 'AlphaBlend'}),
                          'material-feature-unported:AlphaBlend')
 
-    def test_the_root_color_reads_the_serialized_bytes_in_the_core_dll_blue_green_red_alpha_order(self):
-        self.assertEqual(authored_color_rgba({'rawHex': '01020304'}), [3, 2, 1, 4])
-        self.assertEqual(authored_color_rgba({'rawHex': 'ce9600ff'}), [0, 150, 206, 255])
+    def test_the_authored_colour_reads_the_serialized_color_bytes_as_b_g_r_a(self):
+        self.assertEqual(authored_colour_rgba({'rawHex': '01020304'}), [3, 2, 1, 4])
+        self.assertEqual(authored_colour_rgba({'rawHex': 'ce9600ff', 'structName': 'Color'}), [0, 150, 206, 255])
 
     def test_the_alpha_source_names_a_class_default_or_the_serialized_tag(self):
         self.assertEqual(alpha_source({'provenance': 'authored'}), 'serialized')
@@ -139,7 +165,7 @@ class SkyMaterialTests(unittest.TestCase):
 
 class SkyStepRecordTests(unittest.TestCase):
     def test_the_step_name_version_reasons_and_vocabulary_kind_are_registered(self):
-        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 3))
+        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 4))
         self.assertIn('sky', load_tile_manifest_vocabulary(ROOT).resource_kinds)
         patterns = load_gap_reason_patterns(ROOT)
         for reason in ('sky-zone-ambiguous:2', 'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):
@@ -189,13 +215,13 @@ class RealClientSkyTests(unittest.TestCase):
         converted = convert_tile_sky(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, zone_index, gaps)
         return converted, gaps.rows()
 
-    def test_the_generic_20_20_sky_glb_matches_the_served_sky_except_its_generator_and_its_red_blue_swapped_colors(self):
+    def test_the_generic_20_20_sky_glb_matches_the_served_sky_except_its_generator_colour_order_and_uv_values(self):
         served = (SERVED_SKY_FOLDER / 'sky.glb').read_bytes()
         self.assertEqual(hashlib.sha256(served).hexdigest(), SERVED_SKY_GLB_SHA256)
         converted, gap_rows = self.converted_sky_files('20_20')
         self.assertEqual(gap_rows, [])
-        generic_document, generic_binary = glb_chunks(converted.files['sky.glb'])
-        served_document, served_binary = glb_chunks(served)
+        generic_document, generic_binary = without_texture_coordinate_values(*glb_chunks(converted.files['sky.glb']))
+        served_document, served_binary = without_texture_coordinate_values(*glb_chunks(served))
         self.assertEqual(generic_binary, served_binary)
         self.assertEqual(generic_document['asset'].pop('generator'), SKY_GLB_GENERATOR)
         served_document['asset'].pop('generator')
@@ -204,6 +230,9 @@ class RealClientSkyTests(unittest.TestCase):
             material['pbrMetallicRoughness']['baseColorFactor'] = [blue, green, red, alpha]
         self.assertEqual(generic_document, served_document)
         self.assertEqual(converted.counts, {'nodes': 53, 'vertices': 182, 'triangles': 76, 'materialRoots': 3, 'textures': 3})
+        self.assertEqual({part['mapReference']: part['mappingSize'] for part in json.loads(converted.files['sky.json'])['parts']},
+                         {'L2_Skies.Shaders.Cloud_Final': [1024, 1024], 'L2_Skies.Shaders.HazeRing_Final': [512, 128],
+                          'L2_Skies.Shaders.SkybackgroundColor': [32, 32]})
 
     def test_tile_15_22_sky_layers_take_their_colors_from_the_blue_green_red_alpha_bytes(self):
         converted, gap_rows = self.converted_sky_files('15_22')

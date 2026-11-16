@@ -14,7 +14,7 @@ REVIEWED_NODE_CLASSES = {'Texture', 'Shader', 'Combiner', 'FadeColor', 'Palette'
 MAX_NODES = 128
 REVIEWED_MATERIAL_CLASSES = ('Engine.Shader', 'Engine.Combiner', 'Engine.FinalBlend', 'Engine.ColorModifier', 'Engine.FadeColor',
                              'Engine.ConstantColor', 'Engine.TexPanner', 'Engine.TexRotator', 'Engine.TexOscillator',
-                             'Engine.TexScaler', 'Engine.TexEnvMap', 'Engine.TexCoordSource', 'Engine.MaterialSequence',
+                             'Engine.TexOscillatorTriggered', 'Engine.TexScaler', 'Engine.TexEnvMap', 'Engine.TexCoordSource', 'Engine.MaterialSequence',
                              'Engine.Texture')
 PRESERVED_MATERIAL_DATA_CLASSES = ('Engine.Palette',)
 MATERIAL_GRAPH_SCHEMA_VERSION = 1

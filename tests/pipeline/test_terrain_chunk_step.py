@@ -25,7 +25,7 @@ SOURCE_IDENTITY = {'path': 'maps/20_21.unr', 'sha256': 'a' * 64}
 EVIDENCE = 'work/tile__20_21/terrain/receipt.json'
 REAL_TERRAIN_INDEX_PATH = ROOT / 'artifacts/lane-store/world/work/tile__20_21/terrain/products/terrain-chunks.json'
 WORLD_07_DISCRIMINATING_CASES_PATH = ROOT / 'tests/fixtures/world-07/discriminating-cases.json'
-THREE_LAYER_FOUR_SECTOR_CHUNK_GLB_SHA256 = '73680f738faafea18a0f1d21f3290d11b3374319d8e3f159a77b3c0149af5306'
+THREE_LAYER_FOUR_SECTOR_CHUNK_GLB_SHA256 = 'e1a4135115175d450ee11967d8613bdc75c144a8c01ea993beaf92d9f57c0eac'
 NO_SEAM_STRIP = {'column': None, 'row': None, 'corner': None}
 
 
@@ -59,7 +59,7 @@ class ExtrapolatedRuleTests(unittest.TestCase):
     def test_the_rule_is_the_20_20_submitted_formula_labelled_extrapolated(self):
         self.assertEqual(extrapolated_mask_uv_rule(), {'id': 'interlude-20_20-submitted-mask-uv-20261106',
                                                         'formula': QUALIFIED_MASK_UV_FORMULA, 'status': 'extrapolated'})
-        self.assertEqual(TERRAIN_CHUNK_STEP_ALGORITHM_VERSION, 3)
+        self.assertEqual(TERRAIN_CHUNK_STEP_ALGORITHM_VERSION, 4)
 
     def test_every_chunk_record_and_glb_carries_the_extrapolated_label_and_its_source(self):
         _, _, _, by_chunk, records = build_synthetic_chunks(8, 8)

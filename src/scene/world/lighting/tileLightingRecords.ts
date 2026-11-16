@@ -1,6 +1,5 @@
 import type { CameraZoneFogRecord } from "../../../materials/ue2/babylon/material";
-import type { EnvironmentFogRanges } from "../../../materials/ue2/model/fog";
-import { decodeEnvironmentFogRanges, decodeFogInfos, type DecodedFogInfo } from "./tileFogInfoRecords";
+import { decodeFogInfos, type DecodedFogInfo } from "./tileFogInfoRecords";
 import { TileLightingDecodeError } from "./tileLightingDecodeError";
 
 export interface TileLightingZone {
@@ -9,17 +8,8 @@ export interface TileLightingZone {
   readonly unresolvedReason: string | null;
 }
 
-export interface WorldEnvironmentProgram {
-  readonly startTimeHours: number;
-  readonly timeRatio: number;
-  readonly environmentTypes: readonly number[];
-  readonly unresolved: readonly string[];
-}
-
 export interface TileLightingRecords {
   readonly zones: readonly TileLightingZone[];
-  readonly environmentProgram: WorldEnvironmentProgram;
-  readonly environmentFogRanges: EnvironmentFogRanges | null;
   readonly fogInfos: readonly DecodedFogInfo[];
   readonly waterVolumeCount: number;
 }
@@ -72,26 +62,6 @@ function readZone(value: unknown, position: number): TileLightingZone {
     fog: { colourBytes: readFogColourBytes(fields.get("DistanceFogColor")!.value, label), startSourceUnits: start, endSourceUnits: end } } };
 }
 
-function setupNumber(setupValues: Record<string, unknown>, key: string): number {
-  const entry = setupValues[key];
-  requireRecords(isRecord(entry) && typeof entry.value === "number" && Number.isFinite(entry.value), `environment program setup value ${key} is not a number.`);
-  return entry.value as number;
-}
-
-function readEnvironmentProgram(value: unknown): WorldEnvironmentProgram {
-  requireRecords(isRecord(value) && isRecord(value.setupValues) && Array.isArray(value.environmentTypes) && Array.isArray(value.unresolved),
-    "environmentProgram needs setupValues, environmentTypes and unresolved.");
-  const startTimeHours = setupNumber(value.setupValues, "StartTime"), timeRatio = setupNumber(value.setupValues, "TimeRatio");
-  requireRecords(startTimeHours >= 0 && startTimeHours < 24, `environment program StartTime ${startTimeHours} is outside [0, 24).`);
-  requireRecords(timeRatio > 0, `environment program TimeRatio ${timeRatio} must be positive.`);
-  const environmentTypes = value.environmentTypes.map((entry, index) => {
-    requireRecords(isRecord(entry) && Number.isSafeInteger(entry.environmentType), `environmentTypes[${index}] has no integer environmentType.`);
-    return entry.environmentType as number;
-  });
-  requireRecords(value.unresolved.every(entry => typeof entry === "string"), "environment program unresolved must list reasons.");
-  return { startTimeHours, timeRatio, environmentTypes, unresolved: value.unresolved as string[] };
-}
-
 export function decodeTileLightingRecords(bytes: Uint8Array): TileLightingRecords {
   let document: unknown;
   try {
@@ -105,7 +75,5 @@ export function decodeTileLightingRecords(bytes: Uint8Array): TileLightingRecord
     "the records need zones, fogInfos and waterVolumes lists.");
   const zones = document.zones.map(readZone);
   requireRecords(new Set(zones.map(zone => zone.zoneIndex)).size === zones.length, "two zone records share a zoneIndex.");
-  const environmentProgram = readEnvironmentProgram(document.environmentProgram);
-  return { zones, environmentProgram, environmentFogRanges: decodeEnvironmentFogRanges((document.environmentProgram as Record<string, unknown>).setup),
-    fogInfos: decodeFogInfos(document.fogInfos), waterVolumeCount: document.waterVolumes.length };
+  return { zones, fogInfos: decodeFogInfos(document.fogInfos), waterVolumeCount: document.waterVolumes.length };
 }

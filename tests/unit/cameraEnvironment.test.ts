@@ -5,7 +5,7 @@ import { zoneSetOf } from "../../src/scene/world/bspVisibility/core/zoneSet";
 import { cameraEnvironmentGaps, computeCameraEnvironment } from "../../src/scene/world/cameraEnvironment";
 import { collisionWorldFromFixtures, committedMovementRules, fixtureCellId, mixedChunkArrays, waterPhysicsVolume } from "../fixtures/movement/movementCollisionFixtures";
 import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
-import { tileLightingArrays, tileLightingModel, tileLightingPayload, tileLightingRecordsDocument } from "../support/tileLightingFixture";
+import { environmentFogRanges, tileLightingArrays, tileLightingModel, tileLightingPayload, tileLightingRecordsDocument } from "../support/tileLightingFixture";
 
 const records = tileLightingModel().records;
 const rules = committedMovementRules();
@@ -17,7 +17,7 @@ function frameInZone(cameraZone: number): TileVisibilityFrame {
 
 describe("computeCameraEnvironment", () => {
   it("takes the camera zone from the visibility frame and evaluates its distance fog through the library, fogEnd included", () => {
-    const environment = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: null, collision: null, records, hour: 12 });
+    const environment = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: null, collision: null, records, environmentFogRanges, hour: 12 });
     expect(environment.cameraZone).toBe(1);
     expect(environment.fog).toEqual({ enabled: true, source: "camera-zone", colour: [95 / 255, 112 / 255, 116 / 255], startSourceUnits: 100,
       endSourceUnits: 20000, fogEnd: 20000 });
@@ -26,15 +26,15 @@ describe("computeCameraEnvironment", () => {
   });
 
   it("keeps fog off in a zone without distance fog and names an unresolved or unknown zone", () => {
-    expect(computeCameraEnvironment({ frame: frameInZone(2), cameraSourcePosition: null, collision: null, records, hour: 12 }).fog)
+    expect(computeCameraEnvironment({ frame: frameInZone(2), cameraSourcePosition: null, collision: null, records, environmentFogRanges, hour: 12 }).fog)
       .toEqual({ ...FOG_DISABLED, source: "zone-without-fog" });
-    const unresolved = computeCameraEnvironment({ frame: frameInZone(0), cameraSourcePosition: null, collision: null, records, hour: 12 });
+    const unresolved = computeCameraEnvironment({ frame: frameInZone(0), cameraSourcePosition: null, collision: null, records, environmentFogRanges, hour: 12 });
     expect(unresolved.fog).toEqual(FOG_DISABLED);
     expect(unresolved.gaps).toContain("lighting-zone-fog-unresolved:0:bDistanceFog");
-    const unknown = computeCameraEnvironment({ frame: null, cameraSourcePosition: null, collision: null, records, hour: 12 });
+    const unknown = computeCameraEnvironment({ frame: null, cameraSourcePosition: null, collision: null, records, environmentFogRanges, hour: 12 });
     expect(unknown).toMatchObject({ cameraZone: -1, fog: FOG_DISABLED });
     expect(unknown.gaps).toContain(cameraEnvironmentGaps.cameraZoneUnknown);
-    expect(computeCameraEnvironment({ frame: frameInZone(9), cameraSourcePosition: null, collision: null, records, hour: 12 }).gaps).toContain("lighting-zone-unlisted:9");
+    expect(computeCameraEnvironment({ frame: frameInZone(9), cameraSourcePosition: null, collision: null, records, environmentFogRanges, hour: 12 }).gaps).toContain("lighting-zone-unlisted:9");
   });
 
   it("names a decoded zone fog range whose end does not pass its start as a gap instead of throwing in the frame loop", () => {
@@ -44,7 +44,7 @@ describe("computeCameraEnvironment", () => {
     const payload = tileLightingPayload(tileLightingArrays(document));
     const flatRecords = decodeTileLighting(payload.assetRecord, payload.payloadBytes).records;
     expect(flatRecords.zones[1]).toEqual({ zoneIndex: 1, fog: null, unresolvedReason: "lighting-zone-fog-range-not-increasing:1:100:100" });
-    const environment = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: null, collision: null, records: flatRecords, hour: 12 });
+    const environment = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: null, collision: null, records: flatRecords, environmentFogRanges, hour: 12 });
     expect(environment.fog).toEqual(FOG_DISABLED);
     expect(environment.gaps).toContain("lighting-zone-fog-range-not-increasing:1:100:100");
   });
@@ -52,11 +52,11 @@ describe("computeCameraEnvironment", () => {
   it("finds the physics volume around the camera through volumesContaining and names the missing water flag", () => {
     const world = collisionWorldFromFixtures(mixedChunkArrays(), null);
     const [x, y, z] = waterPhysicsVolume.location;
-    const inside = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: { x: x + 300, y, z: z + 50 }, collision: { world, rules }, records, hour: 12 });
+    const inside = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: { x: x + 300, y, z: z + 50 }, collision: { world, rules }, records, environmentFogRanges, hour: 12 });
     expect(inside.containingVolume).toMatchObject({ cellId: fixtureCellId, volumeIndex: 1, volume: { kind: "physics" } });
     expect(inside.gaps).toContain(cameraEnvironmentGaps.volumeWaterFlagAbsent);
     expect(inside.fog.source).toBe("camera-zone");
-    const outside = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: { x: x + 380, y, z }, collision: { world, rules }, records, hour: 12 });
+    const outside = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: { x: x + 380, y, z }, collision: { world, rules }, records, environmentFogRanges, hour: 12 });
     expect(outside.containingVolume).toBeNull();
     expect(outside.gaps).not.toContain(cameraEnvironmentGaps.volumeWaterFlagAbsent);
   });

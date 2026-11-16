@@ -1,12 +1,17 @@
+import type { Material } from "@babylonjs/core/Materials/material";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
-import { createNativeMaterial, type LoadedNativeMaterial, type NativeMaterial } from "../../materials/ue2/babylon/material";
+import {
+  createNativeMaterial, FOG_DISABLED, type LoadedNativeMaterial, type NativeMaterial, type NativeMaterialUniforms,
+} from "../../materials/ue2/babylon/material";
 import { decodeNativeJsonResource } from "./loadNativeSection";
 import { hasExactKeys, isPlainRecord } from "./nativeManifestRecordGuards";
 import { readNativeSourceReference } from "./nativeSourceReference";
 import type { NativeSkyBundleFile } from "./nativeTileSkySource";
+import { bindSkyEnvironmentColours, type SkyEnvironmentColourInspection, type SkyEnvironmentColourWriter } from "./skyEnvironmentColours";
 import { parseListedProgramPin } from "./staticMeshLibraryMaterials";
+import type { SkyEnvironmentColour } from "./worldTimeOfDay";
 
 export interface NativeSkyMaterialEntry {
   readonly root: string;
@@ -29,6 +34,15 @@ export interface NativeSkySurface {
   readonly programMaterialId: string | null;
   readonly reasons: readonly string[];
   readonly library: NativeMaterial | null;
+  readonly colorModifierNodes: readonly string[];
+}
+
+export interface NativeSkySurfaceInspection {
+  readonly mesh: string;
+  readonly sourceReference: string | null;
+  readonly programMaterialId: string | null;
+  readonly status: NativeSkySurfaceStatus;
+  readonly reasons: readonly string[];
 }
 
 export interface NativeSkyLibrarySettings {
@@ -36,8 +50,21 @@ export interface NativeSkyLibrarySettings {
   readonly meshes: readonly AbstractMesh[];
   readonly listing: NativeSkyMaterialsListing | null;
   readonly sessionSeed: number;
+  readonly materialUniforms: (() => NativeMaterialUniforms) | null;
+  readonly environmentColours: (() => readonly SkyEnvironmentColour[]) | null;
   readonly loadProgram: (materialId: string, signal: AbortSignal) => Promise<LoadedNativeMaterial>;
   readonly signal: AbortSignal;
+}
+
+export interface NativeSkyLibraryBinding {
+  readonly surfaces: readonly NativeSkySurfaceInspection[];
+  environmentColours(): readonly SkyEnvironmentColourInspection[];
+  dispose(): void;
+}
+
+interface CompiledNativeSkySurface extends NativeSkySurface {
+  readonly library: NativeMaterial;
+  readonly snapshotMaterial: Material | null;
 }
 
 export const skyMaterialsListingAbsentReason = "sky-materials-listing-absent";
@@ -92,10 +119,14 @@ export function joinNativeSkySurface(listing: NativeSkyMaterialsListing, sourceR
   return { kind: "program", programMaterialId: entry.programMaterialId };
 }
 
+function colorModifierNodesOf(loaded: LoadedNativeMaterial): readonly string[] {
+  return loaded.plan.status === "diagnostic" ? [] : loaded.plan.colourSources.filter(source => source.kind === "color-modifier").map(source => source.node);
+}
+
 async function librarySkySurface(settings: NativeSkyLibrarySettings, mesh: AbstractMesh): Promise<NativeSkySurface> {
   const sourceReference = readNativeSourceReference(mesh.material);
   const unbound = (status: NativeSkySurfaceStatus, programMaterialId: string | null, reasons: readonly string[]): NativeSkySurface =>
-    ({ mesh, sourceReference, status, programMaterialId, reasons, library: null });
+    ({ mesh, sourceReference, status, programMaterialId, reasons, library: null, colorModifierNodes: [] });
   if (settings.listing === null) return unbound("program-unconverted", null, [skyMaterialsListingAbsentReason]);
   const join = joinNativeSkySurface(settings.listing, sourceReference);
   if (join.kind === "gap") return unbound("program-gap", null, join.reasons);
@@ -104,18 +135,61 @@ async function librarySkySurface(settings: NativeSkyLibrarySettings, mesh: Abstr
   const library = createNativeMaterial(settings.scene, loaded, { sessionSeed: settings.sessionSeed, lighting: "unlit" });
   const inspected = library.inspect();
   if (inspected.status !== "compiled") { library.dispose(); return unbound("library-diagnostic", join.programMaterialId, inspected.reasons); }
-  return { mesh, sourceReference, status: "library-compiled", programMaterialId: join.programMaterialId, reasons: [], library };
+  library.material.disableDepthWrite = true;
+  library.material.forceDepthWrite = false;
+  return { mesh, sourceReference, status: "library-compiled", programMaterialId: join.programMaterialId, reasons: [], library,
+    colorModifierNodes: colorModifierNodesOf(loaded) };
 }
 
-export async function bindNativeSkyLibraryMaterials(settings: NativeSkyLibrarySettings): Promise<NativeSkySurface[]> {
+function inspectSkySurface(surface: NativeSkySurface): NativeSkySurfaceInspection {
+  return { mesh: surface.mesh.name, sourceReference: surface.sourceReference, programMaterialId: surface.programMaterialId, status: surface.status,
+    reasons: surface.reasons };
+}
+
+function skyUniformsWithoutFog(materialUniforms: () => NativeMaterialUniforms): NativeMaterialUniforms {
+  return { ...materialUniforms(), fog: FOG_DISABLED };
+}
+
+export async function bindNativeSkyLibraryMaterials(settings: NativeSkyLibrarySettings): Promise<NativeSkyLibraryBinding> {
+  const { scene, materialUniforms } = settings;
   const surfaces: NativeSkySurface[] = [];
+  const compiled: CompiledNativeSkySurface[] = [];
+  let environmentColours: SkyEnvironmentColourWriter | null = null;
   try {
-    for (const mesh of settings.meshes) surfaces.push(await librarySkySurface(settings, mesh));
+    for (const mesh of settings.meshes) {
+      const surface = await librarySkySurface(settings, mesh);
+      surfaces.push(surface);
+      if (surface.library !== null) compiled.push({ ...surface, library: surface.library, snapshotMaterial: mesh.material });
+    }
     settings.signal.throwIfAborted();
+    if (materialUniforms !== null && settings.environmentColours !== null) {
+      environmentColours = bindSkyEnvironmentColours(compiled.map(surface => ({ nativeMaterial: surface.library, colorModifierNodes: surface.colorModifierNodes })),
+        settings.environmentColours);
+    }
   } catch (error) {
-    for (const surface of surfaces) surface.library?.dispose();
+    for (const surface of compiled) surface.library.dispose();
     throw error;
   }
-  for (const surface of surfaces) if (surface.library !== null) surface.mesh.material = surface.library.material;
-  return surfaces;
+  const writeFrame = (uniforms: () => NativeMaterialUniforms) => {
+    environmentColours?.write();
+    const frameUniforms = skyUniformsWithoutFog(uniforms);
+    for (const surface of compiled) surface.library.update(frameUniforms);
+  };
+  if (materialUniforms !== null) writeFrame(materialUniforms);
+  for (const surface of compiled) surface.mesh.material = surface.library.material;
+  const observer = materialUniforms === null || compiled.length === 0 ? null : scene.onBeforeRenderObservable.add(() => writeFrame(materialUniforms));
+  let disposed = false;
+  return {
+    surfaces: surfaces.map(inspectSkySurface),
+    environmentColours: () => environmentColours?.inspection() ?? [],
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      if (observer) scene.onBeforeRenderObservable.remove(observer);
+      for (const surface of compiled) {
+        if (!surface.mesh.isDisposed() && surface.mesh.material === surface.library.material) surface.mesh.material = surface.snapshotMaterial;
+        surface.library.dispose();
+      }
+    },
+  };
 }

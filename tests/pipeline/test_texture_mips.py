@@ -93,8 +93,8 @@ class TextureSourceGapReasonTests(unittest.TestCase):
         return caught.exception.reason
 
     def test_an_unreviewed_format_in_a_reviewed_layout_is_a_listed_format_gap(self):
-        reason = self.refusal_reason(fmt=7)
-        self.assertEqual(reason,'texture-format-unsupported:7')
+        reason = self.refusal_reason(fmt=4)
+        self.assertEqual(reason,'texture-format-unsupported:4')
         self.assertTrue(is_listed_reason(reason,load_gap_reason_patterns(ROOT)))
 
     def test_an_unreviewed_layout_is_a_listed_licensee_gap(self):
@@ -152,6 +152,7 @@ class TextureMipTests(unittest.TestCase):
         result,files = build_texture_source(package,item)
         self.assertEqual(files['native/palette.rgba'],colors)
         self.assertEqual(result['palette']['entry0Alpha'],193)
+        self.assertEqual(result['palette']['channelOrder'],'RGBA8')
         self.assertFalse(result['palette']['alphaModified'])
         self.assertEqual(files['native/mip00.bin'],b'\0\x01\x7f\xff')
         pal = package.exports[1]
@@ -182,7 +183,7 @@ class TextureMipTests(unittest.TestCase):
 
     def test_unsupported_type_is_reserved_for_numeric_format_and_version(self):
         for kwargs in ({'version':(123,31)},{'version':(123,33)},{'version':(123,36)},
-                       {'version':(123,37)},{'version':(122,30)},{'fmt':7},{'fmt':13}):
+                       {'version':(123,37)},{'version':(122,30)},{'fmt':4},{'fmt':13}):
             package,item,_,_ = fixture(**kwargs)
             with self.subTest(kwargs=kwargs),self.assertRaises(UnsupportedTextureSource):
                 build_texture_source(package,item)
