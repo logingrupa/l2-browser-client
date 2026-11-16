@@ -22,6 +22,7 @@ from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.source_table_binding import material_overrides_by_slot, verify_source_table_binding
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
+from native_assets_lib.texture_png_alpha import texture_png_keeping_native_alpha
 from native_assets_lib.texture_package_118 import read_unreal_package
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
 from native_assets_lib.converter_source_digests import ConverterSourceDigests
@@ -259,14 +260,18 @@ class Converter:
             raise ValueError(f'Expected exactly one exported payload for {item["object"]}: {matches}')
         return matches[0]
 
+    def texture_png(self, work, package_path, package, item):
+        self.run(work, package_path, item)
+        payload = self.exported(work, item, ('.png',)).read_bytes()
+        if not payload.startswith(b'\x89PNG\r\n\x1a\n'):
+            raise ValueError('Texture exporter did not produce PNG')
+        return texture_png_keeping_native_alpha(payload, package, item)
+
     def texture(self, work, reference):
         package_name = reference.split('.')[0]
         path, package = self.package(package_name)
         item = self.select(package, reference, 'Texture')
-        self.run(work, path, item)
-        payload = self.exported(work, item, ('.png',)).read_bytes()
-        if not payload.startswith(b'\x89PNG\r\n\x1a\n'):
-            raise ValueError('Texture exporter did not produce PNG')
+        payload = self.texture_png(work, path, package, item)
         properties, _ = package.properties(item)
         return payload, {prop['name']: prop.get('value', {'rawHex': prop['payloadHex']}) for prop in properties}, item['object']
 
@@ -642,13 +647,12 @@ class Converter:
                     primary = 'model.glb'
                     files[primary], mime[primary] = document.glb(), 'model/gltf-binary'
                 elif kind == 'texture':
-                    self.run(work, source_path, item)
                     primary = 'texture.png'
-                    files[primary] = self.exported(work, item, ('.png',)).read_bytes()
+                    files[primary] = self.texture_png(work, source_path, package, item)
                     mime[primary] = 'image/png'
                     properties, _ = package.properties(item)
                     metadata['nativeProperties'] = properties
-                    limitations.append('Texture mip0 decoded by pinned UModel; native material/shader behavior is not included.')
+                    limitations.append('Texture mip0 decoded by pinned UModel, with native mip0 alpha restored when UModel drops it; native material/shader behavior is not included.')
                     try:
                         native_texture, native_files = build_texture_source(package, item)
                         if native_texture['format']['propertyStatus'] == 'omitted-native-zero-default':
