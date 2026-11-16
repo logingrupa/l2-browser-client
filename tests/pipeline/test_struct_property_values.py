@@ -10,9 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from native_assets_lib.class_defaults import CLASS_DEFAULT_CACHE_FOLDER_NAME, DECOMPILE_WORK_FOLDER_NAME, ClassDefaultError
-from native_catalog.ue2 import Package
+from native_catalog.ue2 import FormatError, Package
 from native_effect_bundle import object_values
-from synthetic_class_scripts import SyntheticClassScripts, scratch_work_root
+from synthetic_class_scripts import SyntheticClassScripts, scratch_work_root, synthetic_import_table
 from ue2_package_fixture import compact, package_bytes, tag
 from world.declared_property_types import DeclaredPropertyTypeError, DeclaredPropertyTypes, PropertyScope, struct_member_declarations
 from world.struct_property_tag_rules import read_struct_property_tag_rules
@@ -265,10 +265,11 @@ def write_decompiled_script(work_root, class_object, script_text, recorded_sha25
 
 
 class DeclaredPropertyTypeTests(unittest.TestCase):
-    def declared_types(self, holder_script=SCRIPT_WITH_STRUCTS, recorded_sha256=None, imports_by_package=None):
+    def declared_types(self, holder_script=SCRIPT_WITH_STRUCTS, recorded_sha256=None, imports_by_package=None, ambiguous_package_names=()):
         work_root = scratch_work_root(self, 'declared-types-')
         class_scripts = RefusingSyntheticClassScripts({OWNER_CLASS: ('Core.Object', holder_script), 'Core.Object': (None, OBJECT_SCRIPT),
-                                                        'Core.Texture': ('Core.Object', 'class Texture extends Object;')}, imports_by_package)
+                                                        'Core.Texture': ('Core.Object', 'class Texture extends Object;')}, imports_by_package,
+                                                       ambiguous_package_names)
         class_scripts.client_root = work_root
         write_decompiled_script(work_root, OWNER_CLASS, holder_script, recorded_sha256)
         write_decompiled_script(work_root, 'Core.Object', OBJECT_SCRIPT)
@@ -291,13 +292,26 @@ class DeclaredPropertyTypeTests(unittest.TestCase):
         self.assertEqual([types.is_object_class(holder, name) for name in ('Texture', 'class<Actor>', 'Mystery')], [True, True, False])
 
     def test_an_intrinsic_class_resolves_only_through_a_core_class_import_of_a_chain_package(self):
-        imports = {'Synthetic': [{'object': object_name, 'classPackage': class_package, 'className': class_name}
-                                 for object_name, class_package, class_name in (('Synthetic.Sound', 'Core', 'Class'), ('Synthetic.Brush', 'Core', 'Package'),
-                                                                                ('Other.Model', 'Core', 'Class'), ('Synthetic.Mesh', 'Engine', 'Class'))]}
+        imports = {'Synthetic': synthetic_import_table((('Synthetic.Sound', 'Core', 'Class'), ('Synthetic.Brush', 'Core', 'Package'),
+                                                        ('Other.Model', 'Core', 'Class'), ('Synthetic.Mesh', 'Engine', 'Class'),
+                                                        ('Engine.Group.Grouped', 'Core', 'Class')))}
         types = self.declared_types(imports_by_package=imports)
         holder = PropertyScope(OWNER_CLASS, None)
-        self.assertEqual([types.is_object_class(holder, name) for name in ('Sound', 'Synthetic.Sound', 'Brush', 'Model', 'Mesh', 'Other.Model')],
-                         [True, True, False, False, False, True])
+        names = ('Sound', 'Synthetic.Sound', 'Brush', 'Model', 'Other.Model', 'Mesh', 'Grouped', 'Engine.Group.Grouped')
+        self.assertEqual([types.is_object_class(holder, name) for name in names], [True, True, False, True, True, False, False, True])
+
+    def test_an_unqualified_intrinsic_class_resolves_through_an_import_of_another_package(self):
+        types = self.declared_types(imports_by_package={'Synthetic': synthetic_import_table((('Engine.Sound', 'Core', 'Class'),))})
+        holder = PropertyScope(OWNER_CLASS, None)
+        self.assertEqual([types.is_object_class(holder, name) for name in ('Sound', 'Engine.Sound', 'Synthetic.Sound')], [True, True, False])
+
+    def test_an_absent_chain_package_reads_as_no_import_and_an_ambiguous_one_is_refused(self):
+        holder = PropertyScope(OWNER_CLASS, None)
+        self.assertFalse(self.declared_types().is_object_class(holder, 'Sound'))
+        ambiguous = self.declared_types(imports_by_package={'Synthetic': synthetic_import_table((('Engine.Sound', 'Core', 'Class'),))},
+                                        ambiguous_package_names=('Core',))
+        with self.assertRaisesRegex(FormatError, 'Native package missing/ambiguous: Core'):
+            ambiguous.is_object_class(holder, 'Mystery')
 
     def test_a_script_that_differs_from_its_defaults_json_sha256_is_refused(self):
         types = self.declared_types(recorded_sha256='0' * 64)

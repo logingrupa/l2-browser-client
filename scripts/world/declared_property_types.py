@@ -16,6 +16,7 @@ STRUCT_HEADER_PATTERN = re.compile(r'struct\s+(?:\w+\s+)*?(\w+)(?:\s+extends\s+(
 BASE_TYPE_PATTERN = re.compile(r'((?:array|class)\s*<[^<>]*(?:<[^<>]*>)?[^<>]*>|[\w.]+)\s*$', re.IGNORECASE)
 CONTAINER_TYPE_PATTERN = re.compile(r'(array|class)\s*<\s*(.+?)\s*>', re.IGNORECASE)
 INTRINSIC_CLASS_IMPORT = ('Core', 'Class')
+PACKAGE_IMPORT = ('Core', 'Package')
 
 
 class DeclaredPropertyTypeError(FormatError):
@@ -41,6 +42,13 @@ def base_declared_type(declared_type):
 def container_inner_type(declared_type, container):
     match = CONTAINER_TYPE_PATTERN.fullmatch(declared_type or '')
     return match[2] if match is not None and match[1].casefold() == container else None
+
+
+def is_top_level_package_import(imports, outer_index):
+    if outer_index >= 0:
+        return False
+    outer = imports[-outer_index - 1]
+    return (outer['classPackage'], outer['className']) == PACKAGE_IMPORT and outer['outerIndex'] == 0
 
 
 def leaf_type_name(type_name):
@@ -183,13 +191,20 @@ class DeclaredPropertyTypes:
             self.object_classes[key] = self.resolves_class(scope.class_name, type_name)
         return self.object_classes[key]
 
-    def chain_package_imports_class(self, package_name, class_object):
-        try:
-            _, package = self.class_defaults.class_scripts.packages.get(package_name)
-        except FormatError:
-            return False
-        return any(item['object'].casefold() == class_object.casefold() and (item['classPackage'], item['className']) == INTRINSIC_CLASS_IMPORT
-                   for item in package.imports)
+    def chain_package_imports(self, package_name):
+        packages = self.class_defaults.class_scripts.packages
+        if package_name.lower() not in packages.paths:
+            return []
+        _, package = packages.get(package_name)
+        return package.imports
+
+    def chain_package_imports_class(self, package_name, type_name):
+        imports = self.chain_package_imports(package_name)
+        class_imports = [item for item in imports if (item['classPackage'], item['className']) == INTRINSIC_CLASS_IMPORT]
+        if '.' in type_name:
+            return any(item['object'].casefold() == type_name.casefold() for item in class_imports)
+        return any(item['name'].casefold() == type_name.casefold() and is_top_level_package_import(imports, item['outerIndex'])
+                   for item in class_imports)
 
     def class_script_resolves(self, class_object):
         try:
@@ -205,9 +220,8 @@ class DeclaredPropertyTypes:
             return False
         chain_packages = list(dict.fromkeys(definition['identity']['object'].split('.', 1)[0] for definition in chain))
         candidates = [type_name] if '.' in type_name else [f'{package_name}.{type_name}' for package_name in chain_packages]
-        return any(self.class_script_resolves(candidate) or
-                   any(self.chain_package_imports_class(package_name, candidate) for package_name in chain_packages)
-                   for candidate in candidates)
+        return (any(self.class_script_resolves(candidate) for candidate in candidates) or
+                any(self.chain_package_imports_class(package_name, type_name) for package_name in chain_packages))
 
 
 @functools.cache
