@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import struct
-from pathlib import PurePosixPath
 
 from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import lane_relative_path
@@ -12,7 +11,7 @@ from reference_client_guard import ReferenceClientLockError
 from actors.npc_store_records import catalog_with_records_replaced
 from ui_texture_step import TRANSIENT_TEXTURE_CONVERSION_FAILURES, FAILED_STATUS, convert_reference
 
-UI_FONT_ALGORITHM_VERSION = 1
+UI_FONT_ALGORITHM_VERSION = 2
 UI_FONT_RECIPE_SCHEMA_VERSION = 1
 FONTS_STEP = 'fonts'
 FONTS_CATALOG_SLICE = 'fonts'
@@ -174,7 +173,7 @@ class FontUnitPlan:
 
 
 def texture_request(entry):
-    return {'reference': entry['texture']['object'], 'packageName': PurePosixPath(entry['texture']['package']).stem, 'reason': None}
+    return {'reference': entry['texture']['object'], 'packageName': entry['texture']['package'], 'reason': None}
 
 
 def convert_font_texture(unit_plan, converter):
@@ -234,12 +233,21 @@ def convert_font_unit(entry, client_access, converter, ledger, output_root, *, c
                               'nativeSourceGapReason': texture_outcome['nativeSourceGapReason']}, store_outputs)
 
 
-def selected_font_entries(recipe, requested_font_types, limit):
+def selected_font_entries(recipe, requested_font_types):
     entries = converted_font_entries(recipe)
     if requested_font_types is None:
-        return entries[:limit]
+        return entries
     entries_by_font_type = {entry['fontType']: entry for entry in entries}
     missing = [font_type for font_type in requested_font_types if font_type not in entries_by_font_type]
     if missing:
         raise UiFontStepError(f'ui font recipe converts no fontType {", ".join(map(str, missing))}')
     return [entries_by_font_type[font_type] for font_type in requested_font_types]
+
+
+def convert_font_units(entries, limit, convert_entry):
+    results = []
+    for entry in entries:
+        if sum(1 for result in results if result['status'] != 'skipped-sealed') >= limit:
+            break
+        results.append(convert_entry(entry))
+    return results

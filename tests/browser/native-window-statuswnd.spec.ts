@@ -5,7 +5,7 @@ import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
 import { servedLaneCatalogSha256, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
 
-const laneName = "data-ui";
+const laneName = "integration";
 const laneStoreRoot = resolve("artifacts/lane-store", laneName);
 const laneCatalogPath = resolve(laneStoreRoot, "l2/catalog.json");
 const evidenceDirectory = resolve("artifacts/ui-evidence");
@@ -17,11 +17,25 @@ const portraitPhoneViewport = { width: 430, height: 932 };
 interface LaneWindowRecord { readonly id: string; readonly manifest: string }
 interface LaneTextureRecord { readonly id: string; readonly image: string }
 interface LaneCatalog { readonly windows?: LaneWindowRecord[]; readonly textures?: LaneTextureRecord[] }
-interface DecodedRoot { readonly width: number; readonly height: number }
+interface DecodedTextLayout { readonly defaultText: string; readonly fontType: number }
+interface DecodedNode { readonly name: string; readonly type: string; readonly textLayout?: DecodedTextLayout; readonly children: readonly DecodedNode[] }
+interface DecodedRoot extends DecodedNode { readonly width: number; readonly height: number }
 interface DecodedStatusManifest { readonly root: DecodedRoot; readonly textureRefs: readonly string[] }
 interface FieldBindingRow { readonly windowId: string; readonly controlName: string; readonly worldField: string | null; readonly gapReason: string | null }
 
 const uiTextureIdPrefix = "ui-texture:";
+const digitAtlasFontType = 10;
+const cpLabelText = "CP";
+
+function cpLabelControlName(manifest: DecodedStatusManifest): string {
+  const pending: DecodedNode[] = [manifest.root];
+  while (pending.length > 0) {
+    const node = pending.pop()!;
+    if (node.type === "TextBox" && node.textLayout?.defaultText === cpLabelText && node.textLayout.fontType === digitAtlasFontType) return node.name;
+    pending.push(...node.children);
+  }
+  throw new Error(`the decoded StatusWnd holds no ${cpLabelText} TextBox in fontType ${digitAtlasFontType}`);
+}
 
 function laneCatalog(): LaneCatalog | undefined {
   return existsSync(laneCatalogPath) ? JSON.parse(readFileSync(laneCatalogPath, "utf8")) as LaneCatalog : undefined;
@@ -45,8 +59,8 @@ const servedCatalog = laneCatalog();
 const statusRecord = servedCatalog?.windows?.find(record => record.id === statusWindowId);
 const failures: string[] = [];
 
-test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=data-ui");
-test.skip(statusRecord === undefined, "window:StatusWnd not converted in the data-ui lane store");
+test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=integration");
+test.skip(statusRecord === undefined, "window:StatusWnd not in the integration union store");
 
 async function openStatusWindow(page: Page): Promise<ReadonlySet<string>> {
   const pageErrors: string[] = [];
@@ -76,6 +90,13 @@ async function expectConvertedSkinDrawn(page: Page, fetchedImagePaths: ReadonlyS
   await expect.poll(() => decodedControlImageCount(page)).toBeGreaterThan(0);
 }
 
+async function expectCpLabelDrawn(page: Page): Promise<void> {
+  const label = page.locator(`[data-native-control="${cpLabelControlName(decodedStatusManifest(statusRecord!))}"]`);
+  await expect(label.locator('[data-native-text="drawn"] [data-native-glyph]')).toHaveCount(cpLabelText.length);
+  expect(await label.getAttribute("data-native-gap")).toBeNull();
+  expect(await label.innerText()).toBe("");
+}
+
 async function boxWidth(page: Page, selector: string): Promise<number> {
   const box = await page.locator(selector).boundingBox();
   if (box === null) throw new Error(`${selector} has no layout box`);
@@ -100,6 +121,7 @@ async function checkStatusWindowAt(browser: Browser, contextOptions: BrowserCont
     const page = await context.newPage();
     const fetchedImagePaths = await openStatusWindow(page);
     await expectConvertedSkinDrawn(page, fetchedImagePaths);
+    await expectCpLabelDrawn(page);
     const rootBox = await page.locator(`[data-native-window="${statusWindowId}"]`).boundingBox();
     expect([rootBox?.width, rootBox?.height]).toEqual([root.width, root.height]);
     const gaugeSelector = `[data-native-control="${boundGauge.controlName}"]`;

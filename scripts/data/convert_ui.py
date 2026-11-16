@@ -24,8 +24,8 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, lock
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module, resolve_elbera_path
 import reference_client_guard
 from reference_client_guard import require_reference_client
-from ui_font_step import (FONTS_STEP, UI_FONT_ALGORITHM_VERSION, convert_font_unit, converted_font_entries, read_ui_font_recipe,
-                          selected_font_entries)
+from ui_font_step import (FONTS_STEP, UI_FONT_ALGORITHM_VERSION, convert_font_unit, convert_font_units, converted_font_entries,
+                          read_ui_font_recipe, selected_font_entries)
 from ui_texture_step import (FAILED_STATUS, TEXTURES_STEP, UI_TEXTURE_ALGORITHM_VERSION, convert_window_textures, ui_texture_recipe_bytes,
                              ui_texture_requests)
 from window_control_gaps import CONTROLS_ALGORITHM_VERSION, CONTROLS_STEP, convert_window_controls, read_rendered_control_types
@@ -177,8 +177,8 @@ def convert_fonts_step(client, client_access, output_root, requested_font_types,
     converter_identity = {'implementation': implementation_hash(), 'umodel': UMODEL_SHA256}
     ledger = UnitLedger(work_root, FONTS_STEP, UI_FONT_ALGORITHM_VERSION)
     capacity = len(converted_font_entries(recipe))
-    return [convert_font_unit(entry, client_access, converter, ledger, output_root, converter_identity=converter_identity, capacity=capacity)
-            for entry in selected_font_entries(recipe, requested_font_types, limit)]
+    return convert_font_units(selected_font_entries(recipe, requested_font_types), limit, lambda entry: convert_font_unit(
+        entry, client_access, converter, ledger, output_root, converter_identity=converter_identity, capacity=capacity))
 
 
 def convert_controls_step(output_root, requested_window_ids, limit):

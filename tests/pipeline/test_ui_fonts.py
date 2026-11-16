@@ -93,6 +93,19 @@ class UiFontRecipeTests(unittest.TestCase):
         self.assertEqual([entry['fontType'] for entry in ui_font_step.converted_font_entries(recipe)], [0, 1, 10, 11])
         self.assertEqual(recipe['source']['reportSha256'], '903ea77455aa5e1bbe730db8c260e9b47fcf515f39185cfee48fa40563d2f40c')
 
+    def test_the_limit_counts_pending_units_and_skips_past_sealed_ones(self):
+        recipe = ui_font_step.read_ui_font_recipe(RECIPE_PATH)
+        sealed_font_types = {0, 10}
+        converted = []
+
+        def convert_entry(entry):
+            converted.append(entry['fontType'])
+            return {'status': 'skipped-sealed' if entry['fontType'] in sealed_font_types else 'converted'}
+        ui_font_step.convert_font_units(ui_font_step.selected_font_entries(recipe, None), 2, convert_entry)
+        self.assertEqual(converted, [0, 1, 10, 11])
+        with self.assertRaisesRegex(ui_font_step.UiFontStepError, 'converts no fontType 6'):
+            ui_font_step.selected_font_entries(recipe, [6])
+
     def test_a_font_record_needs_the_ui_font_id_and_a_fonts_manifest_path(self):
         record = {'id': 'ui-font:10', 'manifest': f'/l2/fonts/{"a" * 64}/font.json', 'manifestSha256': 'a' * 64, 'manifestBytes': 10}
         self.assertEqual(validate_catalog_record('fonts', record), record)
@@ -135,7 +148,7 @@ class ConvertFontUnitTests(unittest.TestCase):
         self.assertEqual(manifest['source']['texture'], {'path': 'systextures/SyntheticUI.utx', 'sha256': hashlib.sha256(b'digit package').hexdigest(),
                                                          'object': 'SyntheticUI.Nwindow.Number'})
         self.assertEqual(self.convert(DIGIT_FONT), {'unit': 'ui-font:10', 'status': 'skipped-sealed'})
-        self.assertEqual(len(self.converter.requests), 1)
+        self.assertEqual(self.converter.requests, [{'kind': 'texture', 'package': 'systextures/SyntheticUI.utx', 'object': 'SyntheticUI.Nwindow.Number'}])
 
     def test_converts_a_bitmap_font_with_its_glyph_table_and_records_the_unread_trailer(self):
         self.convert(BITMAP_FONT)
