@@ -3,6 +3,7 @@ import type { VariableInfo } from "../ui/devSheet/types";
 import { nativeSandboxPresentation } from "../scene/presentationConfiguration";
 import type { NativeSliceSheetTools } from "./nativeSliceSheet";
 import { attachScenePresentationGroup } from "./attachScenePresentationGroup";
+import { attachTimeOfDayGroup } from "./attachTimeOfDayGroup";
 import type { NativeSliceSheetContext } from "./attachNativeSliceSheet";
 import type { DisplayGammaInspection } from "../materials/ue2/babylon/displayGammaPostProcess";
 
@@ -93,6 +94,9 @@ function attachDisplayGammaGroup(section: DevSection, displayGamma: DisplayGamma
 export function attachNativeSliceWorldSheet(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): NativeSliceWorldSheet {
   attachCameraGroup(section, context, tools);
   attachSkyGroup(section, context);
+  const { timeOfDay, sky, skyFailure } = context.world;
+  attachTimeOfDayGroup(section, { timeOfDay, adapter: context.adapter,
+    skyEnvironmentColours: sky ? () => sky.inspection().environmentColours : null, skyAbsentReason: skyFailure === null ? "sky-not-staged" : "sky-failed" });
   attachDisplayGammaGroup(section, context.displayGamma);
   const flameSheet = attachFlameGroup(section, context, tools);
   attachScenePresentationGroup(section, nativeSandboxPresentation, { sceneName: "native sandbox scene", readoutTestId: "native-scene-presentation" });

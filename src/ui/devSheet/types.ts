@@ -73,7 +73,7 @@ export interface DevReadoutOptions extends DevControlInfo {
 export interface DevIdEntryField {
   name: string;
   label: string;
-  kind: "integer" | "search" | "tile" | "window";
+  kind: "integer" | "search" | "tile" | "window" | "clock";
   minimum?: number;
 }
 

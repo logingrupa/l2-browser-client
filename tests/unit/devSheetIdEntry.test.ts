@@ -89,6 +89,19 @@ describe("developer sheet ID entry", () => {
     expect(message.textContent).toMatch(/^Window must start with a letter/);
   });
 
+  it.each([["00:00", 0], ["06:00", 360], [" 18:30 ", 1110], ["23:59", 1439]])("submits clock %j as %i whole minutes", (accepted, minutes) => {
+    const { onSubmit, submit } = mountIdEntry({ fields: [{ name: "clock", label: "Game time", kind: "clock" }] });
+    submit({ clock: accepted });
+    expect(onSubmit).toHaveBeenCalledWith({ clock: minutes });
+  });
+
+  it.each(["24:00", "12:60", "6:00", "1200", "12:5", "-1:00", ""])("rejects clock %j before submitting", rejected => {
+    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "clock", label: "Game time", kind: "clock" }] });
+    submit({ clock: rejected });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(message.textContent).toBe(rejected === "" ? "Game time is required." : "Game time must be HH:MM from 00:00 to 23:59.");
+  });
+
   it("is reachable from a sheet group with a hover-card info button", () => {
     const host = dom.document.createElement("section"); host.className = "world-interface";
     const canvas = dom.document.createElement("canvas");

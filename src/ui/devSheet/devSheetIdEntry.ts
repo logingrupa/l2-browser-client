@@ -2,11 +2,21 @@ import { tileIdPattern, windowIdPattern } from "../../assets/native/nativeCatalo
 import type { DevIdEntry, DevIdEntryField, DevIdEntryOptions } from "./types";
 
 const integerInputPattern = /^\d{1,9}$/;
+const clockInputPattern = /^(\d{2}):(\d{2})$/;
+const hoursPerDay = 24;
+const minutesPerHour = 60;
 const maximumSearchTextLength = 64;
 
 let idEntrySequence = 0;
 
 type FieldReading = { readonly value: number | string } | { readonly rejection: string };
+
+function readClockField(field: DevIdEntryField, text: string): FieldReading {
+  const match = clockInputPattern.exec(text);
+  const hours = Number(match?.[1]), minutes = Number(match?.[2]);
+  if (match === null || hours >= hoursPerDay || minutes >= minutesPerHour) return { rejection: `${field.label} must be HH:MM from 00:00 to 23:59.` };
+  return { value: hours * minutesPerHour + minutes };
+}
 
 function readIdEntryField(field: DevIdEntryField, rawText: string): FieldReading {
   const text = rawText.trim();
@@ -17,6 +27,7 @@ function readIdEntryField(field: DevIdEntryField, rawText: string): FieldReading
   if (field.kind === "tile") {
     return tileIdPattern.test(text) ? { value: text } : { rejection: `${field.label} must be two two-digit numbers joined by an underscore (XX_YY).` };
   }
+  if (field.kind === "clock") return readClockField(field, text);
   if (field.kind === "window") {
     return windowIdPattern.test(text) ? { value: text }
       : { rejection: `${field.label} must start with a letter and use only letters, digits and underscores, at most 64 characters, optionally followed by #<ordinal>.` };

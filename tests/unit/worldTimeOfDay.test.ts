@@ -60,6 +60,20 @@ describe("world time of day", () => {
     expect(inspection).toMatchObject({ status: "running", snapshot: { oldType: 0, targetType: 3, frozen: { reason: "freeze-producer-unresolved" } } });
   });
 
+  it.each([0, 6, 12, 18])("inspects the loaded EnvTypes and the DB-4 sun and moon theta and moon scale at server hour %s", hour => {
+    const scene = newScene();
+    const timeOfDay = provideDayNightTimeOfDay(scene, () => 0, { ...shippedEnvironmentSetup, isClock: false });
+    timeOfDay.manager.receiveServerTime(hour * 60);
+    const fixtureValue = (consumer: string) => readDayNightFixtureRows().find(row => row.consumer === consumer && row.hour === hour && row.environmentType === 0)!.value;
+    const inspection = inspectWorldTimeOfDay(timeOfDay);
+    if (inspection.status !== "running") throw new Error("The time of day is not running.");
+    expect(inspection.environmentTypes).toEqual([0, 1, 2, 3]);
+    expect(inspection.celestial.sunTheta).toBe((fixtureValue("SunAngles") as readonly number[])[0]);
+    expect(inspection.celestial.moonTheta).toBe((fixtureValue("MoonAngles") as readonly number[])[0]);
+    expect(inspection.celestial.moonScale).toEqual(hour === 0 ? { status: "sampled", value: fixtureValue("MoonScale") }
+      : { status: "unresolved", reason: "time-scale-read-past-table" });
+  });
+
   it("reports a scene without a provided time of day as a visible gap and refuses a second provider", () => {
     const scene = newScene();
     expect(worldTimeOfDayFor(scene)).toEqual({ status: "gap", reason: "environment-time-of-day-unprovided", detail: expect.any(String) });
