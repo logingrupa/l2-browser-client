@@ -46,7 +46,7 @@ export function model(id: string, sourceObject: string) {
 
 export function catalogWith(slices: Partial<NativeCatalog>): NativeCatalog {
   return { schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [], materialPrograms: [], fonts: [],
+    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [], materialPrograms: [], fonts: [], environments: [],
     servedCatalogSha256: "c".repeat(64), laneCatalogSha256: null, ...slices };
 }
 

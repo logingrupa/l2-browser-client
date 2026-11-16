@@ -210,7 +210,8 @@ export async function planNativeEnvironmentStage(options = {}) {
     nativeRenderingParity: "unverified",
   };
   const staged = new Map([["manifest.json", encode(browserManifest)], ["conversion-manifest.json", manifestBytes], ["time-tables.json", payloads.get("time-tables.json")]]);
-  const target = join(output, conversionSha256);
+  const browserManifestSha256 = hash(staged.get("manifest.json"));
+  const target = join(output, browserManifestSha256);
   const targetState = await checkedPath(target);
   if (targetState.stat) {
     require(targetState.stat.isDirectory(), "staged destination is not a directory");
@@ -218,7 +219,7 @@ export async function planNativeEnvironmentStage(options = {}) {
     for (const [name, bytes] of staged) require((await readBounded(target, name, 32 * 1024 * 1024)).equals(bytes), `immutable staged file differs: ${name}`);
   }
   const summary = { schemaVersion: 1, kind: "native-environment-stage-receipt", status: targetState.stat ? "preserved" : "planned",
-    inputDir: input, outputDir: target, conversionManifestSha256: conversionSha256, browserManifestSha256: hash(staged.get("manifest.json")),
+    inputDir: input, outputDir: target, conversionManifestSha256: conversionSha256, browserManifestSha256,
     sourceProductsVerified: names.length, sourceFilesVerified: manifest.inputs.length, tableCount: tables.tableCount, rowCount: tables.rowCount,
     originalFilesStaged: false, files: [...staged].map(([name, bytes]) => descriptor(bytes, name)), writes: targetState.stat ? 0 : staged.size };
   const plan = { summary: structuredClone(summary) };

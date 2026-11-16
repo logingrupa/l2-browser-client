@@ -15,8 +15,11 @@ export interface NativeMaterialProgramCatalogRecord {
 export interface NativeFontCatalogRecord {
   readonly fontType: number; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number;
 }
+export interface NativeEnvironmentCatalogRecord {
+  readonly environment: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number;
+}
 
-type PinnedManifestSliceName = "tiles" | "tables" | "windows" | "materialPrograms" | "fonts";
+type PinnedManifestSliceName = "tiles" | "tables" | "windows" | "materialPrograms" | "fonts" | "environments";
 
 interface PinnedManifestRecordShape {
   readonly fields: readonly string[];
@@ -48,6 +51,8 @@ const pinnedManifestRecordShapes: Readonly<Record<PinnedManifestSliceName, Pinne
     manifestPathPattern: /^\/l2\/native-materials\/material-program-(?<sha256>[a-f0-9]{64})\.json$/, maximumManifestBytes: 1_000_000 },
   fonts: { fields: pinnedManifestRecordFields, idPattern: fontRecordIdPattern,
     manifestPathPattern: /^\/l2\/fonts\/(?<sha256>[a-f0-9]{64})\/font\.json$/, maximumManifestBytes: 1_000_000 },
+  environments: { fields: pinnedManifestRecordFields, idPattern: /^interlude$/,
+    manifestPathPattern: /^\/l2\/environments\/(?<sha256>[a-f0-9]{64})\/manifest\.json$/, maximumManifestBytes: 1_000_000 },
 };
 
 function invalidCatalogRecord(sliceName: PinnedManifestSliceName): Error {
@@ -97,4 +102,9 @@ export function readMaterialProgramCatalogRecord(value: unknown): NativeMaterial
 export function readFontCatalogRecord(value: unknown): NativeFontCatalogRecord {
   const { id, manifest, manifestSha256, manifestBytes } = readPinnedManifestRecord(value, "fonts");
   return { fontType: Number(id.slice(fontRecordIdPrefix.length)), manifest, manifestSha256, manifestBytes };
+}
+
+export function readEnvironmentCatalogRecord(value: unknown): NativeEnvironmentCatalogRecord {
+  const { id, manifest, manifestSha256, manifestBytes } = readPinnedManifestRecord(value, "environments");
+  return { environment: id, manifest, manifestSha256, manifestBytes };
 }

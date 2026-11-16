@@ -17,7 +17,7 @@ from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_c
 
 KNOWN_CATALOG_SLICES = ('models', 'textures', 'sections', 'movers', 'npcProfiles', 'playerProfiles',
                         'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles', 'tables', 'windows',
-                        'materialPrograms', 'fonts')
+                        'materialPrograms', 'fonts', 'environments')
 NATIVE_RESOURCE_PATH_PATTERN = re.compile(r'^\/l2\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$')
 MAXIMUM_CATALOG_BYTES = 32 * 1024 * 1024
 MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
@@ -40,6 +40,9 @@ MATERIAL_PROGRAM_MANIFEST_MAXIMUM_BYTES = 1_000_000
 FONT_RECORD_ID_PATTERN = re.compile(r'^ui-font:(?:0|[1-9]\d{0,2})$')
 FONT_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/fonts/(?P<sha256>[a-f0-9]{64})/font\.json$')
 FONT_MANIFEST_MAXIMUM_BYTES = 1_000_000
+ENVIRONMENT_RECORD_ID_PATTERN = re.compile(r'^interlude$')
+ENVIRONMENT_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/environments/(?P<sha256>[a-f0-9]{64})/manifest\.json$')
+ENVIRONMENT_MANIFEST_MAXIMUM_BYTES = 1_000_000
 PINNED_MANIFEST_RECORD_FIELDS = ('id', 'manifest', 'manifestSha256', 'manifestBytes')
 TABLE_RECORD_FIELDS = (*PINNED_MANIFEST_RECORD_FIELDS, 'recordCount', 'sourceSha256')
 NATIVE_RESOURCE_PREFIX = '/l2/'
@@ -76,6 +79,8 @@ PINNED_MANIFEST_RECORD_SHAPES = {
     'materialPrograms': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, MATERIAL_PROGRAM_RECORD_ID_PATTERN,
                                                   MATERIAL_PROGRAM_MANIFEST_PATH_PATTERN, MATERIAL_PROGRAM_MANIFEST_MAXIMUM_BYTES),
     'fonts': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, FONT_RECORD_ID_PATTERN, FONT_MANIFEST_PATH_PATTERN, FONT_MANIFEST_MAXIMUM_BYTES),
+    'environments': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, ENVIRONMENT_RECORD_ID_PATTERN, ENVIRONMENT_MANIFEST_PATH_PATTERN,
+                                              ENVIRONMENT_MANIFEST_MAXIMUM_BYTES),
 }
 
 

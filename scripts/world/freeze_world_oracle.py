@@ -20,9 +20,10 @@ WORLD_ORACLE_RELATIVE_PATH = 'recipes/world/oracle/20_20/expected.json'
 WORLD_ORACLE_SCHEMA_VERSION = 1
 DEFAULT_STORE_ROOT = REPOSITORY_ROOT / 'public' / 'l2'
 SKY_PIN_SOURCE_PATH = REPOSITORY_ROOT / 'src' / 'scene' / 'world' / 'nativeSkyPresentation.ts'
-ENVIRONMENT_PIN_SOURCE_PATH = REPOSITORY_ROOT / 'src' / 'scene' / 'world' / 'nativeEnvironmentTables.ts'
 SECTION_RECORD_ID = 'map-20-20-section'
 MOVERS_RECORD_ID = 'map-20-20-movers'
+ENVIRONMENT_RECORD_ID = 'interlude'
+ENVIRONMENTS_SLICE_NAME = 'environments'
 WORLD_AUDIO_RECORD_IDS = ('map-20-20-ambience', 'map-20-20-music')
 STEP_SOUND_RECORD_IDS = ('stepsound-deco-grass-20-20', 'stepsound-surfaces')
 WORLD_AUDIO_SLICE_NAME = 'worldAudio'
@@ -151,19 +152,21 @@ def sky_oracle(store_root):
                       for path in sorted(manifest['files'])]}
 
 
-def environment_oracle(store_root):
-    conversion_manifest_sha256 = typescript_pin(ENVIRONMENT_PIN_SOURCE_PATH, 'conversionManifestSha256')
-    folder = f'environments/{conversion_manifest_sha256}'
-    manifest_payload = read_bounded_store_bytes(store_root, f'{folder}/{MANIFEST_FILE_NAME}')
-    manifest = decode_json_object(manifest_payload, f'{folder}/{MANIFEST_FILE_NAME}')
+ABSENT_ENVIRONMENT_ORACLE = {'manifestSha256': None, 'files': []}
+
+
+def environment_oracle(store_root, catalog):
+    if not any(isinstance(record, dict) and record.get('id') == ENVIRONMENT_RECORD_ID for record in catalog.get(ENVIRONMENTS_SLICE_NAME, [])):
+        return ABSENT_ENVIRONMENT_ORACLE
+    record = catalog_record(catalog, ENVIRONMENTS_SLICE_NAME, ENVIRONMENT_RECORD_ID)
+    manifest_relative_path = store_relative_path(record['manifest'])
+    manifest = read_pinned_json(store_root, manifest_relative_path, record['manifestSha256'])
     listed_files = [manifest['conversionManifest'], manifest['tables']]
-    if manifest['conversionManifest']['sha256'] != conversion_manifest_sha256:
-        raise WorldOracleError(f'environment manifest lists conversion manifest {manifest["conversionManifest"]["sha256"]}, '
-                               f'not the pinned {conversion_manifest_sha256}')
-    read_pinned_json(store_root, f'{folder}/{manifest["conversionManifest"]["file"]}', conversion_manifest_sha256)
-    files = [{'path': MANIFEST_FILE_NAME, 'sha256': sha256_hex(manifest_payload), 'bytes': len(manifest_payload)}]
+    read_pinned_json(store_root, posixpath.join(posixpath.dirname(manifest_relative_path), manifest['conversionManifest']['file']),
+                     manifest['conversionManifest']['sha256'])
+    files = [{'path': MANIFEST_FILE_NAME, 'sha256': record['manifestSha256'], 'bytes': record['manifestBytes']}]
     files.extend({'path': listed['file'], 'sha256': listed['sha256'], 'bytes': listed['bytes']} for listed in listed_files)
-    return {'manifestSha256': conversion_manifest_sha256, 'files': sorted(files, key=lambda file: file['path'])}
+    return {'manifestSha256': record['manifestSha256'], 'files': sorted(files, key=lambda file: file['path'])}
 
 
 def movers_oracle(store_root, catalog):
@@ -214,7 +217,7 @@ def freeze_world_oracle(store_root):
     catalog = decode_json_object(catalog_payload, CATALOG_FILE_NAME)
     try:
         oracle = {'schemaVersion': WORLD_ORACLE_SCHEMA_VERSION, 'catalogSha256': sha256_hex(catalog_payload),
-                  'section': section_oracle(store_root, catalog), 'sky': sky_oracle(store_root), 'environment': environment_oracle(store_root),
+                  'section': section_oracle(store_root, catalog), 'sky': sky_oracle(store_root), 'environment': environment_oracle(store_root, catalog),
                   'movers': movers_oracle(store_root, catalog),
                   'worldAudio': pinned_manifest_oracles(store_root, catalog, WORLD_AUDIO_SLICE_NAME, WORLD_AUDIO_RECORD_IDS),
                   'stepSounds': pinned_manifest_oracles(store_root, catalog, STEP_SOUND_SLICE_NAME, STEP_SOUND_RECORD_IDS)}

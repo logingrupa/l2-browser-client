@@ -120,8 +120,9 @@ describe("immutable converted environment browser staging", () => {
     expect(await tree(f.inputDir)).toEqual(input); expect(existsSync(f.outputDir)).toBe(false);
     const result = await applyNativeEnvironmentStage(plan);
     expect(result).toMatchObject({ status: "staged", writes: 3, tableCount: 1, rowCount: 2, originalFilesStaged: false });
-    expect(basename(result.outputDir)).toBe(hash(await fs.readFile(join(f.inputDir, "manifest.json"))));
     const staged = await tree(result.outputDir);
+    expect(basename(result.outputDir)).toBe(hash(staged["manifest.json"]!.bytes));
+    expect(result.browserManifestSha256).toBe(basename(result.outputDir));
     expect(Object.keys(staged).sort()).toEqual(["conversion-manifest.json", "manifest.json", "time-tables.json"]);
     expect(staged["time-tables.json"]!.bytes).toEqual(input["time-tables.json"]!.bytes);
     expect(staged["conversion-manifest.json"]!.bytes).toEqual(input["manifest.json"]!.bytes);

@@ -1,24 +1,8 @@
 {
   "catalogSha256": "55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe",
   "environment": {
-    "files": [
-      {
-        "bytes": 3662,
-        "path": "conversion-manifest.json",
-        "sha256": "e10827c4e98daeed18062c9e85117a1f862a3e6dfcaad08638798f887081183d"
-      },
-      {
-        "bytes": 1820,
-        "path": "manifest.json",
-        "sha256": "6d23cdab2adb56110873ee1ab2c980038524504607a813949240cd66718b97b4"
-      },
-      {
-        "bytes": 232991,
-        "path": "sky-tables.json",
-        "sha256": "1dd8e88620ded38cc47e092fe68056dc2e12c3f8d1fdc2e2f7dad281c009151d"
-      }
-    ],
-    "manifestSha256": "e10827c4e98daeed18062c9e85117a1f862a3e6dfcaad08638798f887081183d"
+    "files": [],
+    "manifestSha256": null
   },
   "movers": {
     "manifestSha256": "0de5d0831dd80866ccdef5084b0d658691ce81d9351222fba55257dc43b6e2e8",
