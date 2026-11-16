@@ -10,7 +10,7 @@ completed: 2026-11-16
 
 # Quick task 261116-dn4: day/night cycle from DB-4 - summary
 
-Ports the verified DB-4 day/night rules (report `fe5de165`; claim audit 21 supported, 5 partly, 0 refuted; 336 of 336 fixtures recompute). Decision: DEC-ENV-1 (owner review).
+Ports the verified DB-4 day/night rules (report `fe5de165`; claim audit 21 supported, 5 partly, 0 refuted; 320 of 336 fixtures recompute bit for bit, 4 SunScale hour-0 rows unwritten, 12 MoonScale rows `time-scale-read-past-table`). Decision: DEC-ENV-1 (owner review).
 
 ## Commits
 
@@ -18,7 +18,7 @@ Ports the verified DB-4 day/night rules (report `fe5de165`; claim audit 21 suppo
 - `54599ea` environment program out of the per-tile lighting records.
 - `2123748` one native ini owner and the effective `time-tables.json`.
 - `0d31546` clock, manager and CalcEnvDelta (pure model).
-- `d9677eb` table sampling, FGetHSV, getters, sun and moon (336 fixtures).
+- `d9677eb` table sampling, FGetHSV, getters, sun and moon (336 fixtures checked: 320 bit for bit, 16 scale rows unwritten or a named gap).
 - `1655d6e` adapter split: `server-time`, `environment-ssq-info`, `environment-red-sky`.
 - `e9c899f` one world manager from the staged tables; tile lighting reads it.
 - `84ab687` sky ColorModifier Color R, G, B writer; physical-row comparison deleted.

@@ -29,10 +29,14 @@ function resolvedValue<Value>(result: { readonly status: string; readonly value?
   return result.value;
 }
 
-function expectedScaleStatus(row: DayNightFixtureRow, section: ScaleSection): "sampled" | "unwritten" | "unresolved" {
-  const times = tablesOfType(row.environmentType).scale[section].map(scaleRow => scaleRow.time);
-  if (row.hour < times[0]!) return "unwritten";
-  return row.hour >= times[times.length - 1]! ? "unresolved" : "sampled";
+const harnessSeededScale = 1;
+const sunScaleUnwrittenHour = 0;
+const moonScalePastTableHours = [6, 12, 18];
+
+function namedScaleOutcome(row: DayNightFixtureRow): "sampled" | "unwritten" | "unresolved" {
+  if (row.consumer === "SunScale" && row.hour === sunScaleUnwrittenHour) return "unwritten";
+  if (row.consumer === "MoonScale" && moonScalePastTableHours.includes(row.hour)) return "unresolved";
+  return "sampled";
 }
 
 function modelValueFor(row: DayNightFixtureRow): number | readonly number[] {
@@ -75,23 +79,29 @@ describe("DB-4 day/night fixtures through the native environment model", () => {
     modelValues.forEach((value, index) => expect(Object.is(value, expectedValues[index])).toBe(true));
   });
 
-  it.each(scaleRows.map(row => [`${row.consumer} type ${row.environmentType} hour ${row.hour}`, row] as const))(
-    "reproduces %s where the native read is resolved and reports the gap otherwise", (_, row) => {
-      const section = row.consumer as ScaleSection;
-      const sample = environmentScale(tables, settledBlend(row.environmentType), section, row.hour);
-      const expectedStatus = expectedScaleStatus(row, section);
-      expect(sample.status).toBe(expectedStatus);
+  it("splits the 32 scale rows into 16 sampled, 4 SunScale hour 0 unwritten and 12 MoonScale past-table rows", () => {
+    expect(scaleRows.map(namedScaleOutcome).reduce<Record<string, number>>((counts, outcome) => ({ ...counts, [outcome]: (counts[outcome] ?? 0) + 1 }), {}))
+      .toEqual({ sampled: 16, unwritten: 4, unresolved: 12 });
+  });
+
+  it.each(scaleRows.filter(row => namedScaleOutcome(row) === "sampled").map(row => [`${row.consumer} type ${row.environmentType} hour ${row.hour}`, row] as const))(
+    "reproduces %s bit for bit", (_, row) => {
+      const sample = environmentScale(tables, settledBlend(row.environmentType), row.consumer as ScaleSection, row.hour);
+      expect(sample.status).toBe("sampled");
       if (sample.status === "sampled") expect(Object.is(sample.value, row.value)).toBe(true);
-      if (sample.status === "unresolved") expect(sample.reason).toBe("time-scale-read-past-table");
     });
 
-  it("leaves the twelve MoonScale rows at hours 6, 12 and 18 unresolved instead of asserting the seeded 1.0", () => {
-    const moonPastTable = scaleRows.filter(row => row.consumer === "MoonScale" && row.hour >= 6);
-    expect(moonPastTable).toHaveLength(12);
-    expect(moonPastTable.every(row => row.value === 1)).toBe(true);
-    expect(moonPastTable.map(row => environmentScale(tables, settledBlend(row.environmentType), "MoonScale", row.hour).status))
-      .toEqual(Array(12).fill("unresolved"));
-  });
+  it.each(scaleRows.filter(row => namedScaleOutcome(row) === "unwritten").map(row => [`${row.consumer} type ${row.environmentType} hour ${row.hour}`, row] as const))(
+    "leaves %s unwritten, so the harness seed passes through unchanged as the fixture holds", (_, row) => {
+      expect(environmentScale(tables, settledBlend(row.environmentType), "SunScale", row.hour)).toEqual({ status: "unwritten" });
+      expect(row.value).toBe(harnessSeededScale);
+    });
+
+  it.each(scaleRows.filter(row => namedScaleOutcome(row) === "unresolved").map(row => [`${row.consumer} type ${row.environmentType} hour ${row.hour}`, row] as const))(
+    "names %s as time-scale-read-past-table instead of asserting the seeded fixture value", (_, row) => {
+      expect(environmentScale(tables, settledBlend(row.environmentType), "MoonScale", row.hour)).toEqual({ status: "unresolved", reason: "time-scale-read-past-table" });
+      expect(row.value).toBe(harnessSeededScale);
+    });
 
   it("keeps a settled type 3 sky black because timeenv3 SkyBoxColor loads one row", () => {
     expect(tablesOfType(3).colour.SkyBoxColor).toHaveLength(1);
