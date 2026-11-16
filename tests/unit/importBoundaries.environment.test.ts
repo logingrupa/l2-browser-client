@@ -19,6 +19,7 @@ describe("src/environment/model import boundary", () => {
   it("scans every model module", () => {
     expect(modelModules).toEqual(expect.arrayContaining([
       `${modelFolder}/nativeTimeClock.ts`, `${modelFolder}/nativeEnvironmentManager.ts`, `${modelFolder}/calculateEnvironmentDelta.ts`,
+      `${modelFolder}/sampleNativeTimeTables.ts`, `${modelFolder}/fGetHsv.ts`, `${modelFolder}/nativeEnvironmentColours.ts`, `${modelFolder}/nativeSunMoonDirection.ts`,
     ]));
   });
 
