@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-25-PLAN.md
-last_updated: "2026-11-14T20:51:27.000Z"
+stopped_at: Completed 03-36-PLAN.md
+last_updated: "2026-11-16T13:45:14.046Z"
 last_activity: 2026-11-14
-last_activity_desc: Phase 03 plan 03-25 complete (shared skeletal material programs: 3,381 material-program units in the materialPrograms slice; skinned slots draw through the UE2 library with bone influences)
-state_head: 25261f1c2032a6771e91cca05c9abdc4e9431619
+last_activity_desc: "Phase 03 plan 03-25 complete (shared skeletal material programs: 3,381 material-program units in the materialPrograms slice; skinned slots draw through the UE2 library with bone influences)"
+state_head: bf8cf84f13b040f32bf2aeadec31e35509cb6381
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 152
-  completed_plans: 128
+  completed_plans: 129
   percent: 0
 ---
 
@@ -174,6 +174,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P23 | 8min | 2 tasks | 7 files |
 | Phase 03 P24 | 1h 50m | 3 tasks | 27 files |
 | Phase 03 P25 | 1h 30m | 3 tasks | 52 files |
+| Phase 3 P36 | 2h 48m | 3 tasks | 40 files |
 
 ## Accumulated Context
 
@@ -468,6 +469,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 03]: 03-23: tile minimap schema 3 and minimap step version 3 drop radarTexture and projection; no sealed schema 2 unit is reused, 145 tiles re-run in 03-24
 - [Phase 03]: 03-24: static mesh slots draw through the UE2 library from a per-tile static-mesh-materials listing (shared program path with BSP); no COLOR_0 vertex colour input because no program or reviewed lighting row names one (P1212 to P1215)
 - [Phase 03]: 03-25: one shared material-program:<object> unit per root object the converter resolved in the sealed actor archives, published as pinned listings in the materialPrograms slice; no key-level gap rows; the library vertex stage skins through bonesDeclaration and bonesVertex; diagnostic plans keep the texture material (P1216 to P1222)
+- [Phase 3]: 03-36: P1224 one library shader per tile composites the verified terrain pass chain; BLENDOP ADD is the one assumption row
+- [Phase 3]: 03-36: P1225 to P1226 Ai only from equal-channel alpha maps, bUseAlpha layers listed, sampler budget kept as a reason
+- [Phase 3]: 03-36: P1227 to P1228 L2FogInfo selection follows Q12 but waits on GL2TerrainCR, the fade reference position and the list producer; no fog transition yet
 
 ### Pending Todos
 
@@ -617,6 +621,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-14T20:51:27.000Z
-Stopped at: Completed 03-25-PLAN.md
+Last session: 2026-11-16T13:45:13.197Z
+Stopped at: Completed 03-36-PLAN.md
 Resume file: None
