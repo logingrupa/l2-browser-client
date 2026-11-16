@@ -16,6 +16,7 @@ from world.sky_step import SKY_STEP_NAME, sky_ledger, sky_unit_config
 from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME, static_mesh_materials_ledger, static_mesh_materials_unit_config
 from world.static_mesh_step import STATIC_MESH_STEP_NAME, static_mesh_ledger, static_mesh_unit
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, TerrainChunkStepError, sealed_terrain_chunks, terrain_step_ledger, terrain_unit
+from world.terrain_material_step import TERRAIN_MATERIAL_STEP_NAME, terrain_material_ledger, terrain_material_unit_config
 from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, ChunkPlanStepError, chunk_plan_ledger, chunk_plan_unit
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, tile_manifest_ledger, tile_manifest_unit
 from world.tile_music import pinned_music_encoder
@@ -88,6 +89,10 @@ def static_mesh_materials_seal_is_current(project_root, unit_key, ledger):
     return receipt_matches_locked_input_config(static_mesh_materials_unit_config, project_root, unit_key, ledger)
 
 
+def terrain_material_seal_is_current(project_root, unit_key, ledger):
+    return receipt_matches_locked_input_config(terrain_material_unit_config, project_root, unit_key, ledger)
+
+
 def collision_seal_is_current(project_root, unit_key, ledger):
     return receipt_matches_unit_fingerprint(collision_unit, project_root, unit_key, ledger)
 
@@ -153,6 +158,7 @@ TILE_STEP_SEAL_CHECKS = {
     TERRAIN_STEP_NAME: TileStepSealCheck(terrain_step_ledger, terrain_seal_is_current, (ChunkPlanStepError,)),
     STATIC_MESH_STEP_NAME: TileStepSealCheck(static_mesh_ledger, static_mesh_seal_is_current, (ChunkPlanStepError,)),
     STATIC_MESH_MATERIALS_STEP_NAME: TileStepSealCheck(static_mesh_materials_ledger, static_mesh_materials_seal_is_current, (ChunkPlanStepError,)),
+    TERRAIN_MATERIAL_STEP_NAME: TileStepSealCheck(terrain_material_ledger, terrain_material_seal_is_current, (ChunkPlanStepError, TerrainChunkStepError)),
     BSP_STEP_NAME: TileStepSealCheck(bsp_ledger, bsp_seal_is_current, (ChunkPlanStepError,)),
     MOVER_STEP_NAME: TileStepSealCheck(mover_ledger, mover_seal_is_current, (ChunkPlanStepError, UpstreamUnitPendingError)),
     COLLISION_STEP_NAME: TileStepSealCheck(collision_ledger, collision_seal_is_current, (ChunkPlanStepError,)),

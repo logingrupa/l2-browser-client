@@ -1,12 +1,15 @@
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
+from native_store.catalog_writer import add_store_file, sha256_hex
 from native_store.native_material_program_pins import NATIVE_MATERIALS_FOLDER
+from native_store.store_file_publish import publish_store_files
 
 NATIVE_MATERIAL_LISTING_SCHEMA_VERSION = 1
 SURFACE_MATERIALS_LISTING_KIND = 'native-tile-surface-materials'
 SURFACE_MATERIALS_LISTING_PREFIX = 'surface-materials'
 STATIC_MESH_MATERIALS_LISTING_KIND = 'native-tile-static-mesh-materials'
 STATIC_MESH_MATERIALS_LISTING_PREFIX = 'static-mesh-materials'
+TERRAIN_MATERIALS_LISTING_KIND = 'native-tile-terrain-materials'
+TERRAIN_MATERIALS_LISTING_PREFIX = 'terrain-materials'
 
 
 class NativeMaterialListingError(ValueError):
@@ -43,3 +46,15 @@ def surface_materials_listing(tile_id, material_files):
 def static_mesh_materials_listing(tile_id, materials, material_files):
     return native_material_listing(STATIC_MESH_MATERIALS_LISTING_KIND, STATIC_MESH_MATERIALS_LISTING_PREFIX, tile_id, {'materials': materials},
                                    material_files)
+
+
+def terrain_materials_listing(tile_id, layers, material_files):
+    return native_material_listing(TERRAIN_MATERIALS_LISTING_KIND, TERRAIN_MATERIALS_LISTING_PREFIX, tile_id, {'layers': layers}, material_files)
+
+
+def publish_native_material_listing(store_root, relative_path, payload, material_files):
+    store_files = {}
+    add_store_file(store_files, relative_path, payload)
+    publish_store_files(store_root, store_files)
+    listing = {'resource': '/l2/' + relative_path, 'sha256': sha256_hex(payload), 'bytes': len(payload)}
+    return listing, [*material_files, {'path': relative_path, 'sha256': listing['sha256'], 'bytes': listing['bytes']}]

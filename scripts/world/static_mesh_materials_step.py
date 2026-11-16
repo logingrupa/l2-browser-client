@@ -4,18 +4,16 @@ from pathlib import Path
 from native_assets import implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
-from native_store.catalog_writer import add_store_file, sha256_hex
-from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
+from native_store.catalog_writer import sha256_hex
 from native_store.glb_container import glb_document_and_binary
-from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
-from world.native_material_listings import static_mesh_materials_listing, unique_native_material_files
+from world.native_material_listings import publish_native_material_listing, static_mesh_materials_listing, unique_native_material_files
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_mesh_step import sealed_static_meshes
-from world.static_placement_plan import FAILED_STATUS
-from world.surface_material_programs import material_package_paths, material_program_outcome, program_root_is_ported, world_material_sources
+from world.surface_material_programs import (material_outcome_gap_rows, material_package_paths, material_program_outcome, program_root_is_ported,
+                                             world_material_sources)
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
@@ -23,7 +21,6 @@ STATIC_MESH_MATERIALS_STEP_ALGORITHM_VERSION = 1
 STATIC_MESH_MATERIALS_STEP_NAME = 'static-mesh-materials'
 STATIC_MESH_MATERIALS_PRODUCT_NAME = 'static-mesh-materials.json'
 SOURCE_REFERENCE_EXTRAS_FIELD = 'nativeSourceReference'
-MATERIAL_GAP_REASON_PREFIX = 'material-'
 
 
 class StaticMeshMaterialsStepError(ValueError):
@@ -82,16 +79,6 @@ def static_mesh_material_identities(store_root, static_meshes):
     return sorted(identities.values(), key=lambda identity: (identity.casefold(), identity))
 
 
-def material_gap_rows(tile_id, source_identity, evidence, outcomes):
-    rows = []
-    for identity, outcome in outcomes.items():
-        object_identity = {**source_identity, 'object': identity} if QUALIFIED_OBJECT_NAME_PATTERN.fullmatch(identity) else source_identity
-        rows.extend(tile_step_row(tile_id, STATIC_MESH_MATERIALS_STEP_NAME, GAP_STATUS if reason.startswith(MATERIAL_GAP_REASON_PREFIX) else FAILED_STATUS,
-                                  reason, object_identity, evidence)
-                    for reason in outcome.gap_reasons)
-    return rows
-
-
 def listed_static_mesh_materials(outcomes):
     return [{'sourceObject': identity, 'program': outcome.program_record,
              'rootPorted': outcome.program is not None and program_root_is_ported(outcome.program), 'gapReasons': outcome.gap_reasons}
@@ -101,11 +88,7 @@ def listed_static_mesh_materials(outcomes):
 def write_static_mesh_materials_listing(store_root, tile_id, outcomes):
     material_files = unique_native_material_files(tile_id, [outcome.store_outputs for outcome in outcomes.values()])
     relative_path, payload = static_mesh_materials_listing(tile_id, listed_static_mesh_materials(outcomes), material_files)
-    store_files = {}
-    add_store_file(store_files, relative_path, payload)
-    publish_store_files(store_root, store_files)
-    listing = {'resource': '/l2/' + relative_path, 'sha256': sha256_hex(payload), 'bytes': len(payload)}
-    return listing, [*material_files, {'path': relative_path, 'sha256': listing['sha256'], 'bytes': listing['bytes']}]
+    return publish_native_material_listing(store_root, relative_path, payload, material_files)
 
 
 def run_static_mesh_materials_step(project_root, client_root, tile_id):
@@ -127,7 +110,7 @@ def run_static_mesh_materials_step(project_root, client_root, tile_id):
     outcomes = {identity: material_program_outcome(identity, *sources) for identity in identities}
     inputs = locked_input_records(sorted({tile_map_path(tile_id), *material_package_paths(sources.map_sources, identities)}))
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
-    gap_rows = material_gap_rows(tile_id, source_identity, receipt_evidence, outcomes)
+    gap_rows = material_outcome_gap_rows(tile_id, STATIC_MESH_MATERIALS_STEP_NAME, source_identity, receipt_evidence, outcomes)
     products_directory = ledger.begin(unit_key, fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
     listing, store_records = write_static_mesh_materials_listing(store_root, tile_id, outcomes) if outcomes else (None, [])

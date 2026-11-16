@@ -43,7 +43,7 @@ function listingError(label: string, problem: string): never {
   throw new Error(`${label} ${problem}`);
 }
 
-function parseProgramPin(value: unknown, label: string): string | null {
+export function parseListedProgramPin(value: unknown, label: string): string | null {
   if (value === null) return null;
   if (!hasExactKeys(value, programPinFields) || typeof value.programSha256 !== "string" || !nativeTileSha256Pattern.test(value.programSha256) ||
     value.directory !== `native-materials/${value.programSha256}`) {
@@ -61,7 +61,7 @@ function parseMaterialEntry(value: unknown, label: string): StaticMeshMaterialEn
   if (!Array.isArray(value.gapReasons) || !value.gapReasons.every(reason => typeof reason === "string" && reason)) {
     listingError(entryLabel, "gapReasons must be a list of reasons.");
   }
-  const programMaterialId = parseProgramPin(value.program, entryLabel);
+  const programMaterialId = parseListedProgramPin(value.program, entryLabel);
   if (value.rootPorted && programMaterialId === null) listingError(entryLabel, "names a ported root without a program.");
   if (!value.rootPorted && value.gapReasons.length === 0) listingError(entryLabel, "names an unported root without a gap reason.");
   return { sourceObject: value.sourceObject, programMaterialId, rootPorted: value.rootPorted, gapReasons: [...value.gapReasons as string[]] };

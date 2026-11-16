@@ -9,15 +9,20 @@ from native_assets_lib.material_graph import read_material_graph
 from native_assets_lib.material_program import derive_material_program
 from native_assets_lib.material_resources import write_material_program_record
 from native_catalog.ue2 import FormatError
+from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.store_paths import StorePathError, lane_store_root, lane_work_root
 from world.class_default_reads import kept_material_class_defaults
 from world.map_sources import MapSources
+from world.raw_map_step import tile_step_row
 from world.material_texture_images import (material_texture_image_pins, reviewed_texture_nodes, stored_material_texture_images,
                                            write_material_texture_images)
 from world.static_mesh_step import STATIC_MESH_CONVERTER_FOLDER, conversion_failure_reason
+from world.static_placement_plan import FAILED_STATUS
 from world.tile_census import WORLD_LANE_NAME
+from world.tile_census_validation import GAP_STATUS
 
 UNPORTED_NODE_STATUS = 'unported'
+MATERIAL_GAP_REASON_PREFIX = 'material-'
 MATERIAL_CONVERSION_ERRORS = (ValueError, subprocess.TimeoutExpired)
 
 
@@ -96,3 +101,13 @@ def material_program_outcome(identity, map_sources, converter, class_work_root, 
     except MATERIAL_CONVERSION_ERRORS as error:
         return MaterialProgramOutcome(None, None, [conversion_failure_reason(error)], [])
     return MaterialProgramOutcome(program, program_record, sorted({*program['gapReasons'], *texture_gap_reasons}), store_outputs)
+
+
+def material_outcome_gap_rows(tile_id, step_name, source_identity, evidence, outcomes):
+    rows = []
+    for identity, outcome in outcomes.items():
+        object_identity = {**source_identity, 'object': identity} if QUALIFIED_OBJECT_NAME_PATTERN.fullmatch(identity) else source_identity
+        rows.extend(tile_step_row(tile_id, step_name, GAP_STATUS if reason.startswith(MATERIAL_GAP_REASON_PREFIX) else FAILED_STATUS, reason,
+                                  object_identity, evidence)
+                    for reason in outcome.gap_reasons)
+    return rows

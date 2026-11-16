@@ -87,7 +87,7 @@ function chunkBspGlb(sectionCount: number): Uint8Array<ArrayBuffer> {
 
 function tileStore(options: TileStoreOptions = {}) {
   const fixture = readFixtureTileFiles();
-  const secondTerrainBytes = glb({ asset: { version: "2.0" }, extras: { fixture: "second chunk terrain" } });
+  const secondTerrainBytes = glb({ asset: { version: "2.0" }, extras: { fixture: "second chunk terrain" }, meshes: [{ extras: { nativeLayers: [] } }] });
   const secondTerrainSha256 = sha256Hex(secondTerrainBytes);
   const secondChunk = decodeJsonDocument(fixture.chunk.bytes);
   secondChunk.chunkId = "chunk-0-1";

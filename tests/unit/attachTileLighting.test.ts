@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
@@ -11,6 +10,7 @@ import type { TileLightingBspChunk } from "../../src/scene/world/lighting/bindTi
 import type { NativeBspSection } from "../../src/scene/world/nativeBspResources";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import { staticMeshMaterialsResourceAbsentReason } from "../../src/scene/world/staticMeshLibraryMaterials";
+import { terrainMaterialsResourceAbsentReason } from "../../src/scene/world/terrainLayerMaterials";
 
 vi.mock("../../src/scene/world/lighting/loadTileLighting", async () => {
   const { tileLightingModel } = await import("../support/tileLightingFixture");
@@ -53,19 +53,17 @@ function lightmappedSectionsOf(inspection: ReturnType<Awaited<ReturnType<typeof 
 }
 
 describe("attachTileLighting", () => {
-  it("refuses a chunk whose terrain mesh holds a malformed material program pin and leaves no per-frame observer after dispose", async () => {
+  it("keeps a terrain chunk's material and names the absent terrain-materials resource, and leaves no per-frame observer after dispose", async () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
     scene.activeCamera = new FreeCamera("camera", Vector3.Zero(), scene);
-    const malformedPinMaterial = new StandardMaterial("malformed-pin", scene);
-    malformedPinMaterial.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: "native-materials/not-a-digest", programSha256: "not-a-digest" } } } };
     const terrainMesh = new Mesh("terrain-mesh", scene);
-    terrainMesh.material = malformedPinMaterial;
     const observersBefore = scene.onBeforeRenderObservable.observers.length;
     const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
-    await expect(attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshes: [], terrainMeshes: [terrainMesh] }))
-      .rejects.toThrow(/is not a native-materials program pin/);
-    expect((attached.inspection() as TileLightingRuntimeInspection).terrainLayers).toEqual({});
+    await attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshes: [], terrainMeshes: [terrainMesh] });
+    expect(terrainMesh.material).toBeNull();
+    expect((attached.inspection() as TileLightingRuntimeInspection).terrainLayers)
+      .toMatchObject({ gap: terrainMaterialsResourceAbsentReason, meshCount: 1, statusCounts: { "library-terrain-layers": 0, "terrain-layer-gap": 1 } });
     attached.dispose();
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(scene.onBeforeRenderObservable.observers.length).toBe(observersBefore);

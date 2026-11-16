@@ -12,6 +12,7 @@ from world.sky_step import SKY_STEP_NAME, run_sky_step
 from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME, run_static_mesh_materials_step
 from world.static_mesh_step import STATIC_MESH_STEP_NAME, run_static_mesh_step
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, run_terrain_chunk_step
+from world.terrain_material_step import TERRAIN_MATERIAL_STEP_NAME, run_terrain_material_step
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, run_chunk_plan_step
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, run_tile_manifest_step
@@ -22,6 +23,7 @@ from world.world_audio_step import WORLD_AUDIO_STEP_NAME, run_world_audio_step
 def source_tile_step_runners():
     return {RAW_STEP_NAME: run_raw_map_step, CHUNK_PLAN_STEP_NAME: run_chunk_plan_step, TERRAIN_STEP_NAME: run_terrain_chunk_step,
             STATIC_MESH_STEP_NAME: run_static_mesh_step, STATIC_MESH_MATERIALS_STEP_NAME: run_static_mesh_materials_step,
+            TERRAIN_MATERIAL_STEP_NAME: run_terrain_material_step,
             BSP_STEP_NAME: run_bsp_step, MOVER_STEP_NAME: run_mover_step,
             COLLISION_STEP_NAME: run_collision_step, MAP_EMITTER_STEP_NAME: run_map_emitter_step,
             BSP_VISIBILITY_STEP_NAME: run_bsp_visibility_step, SKY_STEP_NAME: run_sky_step,

@@ -140,6 +140,56 @@ function litColour(result: string, lighting: MaterialLighting): string {
   return `${result}.rgb * ${glslFloat(LIGHTING_CONSTANTS.modulate2x.runtimeDefault)} * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`;
 }
 
+export const terrainLayerSamplerName = (layerPosition: number) => `ue2TerrainLayer${layerPosition}`;
+export const terrainLayerRowUName = (layerPosition: number) => `ue2TerrainLayerRowU${layerPosition}`;
+export const terrainLayerRowVName = (layerPosition: number) => `ue2TerrainLayerRowV${layerPosition}`;
+export const terrainMaskSamplerName = (maskTexture: number) => `ue2TerrainMask${maskTexture}`;
+export const terrainNativePositionVaryingName = "ue2TerrainNativePosition";
+export const terrainMaskCoordinatesVaryingName = "ue2TerrainMaskCoordinates";
+
+export interface TerrainLayerWeightSource {
+  readonly maskTexture: number;
+  readonly channel: keyof typeof maskChannelSwizzle;
+}
+
+function terrainLayerColour(layerPosition: number): string {
+  const nativePoint = `vec4(${terrainNativePositionVaryingName}, 1.0)`;
+  const coordinates = `vec2(dot(${nativePoint}, ${terrainLayerRowUName(layerPosition)}), dot(${nativePoint}, ${terrainLayerRowVName(layerPosition)}))`;
+  return `texture2D(${terrainLayerSamplerName(layerPosition)}, ${coordinates}).rgb`;
+}
+
+export function buildTerrainLayerFragmentChain(layerWeights: readonly TerrainLayerWeightSource[], maskTextureCount: number): FragmentChainSource {
+  const layerCount = layerWeights.length + 1;
+  const layerPositions = Array.from({ length: layerCount }, (_, layerPosition) => layerPosition);
+  const samplers = [...layerPositions.map(terrainLayerSamplerName), ...Array.from({ length: maskTextureCount }, (_, maskTexture) => terrainMaskSamplerName(maskTexture))];
+  const rows = layerPositions.flatMap(layerPosition => [terrainLayerRowUName(layerPosition), terrainLayerRowVName(layerPosition)]);
+  const layerPasses = layerWeights.map((weight, weightPosition) => {
+    const layerPosition = weightPosition + 1;
+    const alpha = `ue2TerrainLayerAlpha${layerPosition}`;
+    return [
+      `  float ${alpha} = texture2D(${terrainMaskSamplerName(weight.maskTexture)}, ${terrainMaskCoordinatesVaryingName}).${maskChannelSwizzle[weight.channel]};`,
+      `  ue2TerrainColour = ${terrainLayerColour(layerPosition)} * ${alpha} + ue2TerrainColour * (1.0 - ${alpha});`,
+    ];
+  }).flat();
+  const fragmentSource = [
+    "precision highp float;",
+    `varying vec3 ${terrainNativePositionVaryingName};`,
+    `varying vec2 ${terrainMaskCoordinatesVaryingName};`,
+    "varying float ue2ViewDepth;",
+    ...samplers.map(name => `uniform sampler2D ${name};`),
+    ...rows.map(name => `uniform vec4 ${name};`),
+    `uniform vec4 ${fogUniformNames.range};`,
+    `uniform vec4 ${fogUniformNames.colour};`,
+    "void main() {",
+    `  vec3 ue2TerrainColour = ${terrainLayerColour(0)};`,
+    ...layerPasses,
+    `  float ue2FogFactor = ${fogFactorExpression("ue2ViewDepth")};`,
+    `  gl_FragColor = ${foggedColourExpression("ue2TerrainColour", "1.0", "ue2FogFactor")};`,
+    "}",
+  ].join("\n");
+  return { fragmentSource, uniforms: [...rows, fogUniformNames.range, fogUniformNames.colour], samplers };
+}
+
 export function buildFragmentChain(plan: CompiledMaterialStagePlan, lighting: MaterialLighting): FragmentChainSource {
   const builder: ChainBuilder = { statements: [], nextVariable: 0 };
   const blend = plan.blend;

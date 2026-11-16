@@ -17,6 +17,7 @@ import {
   describeNativeTileGapRow, parseNativeTileChunkManifest, type NativeTileChunkManifest, type NativeTileChunkModel, type NativeTileChunkTerrain,
 } from "./nativeTileChunkManifest";
 import type { NativeTileManifest } from "./nativeTileManifest";
+import { attachTerrainLayerUvRows, parseTerrainLayerUvExtras } from "./terrainLayerMaterials";
 
 export interface LoadedChunkTerrain {
   readonly container: AssetContainer;
@@ -104,6 +105,7 @@ export async function readTileChunkManifests(manifest: NativeTileManifest, signa
 export async function loadChunkTerrain(scene: Scene, chunk: NativeTileChunkManifest, terrain: NativeTileChunkTerrain, signal: AbortSignal): Promise<LoadedChunkTerrain> {
   const bytes = await fetchVerifiedNativeResource(terrain.resource, terrain.sha256, signal);
   if (bytes.byteLength > maximumChunkTerrainBytes) throw new Error(`Native tile chunk terrain exceeds ${maximumChunkTerrainBytes} bytes: ${chunk.chunkId}`);
+  const layerUvRows = parseTerrainLayerUvExtras(validateSectionGlb(bytes));
   const container = await loadNativeGlbContainer(scene, terrain.resource, bytes);
   const meshes = container.meshes.filter(mesh => mesh.getTotalVertices() > 0);
   if (!meshes.length) {
@@ -112,6 +114,7 @@ export async function loadChunkTerrain(scene: Scene, chunk: NativeTileChunkManif
   }
   for (const mesh of meshes) {
     mesh.metadata = { ...mesh.metadata, worldTerrain: true, nativeTileChunk: { tileId: chunk.tileId, chunkId: chunk.chunkId } };
+    attachTerrainLayerUvRows(mesh, layerUvRows);
     mesh.isPickable = true;
   }
   return { container, terrain, bytes: bytes.byteLength, meshes };

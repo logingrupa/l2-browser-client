@@ -28,6 +28,7 @@ from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME
 from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.static_mesh_step import STATIC_MESH_STEP_NAME
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, TerrainChunkStepError
+from world.terrain_material_step import TERRAIN_MATERIAL_STEP_NAME
 from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
 from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, CHUNK_PLAN_STEP_ALGORITHM_VERSION, ChunkPlanStepError, chunk_plan_unit_config
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, tile_manifest_unit_config
@@ -46,7 +47,7 @@ UNIT_FINGERPRINT_STEP_UNITS = {TERRAIN_STEP_NAME: 'terrain_unit', STATIC_MESH_ST
                                LIGHTING_STEP_NAME: 'lighting_unit'}
 UPSTREAM_SEALED_TILE_MANIFEST_STEPS = (STATIC_MESH_STEP_NAME, BSP_STEP_NAME, COLLISION_STEP_NAME, MOVER_STEP_NAME, BSP_VISIBILITY_STEP_NAME,
                                        MAP_EMITTER_STEP_NAME, SKY_STEP_NAME, WORLD_AUDIO_STEP_NAME, LIGHTING_STEP_NAME, MINIMAP_STEP_NAME,
-                                       STATIC_MESH_MATERIALS_STEP_NAME)
+                                       STATIC_MESH_MATERIALS_STEP_NAME, TERRAIN_MATERIAL_STEP_NAME)
 
 
 def upstream_config(fingerprint):
@@ -101,7 +102,7 @@ class CurrentSealTestCase(unittest.TestCase):
 class RegistryCoverageTests(unittest.TestCase):
     def test_every_registered_tile_step_has_one_current_seal_check(self):
         self.assertEqual(set(TILE_STEP_SEAL_CHECKS), set(TILE_STEP_NAMES))
-        self.assertEqual(len(TILE_STEP_NAMES), 15)
+        self.assertEqual(len(TILE_STEP_NAMES), 16)
 
     def test_a_registered_step_without_a_current_seal_check_refuses_the_registry(self):
         checks_without_sky = {step: check for step, check in TILE_STEP_SEAL_CHECKS.items() if step != SKY_STEP_NAME}
