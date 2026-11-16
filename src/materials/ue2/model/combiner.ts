@@ -97,7 +97,7 @@ function evaluateShader(expression: Extract<ColourExpression, { kind: "shader" }
   if (expression.specular) {
     const specular = channels(evaluateColourExpression(expression.specular, { ...inputs, usesDiffuseAlpha: false }));
     const specularMask = expression.specularityMask ? evaluateColourExpression(expression.specularityMask, { ...inputs, usesDiffuseAlpha: true })[3] : 1;
-    colour = expression.modulateSpecular2X ? perChannel(colour, specular, (left, right) => left * 2 * right) : perChannel(colour, specular, (left, right) => left + specularMask * right);
+    colour = perChannel(colour, specular, (left, right) => left + specularMask * right);
   } else if (expression.selfIllumination && expression.selfIlluminationMask) {
     const selfIllumination = channels(evaluateColourExpression(expression.selfIllumination, { ...inputs, usesDiffuseAlpha: false }));
     const selfIlluminationMask = evaluateColourExpression(expression.selfIlluminationMask, { ...inputs, usesDiffuseAlpha: true })[3];

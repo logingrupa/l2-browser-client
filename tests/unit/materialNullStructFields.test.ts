@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readBooleanField, readColourField, readNumberField, readRotatorField } from "../../src/materials/ue2/model/materialFieldValues";
-import { parseMaterialProgram, programNode, type MaterialProgram } from "../../src/materials/ue2/model/materialProgram";
+import { MaterialProgramError, parseMaterialProgram, programNode, type MaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { texRotatorAngle, textureCoordinateModifierMatrix } from "../../src/materials/ue2/model/modifiers";
 import { createRandomStream } from "../../src/shared/random";
 import {
@@ -8,6 +8,7 @@ import {
 } from "../support/materialProgramFixture";
 
 const oceanRotatorId = "FX_E_T.WaterSurfaceShaderSet.ocn_rot";
+const constantColourId = "Synthetic.UnsetConstantColor";
 const textureId = "FX_E_T.WaterSurfaceSet.ocean011";
 const oscillationRotatorFields = ["OscillationRate", "OscillationAmplitude", "OscillationPhase"] as const;
 const reaZeroRotator = { Pitch: 0, Yaw: 0, Roll: 0 };
@@ -19,7 +20,7 @@ function convertedOceanRotatorFields(rotationType: ReturnType<typeof enumValue>,
   return [
     field("Material", nodeReference(textureId)),
     field("Rotation", rawStruct("Rotator", authoredRotationRawHex), "authored", "raw"),
-    field("TexRotationType", rotationType, "ue-zero"),
+    field("TexRotationType", rotationType, rotationType.ordinal === 0 ? "ue-zero" : "authored"),
     ...oscillationRotatorFields.map(name => field(name, unsetStructValue("Rotator"), "ue-zero")),
     field("UOffset", null, "ue-zero"), field("VOffset", null, "ue-zero"), field("ConstantRotation", null, "ue-zero"),
   ];
@@ -44,7 +45,18 @@ describe("struct fields the store serves as null at UE zero", () => {
     const zeroRotatorUnits = { pitch: reaZeroRotator.Pitch, yaw: reaZeroRotator.Yaw, roll: reaZeroRotator.Roll };
     for (const name of oscillationRotatorFields) expect(readRotatorField(node, name)).toEqual(zeroRotatorUnits);
     expect([readNumberField(node, "UOffset"), readNumberField(node, "VOffset"), readBooleanField(node, "ConstantRotation")]).toEqual([0, 0, false]);
-    expect(readColourField(node, "Color")).toEqual([0, 0, 0, 0]);
+  });
+
+  it("read a ConstantColor Color served as null at UE zero as the zero colour", () => {
+    const program = parseMaterialProgram(JSON.parse(JSON.stringify(programOf(constantColourId, [
+      reviewedNode(constantColourId, "Engine.ConstantColor", [field("Color", null, "ue-zero")])]))));
+    expect(readColourField(programNode(program, constantColourId), "Color")).toEqual([0, 0, 0, 0]);
+  });
+
+  it("refuse a field the node does not serve instead of reading it as zero", () => {
+    const node = programNode(oceanRotatorProgram(enumValue(0, "TR_FixedRotation"), servedNullStruct), oceanRotatorId);
+    expect(() => readColourField(node, "Color")).toThrow(MaterialProgramError);
+    expect(() => readRotatorField(node, "OscilationRate")).toThrow(/OscilationRate is not a field of Engine.TexRotator/);
   });
 
   it("evaluate ocn_rot exactly as the same node with explicit zero oscillation Rotators", () => {

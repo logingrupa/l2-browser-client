@@ -114,9 +114,7 @@ function emitShader(builder: ChainBuilder, expression: Extract<ColourExpression,
   if (expression.specular) {
     const specular = emitExpression(builder, expression.specular, false);
     const specularMask = expression.specularityMask ? `${emitExpression(builder, expression.specularityMask, true)}.a` : "1.0";
-    shaded = declare(builder, expression.modulateSpecular2X
-      ? `vec4(${shaded}.rgb * 2.0 * ${specular}.rgb, ${shaded}.a)`
-      : `vec4(${shaded}.rgb + ${specularMask} * ${specular}.rgb, ${shaded}.a)`);
+    shaded = declare(builder, `vec4(${shaded}.rgb + ${specularMask} * ${specular}.rgb, ${shaded}.a)`);
   } else if (expression.selfIllumination && expression.selfIlluminationMask) {
     const selfIllumination = emitExpression(builder, expression.selfIllumination, false);
     const selfIlluminationMask = emitExpression(builder, expression.selfIlluminationMask, true);

@@ -33,6 +33,7 @@ SYNTHETIC_FRAME_BUFFER_BLENDING_MEMBERS = ['FB_Overwrite', 'FB_Modulate', 'FB_Al
 SYNTHETIC_TRIGGER_ACTION_MEMBERS = ['MSTA_Ignore', 'MSTA_Reset', 'MSTA_Pause', 'MSTA_Stop']
 RETRIGGER_ACTION_MEMBERS = ['RTA_Reverse', 'RTA_Reset', 'RTA_Ignore', 'RTA_Retrigger']
 OSCILLATION_TYPE_MEMBERS = ['OT_Pan', 'OT_Stretch', 'OT_StretchRepeat', 'OT_Jitter']
+SYNTHETIC_CLAMP_MODE_MEMBERS = ['TC_Wrap', 'TC_Clamp']
 TRIGGERED_OSCILLATOR = 'Engine.TexOscillatorTriggered'
 WATER_SHADER_ROOT = 'FX_E_T.WaterSurfaceShaderSet.WaterShader01'
 OCEAN_S = 'FX_E_T.WaterSurfaceShaderSet.ocean-s'
@@ -70,10 +71,14 @@ SYNTHETIC_CLASS_DEFAULTS = {
     ],
     'Engine.Texture': [
         declaration('USize', 'const int', 'Engine.BitmapMaterial'),
+        declaration('VSize', 'const int', 'Engine.BitmapMaterial'),
+        declaration('UClampMode', 'BitmapMaterial.ETexClampMode', 'Engine.BitmapMaterial', enum_members=SYNTHETIC_CLAMP_MODE_MEMBERS),
+        declaration('VClampMode', 'BitmapMaterial.ETexClampMode', 'Engine.BitmapMaterial', enum_members=SYNTHETIC_CLAMP_MODE_MEMBERS),
         declaration('Format', 'BitmapMaterial.ETextureFormat', 'Engine.BitmapMaterial', enum_members=['F0', 'F1', 'F2', 'F3']),
         declaration('Palette', 'Palette', 'Engine.Texture'),
         declaration('bMasked', 'bool', 'Engine.Texture'),
         declaration('AnimNext', 'Texture', 'Engine.Texture'),
+        declaration('MaxFrameRate', 'float', 'Engine.Texture'),
     ],
     'Engine.MaterialSequence': [
         declaration('SequenceItems', 'array<MaterialSequenceItem>', 'Engine.MaterialSequence'),

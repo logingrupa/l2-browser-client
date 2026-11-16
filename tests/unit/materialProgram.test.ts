@@ -52,6 +52,8 @@ describe("parseMaterialProgram", () => {
     const shader = programNode(program, "SyntheticSwatch.SwatchShader");
     expect(shader.fields.map(programField => [programField.field, programField.provenance])).toEqual([
       ["Diffuse", "authored"], ["Opacity", "ue-zero"], ["OutputBlending", "ue-zero"], ["TwoSided", "ue-zero"], ["DetailScale", "class-default"],
+      ["Specular", "ue-zero"], ["SpecularityMask", "ue-zero"], ["SelfIllumination", "ue-zero"], ["SelfIlluminationMask", "ue-zero"], ["Detail", "ue-zero"],
+      ["AlphaRef", "ue-zero"],
     ]);
     expect(programNode(program, "SyntheticSwatch.SwatchTexture").image).toEqual(swatchImage);
   });

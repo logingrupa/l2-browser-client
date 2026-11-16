@@ -119,6 +119,54 @@
           "provenance": "class-default",
           "status": "typed",
           "value": 8
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Specular",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "SpecularityMask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "SelfIllumination",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "SelfIlluminationMask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Detail",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaRef",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
         }
       ],
       "gapReasons": [],

@@ -22,9 +22,11 @@ function isValueRecord(value: MaterialFieldValue): value is { readonly [member: 
 
 function typedFieldReader<Value>(unsetPropertyValue: () => Value, decodeSetValue: (value: SetFieldValue, refuse: RefuseField) => Value): MaterialFieldReader<Value> {
   return (node, fieldName) => {
-    const setValue = programField(node, fieldName)?.value ?? null;
-    if (setValue === null) return unsetPropertyValue();
-    return decodeSetValue(setValue, message => { throw new MaterialProgramError(`Material program: ${node.id}.${fieldName} ${message}`); });
+    const refuse: RefuseField = message => { throw new MaterialProgramError(`Material program: ${node.id}.${fieldName} ${message}`); };
+    const field = programField(node, fieldName);
+    if (field === null) return refuse(`is not a field of ${node.class}.`);
+    if (field.value === null) return unsetPropertyValue();
+    return decodeSetValue(field.value, refuse);
   };
 }
 

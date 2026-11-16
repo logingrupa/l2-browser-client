@@ -52,8 +52,37 @@ export const enumValue = (ordinal: number, name: string) => ({ ordinal, name });
 export const nodeReference = (node: string) => ({ node });
 export const rawStruct = (structName: string, rawHex: string) => ({ rawHex, propertyType: 10, structName });
 
+const textureCoordinateModifierReadFields = ["Material", "UOffset", "VOffset"];
+const oscillatorReadFields = [...textureCoordinateModifierReadFields, ...(["U", "V"] as const).flatMap(axis =>
+  ["OscillationRate", "OscillationPhase", "OscillationAmplitude", "OscillationType"].map(name => `${axis}${name}`))];
+
+const runtimeReadFieldsDeclaredByReferenceClass: Readonly<Record<string, readonly string[]>> = {
+  "Engine.Shader": ["Diffuse", "Opacity", "Specular", "SpecularityMask", "SelfIllumination", "SelfIlluminationMask", "Detail", "OutputBlending", "AlphaRef"],
+  "Engine.Combiner": ["CombineOperation", "AlphaOperation", "Material1", "Material2", "Mask", "InvertMask", "Modulate2X", "Modulate4X"],
+  "Engine.FinalBlend": ["Material", "FrameBufferBlending", "AlphaRef"],
+  "Engine.ColorModifier": ["Material", "Color", "AlphaBlend"],
+  "Engine.ConstantColor": ["Color"],
+  "Engine.FadeColor": ["Color1", "Color2", "FadePeriod", "FadePhase", "ColorFadeType"],
+  "Engine.TexPanner": ["Material", "PanDirection", "PanRate"],
+  "Engine.TexRotator": [...textureCoordinateModifierReadFields, "TexRotationType", "Rotation", "OscillationRate", "OscillationAmplitude", "OscillationPhase"],
+  "Engine.TexOscillator": oscillatorReadFields,
+  "Engine.TexOscillatorTriggered": [...oscillatorReadFields, "StopAfterPeriod"],
+  "Engine.TexScaler": [...textureCoordinateModifierReadFields, "UScale", "VScale"],
+  "Engine.TexCoordSource": ["Material", "SourceChannel"],
+  "Engine.TexEnvMap": ["Material"],
+  "Engine.Texture": ["USize", "VSize", "UClampMode", "VClampMode", "AnimNext", "MaxFrameRate"],
+};
+
+function withUnsetDeclaredFields(nodeClass: string, fields: FixtureProgramField[]): FixtureProgramField[] {
+  const present = new Set(fields.map(nodeField => nodeField.field));
+  const unset = (runtimeReadFieldsDeclaredByReferenceClass[nodeClass] ?? []).filter(name => !present.has(name)).map(name => field(name, null, "ue-zero"));
+  return [...fields, ...unset];
+}
+
 export function reviewedNode(id: string, nodeClass: string, fields: FixtureProgramField[], image?: FixtureTextureImage): FixtureProgramNode {
-  return image ? { id, class: nodeClass, status: "reviewed", gapReasons: [], fields, image } : { id, class: nodeClass, status: "reviewed", gapReasons: [], fields };
+  const declaredFields = withUnsetDeclaredFields(nodeClass, fields);
+  return image ? { id, class: nodeClass, status: "reviewed", gapReasons: [], fields: declaredFields, image }
+    : { id, class: nodeClass, status: "reviewed", gapReasons: [], fields: declaredFields };
 }
 
 export function unportedNode(id: string, nodeClass: string): FixtureProgramNode {

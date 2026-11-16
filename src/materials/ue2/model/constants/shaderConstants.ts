@@ -14,9 +14,9 @@ export const SHADER_CONSTANTS = {
     id: "mat.specular",
     value: "o + SpecularityMask.a * Specular, or o * 2 * Specular with ModulateSpecular2X",
     provenance: `${materialNotes} Fragment order step 6`,
-    status: "unconfirmed",
-    interludeEvidence: null,
-    runtimeDefault: "o + SpecularityMask.a * Specular, or o * 2 * Specular with ModulateSpecular2X",
+    status: "corrected-interlude",
+    interludeEvidence: "system/Engine.u Engine.Shader of the reference client declares no ModulateSpecular2X field (read_class_field_declarations, 2026-11-16), so only the additive form applies",
+    runtimeDefault: "o + SpecularityMask.a * Specular",
   },
   selfIllumination: {
     id: "mat.self-illumination",

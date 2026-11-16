@@ -235,7 +235,7 @@ describe("evaluateColourExpression", () => {
       kind: "shader",
       diffuse: { kind: "combiner", colourOperation: 2, alphaOperation: 3, colourMultiplier: 2, firstEmittedMaterial: "material2", alphaComplementedMaterial: null, maskAlphaComplemented: false,
         material1: { kind: "texture", samplerIndex: 0 }, material2: { kind: "colour-source", colourSourceIndex: 0 }, mask: null },
-      opacity: null, specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null, modulateSpecular2X: false,
+      opacity: null, specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null,
     }, { samplerTexels: [texel], colourSourceValues: [constant], usesDiffuseAlpha: true });
     expect(result[0] * 255).toBeCloseTo(200, 6);
     expect(result[1] * 255).toBeCloseTo((150 / 255) * (128 / 255) * 2 * 255, 6);
@@ -247,7 +247,7 @@ describe("evaluateColourExpression", () => {
     const shader = (opacity: boolean) => ({
       kind: "shader" as const, diffuse: { kind: "texture" as const, samplerIndex: 0 },
       opacity: opacity ? { kind: "colour-source" as const, colourSourceIndex: 0 } : null,
-      specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null, modulateSpecular2X: false,
+      specular: null, specularityMask: null, selfIllumination: null, selfIlluminationMask: null,
     });
     const inputs = { samplerTexels: [bytes(10, 20, 30, 40)], colourSourceValues: [bytes(0, 0, 0, 90)] };
     expect(evaluateColourExpression(shader(false), { ...inputs, usesDiffuseAlpha: false })[3]).toBe(1);
