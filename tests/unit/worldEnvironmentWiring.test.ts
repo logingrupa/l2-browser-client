@@ -1,46 +1,66 @@
-import { describe, expect, it, vi } from "vitest";
-import { createPresentationClock } from "../../src/shared/presentationClock";
-import { createWorldEnvironmentClock } from "../../src/scene/world/lighting/worldEnvironmentClock";
+import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
+import { Scene } from "@babylonjs/core/scene";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { FOG_DISABLED, type FogState } from "../../src/materials/ue2/babylon/material";
 import { cameraFarPlane, cameraFogOnZoneChange, wireWorldEnvironment } from "../../src/runtime/worldEnvironmentWiring";
 import type { NativeSection } from "../../src/scene/world/loadNativeSection";
 import type { TileVisibilityBinding } from "../../src/scene/world/bspVisibility/bindTileVisibility";
+import { startWorldTimeOfDay, type WorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
 import type { WorldEvent } from "../../src/world/worldTypes";
+import { dayNightTimeTables } from "../support/worldTimeOfDayFixture";
 
-const program = { startTimeHours: 6, timeRatio: 6, environmentTypes: [0, 1], unresolved: [] };
 const zoneFog: FogState = { enabled: true, source: "camera-zone", colour: [.5, .5, .5], startSourceUnits: 1000, endSourceUnits: 12000, fogEnd: 12000 };
+const unstagedTimeOfDay: WorldTimeOfDay = { status: "gap", reason: "environment-time-tables-unstaged", detail: "not staged" };
+const scenes: Scene[] = [];
+afterEach(() => { for (const scene of scenes.splice(0)) { const engine = scene.getEngine(); scene.dispose(); engine.dispose(); } });
 
-function environmentOn(fog: FogState | null, withClock = true) {
-  const presentationClock = createPresentationClock();
-  const clock = withClock ? createWorldEnvironmentClock({ program, presentationClock }) : null;
+function runningTimeOfDay(): WorldTimeOfDay {
+  const scene = new Scene(new NullEngine());
+  scenes.push(scene);
+  return startWorldTimeOfDay(scene, dayNightTimeTables(), () => 0);
+}
+
+function environmentOn(fog: FogState | null, timeOfDay: WorldTimeOfDay = runningTimeOfDay()) {
   let emit!: (event: WorldEvent) => void;
   const camera = { maxZ: 1 };
   let currentFog = fog;
   const environment = wireWorldEnvironment({ adapter: { subscribe(listener) { emit = listener; return () => { emit = () => {}; }; } }, camera,
-    environmentClock: clock, cameraFog: () => currentFog, presentationFarPlane: 480 });
-  return { environment, camera, presentationClock, emit: (event: WorldEvent) => emit(event), setFog: (next: FogState | null) => { currentFog = next; } };
+    timeOfDay, cameraFog: () => currentFog, presentationFarPlane: 480 });
+  return { environment, camera, emit: (event: WorldEvent) => emit(event), setFog: (next: FogState | null) => { currentFog = next; } };
+}
+
+function runningSnapshot(environment: ReturnType<typeof environmentOn>["environment"]) {
+  const inspection = environment.inspection().timeOfDay;
+  if (inspection.status !== "running") throw new Error(`The time of day is a gap: ${inspection.reason}.`);
+  return inspection.snapshot;
 }
 
 describe("world environment wiring", () => {
-  it("reports the program fallback until an adapter server-time event moves the game clock", () => {
-    const { environment, presentationClock, emit } = environmentOn(null);
-    expect(environment.inspection().clock).toMatchObject({ gameMinutes: 360, environmentType: 0, source: "environment-program-fallback" });
+  it("routes server time, SSQ info and red sky to the one environment manager", () => {
+    const { environment, emit } = environmentOn(null);
+    expect(runningSnapshot(environment).clock).toMatchObject({ hour: 12, hourSource: "start-time" });
     emit({ type: "server-time", gameMinutes: 1200 });
-    presentationClock.advance(10);
-    expect(environment.inspection().clock).toMatchObject({ gameMinutes: 1201, environmentType: 0, source: "server-time" });
-    expect(environment.inspection()).toMatchObject({ appliedEventCount: 1, rejectedEventCount: 0 });
+    expect(runningSnapshot(environment).clock).toMatchObject({ hour: 20, hourSource: "server-time" });
+    emit({ type: "environment-ssq-info", first: 1, second: 1 });
+    expect(runningSnapshot(environment)).toMatchObject({ oldType: 1, targetType: 1, persistentTargetType: 1 });
+    emit({ type: "environment-red-sky", timeoutSeconds: 5 });
+    expect(runningSnapshot(environment)).toMatchObject({ oldType: 1, targetType: 3, persistentTargetType: 1, remainingRevertSeconds: 5 });
+    emit({ type: "spawn", entity: { id: "x", kind: "npc", displayName: "x", position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, health: 1, maximumHealth: 1, animation: "idle" } });
+    expect(environment.inspection()).toMatchObject({ appliedEventCount: 3, rejectedEventCount: 0, lastRejectedEvent: null,
+      serverPacket: { producer: "sandbox-command", status: "unresolved", reason: "server-packet-unresolved" } });
   });
 
-  it("counts a server time the clock refuses, the type events without a manager and one that reaches a world without a clock, instead of throwing", () => {
+  it("counts an event the manager refuses, and every event that reaches an unstaged time of day, instead of throwing", () => {
     const { environment, emit } = environmentOn(null);
-    expect(() => emit({ type: "server-time", gameMinutes: -30 })).not.toThrow();
-    expect(environment.inspection()).toMatchObject({ appliedEventCount: 0, rejectedEventCount: 1, lastRejectedEvent: expect.stringContaining("-30") });
-    emit({ type: "environment-ssq-info", first: 1, second: 0 });
-    emit({ type: "environment-red-sky", timeoutSeconds: 5 });
-    expect(environment.inspection()).toMatchObject({ rejectedEventCount: 3, lastRejectedEvent: "environment-manager-absent" });
-    const unlit = environmentOn(null, false);
-    unlit.emit({ type: "server-time", gameMinutes: 30 });
-    expect(unlit.environment.inspection()).toMatchObject({ clock: null, rejectedEventCount: 1, lastRejectedEvent: expect.stringContaining("environment-clock-absent") });
+    expect(() => emit({ type: "server-time", gameMinutes: 1.5 })).not.toThrow();
+    expect(environment.inspection()).toMatchObject({ appliedEventCount: 0, rejectedEventCount: 1, lastRejectedEvent: expect.stringContaining("1.5") });
+    expect(() => emit({ type: "environment-red-sky", timeoutSeconds: 0.5 })).not.toThrow();
+    expect(environment.inspection()).toMatchObject({ rejectedEventCount: 2, lastRejectedEvent: expect.stringContaining("0.5") });
+    const unstaged = environmentOn(null, unstagedTimeOfDay);
+    unstaged.emit({ type: "server-time", gameMinutes: 30 });
+    unstaged.emit({ type: "environment-ssq-info", first: 1, second: 0 });
+    expect(unstaged.environment.inspection()).toMatchObject({ timeOfDay: unstagedTimeOfDay, appliedEventCount: 0, rejectedEventCount: 2,
+      lastRejectedEvent: "environment-time-tables-unstaged" });
   });
 
   it("sets camera maxZ to fogEnd while fog is on and keeps the presentation far plane otherwise", () => {
@@ -54,7 +74,7 @@ describe("world environment wiring", () => {
     environment.update();
     expect(camera.maxZ).toBe(480);
     expect(environment.inspection().farPlane).toEqual({ maxZ: 480, source: "presentation" });
-    expect(() => wireWorldEnvironment({ adapter: { subscribe: () => () => {} }, camera, environmentClock: null, cameraFog: () => null, presentationFarPlane: 0 })).toThrow(RangeError);
+    expect(() => wireWorldEnvironment({ adapter: { subscribe: () => () => {} }, camera, timeOfDay: unstagedTimeOfDay, cameraFog: () => null, presentationFarPlane: 0 })).toThrow(RangeError);
   });
 
   it("reads the camera-environment fog from the tile inspection only when the camera zone changes", () => {

@@ -46,7 +46,7 @@ describe("src/environment/model import boundary", () => {
     const plantedModule = `${modelFolder}/plantedProbe.ts`;
     expect(outwardModelImports(plantedModule, 'import { Scene } from "@babylonjs/core/scene";')).toEqual([`${plantedModule} -> @babylonjs/core/scene`]);
     expect(outwardModelImports(plantedModule, 'import { presentationClock } from "../../shared/presentationClock";')).toEqual([]);
-    expect(outwardModelImports(plantedModule, 'import { createWorldEnvironmentClock } from "../../scene/world/lighting/worldEnvironmentClock";'))
-      .toEqual([`${plantedModule} -> ../../scene/world/lighting/worldEnvironmentClock`]);
+    expect(outwardModelImports(plantedModule, 'import { startWorldTimeOfDay } from "../../scene/world/worldTimeOfDay";'))
+      .toEqual([`${plantedModule} -> ../../scene/world/worldTimeOfDay`]);
   });
 });

@@ -1,8 +1,8 @@
 import { sha256 } from "../../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
+import { parseNativeTimeTables, type NativeTimeTablesExport } from "../../environment/parseNativeTimeTables";
 
-/** Exact converted source records. These pins select data, not an environment,
- * native clock, interpolation rule, color transfer or default sky appearance. */
 export const nativeEnvironmentSource = {
   conversionManifestSha256: "e10827c4e98daeed18062c9e85117a1f862a3e6dfcaad08638798f887081183d",
   tablesSha256: "1dd8e88620ded38cc47e092fe68056dc2e12c3f8d1fdc2e2f7dad281c009151d",
@@ -69,7 +69,6 @@ export function parseNativeEnvironmentTables(value: unknown): NativeEnvironmentT
     require(entry.file === "Env.int" && entry.section === "EnvSetup" && typeof entry.key === "string" &&
       (entry.valueAscii === null || typeof entry.valueAscii === "string") && integer(entry.sourceOffset), "Invalid environment setup identity.");
   }
-  // Preserve ordered declarations and anomalies. No map/last-key-wins collapse.
   return structuredClone(data) as unknown as NativeEnvironmentTables;
 }
 
@@ -85,8 +84,6 @@ export async function loadNativeEnvironmentTables(signal: AbortSignal): Promise<
   return parseNativeEnvironmentTables(JSON.parse(new TextDecoder().decode(bytes)));
 }
 
-/** Match three physical rows by explicit key and equal T literal. This is a
- * comparison grouping convention, never NUM precedence or interpolation. */
 export function selectNativeSkyLiteral(data: NativeEnvironmentTables, file: string, key: string): NativeSkyLiteral {
   const layers = skyEnvironmentBindings.map(binding => {
     const declarations = data.envSetupDeclarations.filter(entry => entry.key === binding.setup);
@@ -103,4 +100,53 @@ export function selectNativeSkyLiteral(data: NativeEnvironmentTables, file: stri
   const tLiteral = layers[0]!.row.tLiteral;
   require(layers.every(layer => layer.row.tLiteral === tLiteral), "Selected physical rows have different T literals.");
   return { file, key, tLiteral, layers };
+}
+
+export const environmentTimeTablesUnstagedReason = "environment-time-tables-unstaged";
+const environmentTimeTablesIncompleteReason = "environment-time-tables-incomplete";
+const environmentTimeTablesInvalidReason = "environment-time-tables-invalid";
+const timeTablesProduct = "time-tables.json";
+const httpNotFound = 404;
+
+export type NativeTimeTablesLoad =
+  | { readonly status: "loaded"; readonly timeTables: NativeTimeTablesExport }
+  | { readonly status: "gap"; readonly reason: string; readonly detail: string };
+
+function timeTablesGap(reason: string, detail: string): NativeTimeTablesLoad {
+  return { status: "gap", reason, detail };
+}
+
+function timeTablesProductPin(manifest: unknown): { readonly bytes: number; readonly sha256: string } | null {
+  const products = object(object(manifest).products);
+  if (!Object.hasOwn(products, timeTablesProduct)) return null;
+  const pin = object(products[timeTablesProduct]);
+  require(integer(pin.bytes) && pin.bytes > 0 && hash(pin.sha256), `The conversion manifest pins ${timeTablesProduct} without bytes and sha256.`);
+  return { bytes: pin.bytes, sha256: pin.sha256 };
+}
+
+async function readNativeTimeTables(conversionManifestSha256: string, signal: AbortSignal): Promise<NativeTimeTablesLoad> {
+  const directory = `/l2/environments/${conversionManifestSha256}`;
+  const response = await fetch(nativeResourceUrl(`${directory}/conversion-manifest.json`), { signal });
+  if (response.status === httpNotFound) return timeTablesGap(environmentTimeTablesUnstagedReason, `${directory} is not staged.`);
+  require(response.ok, `The conversion manifest returned HTTP ${response.status}.`);
+  const manifestBytes = new Uint8Array(await response.arrayBuffer());
+  signal.throwIfAborted();
+  require(await sha256(manifestBytes) === conversionManifestSha256, "The conversion manifest differs from its pin.");
+  const pin = timeTablesProductPin(JSON.parse(new TextDecoder().decode(manifestBytes)));
+  if (pin === null) return timeTablesGap(environmentTimeTablesUnstagedReason, `${directory} is an older export without ${timeTablesProduct}.`);
+  const tableBytes = await fetchVerifiedNativeResource(`${directory}/${timeTablesProduct}`, pin.sha256, signal, pin.bytes);
+  const parsed = parseNativeTimeTables(JSON.parse(new TextDecoder().decode(tableBytes)));
+  if (parsed.status === "incomplete") return timeTablesGap(environmentTimeTablesIncompleteReason, parsed.unresolved.join(", "));
+  return { status: "loaded", timeTables: parsed.timeTables };
+}
+
+export async function loadNativeTimeTables(signal: AbortSignal,
+  conversionManifestSha256: string = nativeEnvironmentSource.conversionManifestSha256): Promise<NativeTimeTablesLoad> {
+  signal.throwIfAborted();
+  try {
+    return await readNativeTimeTables(conversionManifestSha256, signal);
+  } catch (error) {
+    signal.throwIfAborted();
+    return timeTablesGap(environmentTimeTablesInvalidReason, error instanceof Error ? error.message : String(error));
+  }
 }

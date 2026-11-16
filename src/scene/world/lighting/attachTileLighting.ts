@@ -13,7 +13,7 @@ import { bindTileLighting, type TileLightingBinding, type TileLightingBspChunk, 
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
 import { readNativeMaterialProgramPin } from "../../../assets/native/nativeMaterialProgramPin";
-import { createWorldEnvironmentClock, type WorldEnvironmentClock } from "./worldEnvironmentClock";
+import { worldTimeOfDayFor } from "../worldTimeOfDay";
 
 export interface TileLightingGapInspection {
   readonly gap: string;
@@ -37,7 +37,6 @@ export interface TileLightingChunkSurfaces {
 }
 
 export interface AttachedTileLighting {
-  readonly environmentClock: WorldEnvironmentClock | null;
   readonly materialUniforms: (() => NativeMaterialUniforms) | null;
   readonly binding: TileLightingBinding | null;
   addChunk(surfaces: TileLightingChunkSurfaces): Promise<void>;
@@ -52,7 +51,7 @@ const payloadInvalidReasonPrefix = "lighting-payload-invalid:";
 const millisecondsPerSecond = 1000;
 
 function unboundTileLighting(gap: string): AttachedTileLighting {
-  return { environmentClock: null, materialUniforms: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
+  return { materialUniforms: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
 }
 
 function terrainLayerCounts(meshes: readonly AbstractMesh[]): TerrainLayerCounts {
@@ -82,6 +81,8 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   Promise<AttachedTileLighting> {
   const resource = manifest.resources.find(entry => entry.kind === lightingResourceKind);
   if (resource === undefined) return unboundTileLighting(lightingResourceAbsentReason);
+  const timeOfDay = worldTimeOfDayFor(scene);
+  if (timeOfDay.status === "gap") return unboundTileLighting(timeOfDay.reason);
   let model: TileLightingModel;
   try {
     model = await loadTileLighting(resource, signal);
@@ -92,7 +93,6 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   }
   const staticMeshMaterials = await loadStaticMeshMaterialsListing(manifest, signal);
   const presentationClock = createPresentationClock();
-  const environmentClock = createWorldEnvironmentClock({ program: model.records.environmentProgram, presentationClock });
   let cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame);
   const advance = scene.onBeforeRenderObservable.add(() => {
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
@@ -100,16 +100,16 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   });
   const sessionSeed = drawNativeSessionSeed();
   const materialUniforms = (): NativeMaterialUniforms => {
-    const environment = environmentClock.sample();
-    return { levelSeconds: presentationClock.levelSeconds, hour: environment.hour, environmentType: environment.environmentType, fog: cameraEnvironment.fog };
+    const environment = timeOfDay.sample();
+    return { levelSeconds: presentationClock.levelSeconds, hour: environment.hour, environmentType: environment.targetType, fog: cameraEnvironment.fog };
   };
-  const binding = bindTileLighting({ scene, model, sessionSeed, environment: () => environmentClock.sample(),
+  const binding = bindTileLighting({ scene, model, sessionSeed, environment: () => timeOfDay.sample(),
     levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, loadProgram: loadNativeMaterial });
   const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
     uniforms: materialUniforms, loadProgram: loadNativeMaterial });
   const terrainLayerCountsByChunk = new Map<string, TerrainLayerCounts>();
   return {
-    environmentClock, materialUniforms, binding,
+    materialUniforms, binding,
     async addChunk(surfaces) {
       const counts = terrainLayerCounts(surfaces.terrainMeshes);
       if (surfaces.bspChunk !== null) await binding.addChunk(surfaces.bspChunk);

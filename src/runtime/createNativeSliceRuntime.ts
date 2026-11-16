@@ -305,7 +305,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         camera.minZ = authoredCamera.minZ; camera.maxZ = authoredCamera.maxZ; camera.upperRadiusLimit = authoredCamera.upperRadiusLimit;
       });
     }
-    const environment = wireWorldEnvironment({ adapter, camera, environmentClock: section?.environmentClock ?? null,
+    const environment = wireWorldEnvironment({ adapter, camera, timeOfDay: world.timeOfDay,
       cameraFog: section ? cameraFogOnZoneChange(section) : () => null, presentationFarPlane: camera.maxZ });
     boundaryReleases.push(() => environment.release());
     if (effectComponents) {

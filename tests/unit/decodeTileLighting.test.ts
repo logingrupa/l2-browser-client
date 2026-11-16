@@ -12,7 +12,7 @@ import { bindTileLighting, type TileLightingBspChunk } from "../../src/scene/wor
 import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
 import { decodeDxt1Texels, lightmapPageAtHour, lightmapSlotAtHour } from "../../src/scene/world/lighting/lightmapPages";
 import { planLightmapSections, type LightmapSectionChunk } from "../../src/scene/world/lighting/tileLightmapSections";
-import type { WorldEnvironmentSample } from "../../src/scene/world/lighting/worldEnvironmentClock";
+import type { WorldEnvironmentSample } from "../../src/scene/world/worldTimeOfDay";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
 import { replaceArray, tileLightingArrays, tileLightingModel, tileLightingPayload } from "../support/tileLightingFixture";
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
@@ -29,6 +29,10 @@ const nodeRanges: NativeBspNodeRange[] = [
 const primitiveIndices = [[0, 1, 2, 0, 2, 3], [0, 1, 2], [0, 1, 2]];
 const primitiveVertexCounts = [4, 3, 3];
 const scenes: Scene[] = [];
+
+function environmentAtHour(hour: number): WorldEnvironmentSample {
+  return { hour, hourSource: "server-time", oldType: 0, targetType: 0, weight: 0 };
+}
 
 function decoded(arrays: readonly TypedPayloadFixtureArray[]) {
   const payload = tileLightingPayload(arrays);
@@ -49,14 +53,13 @@ afterEach(() => {
 });
 
 describe("decodeTileLighting", () => {
-  it("reads the lightmap pages, node ranges, zones and environment program of a lighting payload", () => {
+  it("reads the lightmap pages, node ranges and zones of a lighting payload", () => {
     const model = tileLightingModel();
     expect(model).toMatchObject({ textureCount: 2, sourceSha256: "0123456789abcdef".repeat(4) });
     expect(model.pages).toHaveLength(9);
     expect(model.pages[3]).toMatchObject({ texture: 0, slot: 3, slotCount: 8, edge: 8 });
     expect(model.pages[3]!.texels).toHaveLength(32);
     expect(model.nodeRanges.map(range => [range.node, range.texture, range.lightmapCoordinates.length])).toEqual([[10, 0, 8], [11, 1, 6], [12, -1, 0]]);
-    expect(model.records.environmentProgram).toEqual({ startTimeHours: 12, timeRatio: 6, environmentTypes: [0, 1, 2, 3], unresolved: [] });
     expect(model.records.zones).toEqual([
       { zoneIndex: 0, fog: null, unresolvedReason: "lighting-zone-fog-unresolved:0:bDistanceFog" },
       { zoneIndex: 1, unresolvedReason: null, fog: { distanceFog: true, sunAffected: true, fog: { colourBytes: [95, 112, 116], startSourceUnits: 100, endSourceUnits: 20000 } } },
@@ -137,7 +140,7 @@ describe("bindTileLighting", () => {
       return mesh;
     });
     const chunk: TileLightingBspChunk = { chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes };
-    let environment: WorldEnvironmentSample = { gameMinutes: 60, hour: 1, environmentType: 0, source: "environment-program-fallback" };
+    let environment = environmentAtHour(1);
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1, environment: () => environment,
       levelSeconds: () => 0, fog: () => FOG_DISABLED, loadProgram: async () => loaded });
     await binding.addChunk(chunk);
@@ -146,11 +149,19 @@ describe("bindTileLighting", () => {
     expect(meshes[0]!.material!.getClassName()).toBe("ShaderMaterial");
     expect(meshes[0]!.getVerticesData("uv2")).toEqual(new Float32Array([0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75]));
     expect(meshes[2]!.material!.name).toBe("Synthetic.Unlit converted");
-    environment = { gameMinutes: 780, hour: 13, environmentType: 0, source: "environment-program-fallback" };
+    environment = environmentAtHour(13);
     scene.onBeforeRenderObservable.notifyObservers(scene);
     const pagesAtThirteen = binding.inspection().sections.map(section => section.page);
     expect(pagesAtOne).toEqual([0, 8, null]);
     expect(pagesAtThirteen).toEqual([4, 8, null]);
+    expect(binding.inspection().lightmapHourGap).toBeNull();
+    const boundLightmapPages = () => meshes[0]!.material!.getActiveTextures().map(texture => texture.name).filter(name => name.startsWith("Tile lightmap page"));
+    expect(boundLightmapPages()).toEqual(["Tile lightmap page 4"]);
+    environment = environmentAtHour(25);
+    expect(() => scene.onBeforeRenderObservable.notifyObservers(scene)).not.toThrow();
+    expect(binding.inspection()).toMatchObject({ lightmapHourGap: "lightmap-hour-outside-day:25" });
+    expect(binding.inspection().sections.map(section => section.page)).toEqual([null, null, null]);
+    expect(boundLightmapPages()).toEqual(["Tile lightmap page 4"]);
     expect(binding.inspection().sections[0]!.hourPages).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
     const boundMaterial = meshes[0]!.material!;
     binding.removeChunk("chunk-0-0");
@@ -181,7 +192,7 @@ describe("bindTileLighting", () => {
     const originalMaterials = meshes.map(mesh => mesh.material);
     let releaseProgram: (() => void) | null = null;
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1,
-      environment: () => ({ gameMinutes: 60, hour: 1, environmentType: 0, source: "environment-program-fallback" }), levelSeconds: () => 0, fog: () => FOG_DISABLED,
+      environment: () => environmentAtHour(1), levelSeconds: () => 0, fog: () => FOG_DISABLED,
       loadProgram: (_materialId, signal) => new Promise((_resolve, reject) => { releaseProgram = () => reject(signal.reason); }) });
     const adding = binding.addChunk({ chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes });
     await Promise.resolve();

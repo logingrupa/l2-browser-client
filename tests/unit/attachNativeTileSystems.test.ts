@@ -10,6 +10,7 @@ import type { TileLightingRuntimeInspection } from "../../src/scene/world/lighti
 import type { NativeModelInstance } from "../../src/scene/world/nativeModelPlacements";
 import type { NativeTileChunkPlacement } from "../../src/scene/world/nativeTileChunkManifest";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
+import { provideDayNightTimeOfDay } from "../support/worldTimeOfDayFixture";
 
 vi.mock("../../src/scene/world/bspVisibility/loadBspVisibility", async () => {
   const { threeRoomVisibilityModel } = await import("../support/bspVisibilityFixture");
@@ -38,7 +39,7 @@ function systemsTileManifest() {
 
 describe("attachNativeTileSystems", () => {
   let engine: NullEngine, scene: Scene;
-  beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true; });
+  beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true; provideDayNightTimeOfDay(scene); });
   afterEach(() => { scene.dispose(); engine.dispose(); });
 
   function wallsChunk(instances: readonly NativeModelInstance<NativeTileChunkPlacement>[] = []): NativeTileChunkSystemContents {

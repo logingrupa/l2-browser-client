@@ -26,10 +26,7 @@ export function tileLightingRecordsDocument() {
       fieldRecord("DistanceFogEnd", provenance === "unresolved" ? null : 20000, provenance)],
     sunAffect: fieldRecord("bSunAffect", provenance === "unresolved" ? null : true, provenance === "unresolved" ? provenance : "class-default") });
   return { schemaVersion: 1, kind: "native-tile-lighting-records", lights: [], fogInfos: [{ exportIndex: 7 }], levelInfos: [], rules: [],
-    waterVolumes: [{ exportIndex: 8 }], zones: [zone(0, "unresolved", false), zone(1, "authored", true), zone(2, "authored", false)],
-    environmentProgram: { schemaVersion: 1, kind: "native-environment-program", setup: {}, unresolved: [],
-      setupValues: { StartTime: { key: "StartTime", value: 12 }, TimeRatio: { key: "TimeRatio", value: 6 }, TimeEnvFileNum: { key: "TimeEnvFileNum", value: 4 } },
-      environmentTypes: [0, 1, 2, 3].map(environmentType => ({ environmentType, sections: [] })) } };
+    waterVolumes: [{ exportIndex: 8 }], zones: [zone(0, "unresolved", false), zone(1, "authored", true), zone(2, "authored", false)] };
 }
 
 export function tileLightingArrays(records: unknown = tileLightingRecordsDocument()): TypedPayloadFixtureArray[] {

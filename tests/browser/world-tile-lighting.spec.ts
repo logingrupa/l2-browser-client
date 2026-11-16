@@ -20,7 +20,7 @@ interface LightingSection {
 }
 interface LightingInspection {
   readonly gap: string | null;
-  readonly environment?: { readonly hour: number; readonly environmentType: number; readonly source: string };
+  readonly environment?: { readonly hour: number; readonly hourSource: string; readonly targetType: number };
   readonly sectionCount?: number;
   readonly lightmappedSectionCount?: number;
   readonly statusCounts?: Record<string, number>;
@@ -86,7 +86,7 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
     expect(placement.reasons).toContain("map-emitter-class-defaults-unmerged");
   }
   const sections = inspection.sections!, hour = inspection.environment!.hour;
-  expect(inspection.environment).toMatchObject({ environmentType: 0, source: "environment-program-fallback" });
+  expect(inspection.environment).toMatchObject({ targetType: 0, hourSource: "start-time" });
   expect(hour).toBeGreaterThanOrEqual(12);
   expect(inspection.sectionCount).toBe(servedBspSectionCount());
   expect(Object.values(inspection.statusCounts!).reduce((sum, count) => sum + count, 0)).toBe(sections.length);
@@ -107,7 +107,7 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
 
 test.describe("desktop", () => {
   test.use({ viewport: desktopViewport });
-  test("binds the tile 20_21 lightmap pages by hour from the environment program fallback at 1440 x 900", async ({ page }) => {
+  test("binds the tile 20_21 lightmap pages by hour from the world time of day at 1440 x 900", async ({ page }) => {
     test.setTimeout(tileLoadTimeout + 60_000);
     const inspection = await openTileAndReadLighting(page, "world-tile-lighting-20_21-desktop.png");
     writeFileSync("test-results/world-tile-lighting-20_21-inspection.json", JSON.stringify(inspection, null, 2));

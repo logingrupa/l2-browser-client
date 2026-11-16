@@ -119,7 +119,7 @@ describe("streamed native tile chunks", () => {
       const binding = { frame: () => null, setCulling: (enabled: boolean) => { recorded.cullingSettings.push(enabled); } };
       return {
         visibility: { binding, inspection: () => ({ gap: null, culling: recorded.cullingSettings.at(-1) ?? false, targetChunkIds: [...recorded.bound].sort(), unmappedChunks: [] }) },
-        lighting: { environmentClock: null, inspection: () => ({ gap: null, sectionCount: recorded.bound.size,
+        lighting: { materialUniforms: null, inspection: () => ({ gap: null, sectionCount: recorded.bound.size,
           sections: [...recorded.bound].map(chunkId => ({ chunkId, lighting: "lightmapped" })) }) },
         movers: null, moverGap: null, mapEmitterPlacements: { gap: null, inspection: () => [] },
         addChunk: async (contents: NativeTileChunkSystemContents) => { recorded.added.push(contents.chunkId); recorded.bound.add(contents.chunkId); },
