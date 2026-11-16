@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-27-PLAN.md
-last_updated: "2026-11-16T16:20:24.716Z"
+stopped_at: Completed 03-32-PLAN.md
+last_updated: "2026-11-16T17:48:31.343Z"
 last_activity: 2026-11-14
 last_activity_desc: "Phase 03 plan 03-25 complete (shared skeletal material programs: 3,381 material-program units in the materialPrograms slice; skinned slots draw through the UE2 library with bone influences)"
-state_head: c167ee92ca044dc164af03d5903323729c4bddd2
+state_head: 18b87c0b3b7ff71ea80cc607c1e735f1cb951ad1
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 152
-  completed_plans: 130
+  completed_plans: 131
   percent: 0
 ---
 
@@ -176,6 +176,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P25 | 1h 30m | 3 tasks | 52 files |
 | Phase 3 P36 | 2h 48m | 3 tasks | 40 files |
 | Phase 03 P27 | 81min | 3 tasks | 15 files |
+| Phase 03 P32 | 60min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -476,6 +477,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 03]: 03-27: a class with its WaitAnimName families keeps the profile gap actor-default-unresolved:RunAnimName until Q2b verifies the run, attack and death family getters (row 1217)
 - [Phase 03]: 03-27: every character animation set is the Animation the class Mesh default root mesh serializes (Q3, row 1218)
 - [Phase 03]: 03-27: no client character route on idle alone; the sandbox keeps each key's gap marker (row 1219)
+- [Phase 03]: 03-32: TextBoxes whose default text is the XDAT sentinel 'undefined' draw nothing and carry textbox-text-undefined-sentinel (row 1220)
+- [Phase 03]: 03-32: fontType 0 and 1 draw with the L2Font-e bitmap fonts and list font-bitmap-branch-unconfirmed while GIsTrueFontUse stays open (row 1221)
 
 ### Pending Todos
 
@@ -551,7 +554,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Touched tiles that failed the union load sweep (INT-01, 03-24): fixed in f10993d. The shared native PNG decoder took at most 1,024 pixels per edge, a terrain preview bound, and the static mesh programs of `tile:18_24`, `20_16`, `21_16`, `22_16`, `22_19`, `22_20` and `23_14` pin 8 of the 8,429 library textures, which have a 2,048-pixel edge; the decoder now takes the WebGPU guaranteed 8,192-pixel edge. The 7 tiles re-swept under world lane catalog cddfe152 pass 7 of 7 (`artifacts/lane-store/world/load-checks/cddfe152...json`, SHA-256 595f8a2e...). Left: union bfd4c648 still records the 7 pre-fix failures, because its catalog is unchanged. Unblocked by: the next union catalog sweep of these 7 keys.
 
 - Skill sound through skillsoundgrp (SC3b, ACT-05): narrowed (02-95). Every skillsoundgrp row is a sealed `actor-sounds:skill-sound-row:<n>` unit (1,365 bundles, 11 no-sound, 22 ambiguous) on the routes of `recipes/actors/combat-sound-routes.json`; census `docs/parts/audio/actor-sound-census.json`. Missing: playback of the cast and shot member slots on the skill-cast event, joined from skill id and level through GetSkillSoundData 0x10478280 (the level row, else the level 1 row) to `actor-sounds:skill-sound-row:<n>`; the converted coverage rule for `skill-sound-row:<n>` keys in `scripts/native_store/gap_census_derived_parts.py` (1,403 rows read `step-pending:skill-sounds`); the caster-indexed 2 x 15 table (`skill-sound-caster-index-unresolved:<stage>`, cast 356 and shot 398 rows, index pawn+0x698 unnamed, NPC casters and slot 14); the unrouted third members DAT 4, 13 and 22 (`skill-sound-member-unrouted:<ordinal>`, 143, 13 and 1 rows); whether a stage with several non-empty members plays one or all; skill 5006 init plays PlaySkillSound(caster, caster, 1) at 0x104fa6ad with no effect spawn, and DAT sound names without a group (SkillSound6.frintessa_08) resolve to grouped exports (skillsound6.frintessa.frintessa_08) by a resolver not yet proved (IMPORTA-PC new-skill-row-bindings.json 63cbc253...a1fb, not replay-checked). Unblocked by: an actors-lane playback module plus its integration wiring with the world mixer through `createSkillCastPresentation` (02-84); integration reading the sealed skill-sound-row receipts in the coverage rule; a native answer for the NPC index path and the packet field that sets the mesh type; a verified consumer or verified negative for the third members; an IMPORTA-PC native session capturing a skill with two cast members; a replay check of the 5006 call and of the grouped-name resolver.
-- Window data (SC4e, UI-02, NET-05): Missing: `CPBarTex` and `MPBarTex` stay `adapter-field-absent:cp` and `:mp`; every TextBox renders `label-unresolved`; the data-ui lane window gap rows hold 110 `control-type-unsupported:<type>` rows from `scripts/data/window_control_gaps.py`, one per window over 20 first types (02-VERIFICATION: 460 controls of 25 types in 110 windows); lane ui coverage 46/248 converted, 202 gap. Unblocked by: CP and MP from server data (the Needs Human SC4e line, NET-05); TextBox labels by the client source that names each TextBox's text, read with a cited layout and an exact cross-check (rule G7); the control types by one renderer each, declared in `recipes/data/native-window-control-types.json` with its agreement test.
+- Window data (SC4e, UI-02, NET-05): Missing: `CPBarTex` and `MPBarTex` stay `adapter-field-absent:cp` and `:mp`; TextBoxes draw with converted client fonts since 03-32 (89 of 837 drawn on union 06883731; 388 carry `textbox-text-undefined-sentinel`, 316 `textbox-text-set-at-runtime`, 35 `font-gdi-face-unconverted:<4|6|7>`, 9 `textbox-tail-unresolved`; open: the "undefined" sentinel and textId, runtime GIsTrueFontUse, GDI faces); the data-ui lane window gap rows hold 110 `control-type-unsupported:<type>` rows from `scripts/data/window_control_gaps.py`, one per window over 20 first types (02-VERIFICATION: 460 controls of 25 types in 110 windows); lane ui coverage 46/248 converted, 202 gap. Unblocked by: CP and MP from server data (the Needs Human SC4e line, NET-05); the control types by one renderer each, declared in `recipes/data/native-window-control-types.json` with its agreement test.
 - Map emitter playback (WORLD-01, FX-01): Missing: `loadTileMapEmitterPlacements` in `src/scene/world/tileMapEmitterPlacements.ts` lists every placement with `playing: false` and none reaches `playTileMapEmitters` in `src/effects/particles/render/mapEmitterPlayback.ts`; the converter half (d70fe6d) gaps each blocked record, and after 02-98 the struct rows are 0 (one value left, 20_17 VertMeshEmitter `AnimRate` with a non-finite element) while 6,984 `map-emitter-resource-unconverted:<object>` and 114 class rows remain; the world lane emitters step rows are 77 pass, 69 gap (object gaps) and 2 pending on catalog ba87e45c, and a pass row does not mean the placement plays (independent review slice-11, P716). Unblocked by: a carry rule for non-finite authored floats with the VertMeshEmitter port, converting the referenced emitter meshes and textures, merging the class defaults in the runtime binding (row 651), reading nested values in the runtime placement inspection, then starting each placement without a gap row through `playTileMapEmitters` and reading `playing` from it; no person is needed.
 - Skill dispatch candidates (ACT-06, FX-01, 02-99, P1165 to P1173): R2 of the Engine.dll 4dd2f63c dispatch extraction (SHA-256 85c4436d0b4b2ab26d6b19899a7a860fdfc26a9113498cba2d25fc62ec0e5fd2) is replay-verified on the lock-equal E: client (wf_f4663a6a-7bd: 14,505 of 14,505 instruction occurrences, 823 of 823 data slices, all 1,483 candidate bindings recomputed) and pinned as `recipes/actors/skill-dispatch-candidates.json` with the binding kind `reviewed-native-dispatch-candidates`: 11,210 empty-description rows carry stage, case, candidate classes and entry gate (cast style 0 transient, 12 union-target, or none) and 4 rows animation notify candidates (wf_943f023e-86b), all `skill-dispatch-candidate-runtime-unresolved`; 236 class units sealed, 196 published on actors lane catalog 8458dff2. Missing: which candidate branch plays (1,075 branches with both sides, 3,208 calls not traversed, all 292 cases intraprocedural only); the playback join from a candidate row to its class bundle; 40 unpublished class units (17 converter refusals, 20 unbound simulated components, 3 `no-exact-skillsound-row`); any binding for the 6,361 rows that keep `native-skill-dispatch-required`, 3,481 of them Passive Skill rows not proven effect-free (IMPORTA-PC r7 126bfeec...439c, not replay-checked: the active skill window sends only ASkill0..7 controls, passive controls are PSkill, UseSkill looks up level 1 and branches on cast style 12, UI event Type 1 is not DAT operate_type 2); 947 unresolved rows over 114 skill ids with a nonzero cast style, empty ani_char and no mobskillanimgrp match, a candidate for a narrower gap reason (IMPORTA-PC r4 db6d337c...4585: SetMagicInfo clears pawn+0x534, every SetSkillAnim token compare fails, no NPC override supplies a sequence, InitSkillProcess rejects the zero count; not proof of no visual elsewhere). Unblocked by: one runtime question on IMPORTA-PC (a Debug session under DEC-OWN-13 or one question to the REA thread) that names the branch per stage and gate, then that join; a replay check of the r4 and r7 reports before a narrower gap reason is written. The animation-notify bindings bundle (IMPORTA-PC r2.zip 354a8e42...a8a, its verify.py not run) is checked by our own replay of report bd1bbaad...070ba; the third bundle (skill-effects-4dd2f63c-r3.zip 5e987999...c8fe) adds no skill binding and stays background.
 - Abnormal state effects (FX-01): replay-verified (verified facts `rea-in/20261113-roadmap-verify/verified-abnormal-state.md`, wf_5a900c18-10f 753/753 instructions and 44/44 data, inputs wf_3e8d6519-76b 147/147 and 144/144): APawn::UpdateAbnormalState 0x104b9870 picks effect classes by the 24 state bits at pawn+0x17d0, 17 handlers push a LineageEffect class and 7 have no class literal (PARALYZE, FLESH_STONE, DOT_MP stubs, BIGHEAD, CHANGE_TEXTURE, BIGBODY, STEALTH); five packet writers fill the word (PetInfoPacket 0x1042e430, MonRaceInfoPacket 0x10430780, UIPacket 0x104342f0, CIPacket 0x104366f0, NpcInfoPacket 0x1043a470); skillId is null on every record, so a state bit is never joined to a numerically equal skill id. Missing: the packet opcodes and field indices of the state word, and its route through GameWorldAdapter. Unblocked by: the wire field meaning from the server packets (NET), then the state word through GameWorldAdapter and a playback plan for the 17 class handlers.
@@ -626,6 +629,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-16T16:20:23.742Z
-Stopped at: Completed 03-27-PLAN.md
+Last session: 2026-11-16T17:48:30.417Z
+Stopped at: Completed 03-32-PLAN.md
 Resume file: None

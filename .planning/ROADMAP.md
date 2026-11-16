@@ -203,7 +203,7 @@ Plans:
   2. For world, actor and skill audio, listen-check results are recorded as labelled audible clips with verdicts; successful extraction or decoding is never recorded as a pass.
   3. Each mismatch becomes a converter fix (re-run shows the corrected result in the sandbox) or a listed gap; no tile is hand-patched.
   4. A stage A exit report states per part how many items were converted, load, were checked, and how many pass, mismatch, are unverified or are gaps, tied to the IMPORTA-PC hash lock.
-**Plans**: 14/36 plans executed (gap plans 03-21 to 03-36 added 2026-11-14 for the Phase 2 gaps)
+**Plans**: 15/36 plans executed (gap plans 03-21 to 03-36 added 2026-11-14 for the Phase 2 gaps)
 
 Plans:
 **Wave 1**
@@ -249,7 +249,7 @@ Plans:
 - [ ] 03-29-PLAN.md - Gap SC2e: delete the legacy combat audio route (ACT-05)
 - [ ] 03-30-PLAN.md - Gap SC2c: equipment slots and weapon attach (ACT-03)
 - [ ] 03-31-PLAN.md - Gap SC3b: skill sound join, stage playback, coverage rule (ACT-05)
-- [ ] 03-32-PLAN.md - Gap SC4e: client fonts and TextBox labels (UI-02)
+- [x] 03-32-PLAN.md - Gap SC4e: client fonts and TextBox labels (UI-02)
 - [ ] 03-33-PLAN.md - Gap SC4e: control tail layouts (UI-02)
 - [ ] 03-34-PLAN.md - Gap SC4e: skin, state and gauge control renderers (UI-02)
 - [x] 03-36-PLAN.md - Gap MAT: terrain layer programs and L2FogInfo values (MAT-01, MAT-02)
@@ -311,7 +311,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 |-------|----------------|--------|-----------|
 | 1. Foundations | 17/17 | In Progress | - |
 | 2. Stage A breadth | 99/99 | In Progress | - |
-| 3. Stage A checks | 14/36 | In Progress | - |
+| 3. Stage A checks | 15/36 | In Progress | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
 | 5. Native-parity polish | 0/TBD | Not started | - |
 | 6. Performance and build reproducibility | 0/TBD | Not started | - |
