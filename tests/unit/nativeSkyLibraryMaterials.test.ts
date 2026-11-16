@@ -103,6 +103,7 @@ describe("sky surfaces bound through the UE2 library", () => {
     expect([drawn.disableDepthWrite, drawn.forceDepthWrite]).toEqual([true, false]);
     expect(meshes[1]!.material).toBe(unportedMaterial);
     expect(binding.surfaces[1]!.reasons).toEqual(["material-class-unported:Engine.GlowModifier"]);
+    expect(scene.materials.some(material => material.name.startsWith("UE2 diagnostic:"))).toBe(false);
     expect(binding.environmentColours()).toEqual([]);
   });
 

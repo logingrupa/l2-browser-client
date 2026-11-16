@@ -8,6 +8,7 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
+import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
 import { AssetContainer } from "@babylonjs/core/assetContainer";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { loadNativeMaterial, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
@@ -167,6 +168,21 @@ describe("selected tile sky presentation", () => {
     sky?.dispose();
     expect(scene.meshes).toHaveLength(0);
     expect(scene.materials.some(material => material.name.startsWith("UE2 material:"))).toBe(false);
+  });
+
+  it("reports texturesReady from the library material each sky mesh draws with, not the glTF material it replaced", async () => {
+    tileSkyStore("resource", 1, [listedSkyBackground]);
+    const container = containerWithMeshes(scene, 1, [skyBackgroundRoot]);
+    const readyTexture = { isReady: () => true } as unknown as BaseTexture, unreadyTexture = { isReady: () => false } as unknown as BaseTexture;
+    vi.spyOn(container.materials[0]!, "getActiveTextures").mockReturnValue([unreadyTexture]);
+    vi.mocked(LoadAssetContainerAsync).mockResolvedValue(container);
+    vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null);
+    const drawnTextures = vi.spyOn(scene.meshes.find(mesh => mesh.name === "tile sky part 0")!.material!, "getActiveTextures").mockReturnValue([readyTexture]);
+    expect(sky?.inspection().texturesReady).toBe(true);
+    drawnTextures.mockReturnValue([unreadyTexture]);
+    expect(sky?.inspection().texturesReady).toBe(false);
+    sky?.dispose();
   });
 
   it("presents the tile sky resource with one mesh per material root", async () => {
