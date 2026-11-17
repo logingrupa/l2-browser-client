@@ -15,7 +15,7 @@ from world.minimap_textures import (convert_minimap_texture, converter_package_r
                                     store_converted_texture)
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_STEP_NAME, read_tile_census_row, read_tile_map_lock_record, require_tile_id,
                                 tile_map_path, tile_step_row, tile_unit_key)
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS, TILE_CENSUS_RELATIVE_PATH
 from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, ChunkPlanStepError, raw_unit_fingerprint, sealed_chunk_plan
 from world.tile_json_resource import write_tile_json_resource

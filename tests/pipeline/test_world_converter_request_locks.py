@@ -18,7 +18,7 @@ from test_world_audio_step import wav_bytes
 from world import exact_sound_sources, minimap_textures, mover_step, static_mesh_step
 from world.exact_sound_sources import ResolvedSound
 from world.mover_class_defaults import MOVER_CLASS_UNIT_KEY
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 TILE_ID = '20_20'
 LOCK_RECORD = {'eSha256': 'e' * 64}

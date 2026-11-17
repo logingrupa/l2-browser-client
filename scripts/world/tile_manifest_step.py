@@ -24,7 +24,7 @@ from world.static_mesh_step import STATIC_MESH_STEP_NAME, sealed_static_meshes, 
 from world.terrain_chunk_step import TERRAIN_CHUNK_RESOURCE_NAME, TERRAIN_STEP_NAME, sealed_terrain_chunks
 from world.terrain_material_step import TERRAIN_MATERIAL_STEP_NAME, sealed_terrain_material, tile_terrain_material_row
 from world.tile_chunk_plan import chunk_plan_ledger
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
 TILE_MANIFEST_STEP_ALGORITHM_VERSION = 15

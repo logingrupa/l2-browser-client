@@ -25,7 +25,7 @@ from world.format5_texture_pixels import Format5PixelMismatch, require_png_equal
 from world.minimap_radar_route_recipe import read_minimap_radar_route_recipe
 from world.minimap_route_step import MINIMAP_ROUTE_UNIT_KEY, current_minimap_route, run_minimap_route_step
 from world.minimap_textures import converter_package_request
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 CLIENT_ROOT = Path('E:/Lineage2-client')
 RECIPE = read_minimap_radar_route_recipe()['document']

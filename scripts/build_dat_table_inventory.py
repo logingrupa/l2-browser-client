@@ -1,5 +1,4 @@
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import re
@@ -7,7 +6,7 @@ import sys
 
 from data.hair_table_adapter import ELBERA_HAIR_SELECTION_SCRIPT_PATH, HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_PARSERS
 from data.pinned_elbera_module import ELBERA_COMMIT, ELBERA_ROOT
-from hash_reference_client_tree import canonical_json_bytes
+from hash_reference_client_tree import reference_tree_lock_sha256
 from native_catalog.table_layout_pins import CLIENT_DERIVED_LAYOUTS
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
 from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_HASHES, SCHEMA_ROOT, interlude_descriptor_links
@@ -206,7 +205,7 @@ def build_dat_table_inventory(client_access, elbera_root, decoded_tables_catalog
     return validate_dat_table_inventory({
         'schemaVersion': INVENTORY_SCHEMA_VERSION,
         'descriptorSha256': SCHEMA_HASHES[DESCRIPTOR_FILE],
-        'referenceTreeLockSha256': hashlib.sha256(canonical_json_bytes(client_access.lock.document)).hexdigest(),
+        'referenceTreeLockSha256': reference_tree_lock_sha256(client_access.lock.document),
         'rows': sorted(rows, key=lambda row: row['table']),
     })
 

@@ -29,7 +29,7 @@ from world.static_placement_plan import FAILED_STATUS
 from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.struct_property_values import decode_binary_struct_hex
 from world.surface_material_programs import material_gap_row_status
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle

@@ -29,7 +29,7 @@ from world.static_placement_plan import (FAILED_STATUS, PLACEMENT_CLASS_UNSUPPOR
                                          static_mesh_actor_subclass_actors, static_mesh_actors)
 from world.terrain_chunk_step import sealed_terrain_chunks
 from world.terrain_collision_source import read_terrain_collision
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource

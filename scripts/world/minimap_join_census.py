@@ -11,6 +11,7 @@ import hashlib
 import json
 from typing import NamedTuple
 
+from hash_reference_client_tree import reference_tree_lock_sha256
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
@@ -21,7 +22,6 @@ from world.minimap_route_step import (EVERY_TILE_OPEN_IDS, RADAR_CASE_RULE, RADA
 from world.minimap_sources import MINIMAP_TABLE_PATHS, MINIMAP_TILE_PACKAGE_PATHS, decoded_table_rows, locked_tile_ids, tile_frame_extent
 from world.minimap_textures import export_named, read_texture_package, texture_package_index
 from world.raw_map_step import read_tile_map_lock_record
-from world.tile_census import reference_tree_lock_sha256
 from world.tile_chunk_plan import ChunkPlanStepError, sealed_chunk_plan
 from world.zone_name_keys import zone_key_table
 

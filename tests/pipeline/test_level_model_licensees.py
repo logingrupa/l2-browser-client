@@ -23,7 +23,7 @@ from world.level_model import LevelModelLayoutError, read_level_model
 from world.reader_cross_check_rows import level_model_reader_fixture, read_cross_check_rows
 from world.reader_licensee_layouts import (LEVEL_MODEL_READER, MAP_ACTOR_CROSS_CHECK_TILES, READER_LICENSEE_LAYOUTS, REVIEWED_PACKAGE_VERSION,
                                            require_reviewed_reader_layout)
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 ELIGIBLE_MAP_LICENSEES = (28, 23, 25, 30, 18, 31, 20, 19)
 LEVEL_MODEL_SOURCE = ROOT / 'scripts/world/level_model.py'

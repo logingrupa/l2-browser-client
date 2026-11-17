@@ -6,12 +6,11 @@ if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
 
 import argparse
-import hashlib
 import json
 from pathlib import PurePosixPath
 import re
 
-from hash_reference_client_tree import canonical_json_bytes
+from hash_reference_client_tree import reference_tree_lock_sha256
 from native_assets_lib.texture_mips import REVIEWED_VERSIONS
 from native_catalog.ue2 import FormatError, summary
 from reference_client_guard import require_reference_client
@@ -117,15 +116,11 @@ def validate_texture_package_census(census):
     return census
 
 
-def reference_tree_lock_sha256(lock):
-    return hashlib.sha256(canonical_json_bytes(lock.document)).hexdigest()
-
-
 def build_texture_package_census(client_access, lock):
     package_paths = lock_equal_texture_package_paths(lock)
     return validate_texture_package_census({
         'schemaVersion': TEXTURE_PACKAGE_CENSUS_SCHEMA_VERSION,
-        'referenceTreeLockSha256': reference_tree_lock_sha256(lock),
+        'referenceTreeLockSha256': reference_tree_lock_sha256(lock.document),
         'packages': [texture_package_census_row(client_access, path) for path in package_paths],
     })
 

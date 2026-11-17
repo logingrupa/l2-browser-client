@@ -16,7 +16,7 @@ from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_pre
 from reference_client_guard import require_reference_client
 from world.eligible_tile_selection import failed_step_row, locked_tile_source_identity, own_step_row, seal_derived_step_row, unit_step_evidence
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
 
 FAILED_ROW_STATUS = 'failed'

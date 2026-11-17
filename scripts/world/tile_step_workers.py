@@ -11,7 +11,7 @@ from native_store.unit_ledger import FreeDiskFloorRefusedError, MachineWindowRef
 from world.eligible_tile_selection import (FAILED_STATUS, PASS_STATUS, StepSealMissingError, failed_step_row, own_step_row, sealed_tile_step,
                                            unit_step_evidence)
 from world.raw_map_step import tile_unit_key
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_step_gap_rows import UPSTREAM_BLOCKING_STATUSES, inherited_upstream_row
 
 BATCH_EXIT_DONE = 0

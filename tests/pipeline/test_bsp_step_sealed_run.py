@@ -20,7 +20,7 @@ from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
 from world import surface_material_programs
 from world.bsp_step import bsp_ledger, bsp_product_path, run_bsp_step
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 SIZED_SHADER = 'SyntheticSizedMaterials.SizedShader'
 SIZED_SHADER_PACKAGE_PATH = 'textures/SyntheticSizedMaterials.utx'

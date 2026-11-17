@@ -24,7 +24,7 @@ from world.exact_sound_sources import ConvertedSound, ResolvedSound, SoundSource
 from world.music_volume_join import join_music_volumes
 from world.placement_audio_inventory import inventory_placement_audio, placement_audio_properties
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record, tile_unit_key
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 import world.tile_music as tile_music
 from world.tile_manifest_step import tile_resources
 from world.tile_step_gap_rows import TileStepGapRows

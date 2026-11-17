@@ -19,7 +19,7 @@ from world.static_placement import ClassDefaults
 from world.struct_property_tag_rules import (STRUCT_PROPERTY_TAG_RULES_RELATIVE_PATH, StructPropertyTagRulesError, load_struct_property_tag_rules,
                                              read_struct_property_tag_rules)
 from world.struct_property_values import decode_property_tags
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_chunk_plan import read_locked_map_package
 
 RECIPE_PATH = ROOT / STRUCT_PROPERTY_TAG_RULES_RELATIVE_PATH

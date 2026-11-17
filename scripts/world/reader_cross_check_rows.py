@@ -26,7 +26,7 @@ from world.raw_map_step import raw_map_recipe, read_tile_map_lock_record, tile_m
 from world.reader_licensee_layouts import (G16_HEIGHTMAP_READER, LEVEL_MODEL_READER, MAP_ACTOR_READER, READER_LICENSEE_LAYOUTS,
                                            REVIEWED_PACKAGE_VERSION, TERRAIN_INFO_READER, reader_cross_check_tile, reader_fixture_path)
 from world.terrain_height_texture import read_g16
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 CROSS_CHECKS_RELATIVE_PATH = 'tests/fixtures/world-readers/cross-checks.json'
 AMBIENT_SOUND_CLASS_OBJECT = 'Engine.AmbientSoundObject'

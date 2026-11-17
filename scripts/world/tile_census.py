@@ -11,26 +11,25 @@ import hashlib
 import json
 import re
 
-from hash_reference_client_tree import canonical_json_bytes as lock_canonical_json_bytes
-from native_catalog.ue2 import FormatError, Package, summary
+from hash_reference_client_tree import reference_tree_lock_sha256
+from native_catalog.ue2 import FormatError, Package
 from world.map_actor_properties import actor_properties, decode_property, property_value
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row, write_gap_rows
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
+from world.package_header import read_package_header
 from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, MAP_READERS, reader_gap_reason, reviewed_reader_pairs
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
 from world.tile_census_validation import (CENSUS_READER_NAMES, DECLARED_TERRAIN_MAP_BASIS, ELIGIBLE_STATUS, GAP_STATUS, GATE_FAIL,
                                           GATE_MISSING, GATE_NOT_APPLICABLE, GATE_PASS, NON_TILE_KIND, PACKAGE_NAME_TERRAIN_MAP_BASIS,
                                           TILE_CENSUS_RELATIVE_PATH, TILE_CENSUS_SCHEMA_VERSION, TILE_KIND, TileCensusError,
                                           validate_tile_census)
+from world.world_lane_names import WORLD_LANE_NAME, WORLD_PART_NAME
 
 DEFAULT_CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
-WORLD_LANE_NAME = 'world'
-WORLD_PART_NAME = 'world'
 CENSUS_STEP = 'census'
-PACKAGE_HEADER_PREFIX_BYTES = 128
 MAP_PATH_PATTERN = re.compile(r'maps/(?P<stem>[^/]+)\.unr', re.IGNORECASE)
 TILE_STEM_PATTERN = re.compile(r'\d{2}_\d{2}')
 TERRAIN_HEIGHT_PACKAGE_PATH_FORMAT = 'textures/T_{tile_id}.utx'
@@ -66,17 +65,6 @@ def map_census_keys(lock_records):
     if len(set(keys)) != len(keys):
         raise TileCensusError(f'reference client lock maps give repeated census keys: {sorted(key for key in keys if keys.count(key) > 1)}')
     return sorted(census_keys, key=lambda census_key: census_key['key'])
-
-
-def read_package_header(client_access, relative_path):
-    path = client_access.require_equal_file(relative_path)
-    with open(path, 'rb') as stream:
-        prefix = stream.read(PACKAGE_HEADER_PREFIX_BYTES)
-    try:
-        package_summary = summary(prefix, PurePosixPath(relative_path).name)
-    except (FormatError, UnicodeError) as error:
-        return {'error': str(error)}
-    return {'packageVersion': package_summary['version'], 'licensee': package_summary['licenseeVersion'], 'wrapper': package_summary['wrapper']}
 
 
 def reviewed_pair_gate(readers, header):
@@ -184,10 +172,6 @@ def census_gap_row(row, lock_records):
 def tile_census_gap_rows(census, lock_records):
     reason_patterns = load_gap_reason_patterns()
     return [validate_gap_row(census_gap_row(row, lock_records), reason_patterns) for row in census['maps']]
-
-
-def reference_tree_lock_sha256(lock):
-    return hashlib.sha256(lock_canonical_json_bytes(lock)).hexdigest()
 
 
 def census_reviewed_reader_pairs():

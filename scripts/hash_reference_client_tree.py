@@ -92,6 +92,10 @@ def canonical_json_bytes(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
 
 
+def reference_tree_lock_sha256(lock_document):
+    return hashlib.sha256(canonical_json_bytes(lock_document)).hexdigest()
+
+
 def require_tree_root(root):
     if not os.path.isdir(root):
         raise SystemExit('Reference client root is missing or not a directory: ' + root)

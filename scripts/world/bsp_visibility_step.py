@@ -20,7 +20,7 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_mesh_step import sealed_static_meshes
 from world.static_placement import ClassDefaults
 from world.struct_property_tag_rules import read_struct_property_tag_rules
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource

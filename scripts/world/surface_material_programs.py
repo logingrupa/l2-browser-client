@@ -18,7 +18,7 @@ from world.material_texture_images import (material_texture_image_pins, reviewed
                                            write_material_texture_images)
 from world.static_mesh_step import STATIC_MESH_CONVERTER_FOLDER, conversion_failure_reason
 from world.static_placement_plan import FAILED_STATUS
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
 UNPORTED_NODE_STATUS = 'unported'

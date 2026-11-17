@@ -23,7 +23,7 @@ from world.minimap_step import MINIMAP_STEP_NAME, run_minimap_step, sealed_minim
 from world.minimap_textures import MinimapTextureError
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record,
                                 tile_unit_key)
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import ELIGIBLE_STATUS, TILE_CENSUS_RELATIVE_PATH
 from world.tile_chunk_plan import CHUNK_PLAN_PRODUCT_NAME, CHUNK_PLAN_STEP_ALGORITHM_VERSION, CHUNK_PLAN_STEP_NAME, chunk_plan_unit_config
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, tile_resources

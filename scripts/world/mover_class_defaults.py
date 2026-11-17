@@ -13,7 +13,7 @@ from native_store.store_paths import REPOSITORY_ROOT, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records, sha256_of_file
 from world.map_sources import file_hash, safe_path
 from world.raw_map_step import PRODUCTS_FOLDER_NAME
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 MOVER_CLASS = 'Engine.Mover'
 MOVER_CLASS_UNIT_KEY = 'class:Engine.Mover'

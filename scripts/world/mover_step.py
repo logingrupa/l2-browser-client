@@ -20,7 +20,7 @@ from world.static_mesh_step import (ConvertedStaticMesh, colour_stream_gap_rows,
                                     write_static_mesh_store_files)
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_json_resource import write_tile_json_resource
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan

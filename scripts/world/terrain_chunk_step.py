@@ -19,7 +19,7 @@ from world.terrain_layers import (QUALIFIED_MASK_UV_FORMULA, QUALIFIED_MASK_UV_R
 from world.terrain_rectangle_mesh import build_terrain_rectangle_gltf
 from world.terrain_seam_strip import (seam_gap_statuses, seam_neighbour_inputs, seam_strip_summary, terrain_seam_rules_sha256,
                                       terrain_seam_strip)
-from world.tile_census import WORLD_LANE_NAME, WORLD_PART_NAME
+from world.world_lane_names import WORLD_LANE_NAME, WORLD_PART_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, read_raw_terrain_record, sealed_chunk_plan, serialized_location
 

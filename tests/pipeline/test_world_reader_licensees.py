@@ -30,7 +30,7 @@ from world.raw_map_step import (RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, S
 from world.reader_cross_check_rows import (build_map_into_temporary_directory, canonical_json_sha256, declared_terrain_map_reference,
                                            our_actor_property_projection, our_terrain_sector_projection, read_cross_check_rows,
                                            reader_cross_check_row)
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.reader_licensee_layouts import (BASELINE_LICENSEE, G16_HEIGHTMAP_READER, MAP_ACTOR_READER, MAP_READERS, RAW_MAP_READER,
                                            READER_LICENSEE_LAYOUTS, REVIEWED_PACKAGE_VERSION, TERRAIN_INFO_READER,
                                            require_reviewed_reader_layout, reviewed_reader_pairs)

@@ -25,7 +25,7 @@ from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles
 from world.surface_material_programs import material_gap_row_status, world_material_sources
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 

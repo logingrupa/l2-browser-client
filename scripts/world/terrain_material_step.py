@@ -13,7 +13,7 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.surface_material_programs import (material_outcome_gap_rows, material_package_paths, material_program_outcome, program_root_is_ported,
                                              world_material_sources)
 from world.terrain_chunk_step import sealed_terrain_chunks
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
 TERRAIN_MATERIAL_STEP_ALGORITHM_VERSION = 1

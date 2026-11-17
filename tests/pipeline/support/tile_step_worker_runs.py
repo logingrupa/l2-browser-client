@@ -14,7 +14,7 @@ from test_convert_tile_batch import (SYNTHETIC_EXPECTED_COST, SYNTHETIC_STEP_NAM
 from test_world_tile_batch_phases import raw_is_sealed
 from world import tile_step_workers
 from world.convert_tile_batch import batch_summary, run_tile_batch
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_step_workers import NO_STOPPED_POSITION, TileStepRun
 
 LOCK_RECORDS_FOLDER_NAME = 'locks-under-the-lane-lock'

@@ -22,7 +22,8 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_mesh_colour_streams import colour_streams_store_path, static_mesh_colour_stream_outcome
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actor_subclass_actors, static_mesh_actors
-from world.tile_census import WORLD_LANE_NAME, read_package_header
+from world.package_header import read_package_header
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 

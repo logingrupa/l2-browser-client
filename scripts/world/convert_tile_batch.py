@@ -26,7 +26,8 @@ from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATU
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, locked_tile_map_bytes, tile_unit_key
 from world.terrain_seam_strip import SEAM_ROLE_TILE_STEPS, neighbour_tile_id
-from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
+from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
 from world.tile_step_gap_rows import first_blocking_row
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, STALE_SEAL_STATE, TILE_STEP_SEAL_CHECKS, UNSEALED_STATE, unit_step_seal

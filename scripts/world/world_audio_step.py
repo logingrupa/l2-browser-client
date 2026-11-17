@@ -17,7 +17,7 @@ from world.placement_audio_inventory import inventory_placement_audio, placement
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_unit_key
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement_plan import FAILED_STATUS
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle

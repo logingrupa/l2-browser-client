@@ -23,7 +23,7 @@ from world.minimap_sources import decoded_table_rows
 from world.minimap_textures import (TEXTURE_SOURCE_READABLE_STATUS, convert_minimap_texture, converter_package_request, export_named,
                                     minimap_texture_converter, read_texture_package, store_converted_texture, texture_package_index)
 from world.raw_map_step import PRODUCTS_FOLDER_NAME
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_json_resource import write_tile_json_resource
 from world.zone_name_keys import zone_key_table
 
