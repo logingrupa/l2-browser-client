@@ -31,7 +31,7 @@
  },
  "hairParts": {
   "path": "recipes/actors/character-hair-parts.json",
-  "sha256": "dfea6a6b1f5236d2c1e1eb4e52a0b4bb47a62a5463b3a4b6b3bbc0d9af72dce9"
+  "sha256": "46c07d36569555ae5419fea5bbdff3b0d6ad632e39a194fd4d696c0d0c6f6bbf"
  },
  "rows": [
   {
@@ -56,6 +56,7 @@
       "material": "MFighter.Hair.MFighter_m000_t00_m00_bh",
       "mesh": "Fighter.MFighter_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -64,6 +65,7 @@
       "material": "MFighter.Hair.MFighter_m000_t00_m00_ah",
       "mesh": "Fighter.MFighter_m000_m00_ah",
       "pawnSlot": 5,
+      "route": "ordinary",
       "status": "resolved"
      }
     ],
@@ -130,6 +132,7 @@
       "material": "FFighter.Hair.FFighter_m000_t00_m00_bh",
       "mesh": "Fighter.FFighter_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -138,6 +141,7 @@
       "material": "FFighter.Hair.FFighter_m000_t00_m00_ah",
       "mesh": "Fighter.FFighter_m000_m00_ah",
       "pawnSlot": 5,
+      "route": "ordinary",
       "status": "resolved"
      }
     ],
@@ -204,6 +208,7 @@
       "material": "mdarkelf.Hair.MDarkElf_m000_t00_m00_bh",
       "mesh": "DarkElf.MDarkElf_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -265,7 +270,7 @@
    "gaps": [
     {
      "field": "hair",
-     "reason": "skinned-part-bone-missing:Hair01,Hair10,Hair11,Hair12,Hair13,Hair06,Hair07,Hair08,Hair09,Hair02,Hair03,Hair04,Hair05"
+     "reason": "dynamic-hair-simulation-unported:back"
     }
    ],
    "hair": {
@@ -281,6 +286,7 @@
       "material": "fdarkelf.Hair.FDarkElf_m000_t00_m00_bh",
       "mesh": "DarkElf.FDarkElf_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "dynamic",
       "status": "resolved"
      },
      {
@@ -289,11 +295,12 @@
       "material": "fdarkelf.Hair.FDarkElf_m000_t00_m00_ah",
       "mesh": "DarkElf.FDarkElf_m000_m00_ah",
       "pawnSlot": 5,
+      "route": "ordinary",
       "status": "resolved"
      }
     ],
     "meshType": 3,
-    "reason": "skinned-part-bone-missing:Hair01,Hair10,Hair11,Hair12,Hair13,Hair06,Hair07,Hair08,Hair09,Hair02,Hair03,Hair04,Hair05",
+    "reason": "dynamic-hair-simulation-unported:back",
     "status": "gap"
    },
    "helmet": {
@@ -355,6 +362,7 @@
       "material": "mdwarf.Hair.MDwarf_m000_t00_m00_bh",
       "mesh": "Dwarf.MDwarf_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -427,6 +435,7 @@
       "material": "fdwarf.Hair.FDwarf_m000_t00_m00_bh",
       "mesh": "Dwarf.FDwarf_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -435,6 +444,7 @@
       "material": "fdwarf.Hair.FDwarf_m000_t00_m00_ah",
       "mesh": "Dwarf.FDwarf_m000_m00_ah",
       "pawnSlot": 5,
+      "route": "ordinary",
       "status": "resolved"
      }
     ],
@@ -501,6 +511,7 @@
       "material": "melf.Hair.MElf_m000_t00_m00_bh",
       "mesh": "Elf.MElf_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -509,6 +520,7 @@
       "material": "melf.Hair.MElf_m000_t00_m00_ah",
       "mesh": "Elf.MElf_m000_m00_ah",
       "pawnSlot": 5,
+      "route": "ordinary",
       "status": "resolved"
      }
     ],
@@ -564,7 +576,7 @@
    "gaps": [
     {
      "field": "hair",
-     "reason": "skinned-part-bone-missing:Hair01,Hair02,Hair03,Hair04,Hair05,Hair10,Hair11,Hair12,Hair13,Hair06,Hair07,Hair08,Hair09"
+     "reason": "dynamic-hair-simulation-unported:back"
     }
    ],
    "hair": {
@@ -580,6 +592,7 @@
       "material": "felf.Hair.FElf_m000_t00_m00_bh",
       "mesh": "Elf.FElf_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "dynamic",
       "status": "resolved"
      },
      {
@@ -588,11 +601,12 @@
       "material": "felf.Hair.FElf_m000_t00_m00_ah",
       "mesh": "Elf.FElf_m000_m00_ah",
       "pawnSlot": 5,
+      "route": "ordinary",
       "status": "resolved"
      }
     ],
     "meshType": 7,
-    "reason": "skinned-part-bone-missing:Hair01,Hair02,Hair03,Hair04,Hair05,Hair10,Hair11,Hair12,Hair13,Hair06,Hair07,Hair08,Hair09",
+    "reason": "dynamic-hair-simulation-unported:back",
     "status": "gap"
    },
    "helmet": {
@@ -654,6 +668,7 @@
       "material": "MMagic.Hair.MMagic_m000_t00_m00_bh",
       "mesh": "Magic.MMagic_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -662,6 +677,7 @@
       "material": "MMagic.Hair.MMagic_m000_t00_m00_ah",
       "mesh": "Magic.MMagic_m000_m00_ah",
       "pawnSlot": 5,
+      "route": "ordinary",
       "status": "resolved"
      }
     ],
@@ -728,6 +744,7 @@
       "material": "FMagic.Hair.FMagic_m000_t00_m00_bh",
       "mesh": "Magic.FMagic_M000_M00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -736,6 +753,7 @@
       "material": "FMagic.Hair.FMagic_m000_t00_m00_ah",
       "mesh": "Magic.FMagic_m000_m00_ah",
       "pawnSlot": 5,
+      "route": "ordinary",
       "status": "resolved"
      }
     ],
@@ -788,12 +806,7 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "rigid-part-bone-unmatched:Bip01 Pelvis,Bip01 Spine,Bip01 Spine1,bip01 spine2,Bip01 Neck,Bip01 head,Bip01 HeadNub,Bip01 L Clavicle,Bip01 L UpperArm,Bip01 L Forearm,Bip01 L Hand,Bip01 L Finger0,Bip01 L Finger01,Bip01 L Finger0Nub,Bip01 L Finger1,Bip01 L Finger11,Bip01 L Finger1Nub,Shield_L_Bone,Weapon_L_Bone,Shoulder_L_Bone,Bip01 R Clavicle,Bip01 R UpperArm,Bip01 R Forearm,Bip01 R Hand,Bip01 R Finger0,Bip01 R Finger01,Bip01 R Finger0Nub,Bip01 R Finger1,Bip01 R Finger11,Bip01 R Finger1Nub,Shield_R_Bone,Weapon_R_Bone,Shoulder_R_Bone,Cape_Bone,Bip01 L Thigh,Bip01 L Calf,Bip01 L Foot,Bip01 L Toe0,Bip01 L Toe0Nub,Bip01 R Thigh,Bip01 R Calf,Bip01 R Foot,Bip01 R Toe0,Bip01 R Toe0Nub,Sheath_L_Bone,Bone08"
-    }
-   ],
+   "gaps": [],
    "hair": {
     "appearance": {
      "face": 0,
@@ -807,6 +820,7 @@
       "material": "MOrc.Hair.MOrc_m000_t00_m00_bh",
       "mesh": "Orc.MOrc_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -817,8 +831,8 @@
      }
     ],
     "meshType": 10,
-    "reason": "rigid-part-bone-unmatched:Bip01 Pelvis,Bip01 Spine,Bip01 Spine1,bip01 spine2,Bip01 Neck,Bip01 head,Bip01 HeadNub,Bip01 L Clavicle,Bip01 L UpperArm,Bip01 L Forearm,Bip01 L Hand,Bip01 L Finger0,Bip01 L Finger01,Bip01 L Finger0Nub,Bip01 L Finger1,Bip01 L Finger11,Bip01 L Finger1Nub,Shield_L_Bone,Weapon_L_Bone,Shoulder_L_Bone,Bip01 R Clavicle,Bip01 R UpperArm,Bip01 R Forearm,Bip01 R Hand,Bip01 R Finger0,Bip01 R Finger01,Bip01 R Finger0Nub,Bip01 R Finger1,Bip01 R Finger11,Bip01 R Finger1Nub,Shield_R_Bone,Weapon_R_Bone,Shoulder_R_Bone,Cape_Bone,Bip01 L Thigh,Bip01 L Calf,Bip01 L Foot,Bip01 L Toe0,Bip01 L Toe0Nub,Bip01 R Thigh,Bip01 R Calf,Bip01 R Foot,Bip01 R Toe0,Bip01 R Toe0Nub,Sheath_L_Bone,Bone08",
-    "status": "gap"
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
     "appliedBy": "equipment-03-30",
@@ -879,6 +893,7 @@
       "material": "FOrc.Hair.FOrc_m000_t00_m00_bh",
       "mesh": "Orc.FOrc_m000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -951,6 +966,7 @@
       "material": "MShaman.Hair.MShaman_m000_t00_m00_bh",
       "mesh": "Shaman.MShaman_M000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
@@ -1023,6 +1039,7 @@
       "material": "FShaman.Hair.FShaman_m000_t00_m00_bh",
       "mesh": "Shaman.FShaman_M000_m00_bh",
       "pawnSlot": 4,
+      "route": "ordinary",
       "status": "resolved"
      },
      {
