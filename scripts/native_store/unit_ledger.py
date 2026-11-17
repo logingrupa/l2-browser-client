@@ -19,7 +19,7 @@ from native_store.step_source_modules import (StepSourceModulesError, require_st
                                               step_converter_sources_sha256)
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, STEP_NAME_PATTERN, StorePathError, confined_child_path,
                                       lane_store_root, lane_work_root, refuse_reparse_points, require_known_lane_name,
-                                      require_portable_relative_path)
+                                      require_lane_write_outside_real_lane_stores, require_portable_relative_path)
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, lock_file_identity, read_reference_client_lock
 
 BATCH_MINIMUM_FREE_BYTES = 4 * 1024 ** 3
@@ -316,7 +316,7 @@ class UnitLedger:
         require_sha256(fingerprint, 'unit fingerprint')
         if self.is_sealed(unit_key, fingerprint):
             raise UnitLedgerError(f'unit {unit_key} step {self.step} is already sealed with this fingerprint; check is_sealed first')
-        step_directory = self.unit_step_directory(unit_key)
+        step_directory = require_lane_write_outside_real_lane_stores(self.unit_step_directory(unit_key))
         if os.path.lexists(step_directory):
             if not refuse_reparse_points(step_directory).is_relative_to(self.work_root):
                 raise UnitLedgerError(f'stale unit folder escapes the work root: {step_directory}')

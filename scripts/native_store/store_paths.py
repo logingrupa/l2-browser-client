@@ -10,6 +10,8 @@ from types import MappingProxyType
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 LANE_OWNERSHIP_PATH = REPOSITORY_ROOT / '.planning' / 'lanes.json'
+REAL_LANE_STORES_FOLDER = REPOSITORY_ROOT / 'artifacts' / 'lane-store'
+PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE = 'L2_PIPELINE_TEST_RUN'
 RESERVED_DEVICE_NAME_PATTERN = re.compile(r'(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?', re.IGNORECASE)
 UNSAFE_NAME_CHARACTER_PATTERN = re.compile(r'[:*?<>"|\x00-\x1f]')
 STEP_NAME_PATTERN = re.compile(r'^[a-z][a-z0-9-]{0,63}$')
@@ -23,6 +25,21 @@ class StorePathError(ValueError):
 
 class ConverterOutputRefusedError(StorePathError):
     pass
+
+
+class RealLaneStoreWriteRefusedError(ConverterOutputRefusedError):
+    pass
+
+
+def is_pipeline_test_run():
+    return os.environ.get(PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE) == '1'
+
+
+def require_lane_write_outside_real_lane_stores(path):
+    if is_pipeline_test_run() and Path(os.path.realpath(path)).is_relative_to(Path(os.path.realpath(REAL_LANE_STORES_FOLDER))):
+        raise RealLaneStoreWriteRefusedError(f'a pipeline test run may not write the real lane stores {REAL_LANE_STORES_FOLDER}; '
+                                             f'use a scratch copy: {path}')
+    return path
 
 
 def is_portable_name_part(part):

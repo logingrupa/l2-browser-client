@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -15,6 +16,8 @@ from native_assets_lib.class_defaults import (CLASS_DEFAULT_PROVENANCES, ClassDe
                                               ReferenceClientClassScripts, declared_fields, read_class_defaults_with_provenance,
                                               read_class_field_declarations)
 from native_catalog.effects import UELIB
+from native_store import store_paths
+from native_store.store_paths import PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE, RealLaneStoreWriteRefusedError
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 from synthetic_class_scripts import SyntheticClassScripts, scratch_work_root
 
@@ -74,6 +77,14 @@ def values_by_field(values):
 
 
 class SyntheticClassChainTests(unittest.TestCase):
+    def test_a_pipeline_test_run_refuses_a_class_default_cache_in_the_real_lane_stores_before_decompiling(self):
+        scratch_project = scratch_work_root(self, 'class-defaults-project-')
+        scripts = synthetic_chain_scripts()
+        with patch.object(store_paths, 'REAL_LANE_STORES_FOLDER', scratch_project / 'artifacts' / 'lane-store'),                 patch.dict(os.environ, {PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE: '1'}), self.assertRaises(RealLaneStoreWriteRefusedError):
+            read_class_defaults_with_provenance('Synthetic.Leaf', ['FieldA'], scratch_project / 'artifacts' / 'lane-store' / 'world' / 'work', scripts)
+        self.assertEqual(scripts.decompiled_classes, [])
+        self.assertFalse((scratch_project / 'artifacts').exists())
+
     def test_leaf_middle_and_unset_fields_carry_authored_class_default_and_ue_zero(self):
         values = read_class_defaults_with_provenance('Synthetic.Leaf', ['FieldA', 'FieldB', 'FieldC'], scratch_work_root(self, 'class-defaults-'),
                                                      synthetic_chain_scripts())

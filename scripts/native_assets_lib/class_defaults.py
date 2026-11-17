@@ -11,7 +11,7 @@ from native_catalog.effects import SourcePackages, UELIB_SHA256, parse_uc, read_
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.verified_file_writes import replace_file
-from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
+from native_store.store_paths import REPOSITORY_ROOT, require_converter_output, require_lane_write_outside_real_lane_stores
 
 CLASS_DEFAULT_PROVENANCES = ('authored', 'class-default', 'ue-zero')
 CLASS_DEFAULT_CACHE_FOLDER_NAME = 'class-defaults'
@@ -299,7 +299,7 @@ def enum_members_of_type(declared_type, chain):
 
 def cached_class_chain(class_name, work_root, class_scripts):
     require_qualified_class_name(class_name)
-    cache_folder = require_converter_output(REPOSITORY_ROOT, Path(work_root) / CLASS_DEFAULT_CACHE_FOLDER_NAME)
+    cache_folder = require_lane_write_outside_real_lane_stores(require_converter_output(REPOSITORY_ROOT, Path(work_root) / CLASS_DEFAULT_CACHE_FOLDER_NAME))
     return read_class_chain(class_name, class_scripts, cache_folder)
 
 

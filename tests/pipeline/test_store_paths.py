@@ -10,10 +10,11 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
-from native_store.store_paths import (ConverterOutputRefusedError, StorePathError, confined_child_path,
-                                      lane_gap_rows_path, lane_load_check_path, lane_store_root, lane_work_root,
-                                      read_lane_parts_by_name, refuse_reparse_points, require_converter_output,
-                                      require_portable_relative_path)
+from native_store import lane_roots, store_paths
+from native_store.store_paths import (PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE, REAL_LANE_STORES_FOLDER, ConverterOutputRefusedError,
+                                      RealLaneStoreWriteRefusedError, StorePathError, confined_child_path, lane_gap_rows_path,
+                                      lane_load_check_path, lane_store_root, lane_work_root, read_lane_parts_by_name, refuse_reparse_points,
+                                      require_converter_output, require_lane_write_outside_real_lane_stores, require_portable_relative_path)
 
 REPARSE_REFUSAL_PREFIX = 'Symlink/junction/reparse boundary refused: '
 CATALOG_SHA256 = 'a' * 64
@@ -159,6 +160,28 @@ class LanePathTests(StorePathTestCase):
         for catalog_sha256 in ('', 'A' * 64, 'a' * 63, 'g' * 64, None):
             with self.subTest(catalog_sha256=catalog_sha256), self.assertRaisesRegex(StorePathError, '^catalog SHA-256 must be'):
                 lane_load_check_path(self.project, 'world', catalog_sha256)
+
+
+class RealLaneStoreWriteGuardTests(StorePathTestCase):
+    def test_a_pipeline_test_run_refuses_a_real_lane_store_path_and_admits_a_scratch_lane_store_path(self):
+        real_unit_folder = REAL_LANE_STORES_FOLDER / 'world' / 'work' / 'tile__20_21' / 'raw'
+        scratch_unit_folder = lane_work_root(self.project, 'world') / 'tile__20_21' / 'raw'
+        with patch.dict(os.environ, {PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE: '1'}):
+            with self.assertRaisesRegex(RealLaneStoreWriteRefusedError, 'may not write the real lane stores'):
+                require_lane_write_outside_real_lane_stores(real_unit_folder)
+            self.assertEqual(require_lane_write_outside_real_lane_stores(scratch_unit_folder), scratch_unit_folder)
+
+    def test_without_the_test_run_flag_a_real_lane_store_path_is_admitted(self):
+        real_unit_folder = REAL_LANE_STORES_FOLDER / 'world' / 'work' / 'tile__20_21' / 'raw'
+        with patch.dict(os.environ):
+            os.environ.pop(PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE, None)
+            self.assertEqual(require_lane_write_outside_real_lane_stores(real_unit_folder), real_unit_folder)
+
+    def test_a_pipeline_test_run_refuses_to_create_the_lane_roots_of_the_real_lane_stores(self):
+        with patch.object(store_paths, 'REAL_LANE_STORES_FOLDER', self.project / 'artifacts' / 'lane-store'),                 patch.dict(os.environ, {PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE: '1'}):
+            with self.assertRaises(RealLaneStoreWriteRefusedError):
+                lane_roots.create_lane_work_and_store_roots(self.project, 'world')
+        self.assertFalse((self.project / 'artifacts' / 'lane-store').exists())
 
 
 class ConverterOutputGuardTests(StorePathTestCase):

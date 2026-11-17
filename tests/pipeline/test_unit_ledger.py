@@ -19,7 +19,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_store.canonical_json import canonical_json_bytes
 from native_store.converter_source_closure import process_scripts_source_index
 from native_store.gap_rows import GapRowError
-from native_store.store_paths import StorePathError
+from native_store import store_paths
+from native_store.store_paths import PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE, RealLaneStoreWriteRefusedError, StorePathError
 from native_store.step_source_modules import step_converter_sources_sha256
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, BELOW_NORMAL_PRIORITY_CLASS, BatchPreflightRefusedError,
                                       FreeDiskFloorRefusedError, MachineWindowRefusedError, UnitLedger, UnitLedgerError,
@@ -191,6 +192,15 @@ class UnitLedgerLifecycleTests(unittest.TestCase):
         for unit_key in ('', 'tile', 'tile:../x', 'tile:a/b', 'tile:a"b', 'tile:' + 'x' * 156):
             with self.subTest(unit_key=unit_key), self.assertRaises(UnitLedgerError):
                 unit_directory_name(unit_key)
+
+    def test_a_pipeline_test_run_refuses_to_begin_a_unit_in_the_real_lane_stores_and_leaves_no_unit_folder(self):
+        ledger = self.ledger()
+        fingerprint = ledger.unit_fingerprint([FIRST_INPUT_SHA256, SECOND_INPUT_SHA256], TILE_CONFIG)
+        with patch.dict(os.environ, {PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE: '1'}):
+            with patch.object(store_paths, 'REAL_LANE_STORES_FOLDER', self.project / 'artifacts' / 'lane-store'),                     self.assertRaisesRegex(RealLaneStoreWriteRefusedError, 'may not write the real lane stores'):
+                ledger.begin('tile:20_21', fingerprint)
+            self.assertFalse(self.work_root.exists())
+            self.assertTrue((ledger.begin('tile:20_21', fingerprint) / '.running.json').is_file())
 
     def test_refuses_a_foreign_work_root_an_invalid_step_and_an_invalid_algorithm_version(self):
         with self.assertRaises(UnitLedgerError):
