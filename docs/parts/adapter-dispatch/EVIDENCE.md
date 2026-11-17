@@ -42,7 +42,7 @@ The 2026-11-08 review covered nine 02-56 files at `606ae66` (17 blocking runs, 9
 
 ### Static-material reader widening (WORLD-01, 02-53)
 
-`python -B scripts/static_material_package_census.py --client E:/Lineage2-client` reads all 212 lock-equal `.usx` into `static-mesh-package-census.json` here. 02-53 added the UE123 licensees 12, 18, 0, 14 and 15 after Elbera `l2lib` cross-checks (`tests/fixtures/static-materials/cross-checks.json`, 145 real-client cases). 210 of 212 are reviewed; the two UE118 packages stay refused (UE123 slot reader). Since 2139876 licensees 123/19, 20, 28 and 30 have Elbera cross-checks too (`tests/pipeline/fixtures/static-material-versions.json`), so layout-only review covers only 16, 22, 23, 25 and 31; `test_static_material_reviewed_versions.py` fails a reviewed version with no real-client case. Per-version counts and the 20_21 effect: 02-53 SUMMARY.
+`python -B scripts/static_material_package_census.py --client E:/Lineage2-client` reads all 212 lock-equal `.usx` and the one lock-equal map with StaticMesh exports (`maps/24_18.unr`, 22) into `static-mesh-package-census.json` here. 02-53 added the UE123 licensees 12, 18, 0, 14 and 15 after Elbera `l2lib` cross-checks (`tests/fixtures/static-materials/cross-checks.json`, 145 real-client cases). 210 of 212 are reviewed; the two UE118 packages stay refused (UE123 slot reader). Since 2139876 licensees 123/19, 20, 28 and 30 have Elbera cross-checks too (`tests/pipeline/fixtures/static-material-versions.json`), so layout-only review covers only 16, 22, 23, 25 and 31; `test_static_material_reviewed_versions.py` fails a reviewed version with no real-client case. Per-version counts and the 20_21 effect: 02-53 SUMMARY.
 
 ### Equipment slots (ACT-03)
 
