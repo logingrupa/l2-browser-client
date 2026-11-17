@@ -6,7 +6,7 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-from hash_reference_client_tree import canonical_json_bytes, reference_tree_lock_sha256
+from hash_reference_client_tree import canonical_json_bytes
 from interface_layout_adapter import INTERFACE_XDAT_PATH
 from lane_unit_outcomes import DECODE_FAILED_REASON_PREFIX, lane_relative_path, replace_step_gap_row
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX, TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX
@@ -15,6 +15,7 @@ from native_store.catalog_writer import add_store_file, read_store_catalog, writ
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN, read_gap_rows
 from native_store.store_paths import SHA256_PATTERN, STEP_NAME_PATTERN
 from reference_client_guard import ReferenceClientLockError
+from reference_tree_lock_digest import reference_tree_lock_sha256
 from texture_package_census import validate_texture_package_census
 
 UI_TEXTURE_ALGORITHM_VERSION = 2

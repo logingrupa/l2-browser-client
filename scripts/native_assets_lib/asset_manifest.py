@@ -1,8 +1,8 @@
 import math
 import re
 
-from hash_reference_client_tree import reference_tree_lock_sha256
 from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH
+from reference_tree_lock_digest import reference_tree_lock_sha256
 
 SUPPORTED_ASSET_MANIFEST_VERSIONS = (1, 2)
 ASSET_MANIFEST_VERSION = 2

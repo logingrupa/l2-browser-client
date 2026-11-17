@@ -11,9 +11,9 @@ import hashlib
 import json
 from typing import NamedTuple
 
-from hash_reference_client_tree import reference_tree_lock_sha256
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
+from reference_tree_lock_digest import reference_tree_lock_sha256
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
 from world.minimap_join import (HUNTINGZONE_TABLE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE, join_tile_route_half, join_unresolved_reason)
 from world.minimap_radar_route_recipe import read_minimap_radar_route_recipe

@@ -6,13 +6,13 @@ import sys
 
 from data.hair_table_adapter import ELBERA_HAIR_SELECTION_SCRIPT_PATH, HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_PARSERS
 from data.pinned_elbera_module import ELBERA_COMMIT, ELBERA_ROOT
-from hash_reference_client_tree import reference_tree_lock_sha256
 from native_catalog.table_layout_pins import CLIENT_DERIVED_LAYOUTS
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
 from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_HASHES, SCHEMA_ROOT, interlude_descriptor_links
 from native_store.catalog_writer import STORE_CATALOG_NAME, read_pinned_file, require_file_pin, validate_catalog_record
 from native_store.gap_rows import read_gap_rows
 from reference_client_guard import require_reference_client
+from reference_tree_lock_digest import reference_tree_lock_sha256
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INVENTORY_OUTPUT_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'

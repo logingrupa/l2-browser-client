@@ -11,7 +11,6 @@ import hashlib
 import json
 import re
 
-from hash_reference_client_tree import reference_tree_lock_sha256
 from native_catalog.ue2 import FormatError, Package
 from world.map_actor_properties import actor_properties, decode_property, property_value
 from native_store.canonical_json import canonical_json_bytes
@@ -19,6 +18,7 @@ from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row, wr
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
+from reference_tree_lock_digest import reference_tree_lock_sha256
 from world.package_header import read_package_header
 from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, MAP_READERS, reader_gap_reason, reviewed_reader_pairs
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes

@@ -10,10 +10,10 @@ import json
 from pathlib import PurePosixPath
 import re
 
-from hash_reference_client_tree import reference_tree_lock_sha256
 from native_assets_lib.texture_mips import REVIEWED_VERSIONS
 from native_catalog.ue2 import FormatError, summary
 from reference_client_guard import require_reference_client
+from reference_tree_lock_digest import reference_tree_lock_sha256
 
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent
 TEXTURE_PACKAGE_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'ui' / 'texture-package-census.json'

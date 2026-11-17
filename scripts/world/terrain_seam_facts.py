@@ -11,11 +11,11 @@ import hashlib
 import json
 import struct
 
-from hash_reference_client_tree import reference_tree_lock_sha256
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
+from reference_tree_lock_digest import reference_tree_lock_sha256
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.native_terrain_sectors import native_terrain, read_height_samples

@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -6,8 +7,10 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from build_reference_client_lock import FILE_CLASSES, hashing_script_sha256
+from hash_reference_client_tree import canonical_json_bytes
 from reference_client_guard import (REFERENCE_CLIENT_LOCK_FILE_FIELDS, REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLockError,
     read_reference_client_lock, require_reference_client)
+from reference_tree_lock_digest import reference_tree_lock_sha256
 
 NATIVE_INPUTS_LOCK_PATH = ROOT / 'recipes' / 'native-inputs.lock.json'
 MAXIMUM_LOCK_BYTES = 4 * 1024 * 1024
@@ -60,6 +63,9 @@ class CommittedReferenceClientLockTests(unittest.TestCase):
 
     def test_lock_records_the_current_tracked_hashing_script(self):
         self.assertEqual(self.lock['hashingScriptSha256'], hashing_script_sha256())
+
+    def test_lock_digest_hashes_the_compact_canonical_lock_bytes_of_the_hashing_script(self):
+        self.assertEqual(reference_tree_lock_sha256(self.lock), hashlib.sha256(canonical_json_bytes(self.lock)).hexdigest())
 
 
 CONVERSION_ROOT = Path(committed_reference_client_lock()['conversionRoot'])
