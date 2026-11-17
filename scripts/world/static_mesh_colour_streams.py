@@ -26,9 +26,11 @@ GLB_CHUNK_HEADER_BYTES = 8
 COLOUR_STREAMS_KIND = 'native-static-mesh-colour-streams'
 COLOUR_STREAMS_SCHEMA_VERSION = 1
 COLOUR_STREAMS_FILE_NAME = 'colour-streams.json'
+COLOUR_STREAMS_STORE_FOLDER = 'static-mesh-colour-streams'
 COLOUR_SELECTOR_UNRESOLVED_REASON = 'static-mesh-colour-selector-unresolved'
 COLOUR_STREAM_LAYOUT_UNREVIEWED_REASON_PREFIX = 'static-mesh-colour-stream-layout-unreviewed:'
 COLOUR_STREAM_JOIN_MISMATCH_REASON = 'static-mesh-colour-stream-join-mismatch'
+COLOUR_STREAM_UNREAD_REASON_PREFIX = 'static-mesh-colour-stream-unread:'
 
 
 class StaticMeshSection(NamedTuple):
@@ -54,6 +56,15 @@ class ColourStreamOutcome(NamedTuple):
 
 def colour_stream_layout_unreviewed_reason(package_version, licensee):
     return f'{COLOUR_STREAM_LAYOUT_UNREVIEWED_REASON_PREFIX}{package_version}/{licensee}'
+
+
+def colour_stream_unread_reason(error):
+    message = str(error).strip()
+    return f'{COLOUR_STREAM_UNREAD_REASON_PREFIX}{message.splitlines()[0] if message else type(error).__name__}'
+
+
+def colour_streams_store_path(payload_sha256):
+    return f'{COLOUR_STREAMS_STORE_FOLDER}/{payload_sha256}/{COLOUR_STREAMS_FILE_NAME}'
 
 
 def counted(reader, label, maximum=MAXIMUM_STREAM_ELEMENTS):
@@ -183,8 +194,11 @@ def static_mesh_colour_stream_outcome(package_version, load_package, request, gl
     if package_version not in REVIEWED_COLOUR_STREAM_LAYOUTS:
         return ColourStreamOutcome(None, colour_stream_layout_unreviewed_reason(*package_version))
     package, package_record = load_package(request['package'])
-    export = static_mesh_export(package, request['object'])
-    streams = read_static_mesh_colour_streams(package, export)
+    try:
+        export = static_mesh_export(package, request['object'])
+        streams = read_static_mesh_colour_streams(package, export)
+    except ValueError as error:
+        return ColourStreamOutcome(None, colour_stream_unread_reason(error))
     primitives = joined_primitive_vertices(glb, streams)
     if primitives is None:
         return ColourStreamOutcome(None, COLOUR_STREAM_JOIN_MISMATCH_REASON)

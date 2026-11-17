@@ -19,14 +19,14 @@ from static_material_package_census import STATIC_MESH_PACKAGE_CENSUS_RELATIVE_P
 from world.light_actors import reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
-from world.static_mesh_colour_streams import COLOUR_STREAMS_FILE_NAME, static_mesh_colour_stream_outcome
+from world.static_mesh_colour_streams import colour_streams_store_path, static_mesh_colour_stream_outcome
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actor_subclass_actors, static_mesh_actors
 from world.tile_census import WORLD_LANE_NAME, read_package_header
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-STATIC_MESH_STEP_ALGORITHM_VERSION = 4
+STATIC_MESH_STEP_ALGORITHM_VERSION = 5
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
 STATIC_MESH_CONVERTER_FOLDER = 'static-mesh-converter'
@@ -152,10 +152,11 @@ class StaticMeshPackages:
 def with_colour_streams(converted, outcome):
     if outcome.gap_reason is not None:
         return converted._replace(model_record={**converted.model_record, 'colourStreams': {'gapReason': outcome.gap_reason}})
-    relative = f'{converted.model_record["model"]["file"].rsplit("/", 1)[0]}/{COLOUR_STREAMS_FILE_NAME}'
+    payload_sha256 = sha256_hex(outcome.payload)
+    relative = colour_streams_store_path(payload_sha256)
     store_files = dict(converted.store_files)
     add_store_file(store_files, relative, outcome.payload)
-    colour_streams = {'file': relative, 'sha256': sha256_hex(outcome.payload), 'bytes': len(outcome.payload)}
+    colour_streams = {'file': relative, 'sha256': payload_sha256, 'bytes': len(outcome.payload)}
     return ConvertedStaticMesh({**converted.model_record, 'colourStreams': colour_streams}, store_files)
 
 
@@ -240,11 +241,11 @@ def static_mesh_outcomes(project_root, client, requests):
                                            project_root=project_root)
         try:
             converted = convert_static_mesh(converter, request)
-            colour_streams = static_mesh_colour_stream_outcome((header['packageVersion'], header['licensee']), packages, request,
-                                                               model_glb_bytes(converted))
-            outcomes[request['object']] = with_colour_streams(converted, colour_streams)
         except MODEL_CONVERSION_ERRORS as error:
             outcomes[request['object']] = (FAILED_STATUS, conversion_failure_reason(error))
+            continue
+        colour_streams = static_mesh_colour_stream_outcome((header['packageVersion'], header['licensee']), packages, request, model_glb_bytes(converted))
+        outcomes[request['object']] = with_colour_streams(converted, colour_streams)
     return outcomes
 
 
