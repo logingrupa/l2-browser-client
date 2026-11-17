@@ -6,7 +6,8 @@ import re
 
 from native_assets_lib.asset_manifest import reference_client_build
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import CatalogWriteError, refuse_duplicate_json_keys, refuse_non_finite_json_number, replace_file
+from native_store.catalog_writer import refuse_duplicate_json_keys, refuse_non_finite_json_number
+from native_store.verified_file_writes import CatalogWriteError, replace_file
 from native_store.coverage_denominators import COVERAGE_PART_ORDER
 from native_store.load_check_records import is_catalog_key, is_riga_timestamp
 from native_store.side_by_side_check_halves import (AUDIO_PART, OWNER_IDENTITY, RecordContext, SideBySideCheckRecordError, is_non_empty_text,

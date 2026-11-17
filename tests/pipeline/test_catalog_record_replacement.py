@@ -12,7 +12,7 @@ from catalog_store_fixture import write_store_catalog
 from native_assets_lib.gltf import json_bytes
 from native_store import catalog_record_replacement
 from native_store.catalog_record_replacement import catalog_with_records_replaced, catalog_without_records, write_catalog_without_record
-from native_store.catalog_writer import CatalogWriteError
+from native_store.verified_file_writes import CatalogWriteError
 
 
 def revised_record(record_id, revision):

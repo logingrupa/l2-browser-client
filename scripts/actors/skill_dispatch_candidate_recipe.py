@@ -18,7 +18,7 @@ from actors.skill_dispatch_recipe_sources import (ANIMATION_NOTIFY_SOURCE_FILE_N
                                                   require_locked_source, verification_folder_of, verified_facts_identity)
 from native_catalog.tables import decode_table
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock, require_reference_client
 
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent

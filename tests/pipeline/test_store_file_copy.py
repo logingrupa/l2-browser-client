@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from native_assets_lib.gltf import json_bytes
 from native_store import catalog_writer
-from native_store.catalog_writer import CatalogWriteError, add_store_file, sha256_of_file, write_store
+from native_store.catalog_writer import add_store_file, write_store
+from native_store.verified_file_writes import CatalogWriteError, sha256_of_file
 from native_store.pinned_store_verification import VerifiedStoreFile
 from native_store import store_file_copy
 from native_store.store_file_copy import STORE_FILE_COPY_CHUNK_BYTES, StoreFileSource, add_store_file_source, copy_store_files

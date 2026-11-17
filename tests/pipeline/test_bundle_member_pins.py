@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import CatalogWriteError
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.merge_lane_store import LaneStoreMergeRefusedError, merge_lane_store
 from native_store import pinned_store_verification
 from native_store.pinned_store_verification import verify_pinned_store_files

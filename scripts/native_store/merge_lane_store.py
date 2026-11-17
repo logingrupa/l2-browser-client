@@ -16,8 +16,9 @@ from native_assets import verify_archive
 from native_assets_lib.asset_manifest import require_supported_asset_manifest
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
-from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_catalog, merge_catalog_slice_records, read_current_catalog_bytes,
-                                         sha256_hex, validate_catalog_record)
+from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_catalog, merge_catalog_slice_records,
+                                         read_current_catalog_bytes, validate_catalog_record)
+from native_store.verified_file_writes import sha256_hex
 from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 from native_store.store_file_copy import add_store_file_source, copy_store_files, missing_store_file_sources
 from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points

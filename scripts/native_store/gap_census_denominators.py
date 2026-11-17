@@ -8,7 +8,8 @@ from actors.actor_unit_inventory import CONVERTIBLE_UNIT_STATUS, GAP_UNIT_STATUS
 from actors.npc_requests import npc_sound_references
 from actors.skill_unit_inventory import SKILL_SOUND_ROW_UNIT_KIND
 from build_dat_table_inventory import DEFAULT_INVENTORY_OUTPUT_PATH
-from native_store.catalog_writer import CatalogWriteError, refuse_duplicate_json_keys, refuse_non_finite_json_number
+from native_store.catalog_writer import refuse_duplicate_json_keys, refuse_non_finite_json_number
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.coverage_denominators import (COVERAGE_PART_ORDER, SANDBOX_DENOMINATOR_SOURCE, TILE_CENSUS_PATH, CoverageReportError,
                                                 inventory_table_count_denominator, read_dat_table_inventory, repository_relative_text,
                                                 require_catalog_key, table_denominator, unknown_denominator, world_denominator)

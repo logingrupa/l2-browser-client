@@ -8,8 +8,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
-from native_store import catalog_writer
-from native_store.catalog_writer import CatalogWriteError, immutable_write, replace_file
+from native_store import verified_file_writes
+from native_store.verified_file_writes import CatalogWriteError, immutable_write, replace_file
 
 PAYLOAD = b'the whole payload of one immutable store file'
 OTHER_WRITER_PAYLOAD = b'bytes of another writer'
@@ -35,7 +35,7 @@ class ImmutableWritePublishTests(unittest.TestCase):
             Path(destination).write_bytes(other_process_payload)
             link(source, destination)
 
-        return mock.patch.object(catalog_writer.os, 'link', publish_first_then_link)
+        return mock.patch.object(verified_file_writes.os, 'link', publish_first_then_link)
 
     def test_a_new_file_is_published_complete_and_leaves_no_temporary_file(self):
         immutable_write(self.destination, PAYLOAD)
@@ -46,8 +46,8 @@ class ImmutableWritePublishTests(unittest.TestCase):
         self.folder.mkdir(parents=True)
         self.destination.write_bytes(PAYLOAD)
         modified_before = self.destination.stat().st_mtime_ns
-        with mock.patch.object(catalog_writer.tempfile, 'NamedTemporaryFile', side_effect=AssertionError('a temporary file was written')), \
-                mock.patch.object(catalog_writer.os, 'link', side_effect=AssertionError('a link was made')):
+        with mock.patch.object(verified_file_writes.tempfile, 'NamedTemporaryFile', side_effect=AssertionError('a temporary file was written')), \
+                mock.patch.object(verified_file_writes.os, 'link', side_effect=AssertionError('a link was made')):
             immutable_write(self.destination, PAYLOAD)
         self.assertEqual((self.destination.read_bytes(), self.destination.stat().st_mtime_ns), (PAYLOAD, modified_before))
 
@@ -79,20 +79,20 @@ class ImmutableWritePublishTests(unittest.TestCase):
             seen_at_the_link.append((Path(destination).exists(), Path(source).read_bytes(), Path(source).parent, Path(source).suffix))
             link(source, destination)
 
-        with mock.patch.object(catalog_writer.os, 'link', record_then_link):
+        with mock.patch.object(verified_file_writes.os, 'link', record_then_link):
             immutable_write(self.destination, PAYLOAD)
         self.assertEqual(seen_at_the_link, [(False, PAYLOAD, self.folder, '.tmp')])
         self.assertEqual(self.destination.read_bytes(), PAYLOAD)
         self.destination.unlink()
         link_refusal = OSError('the link was refused')
-        with mock.patch.object(catalog_writer.os, 'link', side_effect=link_refusal):
+        with mock.patch.object(verified_file_writes.os, 'link', side_effect=link_refusal):
             with self.assertRaises(OSError) as caught:
                 immutable_write(self.destination, PAYLOAD)
         self.assertIs(caught.exception, link_refusal)
         self.assertFalse(self.destination.exists())
 
     def test_a_published_file_whose_read_back_differs_is_refused_as_a_runtime_copy(self):
-        with mock.patch.object(catalog_writer, 'sha256_of_file', return_value='0' * 64):
+        with mock.patch.object(verified_file_writes, 'sha256_of_file', return_value='0' * 64):
             with self.assertRaises(CatalogWriteError) as refusal:
                 immutable_write(self.destination, PAYLOAD)
         self.assertEqual(str(refusal.exception), 'Runtime copy hash differs: ' + str(self.destination))

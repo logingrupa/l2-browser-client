@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import copy
-import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
-import tempfile
 from typing import NamedTuple
 
 from native_store.interprocess_lock import lane_store_publish_lock
@@ -14,6 +12,7 @@ from native_store.native_material_program_pins import (MATERIAL_PROGRAM_FILE_NAM
                                                        native_material_program_directory)
 from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_child_path, refuse_reparse_points,
                                       require_portable_relative_path)
+from native_store.verified_file_writes import CatalogWriteError, immutable_write, replace_file, sha256_hex, sha256_of_file
 
 KNOWN_CATALOG_SLICES = ('models', 'textures', 'sections', 'movers', 'npcProfiles', 'playerProfiles',
                         'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles', 'tables', 'windows',
@@ -59,10 +58,6 @@ STORE_ROOT_BUNDLE_FOLDER = ''
 PINNED_MANIFEST_SUFFIX = '.json'
 
 
-class CatalogWriteError(ValueError):
-    pass
-
-
 class PinnedManifestRecordShape(NamedTuple):
     fields: tuple
     id_pattern: re.Pattern
@@ -82,52 +77,6 @@ PINNED_MANIFEST_RECORD_SHAPES = {
     'environments': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, ENVIRONMENT_RECORD_ID_PATTERN, ENVIRONMENT_MANIFEST_PATH_PATTERN,
                                               ENVIRONMENT_MANIFEST_MAXIMUM_BYTES),
 }
-
-
-def sha256_hex(payload):
-    return hashlib.sha256(payload).hexdigest()
-
-
-def sha256_of_file(path):
-    with open(path, 'rb') as handle:
-        return hashlib.file_digest(handle, 'sha256').hexdigest()
-
-
-def replace_file(path, payload):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + '.', suffix='.tmp', delete=False) as output:
-        temporary = Path(output.name)
-        output.write(payload)
-    try:
-        temporary.replace(path)
-    finally:
-        temporary.unlink(missing_ok=True)
-    if sha256_of_file(path) != sha256_hex(payload):
-        raise CatalogWriteError('Runtime copy hash differs: ' + str(path))
-
-
-def require_same_immutable_file(path, payload):
-    if sha256_of_file(path) != sha256_hex(payload):
-        raise CatalogWriteError('Existing immutable runtime asset is corrupt; preserved: ' + str(path))
-
-
-def immutable_write(path, payload):
-    if path.exists():
-        require_same_immutable_file(path, payload)
-        return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + '.', suffix='.tmp', delete=False) as output:
-        temporary = Path(output.name)
-        output.write(payload)
-    try:
-        os.link(temporary, path)
-    except FileExistsError:
-        require_same_immutable_file(path, payload)
-        return
-    finally:
-        temporary.unlink(missing_ok=True)
-    if sha256_of_file(path) != sha256_hex(payload):
-        raise CatalogWriteError('Runtime copy hash differs: ' + str(path))
 
 
 def store_file_key(relative):

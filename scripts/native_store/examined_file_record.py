@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.interprocess_lock import LANE_WORK_FOLDER_NAME
 from native_store.store_paths import SHA256_PATTERN
 

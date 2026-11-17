@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
-from native_store.catalog_writer import CatalogWriteError, immutable_write, replace_file
+from native_store.verified_file_writes import CatalogWriteError, immutable_write, replace_file
 from native_store.lane_sharing_candidates import MINIMUM_SHARED_FILE_BYTES
 from native_store.pinned_store_verification import verify_pinned_store_files
 from native_store.share_identical_lane_files import share_identical_lane_files

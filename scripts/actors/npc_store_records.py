@@ -3,7 +3,8 @@ from pathlib import Path
 
 from native_actor_profiles import verify_npc_profiles
 from native_store.catalog_record_replacement import catalog_with_records_replaced, catalog_without_records
-from native_store.catalog_writer import NATIVE_RESOURCE_PREFIX, add_store_file, sha256_hex
+from native_store.catalog_writer import NATIVE_RESOURCE_PREFIX, add_store_file
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import StorePathError, confined_child_path
 
 PROFILE_STORE_FOLDER = 'npc-profiles'

@@ -18,7 +18,8 @@ from native_catalog.table_layout_pins import CRYPTO_HASH, SCHEMA_HASHES, TABLES
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
 from native_catalog.tables import DESCRIPTOR_FILE, decode_table, interlude_descriptor_links, table_layout_schema
 from native_catalog.ue2 import FormatError
-from native_store.catalog_writer import sha256_hex, validate_catalog_record
+from native_store.catalog_writer import validate_catalog_record
+from native_store.verified_file_writes import sha256_hex
 from native_store.data_ui_table_manifest import (DECODED_TABLE_KIND, DECODED_TABLE_SCHEMA_VERSION, ELBERA_ADAPTER_ROUTE,
                                                  LOCAL_DESCRIPTOR_ROUTE, native_table_manifest)
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit

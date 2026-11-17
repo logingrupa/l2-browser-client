@@ -6,9 +6,10 @@ from pathlib import Path
 import re
 from typing import NamedTuple
 
-from native_store.catalog_writer import (MAXIMUM_CATALOG_BYTES, MAXIMUM_SAFE_INTEGER, STORE_CATALOG_NAME, CatalogWriteError,
-                                         decode_store_catalog, is_table_name_index_id, refuse_duplicate_json_keys, refuse_non_finite_json_number,
-                                         require_byte_length, require_pinned_path, sha256_hex, validate_catalog_record)
+from native_store.catalog_writer import (MAXIMUM_CATALOG_BYTES, MAXIMUM_SAFE_INTEGER, STORE_CATALOG_NAME, decode_store_catalog,
+                                         is_table_name_index_id, refuse_duplicate_json_keys, refuse_non_finite_json_number,
+                                         require_byte_length, require_pinned_path, validate_catalog_record)
+from native_store.verified_file_writes import CatalogWriteError, sha256_hex
 from native_store.coverage_denominators import CoverageReportError
 from native_store.gap_rows import CATALOG_KEY_PATTERNS
 

@@ -13,8 +13,8 @@ from actors.skill_effect_conversion import add_staged_effect_store_files, skill_
 from effect_source_bundle_fixture import write_sprite_effect_source_bundle
 from native_store.canonical_json import canonical_json_bytes
 from native_store import catalog_writer
-from native_store.catalog_writer import (CatalogWriteError, PinnedFileReference, catalog_pinned_file_references, merge_catalog_slice,
-                                         write_store)
+from native_store.catalog_writer import PinnedFileReference, catalog_pinned_file_references, merge_catalog_slice, write_store
+from native_store.verified_file_writes import CatalogWriteError
 from native_store import pinned_store_verification
 from native_store.pinned_store_verification import (PINNED_STORE_VERIFICATION_WORKER_COUNT, verified_chunk_outcomes,
                                                     verified_file_child_references, verify_pinned_store_files)

@@ -17,8 +17,8 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from native_assets_lib.gltf import json_bytes
 from native_store import catalog_writer
-from native_store.catalog_writer import (CatalogWriteError, NATIVE_RESOURCE_PATH_PATTERN, add_store_file, merge_catalog_slice,
-                                         read_store_catalog, write_store)
+from native_store.catalog_writer import NATIVE_RESOURCE_PATH_PATTERN, add_store_file, merge_catalog_slice, read_store_catalog, write_store
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.interprocess_lock import LOCK_FILE_SUFFIX
 from native_store.merge_lane_store import main_checkout_root
 from native_store.store_paths import StorePathError, lane_store_root

@@ -13,7 +13,8 @@ from actors.skill_effect_conversion import (add_staged_effect_store_files, skill
                                             stage_effect_bundle)
 from effect_source_bundle_fixture import write_sprite_effect_source_bundle
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import CatalogWriteError, merge_catalog_slice, write_store
+from native_store.catalog_writer import merge_catalog_slice, write_store
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 
 VISUAL_ROOT = 'skill.fixture.root'

@@ -11,7 +11,8 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import character_model_record_id
-from native_store.catalog_writer import CatalogWriteError, add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, write_store
+from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, write_store
+from native_store.verified_file_writes import CatalogWriteError, sha256_hex
 from native_store.gap_rows import write_gap_rows
 from native_store.store_paths import lane_store_root
 from native_store.write_lane_catalog import LaneCatalogError, write_lane_catalog

@@ -6,7 +6,8 @@ from pathlib import Path
 
 from native_store.build_coverage_report import COVERAGE_OUTPUT_NAME, COVERAGE_ROW_FIELDS
 from native_store.catalog_index_keys import catalog_index_keys, read_measured_catalog
-from native_store.catalog_writer import CatalogWriteError, refuse_duplicate_json_keys, refuse_non_finite_json_number
+from native_store.catalog_writer import refuse_duplicate_json_keys, refuse_non_finite_json_number
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.gap_rows import INTEGRATION_LANE_NAME
 from native_store.load_check_records import read_load_check_records
 from native_store.side_by_side_key_digest import key_content_sha256_by_key

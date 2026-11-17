@@ -4,7 +4,8 @@ from datetime import datetime
 import json
 import re
 
-from native_store.catalog_writer import CatalogWriteError, refuse_duplicate_json_keys, refuse_non_finite_json_number
+from native_store.catalog_writer import refuse_duplicate_json_keys, refuse_non_finite_json_number
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.gap_rows import CATALOG_KEY_PATTERNS
 from native_store.store_paths import lane_load_check_path
 

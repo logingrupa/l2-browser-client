@@ -13,7 +13,8 @@ import re
 
 from hash_reference_client_tree import canonical_json_bytes as compact_canonical_json_bytes
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import CatalogWriteError, bundle_folder_of, pinned_file_references
+from native_store.catalog_writer import bundle_folder_of, pinned_file_references
+from native_store.verified_file_writes import CatalogWriteError
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
 
 WORLD_ORACLE_RELATIVE_PATH = 'recipes/world/oracle/20_20/expected.json'

@@ -13,7 +13,7 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.side_by_side_check_halves import key_file_stem
 from native_store.side_by_side_check_records import read_project_reference_client_lock, read_side_by_side_records
 from native_store.store_paths import REPOSITORY_ROOT

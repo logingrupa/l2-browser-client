@@ -16,7 +16,7 @@ from native_assets_lib.static_materials import (REVIEWED_VERSIONS, STATIC_MATERI
                                                 static_material_layout_unreviewed_reason)
 from native_catalog.ue2 import FormatError, read_package_index, summary
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.store_paths import refuse_reparse_points
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client

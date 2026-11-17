@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.side_by_side_check_records import NATIVE_SELECTION_UNCONFIRMED_REASON, REVIEW_PENDING_REASON
 from native_store.store_paths import SHA256_PATTERN
 from side_by_side.pair_queue_key_facts import PairQueueKeyFacts

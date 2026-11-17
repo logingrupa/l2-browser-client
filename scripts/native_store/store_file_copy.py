@@ -7,8 +7,8 @@ import shutil
 import tempfile
 from typing import NamedTuple
 
-from native_store.catalog_writer import (STORE_CATALOG_NAME, CatalogWriteError, replace_file, require_catalog_unchanged,
-                                         require_catalog_within_byte_limit, sha256_hex, sha256_of_file, store_file_key)
+from native_store.catalog_writer import STORE_CATALOG_NAME, require_catalog_unchanged, require_catalog_within_byte_limit, store_file_key
+from native_store.verified_file_writes import CatalogWriteError, replace_file, sha256_hex, sha256_of_file
 from native_store.interprocess_lock import is_lane_store_root
 from native_store.linked_file_copy import source_can_be_linked
 from native_store.store_paths import confined_child_path, refuse_reparse_points

@@ -8,7 +8,8 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_store.catalog_writer import CatalogWriteError, read_store_catalog, validate_catalog_record
+from native_store.catalog_writer import read_store_catalog, validate_catalog_record
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.pinned_store_verification import verify_pinned_store_files
 from support.environment_source_files import SETUP_FILE_TEXT, encoded_environment_file
 from world import environment_step

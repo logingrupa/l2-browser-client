@@ -11,7 +11,7 @@ import json
 from actors.path_free_messages import path_free_reason
 from actors.pinned_answer_files import pinned_bytes, require_lock_equal, sha256_hex
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.data_ui_table_manifest import ELBERA_ADAPTER_ROUTE, data_ui_table_manifest
 from reference_client_guard import ReferenceClientLockError, require_reference_client
 

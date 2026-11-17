@@ -11,7 +11,8 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import catalog_record_unit, require_npc_profiles_join_models_of_their_mesh
 from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, empty_store_catalog, merge_catalog_slice_records, read_store_catalog,
-                                         sha256_hex, sha256_of_file, validate_catalog_record, write_store)
+                                         validate_catalog_record, write_store)
+from native_store.verified_file_writes import sha256_hex, sha256_of_file
 from native_store.gap_rows import read_gap_rows
 from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root

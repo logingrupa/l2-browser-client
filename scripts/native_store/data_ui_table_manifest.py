@@ -1,8 +1,9 @@
 import json
 
 from native_catalog.tables import decoded_table_record_count
-from native_store.catalog_writer import (CatalogWriteError, read_pinned_file, read_store_catalog, refuse_duplicate_json_keys,
-                                         refuse_non_finite_json_number, require_file_pin, validate_catalog_record)
+from native_store.catalog_writer import (read_pinned_file, read_store_catalog, refuse_duplicate_json_keys, refuse_non_finite_json_number,
+                                         require_file_pin, validate_catalog_record)
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.store_paths import lane_store_root
 from native_store.unit_ledger import locked_input_records
 

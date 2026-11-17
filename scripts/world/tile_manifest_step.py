@@ -3,7 +3,8 @@ from typing import NamedTuple
 
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, validate_catalog_record, write_store
+from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, validate_catalog_record, write_store
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root, require_converter_output
 from native_store.tile_manifest_validation import (FRAME_FIELDS, TILE_CHUNK_MANIFEST_KIND, TILE_MANIFEST_KIND, TILE_MANIFEST_SCHEMA_VERSION,
                                                    validate_tile_chunk_manifest, validate_tile_manifest)

@@ -16,7 +16,8 @@ from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_UNDECODED
 from native_catalog.table_layout_pins import CLIENT_DERIVED_LAYOUTS
 from native_catalog.table_source_resolver import TableSourceResolutionError, descriptor_layout_links
 from native_catalog.tables import TABLES
-from native_store.catalog_writer import CatalogWriteError, is_table_name_index_id
+from native_store.catalog_writer import is_table_name_index_id
+from native_store.verified_file_writes import CatalogWriteError
 from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import use_reference_client_lock
 from test_reference_client_guard import SyntheticReferenceClientTrees

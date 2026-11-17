@@ -7,7 +7,8 @@ from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.static_materials import REVIEWED_VERSIONS, static_material_layout_unreviewed_reason
 from native_catalog.ue2 import FormatError, Package
-from native_store.catalog_writer import add_store_file, sha256_hex
+from native_store.catalog_writer import add_store_file
+from native_store.verified_file_writes import sha256_hex
 from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root

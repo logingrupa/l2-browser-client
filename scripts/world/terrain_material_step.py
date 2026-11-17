@@ -4,7 +4,7 @@ from pathlib import Path
 from native_assets import implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs

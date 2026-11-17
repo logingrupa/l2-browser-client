@@ -3,7 +3,8 @@ from __future__ import annotations
 from contextlib import contextmanager
 
 from native_store.build_coverage_report import COVERAGE_OUTPUT_NAME, refresh_lane_coverage_report
-from native_store.catalog_writer import STORE_CATALOG_NAME, sha256_of_file
+from native_store.catalog_writer import STORE_CATALOG_NAME
+from native_store.verified_file_writes import sha256_of_file
 from native_store.store_paths import lane_store_root
 
 

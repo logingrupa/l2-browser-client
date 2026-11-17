@@ -4,7 +4,8 @@ from pathlib import Path
 import zipfile
 
 from native_assets import verify_archive
-from native_store.catalog_writer import NATIVE_RESOURCE_PREFIX, add_store_file, sha256_hex
+from native_store.catalog_writer import NATIVE_RESOURCE_PREFIX, add_store_file
+from native_store.verified_file_writes import sha256_hex
 
 MODEL_ARCHIVE_FILE_NAME = 'asset.l2asset'
 MODEL_STORE_FILE_NAME = 'model.glb'

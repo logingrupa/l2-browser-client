@@ -19,7 +19,8 @@ from native_assets_lib.footstep_config import decode_config
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import read_pinned_file, read_store_catalog, replace_file, require_file_pin, write_store
+from native_store.catalog_writer import read_pinned_file, read_store_catalog, require_file_pin, write_store
+from native_store.verified_file_writes import replace_file
 from native_store.gap_rows import gap_reason_list_versions, load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
 from reference_client_guard import ReferenceClientLockError
 

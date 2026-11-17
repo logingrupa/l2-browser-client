@@ -17,7 +17,7 @@ from actors.skill_dispatch_candidates import (SKILL_DISPATCH_CANDIDATE_RUNTIME_U
 from actors.skill_unit_inventory import NATIVE_SKILL_DISPATCH_REQUIRED_REASON, SKILL_PART_NAME
 from native_catalog.tables import decode_table
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client

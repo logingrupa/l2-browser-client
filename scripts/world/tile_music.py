@@ -6,7 +6,7 @@ from typing import NamedTuple
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.world_music import KIND as MUSIC_KIND, encode, encoder_identity, music_volumes, restore_l2_ogg, unpatch
 from native_catalog.tables import decode_table
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.file_identity import file_identity
 from native_store.store_paths import REPOSITORY_ROOT
 from world.music_volume_join import MUSICINFO_TABLE, join_music_volumes, musicinfo_rows

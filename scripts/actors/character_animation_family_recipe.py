@@ -12,7 +12,7 @@ import re
 from actors.pinned_answer_files import pinned_bytes, require_lock_equal, sha256_hex
 from native_animation_families import decode_localization111
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from reference_client_guard import require_reference_client
 
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent

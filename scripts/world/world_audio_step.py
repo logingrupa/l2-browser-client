@@ -5,7 +5,7 @@ from native_assets_lib.gltf import json_bytes
 from native_assets_lib.world_ambience import FIELDS, KIND as AMBIENCE_KIND, pe_export_f32
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError, require_reference_client

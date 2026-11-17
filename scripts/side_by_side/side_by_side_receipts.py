@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from native_store.catalog_writer import sha256_of_file
+from native_store.verified_file_writes import sha256_of_file
 from native_store.side_by_side_check_halves import IMAGE_SANDBOX_HALF_FIELDS, key_file_stem
 from native_store.side_by_side_check_records import read_side_by_side_records, write_side_by_side_records
 from native_store.store_paths import StorePathError, confined_child_path
