@@ -13,7 +13,7 @@ from actors.actor_unit_inventory import decoded_string_values
 from actors.character_census import CHARACTER_CENSUS_RELATIVE_PATH, CHARACTER_CENSUS_SCHEMA_VERSION, PENDING_STATUS
 from actors.character_requests import GAP_STATUS
 from actors.combat_role_routes import (COMBAT_ROLE_ROUTE_PROOF, bind_combat_role_routes, combat_route_config_manifest)
-from actors.npc_store_records import catalog_with_records_replaced, catalog_without_records
+from native_store.catalog_record_replacement import catalog_with_records_replaced, catalog_without_records
 from actors.skill_unit_inventory import SKILL_SOUND_ROW_UNIT_KIND
 from native_assets_lib.footstep_config import decode_config
 from native_assets_lib.gltf import json_bytes

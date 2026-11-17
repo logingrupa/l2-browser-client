@@ -4,7 +4,7 @@ import re
 import subprocess
 from typing import NamedTuple
 
-from actors.npc_store_records import converted_model_store_files_and_record
+from native_store.converted_model_store_files import converted_model_store_files_and_record
 from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.static_materials import REVIEWED_VERSIONS, static_material_layout_unreviewed_reason

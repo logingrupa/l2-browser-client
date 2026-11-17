@@ -10,8 +10,9 @@ from actors.item_requests import (ARMORGRP_TABLE_NAME, GAP_STATUS, ITEM_STEP, PA
 from actors.item_unit_inventory import armorgrp_mtx_column_names
 from actors.npc_requests import (CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, TRANSIENT_FAILURES, animation_reference_gap_reason,
                                  serialized_animation_reference)
-from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_records_replaced, catalog_without_records,
-                                      converted_model_store_files_and_record, file_output_record)
+from actors.npc_store_records import file_output_record
+from native_store.catalog_record_replacement import catalog_with_records_replaced, catalog_without_records
+from native_store.converted_model_store_files import MODEL_ARCHIVE_FILE_NAME, converted_model_store_files_and_record
 from actors.path_free_messages import path_free_reason
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes

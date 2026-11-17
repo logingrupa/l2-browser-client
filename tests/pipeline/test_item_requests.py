@@ -10,7 +10,7 @@ from actors.item_conversion import ItemSources, conversion_units, grouped_item_e
 from actors.item_requests import (ItemRequestError, build_armor_unit_requests, build_weapon_unit_request, item_gap_rows, item_model_record_id,
                                   ungrouped_item_reason)
 from actors.item_unit_inventory import armor_column_selection, weapon_selection
-from actors.npc_store_records import converted_model_store_files_and_record
+from native_store.converted_model_store_files import converted_model_store_files_and_record
 from native_assets import verify_archive
 
 REFERENCE_CLIENT = Path('E:/Lineage2-client')

@@ -14,7 +14,7 @@ from native_store.native_material_program_pins import NATIVE_MATERIALS_FOLDER
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger, locked_input_records
-from actors.npc_store_records import catalog_with_records_replaced
+from native_store.catalog_record_replacement import catalog_with_records_replaced
 from world.map_sources import MapSources
 from world.surface_material_programs import WorldMaterialSources, material_package_paths, material_program_outcome, program_root_is_ported
 

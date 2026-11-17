@@ -8,7 +8,7 @@ from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import lane_relative_path
 from native_store.catalog_writer import add_store_file, read_store_catalog, sha256_hex, validate_catalog_record, write_store
 from reference_client_guard import ReferenceClientLockError
-from actors.npc_store_records import catalog_with_records_replaced
+from native_store.catalog_record_replacement import catalog_with_records_replaced
 from ui_texture_step import TRANSIENT_TEXTURE_CONVERSION_FAILURES, FAILED_STATUS, convert_reference
 
 UI_FONT_ALGORITHM_VERSION = 2

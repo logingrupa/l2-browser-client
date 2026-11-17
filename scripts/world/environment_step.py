@@ -10,7 +10,7 @@ import json
 import subprocess
 from typing import NamedTuple
 
-from actors.npc_store_records import catalog_with_records_replaced
+from native_store.catalog_record_replacement import catalog_with_records_replaced
 from native_assets_lib.gltf import json_bytes
 from native_environment import DEFAULT_FILES, IMPLEMENTATION_FILES, convert
 from native_store.catalog_writer import add_store_file, read_store_catalog, sha256_hex, sha256_of_file, validate_catalog_record, write_store

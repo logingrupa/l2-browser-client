@@ -27,9 +27,10 @@ from actors.npc_batch import (NpcSourceIdentities, npc_batch_plan, printed_batch
 from actors.skill_effect_conversion import (SkillEffectConversionRun, convert_skill, convert_skill_batch_slice, printed_skill_outcome,
                                             skill_outcomes_failed)
 from actors.path_free_messages import path_free_reason
-from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, catalog_with_records_replaced,
-                                      converted_model_store_files_and_record, PROFILE_MANIFEST_FILE_NAME, file_output_record,
+from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, file_output_record,
                                       profile_bundle_store_files_and_record, profile_record_npc_ids)
+from native_store.catalog_record_replacement import catalog_with_records_replaced
+from native_store.converted_model_store_files import MODEL_ARCHIVE_FILE_NAME, converted_model_store_files_and_record
 from data.lane_unit_outcomes import StepGapRowReplacements
 from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, migrate_npc_profiles, npc_profile_tool_pins
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
