@@ -5,10 +5,13 @@ import { VertexBuffer } from "@babylonjs/core/Buffers/buffer";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
-import { createNativeMaterial, type FogState, type LoadedNativeMaterial, type NativeMaterial } from "../../../materials/ue2/babylon/material";
+import { createNativeMaterial, type FogState, type LightmapLighting, type LoadedNativeMaterial, type NativeMaterial } from "../../../materials/ue2/babylon/material";
+import { lightmapStageColourOperation, type LightmapColourOperation } from "../../../environment/model/nativeDrawLightingStates";
+import { bspLightmapSlot } from "../../../environment/model/bspLightmapSelection";
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
 import type { TileLightingModel } from "./decodeTileLighting";
-import { decodeDxt1Texels, hoursPerDay, lightmapHourPages, lightmapPageAtHour } from "./lightmapPages";
+import { decodeDxt1Texels, lightmapHourPages, lightmapPageAtHour } from "./lightmapPages";
+import { ENVIRONMENT_ENGINE_CONSTANTS } from "../../../environment/model/nativeEnvironmentEngineConstants";
 import { readNativeMaterialProgramPin } from "../../../assets/native/nativeMaterialProgramPin";
 import { planLightmapSections, type LightmapSectionPlan } from "./tileLightmapSections";
 import type { WorldEnvironmentSample } from "../worldTimeOfDay";
@@ -38,12 +41,20 @@ export interface TileLightingSectionInspection {
   readonly primitive: number;
   readonly lighting: LightmapSectionPlan["kind"];
   readonly lightmapTexture: number | null;
-  readonly outdoor: boolean | null;
+  readonly nativeRenderSection: number | null;
+  readonly sunAffect: boolean | null;
+  readonly colourOperation: LightmapColourOperation | null;
   readonly page: number | null;
   readonly hourPages: readonly number[];
   readonly status: TileLightingSurfaceStatus;
   readonly programMaterialId: string | null;
   readonly reasons: readonly string[];
+}
+
+export interface LightmapTextureSlot {
+  readonly texture: number;
+  readonly childCount: number;
+  readonly sunAffectedSlot: number | null;
 }
 
 export interface TileLightingInspection {
@@ -54,6 +65,9 @@ export interface TileLightingInspection {
   readonly fog: FogState;
   readonly sectionCount: number;
   readonly lightmappedSectionCount: number;
+  readonly sunAffectedSectionCount: number;
+  readonly textureSlots: readonly LightmapTextureSlot[];
+  readonly lightmapUpload: typeof lightmapCpuDecodedUpload;
   readonly statusCounts: Readonly<Record<TileLightingSurfaceStatus, number>>;
   readonly sections: readonly TileLightingSectionInspection[];
 }
@@ -70,6 +84,7 @@ interface BoundSection {
   readonly status: TileLightingSurfaceStatus;
   readonly programMaterialId: string | null;
   readonly reasons: readonly string[];
+  readonly colourOperation: LightmapColourOperation | null;
   readonly nativeMaterial: NativeMaterial | null;
   boundPage: number | null;
 }
@@ -86,9 +101,27 @@ interface BoundChunk {
 }
 
 const lightmapHourOutsideDayReason = "lightmap-hour-outside-day";
+const colourModifierClass = "Engine.ColorModifier";
+const lightmapCpuDecodedUpload = { format: "rgba8-mip0-cpu-decoded", reason: "lightmap-bc1-cpu-decode" } as const;
+
+function textureSlots(model: TileLightingModel, hour: number): LightmapTextureSlot[] {
+  return Array.from({ length: model.textureCount }, (_, texture) => {
+    const childCount = model.texturePageStart[texture + 1]! - model.texturePageStart[texture]!;
+    return { texture, childCount, sunAffectedSlot: isHourOfDay(hour) ? bspLightmapSlot(hour, childCount, true) : null };
+  });
+}
+
+export function lightmapColourOperationOf(loaded: LoadedNativeMaterial): LightmapColourOperation {
+  const rootClass = loaded.program.nodes.find(node => node.id === loaded.program.root)?.class;
+  return lightmapStageColourOperation(rootClass === colourModifierClass);
+}
+
+function lightmapLightingFor(operation: LightmapColourOperation): LightmapLighting {
+  return operation.operation === "modulate" ? "lightmap-modulate" : "lightmap-modulate2x";
+}
 
 function isHourOfDay(hour: number): boolean {
-  return hour >= 0 && hour < hoursPerDay;
+  return hour >= 0 && hour < ENVIRONMENT_ENGINE_CONSTANTS.hoursPerDay.value;
 }
 
 function lightmapHourGap(hour: number): string | null {
@@ -96,7 +129,7 @@ function lightmapHourGap(hour: number): string | null {
 }
 
 function pageAtHour(model: TileLightingModel, plan: LightmapSectionPlan, hour: number): number | null {
-  return plan.kind === "lightmapped" && isHourOfDay(hour) ? lightmapPageAtHour(model, plan.lightmapTexture, hour, plan.outdoor) : null;
+  return plan.kind === "lightmapped" && isHourOfDay(hour) ? lightmapPageAtHour(model, plan.lightmapTexture, hour, plan.sunAffect) : null;
 }
 
 function disposeSectionMaterials(sections: readonly BoundSection[]): void {
@@ -136,15 +169,18 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
   const prepareSection = async (plan: LightmapSectionPlan, mesh: AbstractMesh, signal: AbortSignal): Promise<PreparedSection> => {
     const programMaterialId = readNativeMaterialProgramPin(mesh.material);
     const unbound = (status: TileLightingSurfaceStatus, reasons: readonly string[]): PreparedSection =>
-      ({ section: { plan, status, programMaterialId, reasons, nativeMaterial: null, boundPage: null }, mesh: null });
+      ({ section: { plan, status, programMaterialId, reasons, colourOperation: null, nativeMaterial: null, boundPage: null }, mesh: null });
     if (plan.kind === "gap") return unbound("lighting-gap", [plan.reason]);
     if (programMaterialId === null) return unbound("program-unconverted", []);
     const loaded = await programFor(programMaterialId, signal);
-    const nativeMaterial = createNativeMaterial(scene, loaded, { sessionSeed: settings.sessionSeed, lighting: plan.kind === "lightmapped" ? "lightmap" : "unlit" });
+    const colourOperation = plan.kind === "lightmapped" ? lightmapColourOperationOf(loaded) : null;
+    const nativeMaterial = createNativeMaterial(scene, loaded, { sessionSeed: settings.sessionSeed,
+      lighting: colourOperation === null ? "unlit" : lightmapLightingFor(colourOperation) });
     const inspected = nativeMaterial.inspect();
     if (inspected.status !== "compiled") { nativeMaterial.dispose(); return unbound("library-diagnostic", inspected.reasons); }
     if (!(mesh instanceof Mesh)) { nativeMaterial.dispose(); return unbound("lighting-gap", [`lighting-mesh-not-editable:${mesh.name}`]); }
-    return { section: { plan, status: "library-compiled", programMaterialId, reasons: [], nativeMaterial, boundPage: null }, mesh };
+    const reasons = colourOperation?.operation === "global-modulation" ? [colourOperation.reason] : [];
+    return { section: { plan, status: "library-compiled", programMaterialId, reasons, colourOperation, nativeMaterial, boundPage: null }, mesh };
   };
   const boundSections = () => [...chunks.values()].sort((left, right) => left.chunkOrdinal - right.chunkOrdinal).flatMap(chunk => chunk.sections);
   const step = () => {
@@ -190,9 +226,12 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
       const statusCounts = { "library-compiled": 0, "library-diagnostic": 0, "program-unconverted": 0, "lighting-gap": 0 };
       for (const section of sections) statusCounts[section.status] += 1;
       return { gap: null, sourceSha256: model.sourceSha256, environment, lightmapHourGap: lightmapHourGap(environment.hour), fog: settings.fog(), sectionCount: sections.length,
-        lightmappedSectionCount: sections.filter(section => section.plan.kind === "lightmapped").length, statusCounts,
-        sections: sections.map(({ plan, status, programMaterialId, reasons }) => ({ chunkId: plan.chunkId, primitive: plan.primitive, lighting: plan.kind,
-          lightmapTexture: plan.kind === "lightmapped" ? plan.lightmapTexture : null, outdoor: plan.kind === "lightmapped" ? plan.outdoor : null,
+        lightmappedSectionCount: sections.filter(section => section.plan.kind === "lightmapped").length,
+        sunAffectedSectionCount: sections.filter(section => section.plan.kind === "lightmapped" && section.plan.sunAffect).length,
+        textureSlots: textureSlots(model, environment.hour), lightmapUpload: lightmapCpuDecodedUpload, statusCounts,
+        sections: sections.map(({ plan, status, programMaterialId, reasons, colourOperation }) => ({ chunkId: plan.chunkId, primitive: plan.primitive, lighting: plan.kind,
+          lightmapTexture: plan.kind === "lightmapped" ? plan.lightmapTexture : null, nativeRenderSection: plan.kind === "lightmapped" ? plan.nativeRenderSection : null,
+          sunAffect: plan.kind === "lightmapped" ? plan.sunAffect : null, colourOperation,
           page: pageAtHour(model, plan, environment.hour), hourPages: plan.kind === "lightmapped" ? lightmapHourPages(model, plan.lightmapTexture) : [],
           status, programMaterialId, reasons: plan.kind === "unlit" ? [plan.reason, ...reasons] : reasons })) };
     },

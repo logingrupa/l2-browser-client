@@ -1,5 +1,8 @@
 import type { Scene } from "@babylonjs/core/scene";
-import { environmentColour, environmentScale, skyLayerColour, type EnvironmentResult, type EnvironmentTransitionGap } from "../../environment/model/nativeEnvironmentColours";
+import {
+  environmentColour, environmentLightPlane, environmentScale, skyLayerColour, type EnvironmentResult, type EnvironmentTransitionGap,
+} from "../../environment/model/nativeEnvironmentColours";
+import type { NativePlane } from "../../environment/model/nativePlane";
 import { createNativeEnvironmentManager, type NativeEnvironmentManager, type NativeEnvironmentSnapshot } from "../../environment/model/nativeEnvironmentManager";
 import type { NativeHourSource, ReadRealSeconds } from "../../environment/model/nativeTimeClock";
 import type { RgbBytes, TimeScaleSample } from "../../environment/model/sampleNativeTimeTables";
@@ -28,6 +31,16 @@ export interface WorldCelestialSample {
   readonly moonScale: TimeScaleSample | EnvironmentTransitionGap;
 }
 
+export interface HourlyEnvironmentLighting {
+  readonly hour: number;
+  readonly terrainAmbient: EnvironmentResult<RgbBytes>;
+  readonly terrainLight: EnvironmentResult<NativePlane>;
+  readonly staticMeshAmbient: EnvironmentResult<RgbBytes>;
+  readonly staticMeshLight: EnvironmentResult<NativePlane>;
+  readonly actorAmbient: EnvironmentResult<RgbBytes>;
+  readonly bspAmbient: EnvironmentResult<RgbBytes>;
+}
+
 export interface RunningWorldTimeOfDay {
   readonly status: "running";
   readonly manager: NativeEnvironmentManager;
@@ -36,6 +49,7 @@ export interface RunningWorldTimeOfDay {
   sample(): WorldEnvironmentSample;
   skyEnvironmentColours(): readonly SkyEnvironmentColour[];
   celestial(): WorldCelestialSample;
+  hourlyEnvironmentLighting(): HourlyEnvironmentLighting;
   dispose(): void;
 }
 
@@ -77,6 +91,14 @@ export function startWorldTimeOfDay(scene: Scene, timeTables: NativeTimeTablesEx
       const hour = manager.hour(), { celestialPhiDegrees } = manager.snapshot();
       return { sunTheta: sunAngles(hour, celestialPhiDegrees).theta, moonTheta: moonAngles(hour, celestialPhiDegrees).theta,
         moonScale: environmentScale(tables, manager.blend(), "MoonScale", hour) };
+    },
+    hourlyEnvironmentLighting() {
+      const hour = manager.hour(), blend = manager.blend();
+      return { hour,
+        terrainAmbient: environmentColour(tables, blend, "TerrainAmbient", hour), terrainLight: environmentLightPlane(tables, blend, "HSVTerrainLight", hour),
+        staticMeshAmbient: environmentColour(tables, blend, "StaticMeshAmbient", hour),
+        staticMeshLight: environmentLightPlane(tables, blend, "HSVStaticMeshLight", hour),
+        actorAmbient: environmentColour(tables, blend, "ActorAmbient", hour), bspAmbient: environmentColour(tables, blend, "BSPAmbient", hour) };
     },
     dispose() {
       if (disposed) return;

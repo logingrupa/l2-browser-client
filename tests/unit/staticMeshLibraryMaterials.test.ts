@@ -8,7 +8,7 @@ import type { LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadN
 import { FOG_DISABLED } from "../../src/materials/ue2/babylon/material";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
-import { bindStaticMeshLibraryMaterials, staticMeshVertexLightingUnportedReason } from "../../src/scene/world/lighting/bindStaticMeshLibraryMaterials";
+import { bindStaticMeshLibraryMaterials, staticMeshFinalVertexColourReason } from "../../src/scene/world/lighting/bindStaticMeshLibraryMaterials";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import { readNativeSourceReference } from "../../src/scene/world/nativeSourceReference";
 import {
@@ -131,7 +131,7 @@ describe("static mesh slots through the UE2 material library", () => {
     expect(f.meshes.slice(2).map(mesh => mesh.material)).toEqual(textureMaterials.slice(2));
     expect(f.loadProgram.mock.calls.map(([materialId]) => materialId).sort()).toEqual([portedProgramSha256, diagnosticProgramSha256]);
     const inspection = binding.inspection();
-    expect(inspection).toMatchObject({ gap: null, lighting: "unlit", lightingReasons: [staticMeshVertexLightingUnportedReason], meshCount: 5,
+    expect(inspection).toMatchObject({ gap: null, lighting: "unlit", lightingReasons: [staticMeshFinalVertexColourReason], meshCount: 5,
       statusCounts: { "library-compiled": 2, "library-diagnostic": 1, "program-gap": 2 } });
     expect(inspection.slots).toEqual([
       { sourceObject: null, status: "program-gap", programMaterialId: null, reasons: [staticMeshSlotMaterialNoneReason], meshes: 1 },

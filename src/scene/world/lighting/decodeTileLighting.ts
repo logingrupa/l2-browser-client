@@ -1,4 +1,5 @@
 import { readTypedPayload, type TypedPayload } from "../../../shared/typedPayload";
+import { decodeHourlyLightingInputs, type HourlyLightingInputs } from "./decodeHourlyLightingInputs";
 import { dxt1ByteCount } from "./lightmapPages";
 import { TileLightingDecodeError } from "./tileLightingDecodeError";
 import { decodeTileLightingRecords, type TileLightingRecords } from "./tileLightingRecords";
@@ -28,6 +29,7 @@ export interface TileLightingModel {
   readonly pages: readonly TileLightmapPage[];
   readonly nodeRanges: readonly TileLightmapNodeRange[];
   readonly records: TileLightingRecords;
+  readonly hourly: HourlyLightingInputs;
 }
 
 export const lightmapTextureNone = -1;
@@ -112,5 +114,5 @@ export function decodeTileLighting(assetJson: unknown, payloadBytes: Uint8Array)
   requireTextureIndices("LMSC.lightmapTexture", payload.int32("LMSC.lightmapTexture"), textureCount, true);
   const pages = decodePages(payload, textureCount, texturePageStart);
   return { sourceSha256: payload.sourceSha256, textureCount, texturePageStart, pages, nodeRanges: decodeNodeRanges(payload, textureCount),
-    records: decodeTileLightingRecords(payload.uint8("RECS.canonicalJson")) };
+    records: decodeTileLightingRecords(payload.uint8("RECS.canonicalJson")), hourly: decodeHourlyLightingInputs(payload) };
 }

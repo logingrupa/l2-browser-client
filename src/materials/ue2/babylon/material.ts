@@ -13,7 +13,7 @@ import { createRandomStream, deriveStreamSeed, type RandomStream } from "../../.
 import type { ResolvedMaterialBlend } from "../model/blendTable";
 import { DIAGNOSTIC_CONSTANTS } from "../model/constants/diagnosticConstants";
 import { FOG_DISABLED, type FogState } from "../model/fog";
-import type { MaterialLighting } from "../model/lighting";
+import { isLightmapLighting, type MaterialLighting } from "../model/lighting";
 import { colorModifierColourSourceIndices, evaluateMaterialFrame, withColourSourceRgb, type ColourUnitsRgb, type MaterialFrameState } from "../model/materialFrame";
 import type { CompiledMaterialStagePlan } from "../model/stagePlan";
 import { babylonBlendStateForPair, blendFactorPairKey, type BabylonBlendState } from "./blendState";
@@ -27,7 +27,7 @@ import type { LoadedNativeMaterial } from "./loadNativeMaterial";
 
 export { particleFragmentChain, type ParticleFragmentChain } from "./particleFragmentChain";
 export { selectTextureFrame } from "../model/textureFrames";
-export type { MaterialLighting } from "../model/lighting";
+export type { LightmapLighting, MaterialLighting } from "../model/lighting";
 export { evaluateFogState, FOG_DISABLED, type CameraZoneFogRecord, type FogInputs, type FogRangeRecord, type FogState } from "../model/fog";
 export { loadNativeMaterial, type LoadedNativeMaterial } from "./loadNativeMaterial";
 
@@ -75,7 +75,7 @@ const lightmapCoordinatesAttribute = "uv2";
 const vertexStageUniforms = ["world", "view", "viewProjection"];
 
 function vertexSourceFor(scene: Scene, lighting: MaterialLighting): string {
-  const lightmapped = lighting === "lightmap";
+  const lightmapped = isLightmapLighting(lighting);
   return [
     "precision highp float;",
     "attribute vec3 position;",
@@ -100,7 +100,7 @@ function vertexSourceFor(scene: Scene, lighting: MaterialLighting): string {
 }
 
 function vertexAttributesFor(lighting: MaterialLighting): string[] {
-  return lighting === "lightmap" ? ["position", "uv", lightmapCoordinatesAttribute] : ["position", "uv"];
+  return isLightmapLighting(lighting) ? ["position", "uv", lightmapCoordinatesAttribute] : ["position", "uv"];
 }
 
 const diagnosticColourUniform = "ue2DiagnosticColour";
@@ -216,7 +216,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
       for (const index of indices) rgbByColourSourceIndex.set(index, rgb);
     },
     setLightmap: lightmap => {
-      if (lighting !== "lightmap") throw new Error(`UE2 material ${plan.root} was built ${lighting} and takes no lightmap.`);
+      if (!isLightmapLighting(lighting)) throw new Error(`UE2 material ${plan.root} was built ${lighting} and takes no lightmap.`);
       material.setTexture(lightmapSamplerName, lightmap);
       lightmapBound = true;
     },

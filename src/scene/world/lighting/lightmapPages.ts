@@ -1,6 +1,6 @@
+import { bspLightmapSlot } from "../../../environment/model/bspLightmapSelection";
 import type { TileLightingModel } from "./decodeTileLighting";
 
-export const hoursPerDay = 24;
 const dxt1BlockEdge = 4;
 const dxt1BlockBytes = 8;
 const rgbaChannels = 4;
@@ -9,17 +9,10 @@ export function dxt1ByteCount(edge: number): number {
   return (edge / dxt1BlockEdge) * (edge / dxt1BlockEdge) * dxt1BlockBytes;
 }
 
-export function lightmapSlotAtHour(hour: number, slotCount: number, outdoor: boolean): number {
-  if (!Number.isFinite(hour) || hour < 0 || hour >= hoursPerDay) throw new RangeError(`Lightmap hour ${hour} is outside [0, ${hoursPerDay}).`);
-  if (!Number.isSafeInteger(slotCount) || slotCount < 1) throw new RangeError(`Lightmap slot count ${slotCount} must be a positive integer.`);
-  if (!outdoor) return 0;
-  return Math.trunc(Math.fround(Math.fround(Math.fround(hour) * slotCount) / hoursPerDay)) % slotCount;
-}
-
-export function lightmapPageAtHour(model: TileLightingModel, texture: number, hour: number, outdoor: boolean): number {
+export function lightmapPageAtHour(model: TileLightingModel, texture: number, hour: number, sunAffect: boolean): number {
   const firstPage = model.texturePageStart[texture], endPage = model.texturePageStart[texture + 1];
   if (firstPage === undefined || endPage === undefined) throw new RangeError(`Lightmap texture ${texture} is outside the ${model.textureCount} textures.`);
-  return firstPage + lightmapSlotAtHour(hour, endPage - firstPage, outdoor);
+  return firstPage + bspLightmapSlot(hour, endPage - firstPage, sunAffect);
 }
 
 export function lightmapHourPages(model: TileLightingModel, texture: number): readonly number[] {

@@ -80,7 +80,7 @@ function storedCollisionResource(folder: string, arrays: readonly TypedPayloadFi
 
 function chunkBspGlb(sectionCount: number): Uint8Array<ArrayBuffer> {
   const sections = Array.from({ length: sectionCount }, (_, primitive) => ({ primitive, material: "Fixture_T.Floor", unlit: false, lightmap: -1,
-    outdoor: true, translucent: false }));
+    nativeRenderSection: primitive, translucent: false }));
   const nodeRanges = sections.map((_, primitive) => ({ node: primitive, primitive, firstIndex: 0, indexCount: 6 }));
   return glb({ asset: { version: "2.0" }, extras: { nativeBspChunk: "chunk-0-1", nativeBspSections: sections, nativeBspNodeRanges: nodeRanges } });
 }
