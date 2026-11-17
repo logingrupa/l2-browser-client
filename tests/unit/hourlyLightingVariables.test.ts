@@ -4,7 +4,7 @@ import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { hourlyLightingVariables, staticMeshVisibilityProbeActor } from "../../src/runtime/hourlyLightingVariables";
-import { attachTileLighting } from "../../src/scene/world/lighting/attachTileLighting";
+import { attachTileLighting, tileLightingWithoutVisibility } from "../../src/scene/world/lighting/attachTileLighting";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import { readConverterExpectations } from "../support/hourlyLightingInputsFixture";
 import { fixtureNumber, fixtureNumbers, readHourlyLightingFixtures } from "../support/hourlyLightingFixtures";
@@ -48,7 +48,7 @@ describe("hourly lighting developer variables", () => {
     const scene = new Scene(new NullEngine());
     scenes.push(scene);
     const timeOfDay = provideDayNightTimeOfDay(scene);
-    const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    const attached = await attachTileLighting(scene, lightingTileManifest(), tileLightingWithoutVisibility, new AbortController().signal);
     const { instance } = readConverterExpectations().staticMesh;
     await attached.addChunk({ chunkId: "chunk-0-0", bspChunk: null, staticMeshes: [], terrainMeshes: [keyedTerrainMesh(scene)],
       staticMeshPlacements: [{ sourceActor: staticMeshVisibilityProbeActor, exportIndex: instance.actorExportIndex }] });

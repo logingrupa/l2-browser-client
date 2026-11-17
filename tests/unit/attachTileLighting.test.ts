@@ -5,7 +5,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
-import { attachTileLighting, type TileLightingRuntimeInspection } from "../../src/scene/world/lighting/attachTileLighting";
+import { attachTileLighting, tileLightingWithoutVisibility, type TileLightingRuntimeInspection } from "../../src/scene/world/lighting/attachTileLighting";
 import { terrainLightingUnportedReason } from "../../src/scene/world/lighting/bindTerrainLayerMaterials";
 import type { TileLightingBspChunk } from "../../src/scene/world/lighting/bindTileLighting";
 import type { NativeBspSection } from "../../src/scene/world/nativeBspResources";
@@ -63,7 +63,7 @@ describe("attachTileLighting", () => {
     scene.activeCamera = new FreeCamera("camera", Vector3.Zero(), scene);
     const terrainMesh = new Mesh("terrain-mesh", scene);
     const observersBefore = scene.onBeforeRenderObservable.observers.length;
-    const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    const attached = await attachTileLighting(scene, lightingTileManifest(), tileLightingWithoutVisibility, new AbortController().signal);
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshes: [], staticMeshPlacements: [], terrainMeshes: [terrainMesh] });
     expect(terrainMesh.material).toBeNull();
     const inspection = attached.inspection() as TileLightingRuntimeInspection;
@@ -81,7 +81,7 @@ describe("attachTileLighting", () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
     provideDayNightTimeOfDay(scene);
-    const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    const attached = await attachTileLighting(scene, lightingTileManifest(), tileLightingWithoutVisibility, new AbortController().signal);
     expect(attached.inspection()).toHaveProperty("cameraEnvironment");
     attached.dispose();
     scene.dispose();
@@ -92,7 +92,7 @@ describe("attachTileLighting", () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
     const timeOfDay = provideDayNightTimeOfDay(scene);
-    const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    const attached = await attachTileLighting(scene, lightingTileManifest(), tileLightingWithoutVisibility, new AbortController().signal);
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(0);
     const staticMesh = new Mesh("late static mesh", scene);
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], staticMeshPlacements: [], terrainMeshes: [] });
@@ -116,7 +116,7 @@ describe("attachTileLighting", () => {
     const scene = new Scene(engine);
     provideDayNightTimeOfDay(scene);
     const ambientBefore = scene.ambientColor.asArray();
-    const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    const attached = await attachTileLighting(scene, lightingTileManifest(), tileLightingWithoutVisibility, new AbortController().signal);
     const staticMesh = new Mesh("late static mesh", scene);
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh],
       staticMeshPlacements: [{ sourceActor: "20_21.StaticMeshActor1905", exportIndex: 7706 }], terrainMeshes: [] });
@@ -136,11 +136,11 @@ describe("attachTileLighting", () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
     const observersBefore = scene.onBeforeRenderObservable.observers.length;
-    const unprovided = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    const unprovided = await attachTileLighting(scene, lightingTileManifest(), tileLightingWithoutVisibility, new AbortController().signal);
     expect(unprovided.inspection()).toEqual({ gap: "environment-time-of-day-unprovided" });
     expect(unprovided.materialUniforms).toBeNull();
     provideWorldTimeOfDay(scene, { status: "gap", reason: "environment-time-tables-unstaged", detail: "not staged" });
-    const unstaged = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
+    const unstaged = await attachTileLighting(scene, lightingTileManifest(), tileLightingWithoutVisibility, new AbortController().signal);
     expect(unstaged.inspection()).toEqual({ gap: "environment-time-tables-unstaged" });
     expect(scene.onBeforeRenderObservable.observers.length).toBe(observersBefore);
     scene.dispose();

@@ -111,6 +111,19 @@ describe("bindTileVisibility", () => {
     expect(binding.memberVisible(999)).toBe(true);
   });
 
+  it("answers nodeRangeVisible from the latest frame's range visibility and for every node before a frame or outside the model", () => {
+    const { binding, manual } = bindThreeRooms(poseAt(-500));
+    const wallAndFloorNodes = () => [binding.nodeRangeVisible(0, 2), binding.nodeRangeVisible(0, 3), binding.nodeRangeVisible(1, 4)];
+    expect(wallAndFloorNodes()).toEqual([true, true, true]);
+    manual.render();
+    expect(wallAndFloorNodes()).toEqual([true, true, true]);
+    binding.setCulling(true);
+    manual.render();
+    expect(wallAndFloorNodes()).toEqual([true, true, false]);
+    expect([binding.nodeRangeVisible(0, 4), binding.nodeRangeVisible(0, 0), binding.nodeRangeVisible(0, 99)]).toEqual([true, true, true]);
+    binding.dispose();
+  });
+
   it("rewrites translucent index blocks back to front only when the order changes and stops once the chunk leaves", () => {
     const { binding, manual, reorders } = bindThreeRooms(poseAt(-500));
     manual.render();

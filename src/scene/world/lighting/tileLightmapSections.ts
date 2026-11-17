@@ -1,6 +1,6 @@
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
 import { bspCompressedLightmapGate } from "../../../environment/model/bspLightmapSelection";
-import { sunAffectUnresolved } from "./decodeHourlyLightingInputs";
+import { sunAffected, sunAffectUnresolved } from "./decodeHourlyLightingInputs";
 import { lightmapTextureNone, type TileLightingModel, type TileLightmapNodeRange } from "./decodeTileLighting";
 
 export interface LightmapSectionChunk {
@@ -15,14 +15,13 @@ export interface LightmapSectionChunk {
 export type LightmapSectionPlan =
   | { readonly kind: "unlit"; readonly chunkId: string; readonly primitive: number; readonly reason: "section-unlit" | "section-without-lightmap" }
   | { readonly kind: "lightmapped"; readonly chunkId: string; readonly primitive: number; readonly lightmapTexture: number; readonly nativeRenderSection: number;
-    readonly sunAffect: boolean; readonly lightmapCoordinates: Float32Array }
+    readonly sunAffectedNodes: readonly number[]; readonly lightmapCoordinates: Float32Array }
   | { readonly kind: "gap"; readonly chunkId: string; readonly primitive: number; readonly reason: string };
-
-type SectionSunAffect = { readonly status: "resolved"; readonly nativeRenderSection: number; readonly sunAffect: boolean } | { readonly status: "gap"; readonly reason: string };
 
 const coordinateComponents = 2;
 export const nativeRenderSectionUnstagedReason = "bsp-native-render-section-unstaged";
 export const sectionSunAffectUnresolvedReason = "bsp-section-sun-affect-unresolved";
+export const sortedSectionMixedSunAffectReason = "bsp-sorted-section-mixed-sun-affect";
 
 function rangeKey(chunkOrdinal: number, node: number): string {
   return `${chunkOrdinal}:${node}`;
@@ -41,15 +40,6 @@ function placeRangeCoordinates(range: TileLightmapNodeRange, indices: ArrayLike<
   return null;
 }
 
-function sectionSunAffect(model: TileLightingModel, nativeRenderSection: number | null): SectionSunAffect {
-  if (nativeRenderSection === null) return { status: "gap", reason: nativeRenderSectionUnstagedReason };
-  const staged = model.hourly.sectionSunAffect;
-  if (staged.status === "unstaged") return { status: "gap", reason: staged.reason };
-  const value = staged.value[nativeRenderSection];
-  if (value === undefined) return { status: "gap", reason: `lighting-native-render-section-invalid:${nativeRenderSection}` };
-  return value === sunAffectUnresolved ? { status: "gap", reason: sectionSunAffectUnresolvedReason } : { status: "resolved", nativeRenderSection, sunAffect: value === 1 };
-}
-
 function compressedPagesGap(model: TileLightingModel, texture: number): string | null {
   const staged = model.hourly.pageRevisions;
   if (staged.status === "unstaged") return staged.reason;
@@ -60,32 +50,41 @@ function compressedPagesGap(model: TileLightingModel, texture: number): string |
   return null;
 }
 
-function planSection(chunk: LightmapSectionChunk, primitive: number, rangesByNode: ReadonlyMap<string, TileLightmapNodeRange>, model: TileLightingModel): LightmapSectionPlan {
+function planSection(chunk: LightmapSectionChunk, primitive: number, rangeIndexByNode: ReadonlyMap<string, number>, model: TileLightingModel): LightmapSectionPlan {
   const section = chunk.sections[primitive]!, chunkId = chunk.chunkId;
   if (section.unlit) return { kind: "unlit", chunkId, primitive, reason: "section-unlit" };
   if (section.lightmap === null || section.lightmap === lightmapTextureNone) return { kind: "unlit", chunkId, primitive, reason: "section-without-lightmap" };
   if (section.lightmap >= model.textureCount) return { kind: "gap", chunkId, primitive, reason: `lighting-section-texture-invalid:${section.lightmap}` };
-  const sunAffect = sectionSunAffect(model, section.nativeRenderSection);
-  if (sunAffect.status === "gap") return { kind: "gap", chunkId, primitive, reason: sunAffect.reason };
+  if (section.nativeRenderSection === null) return { kind: "gap", chunkId, primitive, reason: nativeRenderSectionUnstagedReason };
+  const nodeRangeSunAffect = model.hourly.nodeRangeSunAffect;
+  if (nodeRangeSunAffect.status === "unstaged") return { kind: "gap", chunkId, primitive, reason: nodeRangeSunAffect.reason };
   const pagesGap = compressedPagesGap(model, section.lightmap);
   if (pagesGap !== null) return { kind: "gap", chunkId, primitive, reason: pagesGap };
   const vertexCount = chunk.primitiveVertexCount(primitive), indices = chunk.primitiveIndices(primitive);
-  const coordinates = new Float32Array(vertexCount * coordinateComponents);
+  const coordinates = new Float32Array(vertexCount * coordinateComponents), sunAffectedNodes: number[] = [];
+  let nodeRangeCount = 0;
   for (const glbRange of chunk.nodeRanges.filter(range => range.primitive === primitive)) {
-    const range = rangesByNode.get(rangeKey(chunk.chunkOrdinal, glbRange.node));
-    if (range === undefined) return { kind: "gap", chunkId, primitive, reason: `lighting-node-range-unlisted:${glbRange.node}` };
+    const rangeIndex = rangeIndexByNode.get(rangeKey(chunk.chunkOrdinal, glbRange.node));
+    if (rangeIndex === undefined) return { kind: "gap", chunkId, primitive, reason: `lighting-node-range-unlisted:${glbRange.node}` };
+    const range = model.nodeRanges[rangeIndex]!, sunAffect = nodeRangeSunAffect.value[rangeIndex]!;
     if (range.primitive !== primitive || range.firstIndex !== glbRange.firstIndex || range.indexCount !== glbRange.indexCount) {
       return { kind: "gap", chunkId, primitive, reason: `lighting-node-range-unmapped:${glbRange.node}` };
     }
     if (range.texture !== section.lightmap) return { kind: "gap", chunkId, primitive, reason: `lighting-node-texture-mismatch:${glbRange.node}` };
+    if (sunAffect === sunAffectUnresolved) return { kind: "gap", chunkId, primitive, reason: sectionSunAffectUnresolvedReason };
     const placed = placeRangeCoordinates(range, indices, coordinates, vertexCount);
     if (placed !== null) return { kind: "gap", chunkId, primitive, reason: placed };
+    if (sunAffect === sunAffected) sunAffectedNodes.push(range.node);
+    nodeRangeCount += 1;
   }
-  return { kind: "lightmapped", chunkId, primitive, lightmapTexture: section.lightmap, nativeRenderSection: sunAffect.nativeRenderSection,
-    sunAffect: sunAffect.sunAffect, lightmapCoordinates: coordinates };
+  if (section.translucent && sunAffectedNodes.length > 0 && sunAffectedNodes.length < nodeRangeCount) {
+    return { kind: "gap", chunkId, primitive, reason: sortedSectionMixedSunAffectReason };
+  }
+  return { kind: "lightmapped", chunkId, primitive, lightmapTexture: section.lightmap, nativeRenderSection: section.nativeRenderSection,
+    sunAffectedNodes, lightmapCoordinates: coordinates };
 }
 
 export function planLightmapSections(model: TileLightingModel, chunks: readonly LightmapSectionChunk[]): LightmapSectionPlan[] {
-  const rangesByNode = new Map(model.nodeRanges.map(range => [rangeKey(range.chunk, range.node), range]));
-  return chunks.flatMap(chunk => chunk.sections.map((_, primitive) => planSection(chunk, primitive, rangesByNode, model)));
+  const rangeIndexByNode = new Map(model.nodeRanges.map((range, rangeIndex) => [rangeKey(range.chunk, range.node), rangeIndex]));
+  return chunks.flatMap(chunk => chunk.sections.map((_, primitive) => planSection(chunk, primitive, rangeIndexByNode, model)));
 }

@@ -64,7 +64,7 @@ function bspReadings(lighting: TileLightingRuntimeInspection): Record<string, ()
   };
   return {
     "lighting.bsp.slots": () => unverifiedReading(lighting.textureSlots.map(slot => `${slot.texture}: ${slot.sunAffectedSlot ?? "-"} of ${slot.childCount}`).join(" | ")),
-    "lighting.bsp.sunAffect": () => unverifiedReading(`${lighting.sunAffectedSectionCount} of ${lighting.lightmappedSectionCount} lightmapped sections; others use slot 0`),
+    "lighting.bsp.sunAffect": () => unverifiedReading(`${lighting.sunAffectedSectionCount} of ${lighting.lightmappedSectionCount} lightmapped sections sun-affected this frame; others use slot 0`),
     "lighting.bsp.gaps": () => {
       const gaps = lighting.sections.filter(section => section.lighting === "gap").map(section => section.reasons[0] ?? "lighting-gap");
       const counts = Object.entries(gaps.reduce<Record<string, number>>((sum, reason) => ({ ...sum, [reason]: (sum[reason] ?? 0) + 1 }), {}));
@@ -121,8 +121,12 @@ const hourlyVariableSources: Readonly<Record<string, string>> = {
   "lighting.terrain.staticBase": "TLIT serialized light masks; a covered vertex needs SampleIntensity (terrain-general-staticlight-sampleintensity)",
   "lighting.terrain.drawn": "layer texture x vertex colour with the global op waits for terrain lighting in the library terrain layer material",
   "lighting.terrain.refreshThreshold": "manager +0x160 threshold; DB-7 did not confirm it holds Env.int ShadowTick",
-  "lighting.bsp.slots": "slot = trunc(f32(hour) * N / 24) % N per lightmap texture (claim bsp-discrete-selection); a section takes it only when LMSC.sunAffect is set, which is unconfirmed",
-  "lighting.bsp.sunAffect": "LMSC.sunAffect: any drawn node of the native render section whose front zone has bSunAffect (lighting-rules bsp-section-sun-affect, unconfirmed: the flag scope is an open REA question)",
+  "lighting.bsp.slots": "slot = trunc(f32(hour) * N / 24) % N per lightmap texture (claim bsp-discrete-selection); a section draw takes it in a frame when any visible node range "
+    + "it submits is sun-affected, else slot 0, and a sorted section picks per node (DB-15 bsp-sun-affect-scope.json 6a300d07, Engine.dll 0x10669de0); "
+    + "the visible node set is our port of the visibility walk, not a recorded native draw list",
+  "lighting.bsp.sunAffect": "LMNR.sunAffect per drawn node range: the front zone ZoneInfo bSunAffect, or the LevelInfo bSunAffect for a zone without a ZoneInfo; "
+    + "hasSun resets on every draw call and is chosen per frame from the visible nodes (DB-15 bsp-sun-affect-scope.json 6a300d07, Engine.dll 0x10669de0); "
+    + "the visible node set is our port of the visibility walk, not a recorded native draw list",
   "lighting.bsp.gaps": "sections without a bound lightmap, by reason",
   "lighting.bsp.compressedGate": "LMPG.revision == LMPG.compressedRevision selects the compressed child (claim bsp-compressed-choice)",
   "lighting.bsp.colourOperation": "EnableLighting argument 3: MODULATE for UColorModifier, the global op otherwise (claim bsp-compressed-choice, d3d-modulation)",

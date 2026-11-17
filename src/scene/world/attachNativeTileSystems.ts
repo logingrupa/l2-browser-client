@@ -1,7 +1,7 @@
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { attachTileVisibility, type AttachedTileVisibility } from "./bspVisibility/attachTileVisibility";
-import { attachTileLighting, type AttachedTileLighting, type TileLightingChunkSurfaces } from "./lighting/attachTileLighting";
+import { attachTileLighting, tileLightingWithoutVisibility, type AttachedTileLighting, type TileLightingChunkSurfaces } from "./lighting/attachTileLighting";
 import type { NativeTileBspChunk } from "./loadNativeTileChunks";
 import { loadNativeTileMovers, type NativeTileMovers } from "./loadNativeTileMovers";
 import type { NativeModelInstance } from "./nativeModelPlacements";
@@ -51,8 +51,7 @@ export async function attachNativeTileSystems(scene: Scene, manifest: NativeTile
     visibility = attachedVisibility;
     if (isDisposed()) throw disposedDuringLoading();
     const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));
-    const visibilityBinding = attachedVisibility.binding;
-    const attachedLighting = await attachTileLighting(scene, manifest, () => visibilityBinding?.frame() ?? null, signal);
+    const attachedLighting = await attachTileLighting(scene, manifest, attachedVisibility.binding ?? tileLightingWithoutVisibility, signal);
     lighting = attachedLighting;
     if (isDisposed()) throw disposedDuringLoading();
     const mapEmitterPlacements = await loadTileMapEmitterPlacements(manifest, signal);

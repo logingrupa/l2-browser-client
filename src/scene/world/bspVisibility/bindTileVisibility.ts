@@ -1,7 +1,7 @@
 import type { VariableInfo } from "../../../ui/devSheet/types";
 import type { ResidencyDrawLimitRule } from "../worldResidencyRing";
 import type { BspVisibilityLimitRule } from "./bspVisibilityRules";
-import { memberKindMapEmitter, type BspVisibilityModel } from "./core/decodeBspVisibility";
+import { indexNone, memberKindMapEmitter, type BspVisibilityModel } from "./core/decodeBspVisibility";
 import type { TileVisibilityFrame, TileVisibilityFrameSource } from "./core/tileVisibilityFrame";
 import type { ViewPose } from "./core/viewFrustum";
 
@@ -82,6 +82,7 @@ export type TileVisibilityInspection = BoundTileVisibilityInspection | TileVisib
 export interface TileVisibilityBinding {
   frame(): TileVisibilityFrame | null;
   memberVisible(exportIndex: number): boolean;
+  nodeRangeVisible(chunkOrdinal: number, node: number): boolean;
   setCulling(enabled: boolean): void;
   addChunkTargets(chunkId: string, targets: ChunkVisibilityTargets): void;
   removeChunkTargets(chunkId: string): void;
@@ -164,6 +165,10 @@ export function bindTileVisibility(input: TileVisibilityBindingInput): TileVisib
     memberVisible(exportIndex) {
       const member = memberByExportIndex.get(exportIndex);
       return member === undefined || latest === null || latest.memberVisible[member] === 1;
+    },
+    nodeRangeVisible(chunkOrdinal, node) {
+      const range = model.nodeRange[node] ?? indexNone;
+      return latest === null || range === indexNone || model.ranges.chunk[range] !== chunkOrdinal || latest.rangeVisible[range] === 1;
     },
     setCulling(enabled) { cullingEnabled = enabled; },
     addChunkTargets(chunkId, targets) {

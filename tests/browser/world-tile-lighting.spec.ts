@@ -64,7 +64,7 @@ const minutesPerHour = 60;
 const staticMeshVisibilityProbeActor = "20_21.StaticMeshActor1905";
 const lightingArrayNames = lightingResource ? readJson<{ arrays: readonly { readonly name: string }[] }>(laneStoreFile(lightingResource.manifest)).arrays
   .map(array => array.name) : [];
-const hourlyInputsStaged = ["LMSC.sunAffect", "LMPG.compressedRevision", "TINT.time", "SMEN.bits"].every(name => lightingArrayNames.includes(name));
+const hourlyInputsStaged = ["LMNR.sunAffect", "LMPG.compressedRevision", "TINT.time", "SMEN.bits"].every(name => lightingArrayNames.includes(name));
 
 function servedBspSectionCount(): number {
   return tileManifest!.chunks.map(chunk => readJson<ChunkManifest>(laneStoreFile(chunk.manifest))).reduce((sum, chunk) => {

@@ -110,32 +110,29 @@ describe("lightmap pages by hour", () => {
 describe("planLightmapSections", () => {
   it("places each node range's lightmap coordinates on its own vertices and leaves unlit sections unlit", () => {
     const [sunAffected, sheltered, unlit] = planLightmapSections(tileLightingModel(), [plainChunk()]);
-    expect(sunAffected).toMatchObject({ kind: "lightmapped", lightmapTexture: 0, nativeRenderSection: 0, sunAffect: true });
+    expect(sunAffected).toMatchObject({ kind: "lightmapped", lightmapTexture: 0, nativeRenderSection: 0, sunAffectedNodes: [10] });
     expect(Array.from(sunAffected?.kind === "lightmapped" ? sunAffected.lightmapCoordinates : [])).toEqual([0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75]);
-    expect(sheltered).toMatchObject({ kind: "lightmapped", lightmapTexture: 1, nativeRenderSection: 1, sunAffect: false });
+    expect(sheltered).toMatchObject({ kind: "lightmapped", lightmapTexture: 1, nativeRenderSection: 1, sunAffectedNodes: [] });
     expect(unlit).toEqual({ kind: "unlit", chunkId: "chunk-0-0", primitive: 2, reason: "section-unlit" });
   });
 
-  it("takes sun affect from the LMSC row of each section's native render section", () => {
-    const swapped = decoded(replaceArray(tileLightingArrays(), "LMSC.sunAffect", [0, 1, 0]));
+  it("lists the sun-affected nodes of each section from the LMNR row of each node range", () => {
+    const swapped = decoded(replaceArray(tileLightingArrays(), "LMNR.sunAffect", [0, 1, 0]));
     const [first, second] = planLightmapSections(swapped, [plainChunk()]);
-    expect([first, second].map(plan => plan?.kind === "lightmapped" ? plan.sunAffect : null)).toEqual([false, true]);
+    expect([first, second].map(plan => plan?.kind === "lightmapped" ? plan.sunAffectedNodes : null)).toEqual([[], [11]]);
   });
 
   it.each<[string, () => TileLightingModel, LightmapSectionChunk, string]>([
-    ["a section whose native render section sun affect is unresolved",
-      () => decoded(replaceArray(tileLightingArrays(), "LMSC.sunAffect", [-1, 0, 0])), plainChunk(), sectionSunAffectUnresolvedReason],
-    ["a payload converted before LMSC.sunAffect", () => decoded(withoutArray(tileLightingArrays(), "LMSC.sunAffect")), plainChunk(),
-      "hourly-lighting-input-unstaged:LMSC.sunAffect"],
+    ["a section with a node range whose sun affect is unresolved",
+      () => decoded(replaceArray(tileLightingArrays(), "LMNR.sunAffect", [-1, 0, 0])), plainChunk(), sectionSunAffectUnresolvedReason],
+    ["a payload converted before LMNR.sunAffect", () => decoded(withoutArray(tileLightingArrays(), "LMNR.sunAffect")), plainChunk(),
+      "hourly-lighting-input-unstaged:LMNR.sunAffect"],
     ["a payload converted before the page footer", () => decoded(withoutArray(tileLightingArrays(), "LMPG.compressedRevision")), plainChunk(),
       "hourly-lighting-input-unstaged:LMPG.compressedRevision"],
     ["a page whose revision differs from its compressed revision",
       () => decoded(replaceArray(tileLightingArrays(), "LMPG.compressedRevision", [3, 3, 4, 3, 3, 3, 3, 3, 3])), plainChunk(), "bsp-live-cache-state"],
     ["a chunk BSP keyed by the outdoor class", tileLightingModel, { ...plainChunk(), sections: sections.map(section => ({ ...section, nativeRenderSection: null })) },
       nativeRenderSectionUnstagedReason],
-    ["a section whose native render section the LMSC rows do not list", tileLightingModel,
-      { ...plainChunk(), sections: sections.map(section => section.primitive === 0 ? { ...section, nativeRenderSection: 7 } : section) },
-      "lighting-native-render-section-invalid:7"],
   ])("turns %s into a named gap instead of a lightmap", (_, model, chunk, reason) => {
     expect(planLightmapSections(model(), [chunk])[0]).toMatchObject({ kind: "gap", reason });
   });
@@ -165,7 +162,7 @@ describe("bindTileLighting", () => {
     const chunk: TileLightingBspChunk = { chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes };
     let environment = environmentAtHour(1);
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1, environment: () => environment,
-      levelSeconds: () => 0, fog: () => FOG_DISABLED, loadProgram: async () => loaded });
+      levelSeconds: () => 0, fog: () => FOG_DISABLED, nodeRangeVisible: () => true, loadProgram: async () => loaded });
     await binding.addChunk(chunk);
     const pagesAtOne = binding.inspection().sections.map(section => section.page);
     expect(binding.inspection().sections.map(section => section.status)).toEqual(["library-compiled", "library-compiled", "program-unconverted"]);
@@ -229,7 +226,7 @@ describe("bindTileLighting", () => {
     const originalMaterials = meshes.map(mesh => mesh.material);
     let releaseProgram: (() => void) | null = null;
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1,
-      environment: () => environmentAtHour(1), levelSeconds: () => 0, fog: () => FOG_DISABLED,
+      environment: () => environmentAtHour(1), levelSeconds: () => 0, fog: () => FOG_DISABLED, nodeRangeVisible: () => true,
       loadProgram: (_materialId, signal) => new Promise((_resolve, reject) => { releaseProgram = () => reject(signal.reason); }) });
     const adding = binding.addChunk({ chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes });
     await Promise.resolve();
