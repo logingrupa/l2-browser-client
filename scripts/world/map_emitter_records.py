@@ -1,7 +1,7 @@
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError, Reader
-from native_effect_bundle import CONVERTED_EMITTER_CLASSES
+from native_assets_lib.emitter_classes import CONVERTED_EMITTER_CLASSES
 from world.actor_field_values import resolved_actor_field, serialized_property_tags
 from world.declared_property_types import declared_property_types
 from world.map_actor_properties import MAXIMUM_ARRAY_ELEMENTS, actor_properties

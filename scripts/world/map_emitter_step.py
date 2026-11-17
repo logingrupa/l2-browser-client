@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import NamedTuple
 
-from actors.skill_effect_conversion import read_simulated_emitter_classes
+from native_assets_lib.emitter_classes import read_simulated_emitter_classes
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import sha256_hex

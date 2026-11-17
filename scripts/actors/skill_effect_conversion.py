@@ -25,6 +25,7 @@ from native_catalog.effects import UELIB_SHA256, SourcePackages, skill_actions
 from native_catalog.ue2 import FormatError
 from native_effect_bundle import migrate_effect_bundle
 from native_assets_lib.class_default_inheritance import MAX_CLASSES
+from native_assets_lib.emitter_classes import read_simulated_emitter_classes
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import add_store_file, merge_catalog_slice_records, read_store_catalog, write_store
 from native_store.gap_rows import write_gap_rows
@@ -34,8 +35,6 @@ from reference_client_guard import ReferenceClientLockError
 SKILL_EFFECT_ROOT_ALGORITHM_VERSION = 1
 SKILL_EFFECT_COMPONENT_SUFFIX = 'native-description-action'
 SKILL_ROOT_BUNDLE_ID_PREFIX = 'interlude:skill-root:'
-EMITTER_CLASS_COVERAGE_RELATIVE_PATH = 'recipes/actors/emitter-class-coverage.json'
-EMITTER_CLASS_COVERAGE_FIELDS = frozenset({'schemaVersion', 'listVersion', 'simulated', 'source'})
 EFFECT_STORE_FOLDER = 'effects'
 STAGED_MANIFEST_NAME = 'manifest.json'
 STAGED_EFFECTS_FOLDER = 'effects'
@@ -45,7 +44,9 @@ CONVERTED_ROOT_STATUS = 'converted'
 MAXIMUM_SKILL_ROOT_CLASS_CLOSURE = MAX_CLASSES
 DEFAULT_READER_CLASS_LIMIT_MESSAGE = 'Native class inheritance/dependency limit exceeded'
 STAGE_SCRIPT_RELATIVE_PATH = 'scripts/stage-native-effect.mjs'
-TOOL_IDENTITY_FILES = ('scripts/native_effect_bundle.py', STAGE_SCRIPT_RELATIVE_PATH, 'scripts/native_assets_lib/effect_readiness.py')
+TOOL_IDENTITY_FILES = ('scripts/native_effect_bundle.py', 'scripts/native_assets_lib/class_default_inheritance.py',
+                       'scripts/native_assets_lib/object_property_values.py', 'scripts/native_assets_lib/emitter_classes.py',
+                       STAGE_SCRIPT_RELATIVE_PATH, 'scripts/native_assets_lib/effect_readiness.py')
 STAGE_TIMEOUT_SECONDS = 600
 
 
@@ -59,18 +60,6 @@ def skill_effect_component_id(skill_id, level):
 
 def skill_root_bundle_id(visual_root):
     return SKILL_ROOT_BUNDLE_ID_PREFIX + visual_root
-
-
-def read_simulated_emitter_classes(project_root):
-    path = Path(project_root) / EMITTER_CLASS_COVERAGE_RELATIVE_PATH
-    document = json.loads(path.read_text(encoding='utf-8'))
-    if not (isinstance(document, dict) and set(document) == EMITTER_CLASS_COVERAGE_FIELDS and document['schemaVersion'] == 1
-            and type(document['listVersion']) is int and document['listVersion'] >= 1 and isinstance(document['simulated'], list)
-            and all(isinstance(name, str) and name.startswith('Engine.') for name in document['simulated'])
-            and len(set(document['simulated'])) == len(document['simulated'])):
-        raise SkillEffectConversionError(f'{EMITTER_CLASS_COVERAGE_RELATIVE_PATH} must be {{schemaVersion 1, listVersion, simulated, source}} '
-                                         'with unique Engine emitter class names')
-    return frozenset(document['simulated'])
 
 
 def skill_root_class_closure(packages, visual_root):

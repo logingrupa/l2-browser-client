@@ -10,10 +10,12 @@ from actors.skill_binding_table import (SKILL_BINDING_ANOMALY_FIELDS, SKILL_BIND
                                         emitter_class_root_outcome, representative_skill_binding, require_census_totals,
                                         reviewed_source_dispatch_keys, skill_binding_anomalies, skill_binding_census, skill_binding_gap_rows,
                                         skill_bindings_by_visual_root, visual_roots_in_first_key_order)
-from actors.skill_effect_conversion import (MAXIMUM_SKILL_ROOT_CLASS_CLOSURE, class_limit_reason, read_simulated_emitter_classes,
-                                            skill_effect_component_id, skill_root_bundle_id, unbound_simulated_component_reason)
-from native_effect_bundle import CONVERTED_EMITTER_CLASSES
+from actors.skill_effect_conversion import (MAXIMUM_SKILL_ROOT_CLASS_CLOSURE, TOOL_IDENTITY_FILES, class_limit_reason, skill_effect_component_id,
+                                            skill_root_bundle_id, unbound_simulated_component_reason)
+import native_effect_bundle
+from native_assets_lib import class_default_inheritance, emitter_classes, object_property_values
 from native_assets_lib.class_default_inheritance import MAX_CLASSES
+from native_assets_lib.emitter_classes import CONVERTED_EMITTER_CLASSES, read_simulated_emitter_classes
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 
 GAMEPLAY_FIELDS = ('mp_consume', 'hp_consume', 'cast_range', 'hit_time', 'is_magic', 'operate_type', 'reuse_delay', 'power')
@@ -191,6 +193,12 @@ class EmitterClassTests(unittest.TestCase):
         self.assertIsNone(unbound_simulated_component_reason(bound, simulated))
         unbound = {'components': [staged_component('fx.a.MeshEmitter0', 'Engine.MeshEmitter')]}
         self.assertEqual(unbound_simulated_component_reason(unbound, simulated), 'converter-refused:fx.a.MeshEmitter0 has no converted resource')
+
+
+class ToolIdentityFileTests(unittest.TestCase):
+    def test_the_tool_identity_covers_every_module_the_effect_bundle_runs_its_class_and_emitter_reads_from(self):
+        modules = (native_effect_bundle, class_default_inheritance, object_property_values, emitter_classes)
+        self.assertLessEqual({Path(module.__file__).resolve().relative_to(REPOSITORY_ROOT).as_posix() for module in modules}, set(TOOL_IDENTITY_FILES))
 
 
 class ClassLimitTests(unittest.TestCase):

@@ -13,6 +13,7 @@ import zipfile
 from native_assets import Converter, UMODEL, UMODEL_SHA256, implementation_hash, verify_archive
 from native_assets_lib.class_default_inheritance import (DefaultReader, class_default_tool_paths,
                                                         merge_typed_defaults_replacing_raw_values_whole)
+from native_assets_lib.emitter_classes import CONVERTED_EMITTER_CLASSES
 from native_assets_lib.gltf import safe_name
 from native_assets_lib.object_property_values import object_values
 from native_catalog.cli import file_hash, json_bytes, safe_output, within, write_output
@@ -29,8 +30,6 @@ MATERIAL_CLASSES = {'Texture', 'Shader', 'FinalBlend', 'TexPanner', 'TexRotator'
     'TexOscillator', 'TexScaler', 'TexEnvMap', 'Combiner', 'ColorModifier',
     'ConstantColor', 'FadeColor', 'MaterialSwitch', 'MaterialSequence', 'TexCoordSource'}
 ASSET_KINDS = {'StaticMesh': 'model', 'SkeletalMesh': 'model', 'Texture': 'texture', 'Sound': 'audio'}
-CONVERTED_EMITTER_CLASSES = frozenset({'Engine.SpriteEmitter', 'Engine.MeshEmitter', 'Engine.BeamEmitter', 'Engine.RibbonEmitter',
-    'Engine.VertMeshEmitter'})
 UNCONVERTED_EMITTER_REASON = 'Emitter record retained; its class has no converter route, so its references are not converted.'
 NATIVE_EFFECT_BUNDLE_DESCRIPTION = ('Repeatable raw native effects with table or reviewed binary dispatch evidence. Pinned switch and '
     'class-literal checks establish bounded source associations; they do not execute native dispatch or certify timing, attachment or playback.')
