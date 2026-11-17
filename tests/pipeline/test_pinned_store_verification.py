@@ -49,7 +49,9 @@ class VerifyOnlyWalkTests(TemporaryStoreTestCase):
         tile = SyntheticWorldTile(self.store_root)
         tile_manifest_reference = catalog_pinned_file_references(tile.catalog())[0]
         child_references = verified_file_child_references(self.store_root, tile_manifest_reference)
-        self.assertEqual([reference.relative for reference in child_references], [f'{tile.sky_folder}/manifest.json', tile.bsp_relative])
+        tile_manifest = json.loads(tile.tile_files[tile.record['manifest']])
+        self.assertEqual([reference.relative for reference in child_references],
+                         [entry['manifest'][len('/l2/'):] for entry in (*tile_manifest['chunks'], *tile_manifest['resources'])])
         for reference in child_references:
             self.assertIs(type(reference), PinnedFileReference)
 
