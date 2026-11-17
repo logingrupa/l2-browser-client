@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { SourcePosition } from "../../src/world/sourceFrame";
-import type { WorldEvent } from "../../src/world/worldTypes";
+import type { SourcePosition, WorldPosition } from "../../src/world/sourceFrame";
+import type { SourceCollisionCylinder, WorldEvent } from "../../src/world/worldTypes";
 import { createCollisionWorld, type CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
 import {
   createMovementPresenter, MovementPresenterError, type MovementIntent, type MovementPresenter,
 } from "../../src/scene/world/movement/movementPresenter";
-import { blockingBox, boxVolumeWorld, floorSlab, pawnRules, syntheticPawnHalfHeight, waterBox } from "../fixtures/movement/pawnWorldFixtures";
+import { rm12FloorFixture } from "../fixtures/movement/pawnFloorPlacementRm12";
+import { blockingBox, boxVolumeWorld, bspFloorWorld, floorSlab, pawnRules, syntheticPawnHalfHeight, waterBox } from "../fixtures/movement/pawnWorldFixtures";
 
 const frameSeconds = 1 / 60;
 const localPlayerId = "local-player";
@@ -38,6 +39,11 @@ const moveEvent = (entityId: string, origin: SourcePosition, destination: Source
 
 const swimmingMoveEvent = (entityId: string, origin: SourcePosition, destination: SourcePosition): WorldEvent => ({
   type: "move", entityId, origin, destination, moveType: 0, speeds: { walk: 80, run: 115, swimWalk: 50, swimRun: 70 }, collision: { radius: 9, height: syntheticPawnHalfHeight },
+});
+
+const spawnEvent = (entityId: string, position: WorldPosition, collision: SourceCollisionCylinder | null): WorldEvent => ({
+  type: "spawn", collision,
+  entity: { id: entityId, kind: "monster", displayName: entityId, position, orientationRadians: 0, health: 100, maximumHealth: 100, animation: "idle" },
 });
 
 const pawnOf =(presenter: MovementPresenter, entityId: string) => presenter.inspection().pawns.find(pawn => pawn.entityId === entityId)!;
@@ -157,6 +163,28 @@ describe("movementPresenter applies server movement through the MOVE-01 port", (
     advanceFrames(60);
     expect(pawnOf(presenter, "remote")).toMatchObject({ mode: "walking", isMoving: false });
     expect(pawnOf(presenter, "remote").feetPosition.z).toBeLessThan(5);
+  });
+
+  it("gives a spawned pawn with no move event its simulated location: the spawn trace, then the walking settle", () => {
+    const { presenter, advanceFrames } = presenterOn(bspFloorWorld(0));
+    presenter.applyEvent(spawnEvent("npc-1", { x: 0, y: 0, z: 0 }, { radius: 9, height: syntheticPawnHalfHeight }));
+    expect(pawnOf(presenter, "npc-1")).toMatchObject({ location: { x: 0, y: 0, z: 0 }, isMoving: false, heading: 16384 });
+    advanceFrames(2);
+    const settled = pawnOf(presenter, "npc-1");
+    expect(settled).toMatchObject({ mode: "walking", heldReason: null, isMoving: false, floor: { kind: "bsp-tree" } });
+    expect(settled.location.z).toBeCloseTo(rm12FloorFixture("BSP", "downward-settle").locationZNominal, 4);
+    expect(settled.feetPosition.z).toBeCloseTo(settled.location.z - syntheticPawnHalfHeight, 4);
+  });
+
+  it("keeps a spawn at its incoming position until its collision cell is resident and simulates no pawn without a cylinder", () => {
+    const world = createCollisionWorld();
+    world.requireCell("90_90/unloaded", { minimumX: -512, minimumY: -512, maximumX: 512, maximumY: 512 });
+    const { presenter, advanceFrames } = presenterOn(world);
+    presenter.applyEvent(spawnEvent("npc-1", { x: 0, y: 0.5, z: 0 }, { radius: 9, height: syntheticPawnHalfHeight }));
+    presenter.applyEvent(spawnEvent("npc-2", { x: 0, y: 0, z: 0 }, null));
+    advanceFrames(30);
+    expect(presenter.inspection().pawns.map(pawn => pawn.entityId)).toEqual(["npc-1"]);
+    expect(pawnOf(presenter, "npc-1")).toMatchObject({ heldReason: "collision-not-ready", location: { x: 0, y: 0, z: 50 } });
   });
 
   it("refuses an unknown entity and malformed movement records with named errors", () => {

@@ -1,12 +1,13 @@
 import { float32Vector, type Vector3 } from "../../../shared/math/vector3";
-import type { SourcePosition } from "../../../world/sourceFrame";
-import type { WorldCommand, WorldEvent } from "../../../world/worldTypes";
+import { worldPositionToSource, worldYawToSourceHeading, type SourcePosition } from "../../../world/sourceFrame";
+import type { SourceCollisionCylinder, WorldCommand, WorldEvent } from "../../../world/worldTypes";
 import type { CollisionPrimitive } from "./core/collisionTrace";
 import type { CollisionReadiness, CollisionWorld } from "./core/collisionWorld";
 import type { MovementNativeRules } from "./core/movementRules";
 import { singleLineCheck } from "./core/lineCheck";
-import { pawnExtent, ZERO_VELOCITY, type PawnPhysicsContext, type PawnPhysicsMode } from "./core/pawnBody";
+import { pawnExtent, ZERO_VELOCITY, type PawnBody, type PawnPhysicsContext, type PawnPhysicsMode } from "./core/pawnBody";
 import { advancePawnSimulation, type PawnSimulation, type PawnTraits } from "./core/pawnPhysics";
+import { placeSpawnedPawn } from "./core/pawnSpawnPlacement";
 import type { PawnSpeeds } from "./core/pawnVelocity";
 import { advancePositionReports, INITIAL_POSITION_REPORT_STATE, type PositionReportState } from "./core/positionReports";
 
@@ -80,9 +81,11 @@ interface PresentedPawn {
   readonly heldReason: MovementHeldReason | null;
   readonly lastMoveResult: MovementMoveResult | null;
   readonly fallStartPosition: SourcePosition | null;
+  readonly unplacedSpawnPosition: SourcePosition | null;
 }
 
 type MoveEvent = Extract<WorldEvent, { readonly type: "move" }>;
+type SpawnEvent = Extract<WorldEvent, { readonly type: "spawn" }>;
 
 const headingUnitsPerTurn = 65536;
 const heldReasonByCollisionReadiness: Readonly<Record<Exclude<CollisionReadiness, "ready">, MovementHeldReason>> = {
@@ -120,15 +123,27 @@ function readPawnSpeeds(event: MoveEvent): PawnSpeeds {
   };
 }
 
+function requireCollisionCylinder(collision: SourceCollisionCylinder, entityId: string): void {
+  const { radius, height } = collision;
+  if (!Number.isFinite(radius) || !Number.isFinite(height) || radius < 0 || height < 0) {
+    throw new MovementPresenterError(`entity ${entityId} needs a finite, non-negative collision radius and height.`);
+  }
+}
+
+function requireSpawnEvent(event: SpawnEvent): void {
+  const { id, position, orientationRadians } = event.entity;
+  if (typeof id !== "string" || id.length === 0) throw new MovementPresenterError("a spawn record needs a non-empty entity id.");
+  requirePosition(position, `entity ${id} spawn position`);
+  if (!Number.isFinite(orientationRadians)) throw new MovementPresenterError(`entity ${id} spawn orientation must be finite.`);
+  if (event.collision !== null) requireCollisionCylinder(event.collision, id);
+}
+
 function requireMoveEvent(event: MoveEvent): void {
   if (typeof event.entityId !== "string" || event.entityId.length === 0) throw new MovementPresenterError("a move record needs a non-empty entity id.");
   requirePosition(event.origin, `entity ${event.entityId} move origin`);
   requirePosition(event.destination, `entity ${event.entityId} move destination`);
   if (!Number.isInteger(event.moveType)) throw new MovementPresenterError(`entity ${event.entityId} moveType ${event.moveType} must be an integer.`);
-  const { radius, height } = event.collision;
-  if (!Number.isFinite(radius) || !Number.isFinite(height) || radius < 0 || height < 0) {
-    throw new MovementPresenterError(`entity ${event.entityId} needs a finite, non-negative collision radius and height.`);
-  }
+  requireCollisionCylinder(event.collision, event.entityId);
   if (event.offset !== undefined && (!Number.isFinite(event.offset) || event.offset < 0)) {
     throw new MovementPresenterError(`entity ${event.entityId} move offset must be finite and non-negative.`);
   }
@@ -171,9 +186,29 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
   const replaceSimulation = (entityId: string, pawn: PresentedPawn, simulation: PawnSimulation) => {
     pawnsByEntityId.set(entityId, { ...pawn, simulation });
   };
+  const replacePlacedSimulation = (entityId: string, pawn: PresentedPawn, simulation: PawnSimulation) => {
+    pawnsByEntityId.set(entityId, { ...pawn, simulation, unplacedSpawnPosition: null });
+  };
   const placedAt = (simulation: PawnSimulation, location: Vector3): PawnSimulation => ({
     ...simulation, body: { ...simulation.body, location, velocity: ZERO_VELOCITY, floor: null, restsInFloorBand: false },
   });
+  const standingBody = (location: Vector3, collision: SourceCollisionCylinder): PawnBody => ({
+    location, velocity: ZERO_VELOCITY, collisionRadius: collision.radius, collisionHeight: collision.height, mode: "walking", floor: null, restsInFloorBand: false,
+  });
+  const presentedPawn = (simulation: PawnSimulation, unplacedSpawnPosition: SourcePosition | null): PresentedPawn => ({
+    simulation, reports: INITIAL_POSITION_REPORT_STATE, heldReason: null, lastMoveResult: null, fallStartPosition: null, unplacedSpawnPosition,
+  });
+
+  function applySpawn(event: SpawnEvent): void {
+    requireSpawnEvent(event);
+    const { id, position, orientationRadians } = event.entity;
+    if (event.collision === null) { pawnsByEntityId.delete(id); return; }
+    const incomingPosition = float32Vector(worldPositionToSource(position));
+    const simulation: PawnSimulation = {
+      body: standingBody(incomingPosition, event.collision), yaw: worldYawToSourceHeading(orientationRadians), goal: null, moveTimerSeconds: 0, speedUnresolved: false,
+    };
+    pawnsByEntityId.set(id, presentedPawn(simulation, incomingPosition));
+  }
 
   function applyMove(event: MoveEvent): void {
     requireMoveEvent(event);
@@ -184,19 +219,15 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
     const goal = { destination: centreOf(event.destination, collisionHeight), offset: event.offset ?? 0, runs: event.moveType === rules.pawn.runMoveType, speeds };
     const existing = pawnsByEntityId.get(entityId);
     if (existing === undefined) {
-      const body = {
-        location: origin, velocity: ZERO_VELOCITY, collisionRadius: event.collision.radius, collisionHeight, mode: "walking" as const, floor: null, restsInFloorBand: false,
-      };
-      pawnsByEntityId.set(entityId, {
-        simulation: { body, yaw: 0, goal, moveTimerSeconds: 0, speedUnresolved: false }, reports: INITIAL_POSITION_REPORT_STATE, heldReason: null,
-        lastMoveResult: null, fallStartPosition: null,
-      });
+      pawnsByEntityId.set(entityId, presentedPawn({ body: standingBody(origin, event.collision), yaw: 0, goal, moveTimerSeconds: 0, speedUnresolved: false }, null));
       return;
     }
     const simulation = existing.simulation;
     const resized = { ...simulation, body: { ...simulation.body, collisionRadius: event.collision.radius, collisionHeight } };
-    const snaps = !pawnTraits(entityId).isLocalPlayer && distanceBetween(resized.body.location, origin) > rules.pawn.snapDistance;
-    replaceSimulation(entityId, existing, { ...(snaps ? placedAt(resized, origin) : resized), goal });
+    const snaps = existing.unplacedSpawnPosition !== null ||
+      (!pawnTraits(entityId).isLocalPlayer && distanceBetween(resized.body.location, origin) > rules.pawn.snapDistance);
+    if (snaps) replacePlacedSimulation(entityId, existing, { ...placedAt(resized, origin), goal });
+    else replaceSimulation(entityId, existing, { ...resized, goal });
   }
 
   function applyStop(entityId: string, position: SourcePosition, heading: number): void {
@@ -205,15 +236,15 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
     const yaw = requireHeading(heading, entityId);
     const stopLocation = centreOf(position, pawn.simulation.body.collisionHeight);
     const snaps = !pawnTraits(entityId).isLocalPlayer && distanceBetween(pawn.simulation.body.location, stopLocation) > rules.pawn.snapDistance;
-    const stopped = snaps ? placedAt(pawn.simulation, stopLocation) : pawn.simulation;
-    replaceSimulation(entityId, pawn, { ...stopped, yaw, goal: null, moveTimerSeconds: 0 });
+    if (snaps) replacePlacedSimulation(entityId, pawn, { ...placedAt(pawn.simulation, stopLocation), yaw, goal: null, moveTimerSeconds: 0 });
+    else replaceSimulation(entityId, pawn, { ...pawn.simulation, yaw, goal: null, moveTimerSeconds: 0 });
   }
 
   function applyCorrection(entityId: string, position: SourcePosition, heading: number): void {
     const pawn = requirePawn(entityId);
     requirePosition(position, `entity ${entityId} correct position`);
     const yaw = requireHeading(heading, entityId);
-    replaceSimulation(entityId, pawn, { ...placedAt(pawn.simulation, centreOf(position, pawn.simulation.body.collisionHeight)), yaw });
+    replacePlacedSimulation(entityId, pawn, { ...placedAt(pawn.simulation, centreOf(position, pawn.simulation.body.collisionHeight)), yaw });
   }
 
   function applyTeleport(entityId: string, position: SourcePosition): void {
@@ -222,7 +253,14 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
     const { collisionHeight } = pawn.simulation.body;
     const raised = centreOf({ ...position, z: position.z + collisionHeight + rules.pawn.teleportRaise }, collisionHeight);
     const placed = placedAt(pawn.simulation, raised);
-    replaceSimulation(entityId, pawn, { ...placed, body: { ...placed.body, mode: "falling" }, goal: null, moveTimerSeconds: 0 });
+    replacePlacedSimulation(entityId, pawn, { ...placed, body: { ...placed.body, mode: "falling" }, goal: null, moveTimerSeconds: 0 });
+  }
+
+  function withSpawnPlaced(pawn: PresentedPawn): PresentedPawn {
+    if (pawn.unplacedSpawnPosition === null) return pawn;
+    const { body } = pawn.simulation;
+    const location = placeSpawnedPawn(context, body, pawn.unplacedSpawnPosition);
+    return { ...pawn, simulation: { ...pawn.simulation, body: { ...body, location } }, unplacedSpawnPosition: null };
   }
 
   function emitReports(entityId: string, pawn: PresentedPawn): PresentedPawn {
@@ -250,10 +288,11 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
     return startsFalling ? { ...advanced, fallStartPosition: feetOf(previous.simulation) } : advanced;
   }
 
-  function advancePawn(entityId: string, pawn: PresentedPawn, frameSeconds: number): PresentedPawn {
-    const { location } = pawn.simulation.body;
+  function advancePawn(entityId: string, presented: PresentedPawn, frameSeconds: number): PresentedPawn {
+    const { location } = presented.simulation.body;
     const readiness = collisionWorld.collisionReadiness({ x: location.x, y: location.y });
-    if (readiness !== "ready") return holdPawn(pawn, heldReasonByCollisionReadiness[readiness]);
+    if (readiness !== "ready") return holdPawn(presented, heldReasonByCollisionReadiness[readiness]);
+    const pawn = withSpawnPlaced(presented);
     const traits = pawnTraits(entityId);
     const simulation = advancePawnSimulation(context, pawn.simulation, traits, frameSeconds);
     if (simulation.speedUnresolved) return holdPawn({ ...pawn, simulation }, "speed-unresolved");
@@ -269,6 +308,7 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
   return {
     applyEvent(event) {
       switch (event.type) {
+        case "spawn": return applySpawn(event);
         case "move": return applyMove(event);
         case "stop": return applyStop(event.entityId, event.position, event.heading);
         case "correct": return applyCorrection(event.entityId, event.position, event.heading);

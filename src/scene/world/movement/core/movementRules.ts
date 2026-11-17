@@ -66,7 +66,13 @@ export interface PawnMovementRules {
   readonly otherPawnYawRate: number;
   readonly snapDistance: number;
   readonly teleportRaise: number;
+  readonly spawnTrace: SpawnTraceRules;
   readonly serverPositionIsFeet: boolean;
+}
+
+export interface SpawnTraceRules {
+  readonly raise: number;
+  readonly drop: number;
 }
 
 export interface PositionReportRules {
@@ -211,6 +217,7 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
       otherPawnYawRate: numberRule("movement.yawRate.otherPawn"),
       snapDistance: numberRule("movement.snapThresholds"),
       teleportRaise: numberRule("movement.teleportRaise"),
+      spawnTrace: { raise: numberRule("movement.spawnTrace.raise"), drop: numberRule("movement.spawnTrace.drop") },
       serverPositionIsFeet: booleanRule("movement.serverPositionIsFeet"),
     },
     reports: {
