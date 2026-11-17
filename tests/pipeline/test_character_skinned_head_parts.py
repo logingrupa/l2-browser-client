@@ -5,8 +5,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
-from actors.character_head_part_routes import (RIGID_HEAD_PART_ROUTE, SKINNED_HEAD_PART_ROUTE, SKINNED_PART_BONE_MISSING_REASON_PREFIX,
-                                               generated_with_head_part_routes)
+from actors.character_head_part_routes import (RIGID_HEAD_PART_ROUTE, RIGID_PART_BONE_UNMATCHED_REASON_PREFIX, SKINNED_HEAD_PART_ROUTE,
+                                               SKINNED_PART_BONE_MISSING_REASON_PREFIX, generated_with_head_part_routes)
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 
 BODY_OBJECT, FACE_OBJECT, HAIR_OBJECT = 'Body_m001_u', 'Face_m000_f', 'Hair_m000_h'
@@ -26,7 +26,7 @@ def generated_request(head_parts):
     parts = [{'package': 'Magic', 'object': BODY_OBJECT, 'materials': ['0=MMagic.Body_t00']}] + head_parts
     return {'request': {'kind': 'model', 'name': 'character-8', 'animation': None, 'withEventAudio': True, 'parts': parts,
                         'limitations': ['synthetic request']},
-            'profileFields': {'reason': None}, 'parts': [], 'hair': {}, 'helmet': {}, 'gaps': [{'field': 'hair', 'reason': 'hair-submesh-unlisted:front'}]}
+            'profileFields': {'reason': None}, 'parts': [], 'hair': {'status': 'bound', 'reason': None}, 'helmet': {}, 'gaps': [{'field': 'hair', 'reason': 'hair-submesh-unlisted:front'}]}
 
 
 def face_part(object_name=FACE_OBJECT):
@@ -101,11 +101,32 @@ class SkinnedHeadPartRouteTests(unittest.TestCase):
         self.assertEqual([(route['field'], route['route']) for route in generated['headParts']], [('face', 'rigid'), ('hair', 'rigid')])
         self.assertEqual(generated['request']['parts'][2]['rigidAttachment'], RIGID_ATTACHMENT)
 
-    def test_a_skinned_hair_part_with_a_bone_outside_the_body_skeleton_is_a_hair_gap(self):
+    def test_a_skinned_hair_part_with_a_bone_outside_the_body_skeleton_drops_only_that_hair_part(self):
         read_skeleton, _ = skeleton_reader({BODY_OBJECT: skeleton(BODY_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
+                                            FACE_OBJECT: skeleton(FACE_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
                                             HAIR_OBJECT: skeleton(HAIR_OBJECT, chained_bones(BODY_BONE_NAMES + ('Bip01_hair',)), [4])})
-        generated = generated_with_head_part_routes(generated_request([hair_part()]), read_skeleton)
+        generated = generated_with_head_part_routes(generated_request([face_part(), hair_part()]), read_skeleton)
         self.assertEqual(generated['gaps'][0], {'field': 'hair', 'reason': SKINNED_PART_BONE_MISSING_REASON_PREFIX + 'Bip01_hair'})
+        self.assertEqual([part['object'] for part in generated['request']['parts']], [BODY_OBJECT, FACE_OBJECT])
+        self.assertEqual((generated['hair']['status'], generated['hair']['reason']), ('gap', SKINNED_PART_BONE_MISSING_REASON_PREFIX + 'Bip01_hair'))
+        self.assertEqual([route['field'] for route in generated['headParts']], ['face', 'hair'])
+
+    def test_a_rigid_hair_part_whose_skeleton_hierarchy_differs_from_the_body_is_an_unmatched_hair_gap(self):
+        reparented = [{'name': 'Bip01', 'parentName': None}, {'name': 'Bip01_head', 'parentName': 'Bip01'}]
+        read_skeleton, _ = skeleton_reader({BODY_OBJECT: skeleton(BODY_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
+                                            HAIR_OBJECT: skeleton(HAIR_OBJECT, reparented, [0])})
+        generated = generated_with_head_part_routes(generated_request([hair_part()]), read_skeleton)
+        self.assertEqual(generated['gaps'][0], {'field': 'hair', 'reason': RIGID_PART_BONE_UNMATCHED_REASON_PREFIX + 'Bip01_head'})
+        self.assertEqual([part['object'] for part in generated['request']['parts']], [BODY_OBJECT])
+        self.assertTrue(is_listed_reason(generated['gaps'][0]['reason'], load_gap_reason_patterns()))
+
+    def test_a_rigid_face_whose_skeleton_hierarchy_differs_from_the_body_leaves_no_request(self):
+        reparented = [{'name': 'Bip01', 'parentName': None}, {'name': 'Bip01_head', 'parentName': 'Bip01'}]
+        read_skeleton, _ = skeleton_reader({BODY_OBJECT: skeleton(BODY_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
+                                            FACE_OBJECT: skeleton(FACE_OBJECT, reparented, [0])})
+        generated = generated_with_head_part_routes(generated_request([face_part()]), read_skeleton)
+        self.assertIsNone(generated['request'])
+        self.assertEqual(generated['gaps'][0], {'field': 'face', 'reason': RIGID_PART_BONE_UNMATCHED_REASON_PREFIX + 'Bip01_head'})
 
     def test_a_request_without_head_parts_reads_no_skeleton(self):
         read_skeleton, read_objects = skeleton_reader({})
