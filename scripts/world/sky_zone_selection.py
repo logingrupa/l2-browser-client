@@ -11,10 +11,7 @@ DETAIL_MODES = (0, 1, 2)
 SKY_ZONE_CLASS_UNRESOLVED_PREFIX = 'sky-zone-class-unresolved:'
 SKY_ZONE_DETAIL_FIELD_UNRESOLVED_PREFIX = 'sky-zone-detail-field-unresolved:'
 SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON = 'sky-zone-detail-mode-unresolved'
-SKY_ZONE_ACTOR_WITHOUT_ZONE_PREFIX = 'sky-zone-actor-without-zone:'
-SKY_SELECTION_RULE = ('ZoneInfo.LinkToSkybox (DB-14 sky-zone-rendering.json 13dbd105): every SkyZoneInfo of Level.Actors (+0x38) in ascending order, '
-                      'the last one wins, then the last one eligible for Level.DetailMode wins when one is (0: neither bHighDetail nor '
-                      'bSuperHighDetail, 1: not bSuperHighDetail, 2: any)')
+SKY_ZONE_ACTOR_ZONE_COUNT_PREFIX = 'sky-zone-actor-zone-count:'
 
 
 class SkyZoneCandidate(NamedTuple):
@@ -27,7 +24,6 @@ class SkyZoneSelection(NamedTuple):
     zone_index: int | None
     actor: dict | None
     gap_reason: str | None
-    candidate_actors: tuple
 
 
 def detail_eligible(candidate, detail_mode):
@@ -65,24 +61,23 @@ def sky_zone_exports(package, level, class_chains):
 def select_sky_zone(package, level, zones, class_defaults, class_chains):
     exports, unresolved_classes = sky_zone_exports(package, level, class_chains)
     if unresolved_classes:
-        return SkyZoneSelection(None, None, f'{SKY_ZONE_CLASS_UNRESOLVED_PREFIX}{unresolved_classes[0]}', ())
+        return SkyZoneSelection(None, None, f'{SKY_ZONE_CLASS_UNRESOLVED_PREFIX}{unresolved_classes[0]}')
     candidates = []
     for export in exports:
         candidate = sky_zone_candidate(package, export, class_defaults)
         if isinstance(candidate, str):
-            return SkyZoneSelection(None, None, candidate, tuple(item.export['object'] for item in candidates))
+            return SkyZoneSelection(None, None, candidate)
         candidates.append(candidate)
-    names = tuple(candidate.export['object'] for candidate in candidates)
     if not candidates:
-        return SkyZoneSelection(None, None, None, names)
+        return SkyZoneSelection(None, None, None)
     linked = {linked_sky_candidate(candidates, detail_mode).export['object'] for detail_mode in DETAIL_MODES}
     if len(linked) != 1:
-        return SkyZoneSelection(None, None, SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON, names)
+        return SkyZoneSelection(None, None, SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON)
     actor = linked_sky_candidate(candidates, DETAIL_MODES[0]).export
     zone_indices = [zone.zone_index for zone in zones if zone.actor == actor['object']]
     if len(zone_indices) != 1:
-        return SkyZoneSelection(None, actor, f'{SKY_ZONE_ACTOR_WITHOUT_ZONE_PREFIX}{actor["object"]}', names)
-    return SkyZoneSelection(zone_indices[0], actor, None, names)
+        return SkyZoneSelection(None, actor, f'{SKY_ZONE_ACTOR_ZONE_COUNT_PREFIX}{len(zone_indices)}')
+    return SkyZoneSelection(zone_indices[0], actor, None)
 
 
 def sky_actor_rotation(package, actor, class_defaults):

@@ -10,10 +10,11 @@ from native_catalog.ue2 import FormatError
 from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE, ActorField
 from world.bsp_node_sun_affect import NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED, SUN_AFFECTED, level_info_sun_affect
 from world.level_actors import level_actor_exports
-from world.sky_zone_selection import (SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON, select_sky_zone)
+from world.sky_zone_selection import SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON, select_sky_zone
 
 SKY_CLASS = 'Engine.SkyZoneInfo'
 CLASS_PARENTS = {'Engine.SkyZoneInfo': ('Engine.SkyZoneInfo', 'Engine.ZoneInfo'), 'Engine.ZoneInfo': ('Engine.ZoneInfo',),
+                 'Map.CustomSkyZone': ('Map.CustomSkyZone', 'Engine.SkyZoneInfo', 'Engine.ZoneInfo'),
                  'Engine.LevelInfo': ('Engine.LevelInfo', 'Engine.ZoneInfo'), 'Engine.Light': ('Engine.Light',)}
 
 
@@ -56,7 +57,18 @@ class SkyZoneSelectionTests(unittest.TestCase):
         exports = [actor('LevelInfo0', 'Engine.LevelInfo'), actor('SkyZoneInfo0', SKY_CLASS), actor('Light0', 'Engine.Light'), actor('SkyZoneInfo1', SKY_CLASS)]
         selection = self.select(exports, [zone(0, None), zone(1, 'SkyZoneInfo1'), zone(2, 'SkyZoneInfo0')], references=[1, 0, 4, 3, 2])
         self.assertEqual((selection.zone_index, selection.actor['object'], selection.gap_reason), (2, 'Map.SkyZoneInfo0', None))
-        self.assertEqual(selection.candidate_actors, ('Map.SkyZoneInfo1', 'Map.SkyZoneInfo0'))
+
+    def test_a_subclass_of_sky_zone_info_is_a_sky_candidate(self):
+        exports = [actor('SkyZoneInfo0', SKY_CLASS), actor('CustomSky0', 'Map.CustomSkyZone')]
+        selection = self.select(exports, [zone(0, 'SkyZoneInfo0'), zone(1, 'CustomSky0')])
+        self.assertEqual((selection.zone_index, selection.gap_reason), (1, None))
+
+    def test_when_no_sky_is_eligible_in_some_detail_mode_the_last_sky_stays_linked(self):
+        exports = [actor('SkyZoneInfo0', SKY_CLASS, bHighDetail=True), actor('SkyZoneInfo1', SKY_CLASS, bSuperHighDetail=True)]
+        selection = self.select(exports, [zone(0, 'SkyZoneInfo0'), zone(1, 'SkyZoneInfo1')])
+        self.assertEqual((selection.zone_index, selection.gap_reason), (None, SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON))
+        only_high = self.select([actor('SkyZoneInfo0', SKY_CLASS, bSuperHighDetail=True)], [zone(0, 'SkyZoneInfo0')])
+        self.assertEqual((only_high.zone_index, only_high.gap_reason), (0, None))
 
     def test_detail_flags_that_change_the_choice_between_detail_modes_are_a_gap(self):
         exports = [actor('SkyZoneInfo0', SKY_CLASS), actor('SkyZoneInfo1', SKY_CLASS, bHighDetail=True)]
@@ -69,13 +81,15 @@ class SkyZoneSelectionTests(unittest.TestCase):
         self.assertEqual((selection.zone_index, selection.gap_reason), (1, None))
 
     def test_a_sky_without_a_zone_slot_an_unread_detail_flag_or_an_unknown_actor_class_is_a_gap(self):
-        self.assertEqual(self.select([actor('SkyZoneInfo0', SKY_CLASS)], [zone(0, None)]).gap_reason, 'sky-zone-actor-without-zone:Map.SkyZoneInfo0')
+        self.assertEqual(self.select([actor('SkyZoneInfo0', SKY_CLASS)], [zone(0, None)]).gap_reason, 'sky-zone-actor-zone-count:0')
+        self.assertEqual(self.select([actor('SkyZoneInfo0', SKY_CLASS)], [zone(0, 'SkyZoneInfo0'), zone(1, 'SkyZoneInfo0')]).gap_reason,
+                         'sky-zone-actor-zone-count:2')
         self.assertEqual(self.select([actor('SkyZoneInfo0', SKY_CLASS, bHighDetail='unresolved')], [zone(0, 'SkyZoneInfo0')]).gap_reason,
                          'sky-zone-detail-field-unresolved:Map.SkyZoneInfo0.bHighDetail')
         self.assertEqual(self.select([actor('Mystery0', 'Game.Mystery')], [zone(0, None)]).gap_reason, 'sky-zone-class-unresolved:Game.Mystery')
 
     def test_a_level_without_a_sky_selects_nothing_and_names_no_gap(self):
-        self.assertEqual(self.select([actor('LevelInfo0', 'Engine.LevelInfo')], [zone(0, None)]), (None, None, None, ()))
+        self.assertEqual(self.select([actor('LevelInfo0', 'Engine.LevelInfo')], [zone(0, None)]), (None, None, None))
 
     def test_a_level_needs_exactly_one_actors_array_at_0x38(self):
         with self.assertRaisesRegex(FormatError, 'names 0 Actors arrays at 0x38'):
