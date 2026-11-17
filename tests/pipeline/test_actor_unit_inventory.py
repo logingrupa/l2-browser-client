@@ -4,7 +4,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from actors.actor_unit_inventory import character_units_and_rows, conversion_unit_key
+from actors.actor_unit_inventory import character_units_and_rows, conversion_unit_key, model_record_capacity
 from actors.item_unit_inventory import armorgrp_mtx_column_names, item_units_and_rows
 from actors.skill_unit_inventory import skill_units_and_rows
 from actor_census_fixture import (NO_DISPATCH_CANDIDATES, SYNTHETIC_ARMOR_COLUMNS, SYNTHETIC_FIRST_TEXTURE, SYNTHETIC_MESH, SYNTHETIC_SECOND_TEXTURE,
@@ -39,7 +39,7 @@ class InventoryTestCase(unittest.TestCase):
 
 
 class CharacterUnitInventoryTests(InventoryTestCase):
-    def test_every_chargrp_row_is_a_census_row_with_explicit_hair_and_helmet_gaps(self):
+    def test_every_chargrp_row_is_one_census_row_and_one_unit_without_hair_or_helmet_units(self):
         chargrp = synthetic_chargrp([
             synthetic_character([SYNTHETIC_MESH, ''], [SYNTHETIC_FIRST_TEXTURE, '']),
             synthetic_character([SYNTHETIC_MESH, ''], [SYNTHETIC_SECOND_TEXTURE, '']),
@@ -49,18 +49,15 @@ class CharacterUnitInventoryTests(InventoryTestCase):
         self.assertEqual(reasons_by_key(rows), {'character:0': 'conversion-pending', 'character:1': 'conversion-pending',
                                                 'character:2': 'no-mesh-in-row'})
         units = units_by_key(units)
-        self.assertEqual(sorted(units), ['character:0', 'character:0:hair', 'character:0:helmet', 'character:1', 'character:1:hair',
-                                         'character:1:helmet', 'character:2', 'character:2:hair', 'character:2:helmet'])
-        layout_units = [unit for key, unit in units.items() if key.endswith((':hair', ':helmet'))]
-        self.assertEqual(len(layout_units), 6)
-        self.assertEqual({(unit['status'], unit['reason'], unit['selection']) for unit in layout_units},
-                         {('gap', 'hair-layout-undecoded', None), ('gap', 'helmet-layout-undecoded', None)})
+        self.assertEqual(sorted(units), ['character:0', 'character:1', 'character:2'])
+        self.assertEqual({unit['unitKind'] for unit in units.values()}, {'chargrp-row'})
+        self.assertEqual(model_record_capacity({'units': list(units.values())}), 2)
         self.assertEqual(units['character:0']['selection'], {
             'meshGroups': {'body_mesh': [SYNTHETIC_MESH, '']}, 'textureGroups': {'body_texture': [SYNTHETIC_FIRST_TEXTURE, '']}})
         self.assertEqual((units['character:2']['status'], units['character:2']['reason']), ('gap', 'no-mesh-in-row'))
         self.assert_valid_gap_rows(rows)
 
-    def test_hair_groups_belong_to_the_hair_gap_and_never_gate_the_body(self):
+    def test_hair_groups_never_gate_the_body(self):
         chargrp = synthetic_chargrp([synthetic_character([SYNTHETIC_MESH], [SYNTHETIC_FIRST_TEXTURE], hair_mesh='SyntheticElders.hair_m00',
                                                          hair_texture='SyntheticEldersTex.hair_t00')])
         units, rows = character_units_and_rows(chargrp, self.package_census)

@@ -15,8 +15,6 @@ WEAPON_MESH_UNIT_KIND = 'weapon-mesh'
 ARMOR_MESH_UNIT_KIND = 'armor-mesh'
 WEAPONGRP_TABLE_NAME = 'weapongrp'
 ARMORGRP_TABLE_NAME = 'armorgrp'
-UNDECODED_CHARACTER_LAYOUT_UNITS = (('hair', 'chargrp-hair', 'hair-layout-undecoded'),
-                                    ('helmet', 'chargrp-helmet', 'helmet-layout-undecoded'))
 MESH_GROUP_NAME_SUFFIX = '_mesh'
 TEXTURE_GROUP_NAME_SUFFIX = '_texture'
 HAIR_GROUP_NAME_PREFIX = 'hair_'
@@ -141,7 +139,5 @@ def character_units_and_rows(chargrp, package_census):
         reason = (mesh_and_texture_gap_reason(meshes, textures, package_census) if non_empty_values(meshes)
                   else NO_MESH_IN_ROW_REASON)
         units.append(conversion_unit(row_key, CHARACTER_PART_NAME, CHARGRP_ROW_UNIT_KIND, reason, table_identity, selection))
-        for layout_name, unit_kind, layout_reason in UNDECODED_CHARACTER_LAYOUT_UNITS:
-            units.append(conversion_unit(f'{row_key}:{layout_name}', CHARACTER_PART_NAME, unit_kind, layout_reason, table_identity, None))
         rows.append(census_row(row_key, CHARACTER_PART_NAME, reason, table_identity))
     return units, rows

@@ -114,6 +114,12 @@ class CharacterPlayerProfileTests(unittest.TestCase):
         self.assertEqual(profile['aliasEvidence']['family'], 'SyntheticFighter')
         self.assertIn(CLIP_NAME_CASE_RULE, profile['limitations'])
 
+    def test_the_limitations_name_the_default_appearance_and_the_equipment_hair_mappings(self):
+        limitations = generated_profile(0)['limitations']
+        self.assertTrue(any('HairStyle 0, HairColor 0 and Face 0' in line and 'Phase 4' in line for line in limitations))
+        self.assertTrue(any('helmetgrp and hairaccessarygrp' in line and '03-30' in line for line in limitations))
+        self.assertFalse([line for line in limitations if 'undecoded' in line or 'unbound' in line])
+
     def test_the_shape_check_refuses_a_negative_chargrp_index(self):
         with self.assertRaisesRegex(ValueError, 'chargrpIndex'):
             profile_shape({**generated_profile(0), 'chargrpIndex': -1})

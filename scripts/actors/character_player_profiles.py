@@ -31,8 +31,8 @@ CHARACTER_PROFILE_LIMITATIONS = (
     'Only the WT_HAND (weapon type 0) clips are bound; the other weapon slots follow CurWeaponType once equipment sets it (03-30).',
     'Movement speed comes from server data, not from this profile.',
     'No equipment is bound; upperItems stays empty until the equipment plan (03-30).',
-    'Hair and helmet stay undecoded field gaps (hairgrp, helmetgrp layouts).',
-    'Face textures are selected by the server; the face material slot stays unbound.',
+    'HairStyle 0, HairColor 0 and Face 0 are the default appearance (RM-11 hairgrp rule, face_texture[0]) until a server packet selects one (Phase 4).',
+    'The helmetgrp and hairaccessarygrp hair mappings are stored in recipes/actors/character-hair-parts.json and applied by equipment (03-30).',
 )
 
 

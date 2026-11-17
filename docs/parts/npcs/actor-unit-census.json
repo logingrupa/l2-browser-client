@@ -99790,30 +99790,6 @@
       "unitKind": "chargrp-row"
     },
     {
-      "key": "character:0:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:0:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
       "key": "character:1",
       "part": "player-characters",
       "reason": null,
@@ -99888,30 +99864,6 @@
       "unitKind": "chargrp-row"
     },
     {
-      "key": "character:10:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:10:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
       "key": "character:11",
       "part": "player-characters",
       "reason": null,
@@ -99947,30 +99899,6 @@
       },
       "status": "convertible",
       "unitKind": "chargrp-row"
-    },
-    {
-      "key": "character:11:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:11:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
     },
     {
       "key": "character:12",
@@ -100010,30 +99938,6 @@
       "unitKind": "chargrp-row"
     },
     {
-      "key": "character:12:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:12:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
       "key": "character:13",
       "part": "player-characters",
       "reason": null,
@@ -100071,30 +99975,6 @@
       "unitKind": "chargrp-row"
     },
     {
-      "key": "character:13:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:13:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
       "key": "character:14",
       "part": "player-characters",
       "reason": "no-mesh-in-row",
@@ -100124,54 +100004,6 @@
       },
       "status": "gap",
       "unitKind": "chargrp-row"
-    },
-    {
-      "key": "character:14:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:14:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
-      "key": "character:1:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:1:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
     },
     {
       "key": "character:2",
@@ -100211,30 +100043,6 @@
       "unitKind": "chargrp-row"
     },
     {
-      "key": "character:2:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:2:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
       "key": "character:3",
       "part": "player-characters",
       "reason": null,
@@ -100270,30 +100078,6 @@
       },
       "status": "convertible",
       "unitKind": "chargrp-row"
-    },
-    {
-      "key": "character:3:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:3:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
     },
     {
       "key": "character:4",
@@ -100333,30 +100117,6 @@
       "unitKind": "chargrp-row"
     },
     {
-      "key": "character:4:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:4:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
       "key": "character:5",
       "part": "player-characters",
       "reason": null,
@@ -100392,30 +100152,6 @@
       },
       "status": "convertible",
       "unitKind": "chargrp-row"
-    },
-    {
-      "key": "character:5:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:5:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
     },
     {
       "key": "character:6",
@@ -100455,30 +100191,6 @@
       "unitKind": "chargrp-row"
     },
     {
-      "key": "character:6:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:6:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
       "key": "character:7",
       "part": "player-characters",
       "reason": null,
@@ -100514,30 +100226,6 @@
       },
       "status": "convertible",
       "unitKind": "chargrp-row"
-    },
-    {
-      "key": "character:7:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:7:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
     },
     {
       "key": "character:8",
@@ -100577,30 +100265,6 @@
       "unitKind": "chargrp-row"
     },
     {
-      "key": "character:8:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:8:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
-    },
-    {
       "key": "character:9",
       "part": "player-characters",
       "reason": null,
@@ -100636,30 +100300,6 @@
       },
       "status": "convertible",
       "unitKind": "chargrp-row"
-    },
-    {
-      "key": "character:9:hair",
-      "part": "player-characters",
-      "reason": "hair-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-hair"
-    },
-    {
-      "key": "character:9:helmet",
-      "part": "player-characters",
-      "reason": "helmet-layout-undecoded",
-      "selection": null,
-      "sourceIdentity": {
-        "path": "system/chargrp.dat",
-        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
-      },
-      "status": "gap",
-      "unitKind": "chargrp-helmet"
     },
     {
       "key": "npc-model:0019be327c04c7be1bc8effb4934b9ea8ee6d8c1c986b64ce3c7cba78ebe5fb3",
