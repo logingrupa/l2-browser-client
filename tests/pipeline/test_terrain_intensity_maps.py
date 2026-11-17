@@ -65,7 +65,7 @@ class TerrainIntensityMapTests(unittest.TestCase):
             with self.subTest(message=message), self.assertRaisesRegex(FormatError, message):
                 read_terrain_intensity_maps(*terrain_of(body))
 
-    def test_the_lighting_step_keeps_the_tile_and_names_a_listed_gap_when_the_intensity_maps_are_unreadable(self):
+    def test_unreadable_intensity_maps_give_no_arrays_and_a_listed_gap_instead_of_an_error(self):
         arrays, map_count, reasons = terrain_intensity_map_outcome(*terrain_of(terrain_info_body(declared_count=3)))
         self.assertEqual((arrays, map_count), ([], 0))
         self.assertEqual(reasons, ['terrain-intensity-map-layout-unread:terrain 00_00.TerrainInfo0 NumIntMap is 3, but TIntMap holds 2 maps'])

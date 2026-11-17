@@ -5,6 +5,7 @@ from typing import NamedTuple
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from world.terrain_coordinates import f32
+from world.error_detail import first_line_of_error
 
 REVIEWED_COLOUR_STREAM_LAYOUTS = frozenset({(123, 12)})
 PRIMITIVE_BOUNDS_BYTES = 25 + 16
@@ -59,8 +60,7 @@ def colour_stream_layout_unreviewed_reason(package_version, licensee):
 
 
 def colour_stream_unread_reason(error):
-    message = str(error).strip()
-    return f'{COLOUR_STREAM_UNREAD_REASON_PREFIX}{message.splitlines()[0] if message else type(error).__name__}'
+    return f'{COLOUR_STREAM_UNREAD_REASON_PREFIX}{first_line_of_error(error)}'
 
 
 def colour_streams_store_path(payload_sha256):
@@ -197,9 +197,9 @@ def static_mesh_colour_stream_outcome(package_version, load_package, request, gl
     try:
         export = static_mesh_export(package, request['object'])
         streams = read_static_mesh_colour_streams(package, export)
-    except ValueError as error:
+        primitives = joined_primitive_vertices(glb, streams)
+    except FormatError as error:
         return ColourStreamOutcome(None, colour_stream_unread_reason(error))
-    primitives = joined_primitive_vertices(glb, streams)
     if primitives is None:
         return ColourStreamOutcome(None, COLOUR_STREAM_JOIN_MISMATCH_REASON)
     return ColourStreamOutcome(json_bytes(colour_streams_document(export['object'], package_record, streams, primitives)), None)

@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from native_catalog.ue2 import Package
+from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from world.gltf_builder import GltfBuilder
 from world.static_mesh_colour_streams import (COLOUR_SELECTOR_UNRESOLVED_REASON, COLOUR_STREAM_JOIN_MISMATCH_REASON,
                                               read_static_mesh_colour_streams, static_mesh_colour_stream_outcome, static_mesh_export)
@@ -92,6 +93,22 @@ class StaticMeshColourStreamTests(unittest.TestCase):
             with self.subTest(primitive_vertices=primitive_vertices):
                 outcome = static_mesh_colour_stream_outcome(REVIEWED_LAYOUT, loader_of(package), request_of(package), synthetic_glb(primitive_vertices))
                 self.assertEqual(outcome, (None, COLOUR_STREAM_JOIN_MISMATCH_REASON))
+
+    def test_an_unreadable_colour_stream_is_a_listed_gap_naming_the_first_line_of_the_error(self):
+        package = synthetic_static_mesh_package()
+        missing = {'package': PACKAGE_RECORD['path'], 'object': 'Synthetic_S.Missing'}
+        outcome = static_mesh_colour_stream_outcome(REVIEWED_LAYOUT, loader_of(package), missing, synthetic_glb([(2, 0), (0, 1, 2)]))
+        self.assertEqual(outcome, (None, 'static-mesh-colour-stream-unread:Synthetic_S.usx holds 0 StaticMesh exports named Synthetic_S.Missing'))
+        self.assertTrue(is_listed_reason(outcome.gap_reason, load_gap_reason_patterns()))
+
+    def test_a_model_whose_gltf_accessor_is_not_float32_is_a_gap_instead_of_an_error(self):
+        package = synthetic_static_mesh_package()
+        glb = bytearray(synthetic_glb([(2, 0), (0, 1, 2)]))
+        float_component = b'"componentType":5126'
+        self.assertIn(float_component, glb)
+        glb[glb.index(float_component):glb.index(float_component) + len(float_component)] = b'"componentType":5123'
+        outcome = static_mesh_colour_stream_outcome(REVIEWED_LAYOUT, loader_of(package), request_of(package), bytes(glb))
+        self.assertEqual(outcome, (None, 'static-mesh-colour-stream-unread:glTF accessor 0 is not float32'))
 
     def test_an_unreviewed_layout_is_a_named_gap_without_reading_the_package(self):
         def refuse(relative):

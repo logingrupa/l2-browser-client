@@ -31,6 +31,7 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
+from world.error_detail import first_line_of_error
 
 LIGHTING_STEP_ALGORITHM_VERSION = 5
 LIGHTING_STEP_NAME = 'lighting'
@@ -133,8 +134,7 @@ def terrain_intensity_map_outcome(package, terrain):
     try:
         intensity_maps = read_terrain_intensity_maps(package, terrain)
     except FormatError as error:
-        detail = str(error).strip().splitlines()[0] if str(error).strip() else type(error).__name__
-        return [], 0, [f'{TERRAIN_INTENSITY_MAP_LAYOUT_UNREAD_REASON_PREFIX}{detail}']
+        return [], 0, [f'{TERRAIN_INTENSITY_MAP_LAYOUT_UNREAD_REASON_PREFIX}{first_line_of_error(error)}']
     return terrain_intensity_map_arrays(intensity_maps), len(intensity_maps.times), []
 
 
