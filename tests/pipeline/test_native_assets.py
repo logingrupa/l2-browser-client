@@ -51,7 +51,76 @@ class PackageTests(unittest.TestCase):
             archive_bytes({'files': []}, {'asset.JSON': b'x'})
 
 
+RM12_PAWN_FLOOR_PLACEMENT = ROOT / 'tests' / 'fixtures' / 'movement' / 'pawn-floor-placement-rm12.json'
+UE_AXIS_TO_GLTF_AXIS = (0, 2, 1)
+SOURCE_UNITS_PER_GLTF_METRE = 100
+
+
+def rm12_transform_fixture(name):
+    document = json.loads(RM12_PAWN_FLOOR_PLACEMENT.read_text(encoding='utf-8'))
+    return next(row for row in document['transformFixtures'] if row['name'] == name)
+
+
+def native_mesh_transform_dump(mesh_origin, mesh_scale, rotator_pitch_yaw_roll):
+    pitch, yaw, roll = rotator_pitch_yaw_roll
+    return (f'MeshOrigin = {{ X={mesh_origin[0]!r}, Y={mesh_origin[1]!r}, Z={mesh_origin[2]!r} }}\n'
+            f'MeshScale = {{ X={mesh_scale[0]!r}, Y={mesh_scale[1]!r}, Z={mesh_scale[2]!r} }}\n'
+            f'RotOrigin = {{ Yaw={yaw!r}, Pitch={pitch!r}, Roll={roll!r} }}')
+
+
+def source_rows_and_translation_of_gltf_matrix(gltf_matrix):
+    rows = [[gltf_matrix[4 * UE_AXIS_TO_GLTF_AXIS[row] + UE_AXIS_TO_GLTF_AXIS[column]] for column in range(3)] for row in range(3)]
+    translation = [gltf_matrix[12 + UE_AXIS_TO_GLTF_AXIS[axis]] * SOURCE_UNITS_PER_GLTF_METRE for axis in range(3)]
+    return rows, translation
+
+
+def row_vector_times_rows(vector, rows):
+    return [sum(vector[index] * rows[index][column] for index in range(3)) for column in range(3)]
+
+
 class GeometryTests(unittest.TestCase):
+    def converted_mesh_rows_and_translation(self, mesh_origin, mesh_scale, rotator_pitch_yaw_roll):
+        with tempfile.TemporaryDirectory() as directory:
+            document, _ = self.make_document(Path(directory))
+            result = apply_native_mesh_transform(document, native_mesh_transform_dump(mesh_origin, mesh_scale, rotator_pitch_yaw_roll))
+        return source_rows_and_translation_of_gltf_matrix(result['gltfParentMatrix'])
+
+    def assert_rows_match_native_matrix(self, rows, translation, native_matrix):
+        for row in range(3):
+            for column in range(3):
+                self.assertAlmostEqual(rows[row][column], native_matrix[4 * row + column], places=5)
+        for axis in range(3):
+            self.assertAlmostEqual(translation[axis], native_matrix[12 + axis], delta=1e-4)
+
+    def test_mfighter_mesh_transform_puts_the_bind_foot_where_the_rm12_native_matrix_does(self):
+        fixture = rm12_transform_fixture('MFighter-zero-PrePivot')
+        inputs = fixture['input']
+        self.assertEqual(inputs['rotOrigin'], [0, 49152, 0])
+        self.assertEqual((inputs['rotation'], inputs['prePivot'], inputs['drawScale'], inputs['drawScale3D']), ([0, 0, 0], [0.0, 0.0, 0.0], 1.0, [1.0, 1.0, 1.0]))
+        rows, translation = self.converted_mesh_rows_and_translation(inputs['meshOrigin'], inputs['meshScale'], inputs['rotOrigin'])
+        actor_translation = [translation[axis] + inputs['location'][axis] for axis in range(3)]
+        self.assert_rows_match_native_matrix(rows, actor_translation, fixture['nativeMatrix'])
+        bind_foot = row_vector_times_rows(inputs['vertex'], rows)
+        self.assertAlmostEqual(bind_foot[2] + actor_translation[2], fixture['transformedVertex'][2], delta=1e-5)
+        self.assertAlmostEqual(fixture['transformedVertex'][2], -2.830342, delta=1e-6)
+
+    def test_identity_mesh_transform_matches_the_rm12_identity_root(self):
+        fixture = rm12_transform_fixture('identity-root')
+        inputs = fixture['input']
+        rows, translation = self.converted_mesh_rows_and_translation(inputs['meshOrigin'], inputs['meshScale'], inputs['rotOrigin'])
+        self.assert_rows_match_native_matrix(rows, [translation[axis] + inputs['location'][axis] for axis in range(3)], fixture['nativeMatrix'])
+
+    def test_full_transform_applies_draw_scale_in_mesh_space_before_rot_origin_and_actor_rotation(self):
+        fixture = rm12_transform_fixture('full-transform')
+        inputs = fixture['input']
+        mesh_space_scale = [inputs['meshScale'][axis] * inputs['drawScale'] * inputs['drawScale3D'][axis] for axis in range(3)]
+        mesh_rows, mesh_translation = self.converted_mesh_rows_and_translation(inputs['meshOrigin'], mesh_space_scale, inputs['rotOrigin'])
+        actor_rows, _ = self.converted_mesh_rows_and_translation([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], inputs['rotation'])
+        rows = [row_vector_times_rows(mesh_row, actor_rows) for mesh_row in mesh_rows]
+        rotated_translation = row_vector_times_rows(mesh_translation, actor_rows)
+        translation = [rotated_translation[axis] + inputs['location'][axis] + inputs['prePivot'][axis] for axis in range(3)]
+        self.assert_rows_match_native_matrix(rows, translation, fixture['nativeMatrix'])
+
     def make_document(self, root):
         payload = struct.pack('<6f', 0, 0, 0, 1.23456789, 2, 3)
         (root / 'mesh.bin').write_bytes(payload)
