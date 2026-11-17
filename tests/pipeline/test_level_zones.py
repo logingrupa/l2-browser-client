@@ -1,5 +1,6 @@
 from pathlib import Path
 import struct
+from types import SimpleNamespace
 import sys
 import unittest
 
@@ -18,6 +19,7 @@ from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE
 from world.bsp_step import sealed_bsp_chunks
 from world.level_model import read_level_model
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
+from world.light_actors import reference_client_class_chains
 from world.raw_map_step import read_tile_map_lock_record
 from world.sky_step import sealed_sky
 from world.static_placement import ClassDefaults
@@ -28,18 +30,33 @@ BOOL_PROPERTY_TYPE = 3
 FLOAT_PROPERTY_TYPE = 4
 STRUCT_PROPERTY_TYPE = 10
 BOOL_TRUE_BIT = 128
-ZONE_IMPORTS = [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'ZoneInfo'), ('Core', 'Class', -1, 'SkyZoneInfo')]
+ZONE_IMPORTS = [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'ZoneInfo'), ('Core', 'Class', -1, 'SkyZoneInfo'), ('Core', 'Class', -1, 'LevelInfo')]
 ZONE_INFO_CLASS_IMPORT = -2
 SKY_ZONE_INFO_CLASS_IMPORT = -3
+LEVEL_INFO_CLASS_IMPORT = -4
 PROPERTY_NAMES = ['bSunAffect', 'DistanceFogColor', 'Color', 'DistanceFogEnd']
 ZONE_INFO = 'Engine.ZoneInfo'
 SKY_ZONE_INFO = 'Engine.SkyZoneInfo'
+LEVEL_INFO = 'Engine.LevelInfo'
 ZONE_DEFAULTS = {
     'bSunAffect': (True, 'class-default', ZONE_INFO), 'AmbientVector': (None, 'ue-zero', ZONE_INFO), 'AmbientBrightness': (None, 'ue-zero', ZONE_INFO),
     'AmbientHue': (None, 'ue-zero', ZONE_INFO), 'AmbientSaturation': (255, 'authored', ZONE_INFO), 'bDistanceFog': (None, 'ue-zero', ZONE_INFO),
     'DistanceFogColor': ({'A': 0, 'B': 128, 'G': 128, 'R': 128}, 'class-default', ZONE_INFO), 'DistanceFogStart': (3000.0, 'class-default', ZONE_INFO),
     'DistanceFogEnd': (8000.0, 'class-default', ZONE_INFO)}
-CLASS_DEFAULTS = SyntheticActorClassDefaults({ZONE_INFO: ZONE_DEFAULTS, SKY_ZONE_INFO: ZONE_DEFAULTS})
+CLASS_DEFAULTS = SyntheticActorClassDefaults({ZONE_INFO: ZONE_DEFAULTS, SKY_ZONE_INFO: ZONE_DEFAULTS, LEVEL_INFO: ZONE_DEFAULTS})
+CLASS_PARENTS = {ZONE_INFO: (ZONE_INFO,), SKY_ZONE_INFO: (SKY_ZONE_INFO, ZONE_INFO), LEVEL_INFO: (LEVEL_INFO, ZONE_INFO)}
+
+
+class SyntheticZoneClassChains:
+    def chain(self, class_name):
+        return CLASS_PARENTS.get(class_name)
+
+    def is_subclass(self, class_name, base_class):
+        return base_class in CLASS_PARENTS[class_name]
+
+
+def level_with_actors(model, references):
+    return SimpleNamespace(model=model, binding={'actorArrays': [{'nativeField': '0x38', 'references': list(references)}]})
 
 
 def bool_tag(names, name, value):
@@ -55,7 +72,8 @@ def indoor_zone_body(offset, names):
 
 def synthetic_zone_package():
     exports = [{'name': 'ZoneInfo3', 'class': ZONE_INFO_CLASS_IMPORT, 'body': indoor_zone_body},
-               {'name': 'SkyZoneInfo0', 'class': SKY_ZONE_INFO_CLASS_IMPORT, 'body': lambda offset, names: compact(names['None'])}]
+               {'name': 'SkyZoneInfo0', 'class': SKY_ZONE_INFO_CLASS_IMPORT, 'body': lambda offset, names: compact(names['None'])},
+               {'name': 'LevelInfo0', 'class': LEVEL_INFO_CLASS_IMPORT, 'body': lambda offset, names: compact(names['None'])}]
     return Package(package_bytes(PROPERTY_NAMES, ZONE_IMPORTS, exports), '00_00.unr')
 
 
@@ -66,7 +84,7 @@ def synthetic_zone_model():
 
 class LevelZoneTableTests(unittest.TestCase):
     def setUp(self):
-        self.zones = read_level_zones(synthetic_zone_package(), synthetic_zone_model(), CLASS_DEFAULTS)
+        self.zones = read_level_zones(synthetic_zone_package(), level_with_actors(synthetic_zone_model(), []), CLASS_DEFAULTS, SyntheticZoneClassChains())
 
     def field(self, zone, name):
         return next(field for field in (zone.sun_affect, *zone.ambient, *zone.distance_fog) if field.field == name)
@@ -101,8 +119,21 @@ class LevelZoneTableTests(unittest.TestCase):
 
     def test_an_import_or_out_of_table_zone_actor_reference_is_unresolved(self):
         model = build_synthetic_level_model([], zones=(synthetic_zone(), synthetic_zone(9), synthetic_zone(-3)))
-        zones = read_level_zones(synthetic_zone_package(), model, CLASS_DEFAULTS)
+        zones = read_level_zones(synthetic_zone_package(), level_with_actors(model, []), CLASS_DEFAULTS, SyntheticZoneClassChains())
         self.assertEqual([(zone.actor, zone.unresolved, zone.outdoor) for zone in zones], [(None, True, True), (None, True, False), (None, True, False)])
+
+    def test_a_zone_with_actor_reference_zero_reads_the_level_info_as_get_zone_actor_does(self):
+        zones = read_level_zones(synthetic_zone_package(), level_with_actors(synthetic_zone_model(), [3, 1, 2]), CLASS_DEFAULTS, SyntheticZoneClassChains())
+        self.assertEqual([(zone.actor, zone.level_info_fallback, zone.unresolved) for zone in zones],
+                         [('00_00.LevelInfo0', True, False), ('00_00.ZoneInfo3', False, False), ('00_00.SkyZoneInfo0', False, False),
+                          ('00_00.LevelInfo0', True, False)])
+        self.assertEqual((zones[0].sun_affect.value, zones[0].sun_affect.provenance), (True, 'class-default'))
+        self.assertEqual(zones[0].to_record()['levelInfoFallback'], True)
+        self.assertEqual([zone.class_bits for zone in zones], [1, 0, 1 | 2, 1])
+
+    def test_actors_zero_that_is_not_a_level_info_leaves_actorless_zones_unresolved(self):
+        zones = read_level_zones(synthetic_zone_package(), level_with_actors(synthetic_zone_model(), [1, 3]), CLASS_DEFAULTS, SyntheticZoneClassChains())
+        self.assertEqual([(zone.actor, zone.unresolved) for zone in zones][0], (None, True))
 
     def test_connectivity_and_visibility_masks_come_from_the_model_zones(self):
         self.assertEqual({(zone.connectivity, zone.visibility) for zone in self.zones}, {((1 << 64) - 1, (1 << 64) - 1)})
@@ -142,7 +173,7 @@ class RealMapZoneInputTests(unittest.TestCase):
         package = read_locked_map_package(REAL_CLIENT_ROOT, REAL_TILE_ID, lock_record)
         class_defaults = ClassDefaults(scratch_work_root_with_world_class_default_cache(self.addCleanup, 'level-zones-class-defaults-'),
                                        ReferenceClientClassScripts(REAL_CLIENT_ROOT))
-        zones = read_level_zones(package, read_level_model(package).model, class_defaults)
+        zones = read_level_zones(package, read_level_model(package), class_defaults, reference_client_class_chains(class_defaults))
         self.assertEqual(sorted(outdoor_zone_indices(zones)), bsp['outdoorZones'])
         self.assertEqual(sorted(sky_zone_indices(zones)), bsp['skyZones'])
         self.assertEqual(len(sky['skyZones']), 1)

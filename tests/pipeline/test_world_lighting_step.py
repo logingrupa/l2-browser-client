@@ -48,13 +48,13 @@ def node_range(node, first_index):
     return {'chunk': 0, 'node': node, 'primitive': 0, 'firstIndex': first_index, 'indexCount': 6}
 
 
-def three_surface_lightmaps(section_texture=0, front_zones=(0, 0, 0), zone_actor_references=(1, 1, 1)):
+def three_surface_lightmaps(section_texture=0, front_zones=(0, 0, 0)):
     vertex_uvs = [(u + 0.25 * node, v) for node in range(3) for u, v in SQUARE_UVS]
     tail = build_lightmap_tail([render_section_bytes(vertex_uvs, 3, section_texture)],
                                [(surface, (128 * surface, 0, 128, 128)) for surface in range(3)],
                                [([0, 1, 2], [page_mip_bytes(11), page_mip_bytes(97)])])
     nodes = [lightmap_node(node, 0, 4 * node, 4, front_zone) for node, front_zone in enumerate(front_zones)]
-    model, package = lightmap_model_and_package(tail, nodes, 3, zone_actor_references)
+    model, package = lightmap_model_and_package(tail, nodes, 3)
     return package, model, vertex_uvs
 
 
@@ -66,7 +66,7 @@ class BspLightmapPayloadTests(unittest.TestCase):
     def test_two_pages_keep_their_texels_and_hours_and_every_node_range_gets_its_uvs(self):
         package, model, vertex_uvs = three_surface_lightmaps()
         lightmaps = read_bsp_lightmaps(package, model)
-        arrays, reasons, counts = bsp_lightmap_arrays(package, lightmaps, model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES, NOT_SUN_AFFECTED)
+        arrays, reasons, counts = bsp_lightmap_arrays(package, lightmaps, model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES)
         named = arrays_by_name(arrays)
         self.assertEqual(reasons, [])
         self.assertEqual((named['LMPG.revision'].values, named['LMPG.compressedRevision'].values), ((FIXTURE_PAGE_REVISION,) * 2,
@@ -90,7 +90,7 @@ class BspLightmapPayloadTests(unittest.TestCase):
     def test_a_section_texture_past_the_page_list_is_a_named_gap_with_no_uvs(self):
         package, model, _ = three_surface_lightmaps(section_texture=5)
         lightmaps = read_bsp_lightmaps(package, model)
-        arrays, reasons, counts = bsp_lightmap_arrays(package, lightmaps, model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES, NOT_SUN_AFFECTED)
+        arrays, reasons, counts = bsp_lightmap_arrays(package, lightmaps, model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES)
         named = arrays_by_name(arrays)
         self.assertEqual(reasons, ['lighting-lightmap-index-invalid:5'])
         self.assertEqual(named['LMNR.texture'].values, (NO_LIGHTMAP,) * 3)
@@ -120,38 +120,20 @@ class BspLightmapPayloadTests(unittest.TestCase):
         unresolved_zone = lightmap_zone(None, unresolved=True)
         package, model, _ = three_surface_lightmaps(front_zones=(0, 1, 2))
         drawn = [node_range(node, 6 * node) for node in range(3)]
-        arrays, _, counts = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, drawn, (*SUN_ZONES, unresolved_zone), NOT_SUN_AFFECTED)
+        arrays, _, counts = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, drawn, (*SUN_ZONES, unresolved_zone))
         self.assertEqual(arrays_by_name(arrays)['LMNR.sunAffect'].values, (NOT_SUN_AFFECTED, SUN_AFFECTED, SUN_AFFECT_UNRESOLVED))
         self.assertEqual((counts['sunAffectedNodeRanges'], counts['sunAffectUnresolvedNodeRanges']), (1, 1))
-
-    def test_a_node_range_in_a_zone_without_a_zone_info_actor_takes_the_level_info_sun_affect(self):
-        level_info_zone = lightmap_zone(None, unresolved=True, actor=None)
-        package, model, _ = three_surface_lightmaps(front_zones=(0, 2, 1), zone_actor_references=(1, 1, 0))
-        drawn = [node_range(node, 6 * node) for node in range(3)]
-        for level_info_value in (SUN_AFFECTED, NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED):
-            with self.subTest(level_info_value=level_info_value):
-                arrays, _, _ = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, drawn, (*SUN_ZONES, level_info_zone), level_info_value)
-                self.assertEqual(arrays_by_name(arrays)['LMNR.sunAffect'].values, (NOT_SUN_AFFECTED, level_info_value, SUN_AFFECTED))
-
-    def test_a_zone_whose_actor_reference_is_an_import_or_past_the_exports_stays_unresolved(self):
-        unread_zone = lightmap_zone(None, unresolved=True, actor=None)
-        drawn = [node_range(node, 6 * node) for node in range(3)]
-        for reference in (-3, 999):
-            with self.subTest(reference=reference):
-                package, model, _ = three_surface_lightmaps(front_zones=(0, 2, 1), zone_actor_references=(1, 1, reference))
-                arrays, _, _ = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, drawn, (*SUN_ZONES, unread_zone), SUN_AFFECTED)
-                self.assertEqual(arrays_by_name(arrays)['LMNR.sunAffect'].values, (NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED, SUN_AFFECTED))
 
     def test_only_drawn_node_ranges_get_a_sun_affect_value(self):
         package, model, _ = three_surface_lightmaps(front_zones=(0, 1, 0))
         drawn = [node_range(node, 6 * node) for node in (0, 2)]
-        arrays, _, counts = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, drawn, SUN_ZONES, NOT_SUN_AFFECTED)
+        arrays, _, counts = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, drawn, SUN_ZONES)
         self.assertEqual((arrays_by_name(arrays)['LMNR.sunAffect'].values, counts['sunAffectedNodeRanges']), ((0, 0), 0))
 
     def test_a_node_front_zone_outside_the_level_zones_is_refused(self):
         package, model, _ = three_surface_lightmaps(front_zones=(0, 0, 9))
         with self.assertRaisesRegex(FormatError, 'zone 9 outside the 2 level zones'):
-            bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES, NOT_SUN_AFFECTED)
+            bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES)
 
     def test_a_page_whose_texture_format_is_not_dxt1_is_refused(self):
         package, model, _ = three_surface_lightmaps()

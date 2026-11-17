@@ -15,6 +15,7 @@ from world.bsp_step import sealed_bsp_chunks
 from world.bsp_visibility_payload import bsp_visibility_arrays, portal_node_indices, require_visibility_model, visibility_outdoor_zones
 from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model
 from world.level_zones import read_level_zones, sky_zone_indices
+from world.light_actors import reference_client_class_chains
 from world.map_emitter_step import sealed_map_emitters
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_mesh_step import sealed_static_meshes
@@ -165,8 +166,9 @@ def run_bsp_visibility_step(project_root, client_root, tile_id):
     actors_by_object = {actor['object']: actor for actor in json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))}
     store_root = lane_store_root(project_root, WORLD_LANE_NAME)
     try:
-        model = read_level_model(package).model
-        zones = read_level_zones(package, model, class_defaults)
+        level = read_level_model(package)
+        model = level.model
+        zones = read_level_zones(package, level, class_defaults, reference_client_class_chains(class_defaults))
         sky_zones = sky_zone_indices(zones)
         members = [*static_mesh_members(model, unit.static_meshes, actors_by_object, class_defaults, store_model_reader(store_root, unit.static_meshes),
                                         rules[STATIC_MESH_MARGIN_RULE]['runtimeDefault'], sky_zones),

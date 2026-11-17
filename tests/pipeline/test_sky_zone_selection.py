@@ -8,8 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_catalog.ue2 import FormatError
 from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE, ActorField
-from world.bsp_node_sun_affect import NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED, SUN_AFFECTED, level_info_sun_affect
-from world.level_actors import level_actor_exports
+from world.level_actors import level_actor_exports, level_info_export
 from world.sky_zone_selection import SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON, select_sky_zone
 
 SKY_CLASS = 'Engine.SkyZoneInfo'
@@ -96,19 +95,15 @@ class SkyZoneSelectionTests(unittest.TestCase):
             level_actor_exports(SimpleNamespace(exports=[]), SimpleNamespace(binding={'actorArrays': []}))
 
 
-class LevelInfoSunAffectTests(unittest.TestCase):
-    def sun_affect(self, exports, references=None):
-        package = SimpleNamespace(exports=exports)
-        with mock.patch('world.bsp_node_sun_affect.serialized_actor_values', lambda package, export: export['fields']), \
-                mock.patch('world.bsp_node_sun_affect.resolved_actor_field', resolved_field):
-            return level_info_sun_affect(package, level_of(exports, references), None, SyntheticClassChains())
+class LevelInfoExportTests(unittest.TestCase):
+    def level_info(self, exports, references=None):
+        return level_info_export(SimpleNamespace(exports=exports), level_of(exports, references), SyntheticClassChains())
 
-    def test_actors_zero_must_be_a_level_info_whose_bsunaffect_decides(self):
-        self.assertEqual(self.sun_affect([actor('LevelInfo0', 'Engine.LevelInfo', bSunAffect=True)]), SUN_AFFECTED)
-        self.assertEqual(self.sun_affect([actor('LevelInfo0', 'Engine.LevelInfo')]), NOT_SUN_AFFECTED)
-        self.assertEqual(self.sun_affect([actor('LevelInfo0', 'Engine.LevelInfo', bSunAffect='unresolved')]), SUN_AFFECT_UNRESOLVED)
-        self.assertEqual(self.sun_affect([actor('ZoneInfo0', 'Engine.ZoneInfo', bSunAffect=True)]), SUN_AFFECT_UNRESOLVED)
-        self.assertEqual(self.sun_affect([actor('LevelInfo0', 'Engine.LevelInfo', bSunAffect=True)], references=[0, 1]), SUN_AFFECT_UNRESOLVED)
+    def test_actors_zero_is_the_level_info_only_when_its_class_is_a_level_info(self):
+        self.assertEqual(self.level_info([actor('LevelInfo0', 'Engine.LevelInfo')])['object'], 'Map.LevelInfo0')
+        self.assertIsNone(self.level_info([actor('ZoneInfo0', 'Engine.ZoneInfo')]))
+        self.assertIsNone(self.level_info([actor('Mystery0', 'Game.Mystery')]))
+        self.assertIsNone(self.level_info([actor('LevelInfo0', 'Engine.LevelInfo')], references=[0, 1]))
 
 
 if __name__ == '__main__':
