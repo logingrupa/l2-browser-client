@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,7 +41,7 @@ class ConverterImplementationHashTests(unittest.TestCase):
 
     def converter_sha256_of_copy(self, folder_name, changed_bytes):
         copy_root = copied_converter_closure(self.temporary_root / folder_name, changed_bytes)
-        return ScriptsSourceIndex(copy_root).sources_sha256(native_assets.CONVERTER_SOURCE_MODULES)
+        return ScriptsSourceIndex(copy_root, sources_loaded_before_ns=time.time_ns()).sources_sha256(native_assets.CONVERTER_SOURCE_MODULES)
 
     def test_the_implementation_hash_is_the_source_closure_sha256_of_the_converter(self):
         self.assertEqual(native_assets.implementation_hash(), ScriptsSourceIndex(SCRIPTS_ROOT).sources_sha256(('native_assets',)))

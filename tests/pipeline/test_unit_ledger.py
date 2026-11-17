@@ -11,11 +11,13 @@ import sys
 import tempfile
 import types
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from native_store.canonical_json import canonical_json_bytes
+from native_store.converter_source_closure import process_scripts_source_index
 from native_store.gap_rows import GapRowError
 from native_store.store_paths import StorePathError
 from native_store.step_source_modules import step_converter_sources_sha256
@@ -330,6 +332,22 @@ class UnitLedgerLifecycleTests(unittest.TestCase):
         raw_row = {**unlisted_row, 'status': 'pass', 'reason': None}
         receipt = ledger.seal('tile:20_21', fingerprint, {**self.caller_receipt([output]), 'gapRows': [terrain_row, raw_row]})
         self.assertEqual(receipt['gapRows'], [raw_row, terrain_row])
+
+    def test_seal_refuses_a_unit_whose_step_source_changed_after_the_process_loaded_it(self):
+        ledger = self.ledger()
+        self.sealed_unit(ledger, 'tile:20_21')
+        fingerprint = ledger.unit_fingerprint([FIRST_INPUT_SHA256, SECOND_INPUT_SHA256], TILE_CONFIG)
+        step_directory = ledger.begin('tile:20_22', fingerprint)
+        output = self.write_lane_output('l2/tiles/tile.json', b'{"tile":"20_21"}\n')
+        step_entry_source = ROOT / 'scripts' / 'world' / 'raw_map_step.py'
+        loaded_before_ns = step_entry_source.stat().st_mtime_ns - 1
+        with patch.object(process_scripts_source_index(), 'sources_loaded_before_ns', loaded_before_ns), \
+                self.assertRaisesRegex(UnitLedgerError, r'unit tile:20_22 is not sealed: step raw of lane world: .* changed after this '
+                                                        r'process loaded its converter code; rerun'):
+            ledger.seal('tile:20_22', fingerprint, self.caller_receipt([output]))
+        self.assertEqual(sorted(path.name for path in step_directory.iterdir()), ['.running.json', 'owner.json'])
+        ledger.seal('tile:20_22', fingerprint, self.caller_receipt([output]))
+        self.assertTrue(ledger.is_sealed('tile:20_22', fingerprint))
 
     def test_an_edited_copy_of_the_ledger_module_gives_the_same_fingerprint(self):
         module_copy = self.project / 'unit_ledger_edited_copy.py'

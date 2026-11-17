@@ -1,6 +1,8 @@
+import os
 from pathlib import Path
 import sys
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +20,8 @@ SYNTHETIC_SCRIPTS_FILES = {
                            'def run_tool():\n    return ["powershell", "-File", "extract_defaults.ps1"]\n'),
     'world/dynamic_step.py': 'import importlib\ndef reader():\n    return importlib.import_module("vendor_reader.decoder")\n',
     'world/node_step.py': 'from pathlib import Path\nSTAGE_SCRIPT = Path(__file__).parents[1] / "stage-effect.mjs"\n',
+    'world/file_loader_step.py': ('import importlib.util\nfrom pathlib import Path\ndef load():\n    return importlib.util.spec_from_file_location('
+                                  '"loaded_reader", Path(__file__).parents[1] / "vendor_reader" / "decoder.py")\n'),
     'vendor_reader/__init__.py': '',
     'vendor_reader/decoder.py': 'def decode():\n    return 4\n',
     'extract_defaults.ps1': 'param($Package)\nWrite-Output $Package\n',
@@ -28,7 +32,8 @@ SYNTHETIC_SCRIPTS_FILES = {
     'unrelated_tool.py': 'def unrelated():\n    return 7\n',
 }
 STEP_ENTRY_MODULES = {'sky': ('world.sky_step',), 'meshes': ('world.mesh_step',), 'dynamic': ('world.dynamic_step',),
-                      'node': ('world.node_step',)}
+                      'node': ('world.node_step',), 'file-loader': ('world.file_loader_step',)}
+ONE_SECOND_NS = 10 ** 9
 
 
 def written_scripts_tree(scripts_root, files):
@@ -45,8 +50,11 @@ class SyntheticScriptsTestCase(unittest.TestCase):
         self.addCleanup(temporary_directory.cleanup)
         self.scripts_root = written_scripts_tree(Path(temporary_directory.name) / 'scripts', SYNTHETIC_SCRIPTS_FILES)
 
+    def index(self):
+        return ScriptsSourceIndex(self.scripts_root, sources_loaded_before_ns=time.time_ns())
+
     def step_sha256s(self):
-        index = ScriptsSourceIndex(self.scripts_root)
+        index = self.index()
         return {step: index.sources_sha256(entry_modules) for step, entry_modules in STEP_ENTRY_MODULES.items()}
 
     def steps_changed_by_edit(self, relative_path, appended_text):
@@ -59,7 +67,7 @@ class SyntheticScriptsTestCase(unittest.TestCase):
 
 class StepSourceClosureTests(SyntheticScriptsTestCase):
     def closure(self, step):
-        return ScriptsSourceIndex(self.scripts_root).closure_relative_paths(STEP_ENTRY_MODULES[step])
+        return self.index().closure_relative_paths(STEP_ENTRY_MODULES[step])
 
     def test_a_step_closure_holds_its_imports_package_initialisers_and_named_tools(self):
         self.assertEqual(self.closure('meshes'), ['extract_defaults.ps1', 'shared_library.py', 'world/__init__.py',
@@ -72,14 +80,18 @@ class StepSourceClosureTests(SyntheticScriptsTestCase):
 
     def test_an_edit_of_a_shared_module_makes_every_importing_step_stale(self):
         self.assertEqual(self.steps_changed_by_edit('shared_library.py', 'SHARED_FACTOR = 4\n'), ['meshes', 'sky'])
-        self.assertEqual(self.steps_changed_by_edit('world/__init__.py', 'PACKAGE_FACTOR = 5\n'), ['dynamic', 'meshes', 'node', 'sky'])
+        self.assertEqual(self.steps_changed_by_edit('world/__init__.py', 'PACKAGE_FACTOR = 5\n'),
+                         ['dynamic', 'file-loader', 'meshes', 'node', 'sky'])
 
     def test_an_edit_of_a_module_no_step_reaches_makes_no_step_stale(self):
         self.assertEqual(self.steps_changed_by_edit('unrelated_tool.py', 'UNRELATED_FACTOR = 6\n'), [])
 
     def test_a_literal_dynamic_import_is_covered(self):
         self.assertIn('vendor_reader/decoder.py', self.closure('dynamic'))
-        self.assertEqual(self.steps_changed_by_edit('vendor_reader/decoder.py', 'DECODER_FACTOR = 7\n'), ['dynamic'])
+        self.assertEqual(self.steps_changed_by_edit('vendor_reader/decoder.py', 'DECODER_FACTOR = 7\n'), ['dynamic', 'file-loader'])
+
+    def test_a_literal_file_location_load_is_covered(self):
+        self.assertIn('vendor_reader/decoder.py', self.closure('file-loader'))
 
     def test_a_subprocess_powershell_tool_named_by_the_step_is_covered(self):
         self.assertEqual(self.steps_changed_by_edit('extract_defaults.ps1', 'Write-Output 1\n'), ['meshes'])
@@ -111,16 +123,44 @@ class DynamicLoadRefusalTests(SyntheticScriptsTestCase):
         (self.scripts_root / 'world' / 'dynamic_step.py').write_text(
             'import importlib\ndef reader(name):\n    return importlib.import_module(name)\n', encoding='utf-8')
         with self.assertRaisesRegex(ConverterSourceClosureError, r'world/dynamic_step\.py:3 loads code through import_module'):
-            ScriptsSourceIndex(self.scripts_root).closure(STEP_ENTRY_MODULES['dynamic'])
+            self.index().closure(STEP_ENTRY_MODULES['dynamic'])
+
+    def test_a_dynamic_import_by_a_computed_name_with_a_literal_package_is_refused(self):
+        (self.scripts_root / 'world' / 'dynamic_step.py').write_text(
+            'import importlib\ndef reader(name):\n    return importlib.import_module(name, package="world")\n', encoding='utf-8')
+        with self.assertRaisesRegex(ConverterSourceClosureError, r'world/dynamic_step\.py:3 loads code through import_module'):
+            self.index().closure(STEP_ENTRY_MODULES['dynamic'])
 
     def test_exec_of_a_computed_source_is_refused(self):
         (self.scripts_root / 'world' / 'sky_only_helper.py').write_text('def run(source):\n    exec(source)\n', encoding='utf-8')
         with self.assertRaisesRegex(ConverterSourceClosureError, r'world/sky_only_helper\.py:2 loads code through exec'):
-            ScriptsSourceIndex(self.scripts_root).closure(STEP_ENTRY_MODULES['sky'])
+            self.index().closure(STEP_ENTRY_MODULES['sky'])
 
     def test_an_entry_module_without_a_source_is_refused(self):
         with self.assertRaisesRegex(ConverterSourceClosureError, 'entry module world.missing_step has no source'):
-            ScriptsSourceIndex(self.scripts_root).closure(('world.missing_step',))
+            self.index().closure(('world.missing_step',))
+
+
+class SourceChangedAfterLoadTests(SyntheticScriptsTestCase):
+    def test_a_closure_source_modified_after_the_process_loaded_its_code_refuses_the_check_and_the_hash(self):
+        index = self.index()
+        index.sources_sha256(STEP_ENTRY_MODULES['sky'])
+        index.require_closure_unchanged(STEP_ENTRY_MODULES['sky'])
+        later_ns = index.sources_loaded_before_ns + ONE_SECOND_NS
+        os.utime(self.scripts_root / 'world' / 'sky_only_helper.py', ns=(later_ns, later_ns))
+        changed_message = r'world/sky_only_helper\.py changed after this process loaded its converter code; rerun'
+        with self.assertRaisesRegex(ConverterSourceClosureError, changed_message):
+            index.require_closure_unchanged(STEP_ENTRY_MODULES['sky'])
+        index.require_closure_unchanged(STEP_ENTRY_MODULES['meshes'])
+        with self.assertRaisesRegex(ConverterSourceClosureError, changed_message):
+            ScriptsSourceIndex(self.scripts_root, sources_loaded_before_ns=index.sources_loaded_before_ns).sources_sha256(STEP_ENTRY_MODULES['sky'])
+
+    def test_a_closure_source_removed_after_the_process_loaded_its_code_refuses_the_check(self):
+        index = self.index()
+        index.sources_sha256(STEP_ENTRY_MODULES['meshes'])
+        (self.scripts_root / 'world' / 'mesh_only_helper.py').unlink()
+        with self.assertRaisesRegex(ConverterSourceClosureError, r'world/mesh_only_helper\.py was removed after this process loaded'):
+            index.require_closure_unchanged(STEP_ENTRY_MODULES['meshes'])
 
 
 if __name__ == '__main__':

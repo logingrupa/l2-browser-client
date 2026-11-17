@@ -3,7 +3,9 @@ from functools import cache
 import hashlib
 from pathlib import Path
 import re
+import time
 
+SOURCES_LOADED_BEFORE_NS = time.time_ns()
 SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 PYTHON_SOURCE_SUFFIX = '.py'
 REFERENCED_SOURCE_SUFFIXES = frozenset({'.py', '.ps1', '.psm1', '.mjs', '.cjs', '.js', '.json'})
@@ -11,8 +13,8 @@ SKIPPED_FOLDER_NAMES = frozenset({'__pycache__'})
 REFERENCED_FILE_NAME_PATTERN = re.compile(r'[A-Za-z0-9_.-]+\.(?:py|ps1|psm1|mjs|cjs|js|json)(?![A-Za-z0-9_])')
 DOTTED_MODULE_NAME_PATTERN = re.compile(r'[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*')
 PYTHON_IMPORT_TEXT_PATTERN = re.compile(r'(?<![A-Za-z0-9_.])(?:from|import)\s+([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)')
-DYNAMIC_CODE_LOADER_NAMES = frozenset({'import_module', '__import__', 'spec_from_file_location', 'SourceFileLoader', 'load_source',
-                                       'run_path', 'run_module', 'exec', 'eval'})
+LOADED_CODE_ARGUMENT_POSITION_BY_LOADER_NAME = {'import_module': 0, '__import__': 0, 'run_module': 0, 'run_path': 0, 'exec': 0, 'eval': 0,
+                                                'spec_from_file_location': 1, 'SourceFileLoader': 1, 'load_source': 1}
 PINNED_EXTERNAL_SOURCE_LOADERS = frozenset({'data/pinned_elbera_module.py'})
 
 
@@ -42,6 +44,11 @@ def string_constants(tree):
     return [node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)]
 
 
+def loaded_code_argument_string_constants(call, loader_name):
+    position = LOADED_CODE_ARGUMENT_POSITION_BY_LOADER_NAME[loader_name]
+    return string_constants(call.args[position]) if len(call.args) > position else []
+
+
 def called_name(call):
     if isinstance(call.func, ast.Name):
         return call.func.id
@@ -51,8 +58,9 @@ def called_name(call):
 
 
 class ScriptsSourceIndex:
-    def __init__(self, scripts_root):
+    def __init__(self, scripts_root, sources_loaded_before_ns=SOURCES_LOADED_BEFORE_NS):
         self.scripts_root = Path(scripts_root).resolve()
+        self.sources_loaded_before_ns = sources_loaded_before_ns
         self.source_paths_by_file_name = {}
         for path in sorted(self.scripts_root.rglob('*')):
             if path.is_file() and path.suffix in REFERENCED_SOURCE_SUFFIXES and not SKIPPED_FOLDER_NAMES.intersection(path.parts):
@@ -103,8 +111,9 @@ class ScriptsSourceIndex:
             return []
         paths = []
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and called_name(node) in DYNAMIC_CODE_LOADER_NAMES:
-                loaded_paths = [path for text in string_constants(node) for path in self.paths_named_by_loader_argument(text)]
+            if isinstance(node, ast.Call) and called_name(node) in LOADED_CODE_ARGUMENT_POSITION_BY_LOADER_NAME:
+                loaded_paths = [path for text in loaded_code_argument_string_constants(node, called_name(node))
+                                for path in self.paths_named_by_loader_argument(text)]
                 if not loaded_paths:
                     raise ConverterSourceClosureError(
                         f'{self.relative_path(source_path)}:{node.lineno} loads code through {called_name(node)} by a name that names no '
@@ -135,8 +144,18 @@ class ScriptsSourceIndex:
                 else self.paths_named_in_text(source_path.read_bytes().decode('utf-8', errors='replace')))
         return self.referenced_paths_by_source_path[source_path]
 
+    def require_source_unchanged_since_load(self, source_path):
+        try:
+            modified_ns = source_path.stat().st_mtime_ns
+        except FileNotFoundError as error:
+            raise ConverterSourceClosureError(
+                f'{self.relative_path(source_path)} was removed after this process loaded its converter code; rerun') from error
+        if modified_ns > self.sources_loaded_before_ns:
+            raise ConverterSourceClosureError(f'{self.relative_path(source_path)} changed after this process loaded its converter code; rerun')
+
     def content_sha256(self, source_path):
         if source_path not in self.content_sha256_by_source_path:
+            self.require_source_unchanged_since_load(source_path)
             self.content_sha256_by_source_path[source_path] = lf_normalized_sha256(source_path)
         return self.content_sha256_by_source_path[source_path]
 
@@ -156,6 +175,10 @@ class ScriptsSourceIndex:
             pending.extend(path for path in self.referenced_paths(source_path) if path not in closure)
         return sorted(closure, key=self.relative_path)
 
+    def require_closure_unchanged(self, entry_module_names):
+        for source_path in self.closure(entry_module_names):
+            self.require_source_unchanged_since_load(source_path)
+
     def closure_relative_paths(self, entry_module_names):
         return [self.relative_path(path) for path in self.closure(entry_module_names)]
 
@@ -174,3 +197,7 @@ def process_scripts_source_index():
 @cache
 def process_converter_sources_sha256(entry_module_names):
     return process_scripts_source_index().sources_sha256(entry_module_names)
+
+
+def require_process_converter_sources_unchanged(entry_module_names):
+    process_scripts_source_index().require_closure_unchanged(entry_module_names)

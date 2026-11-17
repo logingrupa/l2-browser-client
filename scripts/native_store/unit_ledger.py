@@ -15,7 +15,8 @@ from typing import NamedTuple
 from native_store.canonical_json import canonical_json_bytes
 from native_store.file_identity import file_identity
 from native_store.gap_rows import load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
-from native_store.step_source_modules import StepSourceModulesError, step_converter_sources_sha256
+from native_store.step_source_modules import (StepSourceModulesError, require_step_converter_sources_unchanged,
+                                              step_converter_sources_sha256)
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, STEP_NAME_PATTERN, StorePathError, confined_child_path,
                                       lane_store_root, lane_work_root, refuse_reparse_points, require_known_lane_name,
                                       require_portable_relative_path)
@@ -340,6 +341,10 @@ class UnitLedger:
         return outputs
 
     def seal(self, unit_key, fingerprint, receipt):
+        try:
+            require_step_converter_sources_unchanged(self.lane_name, self.step)
+        except StepSourceModulesError as error:
+            raise UnitLedgerError(f'unit {unit_key} is not sealed: {error}') from error
         begun_unit = self.begun_units_by_key.get(unit_key)
         if begun_unit is None or begun_unit['fingerprint'] != fingerprint:
             raise UnitLedgerError(f'begin was not called for unit {unit_key} with this fingerprint in this ledger')

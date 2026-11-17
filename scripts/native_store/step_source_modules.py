@@ -1,4 +1,5 @@
-from native_store.converter_source_closure import process_converter_sources_sha256
+from native_store.converter_source_closure import (ConverterSourceClosureError, process_converter_sources_sha256,
+                                                   require_process_converter_sources_unchanged)
 
 WORLD_STEP_SOURCE_MODULES = {
     'raw': ('world.raw_map_step',), 'chunks': ('world.tile_chunk_plan',), 'terrain': ('world.terrain_chunk_step',),
@@ -36,4 +37,14 @@ def step_source_modules(lane_name, step):
 
 
 def step_converter_sources_sha256(lane_name, step):
-    return process_converter_sources_sha256(step_source_modules(lane_name, step))
+    try:
+        return process_converter_sources_sha256(step_source_modules(lane_name, step))
+    except ConverterSourceClosureError as error:
+        raise StepSourceModulesError(f'step {step} of lane {lane_name}: {error}') from error
+
+
+def require_step_converter_sources_unchanged(lane_name, step):
+    try:
+        require_process_converter_sources_unchanged(step_source_modules(lane_name, step))
+    except ConverterSourceClosureError as error:
+        raise StepSourceModulesError(f'step {step} of lane {lane_name}: {error}') from error
