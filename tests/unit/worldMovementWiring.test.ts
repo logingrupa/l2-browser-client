@@ -69,7 +69,9 @@ describe("world movement wiring", () => {
 
   it("poses the initial local pawn and a spawned NPC at their simulated cylinder centre without any move record", async () => {
     const { adapter, movement, advanceFrames, settle } = await wiredWorld();
-    expect(movement.pose(localPlayerId)).toMatchObject({ location: { x: 0, y: 0, z: 0 }, isMoving: false });
+    const unplaced = movement.pose(localPlayerId)!;
+    expect(unplaced).toMatchObject({ feetPosition: { x: 0, y: 0, z: 0 }, location: { x: 0, z: 0 }, isMoving: false });
+    expect(unplaced.location.y).toBeCloseTo(.23, 6);
     expect(movement.pose("native-musveren")).toBeNull();
     await settle();
     advanceFrames(2);

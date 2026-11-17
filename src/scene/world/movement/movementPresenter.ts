@@ -205,7 +205,7 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
     if (event.collision === null) { pawnsByEntityId.delete(id); return; }
     const incomingPosition = float32Vector(worldPositionToSource(position));
     const simulation: PawnSimulation = {
-      body: standingBody(incomingPosition, event.collision), yaw: worldYawToSourceHeading(orientationRadians), goal: null, moveTimerSeconds: 0, speedUnresolved: false,
+      body: standingBody(centreOf(incomingPosition, event.collision.height), event.collision), yaw: worldYawToSourceHeading(orientationRadians), goal: null, moveTimerSeconds: 0, speedUnresolved: false,
     };
     pawnsByEntityId.set(id, presentedPawn(simulation, incomingPosition));
   }

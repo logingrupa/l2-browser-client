@@ -168,7 +168,7 @@ describe("movementPresenter applies server movement through the MOVE-01 port", (
   it("gives a spawned pawn with no move event its simulated location: the spawn trace, then the walking settle", () => {
     const { presenter, advanceFrames } = presenterOn(bspFloorWorld(0));
     presenter.applyEvent(spawnEvent("npc-1", { x: 0, y: 0, z: 0 }, { radius: 9, height: syntheticPawnHalfHeight }));
-    expect(pawnOf(presenter, "npc-1")).toMatchObject({ location: { x: 0, y: 0, z: 0 }, isMoving: false, heading: 16384 });
+    expect(pawnOf(presenter, "npc-1")).toMatchObject({ location: { x: 0, y: 0, z: syntheticPawnHalfHeight }, feetPosition: { x: 0, y: 0, z: 0 }, isMoving: false, heading: 16384 });
     advanceFrames(2);
     const settled = pawnOf(presenter, "npc-1");
     expect(settled).toMatchObject({ mode: "walking", heldReason: null, isMoving: false, floor: { kind: "bsp-tree" } });
@@ -184,7 +184,9 @@ describe("movementPresenter applies server movement through the MOVE-01 port", (
     presenter.applyEvent(spawnEvent("npc-2", { x: 0, y: 0, z: 0 }, null));
     advanceFrames(30);
     expect(presenter.inspection().pawns.map(pawn => pawn.entityId)).toEqual(["npc-1"]);
-    expect(pawnOf(presenter, "npc-1")).toMatchObject({ heldReason: "collision-not-ready", location: { x: 0, y: 0, z: 50 } });
+    expect(pawnOf(presenter, "npc-1")).toMatchObject({
+      heldReason: "collision-not-ready", feetPosition: { x: 0, y: 0, z: 50 }, location: { x: 0, y: 0, z: 50 + syntheticPawnHalfHeight },
+    });
   });
 
   it("refuses an unknown entity and malformed movement records with named errors", () => {
