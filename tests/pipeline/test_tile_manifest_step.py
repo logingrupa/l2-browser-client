@@ -58,6 +58,37 @@ def lane_store_fixture_tile():
     return tile_store_files(FIXTURE_TILE_ID, FIXTURE_SOURCE_IDENTITY, plan, records, glbs, FIXTURE_EVIDENCE)
 
 
+UPSTREAM_PRODUCT_FUNCTIONS = {'meshes': 'sealed_static_meshes', 'bsp': 'sealed_bsp_chunks', 'collision': 'sealed_collision', 'movers': 'sealed_movers',
+                              'bsp-visibility': 'sealed_bsp_visibility', 'emitters': 'sealed_map_emitters', 'sky': 'sealed_sky', 'audio': 'sealed_world_audio',
+                              'lighting': 'sealed_lighting', 'minimap': 'sealed_minimap', 'static-mesh-materials': 'sealed_static_mesh_materials',
+                              'terrain-material': 'sealed_terrain_material'}
+
+
+def fingerprint_of(label):
+    return hashlib.sha256(label.encode('utf-8')).hexdigest()
+
+
+def pinned_resource(path_template, label):
+    return {'resource': path_template.replace('<sha256>', fingerprint_of(label)), 'sha256': fingerprint_of(label), 'bytes': len(label)}
+
+
+def sealed_upstream_products(chunk_ids):
+    collision_chunks = {chunk_id: {**pinned_resource('/l2/maps/<sha256>/native-tile-chunk-collision/asset.json', chunk_id), 'gapRows': []}
+                        for chunk_id in chunk_ids}
+    return {'meshes': {'chunks': {chunk_id: {'models': [], 'gapRows': []} for chunk_id in chunk_ids}, 'gapRows': []},
+            'bsp': {'chunks': {chunk_id: {'resource': None, 'gapRows': []} for chunk_id in chunk_ids}, 'materialFiles': [], 'gapRows': []},
+            'collision': {'chunks': collision_chunks, 'tile': pinned_resource('/l2/maps/<sha256>/native-tile-collision/asset.json', 'collision'),
+                          'gapRows': []},
+            'movers': {'manifest': None, 'gapRows': []},
+            'bsp-visibility': {'resource': pinned_resource('/l2/maps/<sha256>/native-tile-bsp-visibility/asset.json', 'visibility'), 'gapRows': []},
+            'emitters': {'manifest': None, 'gapRows': []}, 'sky': {'manifest': None, 'materialFiles': [], 'gapRows': []},
+            'audio': {'manifests': [], 'gapRows': []},
+            'lighting': {'resource': pinned_resource('/l2/maps/<sha256>/native-tile-lighting/asset.json', 'lighting'), 'gapRows': []},
+            'minimap': {'manifest': pinned_resource('/l2/maps/<sha256>/native-tile-minimap/manifest.json', 'minimap'), 'gapRows': []},
+            'static-mesh-materials': {'listing': None, 'gapRows': []},
+            'terrain-material': {'listing': pinned_resource('/l2/native-materials/terrain-materials-<sha256>.json', 'terrain'), 'gapRows': []}}
+
+
 def hidden_terrain_record(record, gap_rows=()):
     return {**record, 'terrain': None, 'triangleCount': 0, 'gapRows': list(gap_rows)}
 
@@ -149,7 +180,7 @@ class TileManifestTests(unittest.TestCase):
             tile_store_files(REAL_TILE_ID, REAL_SOURCE_IDENTITY, plan, list(reversed(records)), glbs, EVIDENCE)
 
     def test_the_step_constants(self):
-        self.assertEqual((TILE_MANIFEST_STEP_ALGORITHM_VERSION, TILE_CATALOG_CAPACITY), (14, 163))
+        self.assertEqual((TILE_MANIFEST_STEP_ALGORITHM_VERSION, TILE_CATALOG_CAPACITY), (15, 163))
         self.assertEqual(PENDING_TILE_STEPS, ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'sky', 'audio', 'lighting', 'minimap',
                                               'terrain-material', 'static-mesh-materials'))
 
@@ -174,20 +205,18 @@ class RunTileManifestStepTests(unittest.TestCase):
         self.project_root = Path(temporary_directory.name)
         self.store_root = self.project_root / 'artifacts/lane-store/world/l2'
 
-    def sealed_terrain(self, anchor_location=(128.0, 128.0, 200.0)):
+    def sealed_terrain(self, anchor_location=(128.0, 128.0, 200.0), unsealed_steps=()):
         plan, records, glbs = synthetic_tile(REAL_TILE_ID, 8, 8, anchor_location)
         products_directory = self.project_root / 'terrain-products'
         for chunk_id, glb in glbs.items():
             (products_directory / chunk_id).mkdir(parents=True, exist_ok=True)
             (products_directory / chunk_id / 'terrain.glb').write_bytes(glb)
         unit = TerrainUnit(terrain_step_ledger(self.project_root), f'tile:{REAL_TILE_ID}', 'a' * 64, {}, [], 'b' * 64, plan, None, None)
+        products = sealed_upstream_products([chunk['chunkId'] for chunk in plan['chunks']])
+        sealed_by_step = {step: MagicMock(return_value=(None, None) if step in unsealed_steps else (fingerprint_of(step), products[step]))
+                          for step in UPSTREAM_PRODUCT_FUNCTIONS}
         return patch.multiple(tile_manifest_step, sealed_terrain_chunks=MagicMock(return_value=(unit, records, products_directory)),
-                              sealed_static_meshes=MagicMock(return_value=(None, None)), sealed_bsp_chunks=MagicMock(return_value=(None, None)),
-                              sealed_collision=MagicMock(return_value=(None, None)), sealed_movers=MagicMock(return_value=(None, None)),
-                              sealed_bsp_visibility=MagicMock(return_value=(None, None)), sealed_map_emitters=MagicMock(return_value=(None, None)),
-                              sealed_sky=MagicMock(return_value=(None, None)), sealed_world_audio=MagicMock(return_value=(None, None)),
-                              sealed_lighting=MagicMock(return_value=(None, None)), sealed_static_mesh_materials=MagicMock(return_value=(None, None)),
-                              sealed_terrain_material=MagicMock(return_value=(None, None)))
+                              **{UPSTREAM_PRODUCT_FUNCTIONS[step]: sealed for step, sealed in sealed_by_step.items()})
 
     def store_snapshot(self):
         return {path.relative_to(self.project_root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)
@@ -200,9 +229,19 @@ class RunTileManifestStepTests(unittest.TestCase):
         self.assertEqual([record['id'] for record in catalog['tiles']], [REAL_TILE_ID])
         tile_path = self.store_root / catalog['tiles'][0]['manifest'][len('/l2/'):]
         self.assertEqual(hashlib.sha256(tile_path.read_bytes()).hexdigest(), catalog['tiles'][0]['manifestSha256'])
-        self.assertEqual([(row['step'], row['status']) for row in rows], [('manifest', 'pass'), *((step, 'pending') for step in PENDING_TILE_STEPS)])
-        self.assertEqual(len({row['step'] for row in rows}), len(rows))
-        self.assertTrue(all(row['key'] == f'tile:{REAL_TILE_ID}' for row in rows))
+        self.assertEqual([(row['key'], row['step'], row['status'], row['reason']) for row in rows], [(f'tile:{REAL_TILE_ID}', 'manifest', 'pass', None)])
+        tile_manifest = json.loads(tile_path.read_text(encoding='utf-8'))
+        self.assertIn('native-tile-collision', {resource['kind'] for resource in tile_manifest['resources']})
+        self.assertFalse([gap for gap in tile_manifest['gaps'] if gap['status'] == 'pending'])
+
+    def test_a_tile_with_any_unsealed_pinned_step_publishes_nothing_and_returns_a_pending_manifest_row_naming_it(self):
+        for unsealed_step in UPSTREAM_PRODUCT_FUNCTIONS:
+            with self.subTest(unsealed_step=unsealed_step), self.sealed_terrain(unsealed_steps=(unsealed_step,)):
+                rows = run_tile_manifest_step(self.project_root, REAL_TILE_ID, self.store_root)
+                self.assertEqual([(row['step'], row['status'], row['reason']) for row in rows],
+                                 [('manifest', 'pending', f'step-pending:{unsealed_step}')])
+                self.assertFalse(self.store_root.exists())
+                self.assertFalse(list(self.project_root.rglob('manifest/complete.json')))
 
     def test_a_second_run_is_sealed_and_writes_nothing(self):
         with self.sealed_terrain():

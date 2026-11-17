@@ -27,7 +27,7 @@ from world.tile_chunk_plan import chunk_plan_ledger
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
-TILE_MANIFEST_STEP_ALGORITHM_VERSION = 14
+TILE_MANIFEST_STEP_ALGORITHM_VERSION = 15
 TILE_MANIFEST_STEP_NAME = 'manifest'
 TILE_CATALOG_CAPACITY = 163
 PENDING_TILE_STEPS = ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'sky', 'audio', 'lighting', 'minimap',
@@ -66,12 +66,12 @@ class TileManifestUnit(NamedTuple):
     sealed_upstream: dict
 
 
-def pending_step_row(tile_id, step, source_identity, evidence):
-    return tile_step_row(tile_id, step, PENDING_STATUS, f'step-pending:{step}', source_identity, evidence)
+def pending_step_row(tile_id, step, source_identity, evidence, pending_step):
+    return tile_step_row(tile_id, step, PENDING_STATUS, f'step-pending:{pending_step}', source_identity, evidence)
 
 
 def pending_step_rows(tile_id, steps, source_identity, evidence):
-    return [pending_step_row(tile_id, step, source_identity, evidence) for step in steps]
+    return [pending_step_row(tile_id, step, source_identity, evidence, step) for step in steps]
 
 
 def sorted_by_step(rows):
@@ -342,9 +342,8 @@ def require_world_lane_store(project_root, output):
     return store_root
 
 
-def tile_manifest_step_rows(tile_id, source_identity, evidence, upstream_products):
-    return [tile_step_row(tile_id, TILE_MANIFEST_STEP_NAME, 'pass', None, source_identity, evidence),
-            *pending_step_rows(tile_id, pending_steps_after_sealed(PENDING_TILE_STEPS, *upstream_products), source_identity, evidence)]
+def first_unsealed_upstream_step(sealed_upstream):
+    return next((step for step, (_, product) in sealed_upstream.items() if product is None), None)
 
 
 def run_tile_manifest_step(project_root, tile_id, output):
@@ -363,8 +362,12 @@ def run_tile_manifest_step(project_root, tile_id, output):
     ledger, config, fingerprint = unit.ledger, unit.config, unit.fingerprint
     upstream_products = tuple(product for _, product in unit.sealed_upstream.values())
     receipt_evidence = (ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
+    unsealed_step = first_unsealed_upstream_step(unit.sealed_upstream)
+    if unsealed_step is not None:
+        return [pending_step_row(tile_id, TILE_MANIFEST_STEP_NAME, source_identity, receipt_evidence, unsealed_step)]
+    manifest_pass_rows = [tile_step_row(tile_id, TILE_MANIFEST_STEP_NAME, 'pass', None, source_identity, receipt_evidence)]
     if ledger.is_sealed(unit_key, fingerprint):
-        return tile_manifest_step_rows(tile_id, source_identity, receipt_evidence, upstream_products)
+        return manifest_pass_rows
     terrain_glbs_by_chunk = {record['chunkId']: (terrain_products / record['chunkId'] / TERRAIN_CHUNK_RESOURCE_NAME).read_bytes()
                              for record in terrain_records if record['terrain'] is not None}
     files, record = tile_store_files(tile_id, source_identity, chunk_plan, terrain_records, terrain_glbs_by_chunk, receipt_evidence, *upstream_products)
@@ -378,4 +381,4 @@ def run_tile_manifest_step(project_root, tile_id, output):
     outputs = [{'path': (store_root / relative_path).relative_to(ledger.lane_folder).as_posix(), 'sha256': sha256_hex(payload),
                 'bytes': len(payload)} for relative_path, payload in sorted(files.items())]
     ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': [source_identity], 'gapRows': [], 'outputs': outputs})
-    return tile_manifest_step_rows(tile_id, source_identity, receipt_evidence, upstream_products)
+    return manifest_pass_rows
