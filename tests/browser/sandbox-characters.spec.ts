@@ -20,6 +20,7 @@ interface CensusHairHalf {
   readonly status: string;
   readonly mesh?: string;
   readonly material?: string;
+  readonly route?: "ordinary" | "dynamic";
 }
 
 interface CensusHair {
@@ -57,6 +58,9 @@ const framingRadiusPerBoundsHeight = 2.5;
 const sliceMonsterEntityId = "native-musveren";
 const obliqueViewRadians = Math.PI / 4;
 const sideViewRadians = Math.PI / 2;
+const rigidBackHairKeys = [0, 10];
+const dynamicBackHairKeys = [3, 7];
+const dynamicBackHairGap = { field: "hair", reason: "dynamic-hair-simulation-unported:back" };
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=integration");
 test.skip(!existsSync(resolve(storeRoot, "catalog.json")), "the integration union has no catalog; rebuild the union first");
@@ -77,7 +81,7 @@ function expectCensusHairParts(row: CharacterCensusRow, character: SpawnedCharac
   for (const half of row.hair!.halves) {
     const partsOfHalf = character.parts.filter(part => half.mesh === undefined
       ? part.name.toLowerCase().includes(meshSuffixes[half.half]!.toLowerCase()) : part.name.toLowerCase().includes(meshLeafName(half.mesh)));
-    if (half.status === "resolved") {
+    if (half.status === "resolved" && half.route !== "dynamic") {
       expect(partsOfHalf.length, `${row.key} ${half.half} ${half.mesh}`).toBeGreaterThan(0);
       expect(partsOfHalf.every(part => part.enabled), `${row.key} ${half.half} enabled`).toBe(true);
     } else {
@@ -128,9 +132,13 @@ async function expectActiveClip(page: Page, entityId: string, clip: string): Pro
   await expect.poll(async () => (await spawnedCharacter(page, entityId)).playback?.activeClip ?? null, { timeout: modelLoadTimeout }).toBe(clip);
 }
 
+async function despawnEntity(page: Page, entityId: string): Promise<void> {
+  await page.evaluate(id => window.__nativeSlice!.dispatch({ type: "despawn", entityId: id }), entityId);
+  await expect.poll(async () => (await entities(page)).some(entity => entity.id === entityId)).toBe(false);
+}
+
 async function despawnSliceMonsterAtTheSpawnPoint(page: Page): Promise<void> {
-  await page.evaluate(entityId => window.__nativeSlice!.dispatch({ type: "despawn", entityId }), sliceMonsterEntityId);
-  await expect.poll(async () => (await entities(page)).some(entity => entity.id === sliceMonsterEntityId)).toBe(false);
+  await despawnEntity(page, sliceMonsterEntityId);
 }
 
 async function withPage<T>(browser: Browser, options: BrowserContextOptions, use: (page: Page) => Promise<T>): Promise<T> {
@@ -237,6 +245,35 @@ test.describe("chargrp characters on the integration store", () => {
         for (const [view, alphaFromFront] of [["front", 0], ["side", sideViewRadians]] as const) {
           await frameCharacter(page, await spawnedCharacter(page, character.id), alphaFromFront);
           await page.screenshot({ path: resolve(evidenceDirectory, `03-39-character-0-hair-${view}-${device}.png`) });
+        }
+      });
+    }
+  });
+
+  test("keys 0 and 10 idle with rigid back hair and keys 3 and 7 carry the dynamic back hair gap, on desktop and the landscape phone", async ({ browser }) => {
+    const keys = [...rigidBackHairKeys, ...dynamicBackHairKeys].sort((left, right) => left - right);
+    test.setTimeout((worldReadyTimeout + modelLoadTimeout * 2 * keys.length) * 2);
+    const rows = new Map(characterRows().map(row => [row.chargrpIndex, row]));
+    for (const key of rigidBackHairKeys) {
+      expect(rows.get(key)?.hair?.halves.find(half => half.half === "back"), `character:${key} back hair`).toMatchObject({ status: "resolved", route: "ordinary" });
+    }
+    for (const key of dynamicBackHairKeys) {
+      expect(rows.get(key)?.gaps, `character:${key} gaps`).toContainEqual(dynamicBackHairGap);
+      expect(rows.get(key)?.hair?.halves.find(half => half.half === "back")?.route, `character:${key} back route`).toBe("dynamic");
+    }
+    const profiles = servedCharacterProfiles();
+    mkdirSync(evidenceDirectory, { recursive: true });
+    for (const [device, options] of [["desktop", { viewport: desktopViewport }], ["phone", landscapePhone]] as const) {
+      await withPage(browser, options, async page => {
+        await despawnSliceMonsterAtTheSpawnPoint(page);
+        for (const key of keys) {
+          const row = rows.get(key)!;
+          const character = await spawnCharacter(page, key);
+          await expectActiveClip(page, character.id, profiles.get(key)!.clips.idle!);
+          expectCensusHairParts(row, await spawnedCharacter(page, character.id), hairHalfMeshSuffixes());
+          await frameCharacter(page, await spawnedCharacter(page, character.id), obliqueViewRadians);
+          await page.screenshot({ path: resolve(evidenceDirectory, `rm14-character-${key}-wait-${device}.png`) });
+          await despawnEntity(page, character.id);
         }
       });
     }
