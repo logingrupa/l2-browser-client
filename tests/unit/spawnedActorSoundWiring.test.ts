@@ -91,7 +91,7 @@ afterEach(() => { servedBundles.clear(); loadedCatalogKeys.length = 0; });
 describe("spawned actor sound wiring", () => {
   it("loads the actor-sounds bundle of a spawned npc once, binds its clip cues when its clip list exists, and plays a cue past its event time", async () => {
     const { sounds, emit, mixer, changes, listedClipEvents, clockAt } = wiredWithFakes();
-    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }) });
+    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }), collision: null });
     expect(texts(sounds)).toEqual(["npc-20001-1: actor-sounds:npc:20001 loading"]);
     await settle();
     sounds.update();
@@ -110,7 +110,7 @@ describe("spawned actor sound wiring", () => {
 
   it("releases the binding of a removed entity and forgets it", async () => {
     const { sounds, emit, mixer, listedClipEvents, clockAt } = wiredWithFakes();
-    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }) });
+    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }), collision: null });
     await settle();
     listedClipEvents.set("npc-20001-1", clipEvents);
     clockAt("npc-20001-1", .1);
@@ -127,7 +127,7 @@ describe("spawned actor sound wiring", () => {
     vi.stubGlobal("fetch", fetchSpy);
     try {
       const { sounds, emit } = wiredWithFakes();
-      emit({ type: "spawn", entity: entity("npc-20002-1", { npcId: 20002 }) });
+      emit({ type: "spawn", entity: entity("npc-20002-1", { npcId: 20002 }), collision: null });
       await settle();
       expect(sounds.entries()).toEqual([{ entityId: "npc-20002-1", tone: "warning", text: "npc-20002-1: actor-sounds:npc:20002 not in catalog" }]);
       expect(fetchSpy).not.toHaveBeenCalled();
@@ -137,8 +137,8 @@ describe("spawned actor sound wiring", () => {
   it("keys a spawned character by its chargrp index and ignores entities that are neither npc nor character", async () => {
     servedBundles.set("actor-sounds:character:3", syntheticBundle("actor-sounds:character:3"));
     const { sounds, emit } = wiredWithFakes();
-    emit({ type: "spawn", entity: entity("character-3-1", { kind: "remote-player", characterTemplateIndex: 3 }) });
-    emit({ type: "spawn", entity: entity("remote-1", { kind: "remote-player" }) });
+    emit({ type: "spawn", entity: entity("character-3-1", { kind: "remote-player", characterTemplateIndex: 3 }), collision: null });
+    emit({ type: "spawn", entity: entity("remote-1", { kind: "remote-player" }), collision: null });
     await settle();
     expect(loadedCatalogKeys).toEqual(["character:3"]);
     expect(texts(sounds)).toEqual(["character-3-1: actor-sounds:character:3 loaded, waiting for the native model clip list"]);
@@ -147,10 +147,10 @@ describe("spawned actor sound wiring", () => {
   it("releases the earlier binding when the same entity id spawns again", async () => {
     const { sounds, emit, mixer, listedClipEvents, clockAt } = wiredWithFakes();
     listedClipEvents.set("npc-20001-1", clipEvents);
-    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }) });
+    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }), collision: null });
     await settle();
     clockAt("npc-20001-1", .1);
-    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }) });
+    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }), collision: null });
     expect(mixer.stoppedOwners).toHaveLength(1);
     expect(texts(sounds)).toEqual(["npc-20001-1: actor-sounds:npc:20001 loading"]);
     expect(loadedCatalogKeys).toEqual(["npc:20001", "npc:20001"]);
@@ -161,7 +161,7 @@ describe("spawned actor sound wiring", () => {
     const disposed = wiredWithFakes();
     for (const [id, npcId] of [["npc-20001-1", 20001], ["npc-20003-1", 20003]] as const) {
       disposed.listedClipEvents.set(id, clipEvents);
-      disposed.emit({ type: "spawn", entity: entity(id, { npcId }) });
+      disposed.emit({ type: "spawn", entity: entity(id, { npcId }), collision: null });
     }
     await settle();
     disposed.sounds.update();
@@ -174,7 +174,7 @@ describe("spawned actor sound wiring", () => {
 
     const aborted = wiredWithFakes();
     aborted.listedClipEvents.set("npc-20001-1", clipEvents);
-    aborted.emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }) });
+    aborted.emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }), collision: null });
     await settle();
     aborted.sounds.update();
     aborted.lifetime.abort();
@@ -196,8 +196,8 @@ describe("spawned actor sound wiring", () => {
     try {
       const { sounds, emit } = wiredWithFakes();
       const attached = attachSandboxSheetWithFakes(dom, { index: fakeCatalogIndexOver(new Map()), actorSounds: sounds });
-      emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }) });
-      emit({ type: "spawn", entity: entity("npc-20002-1", { npcId: 20002 }) });
+      emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }), collision: null });
+      emit({ type: "spawn", entity: entity("npc-20002-1", { npcId: 20002 }), collision: null });
       await settle();
       const notes = attached.note("sandbox-actor-sounds-note");
       expect(notes.map(note => [note.textContent, note.dataset.tone])).toEqual([
@@ -215,7 +215,7 @@ describe("spawned actor sound wiring", () => {
   it("drops a load that settles after the entity was removed", async () => {
     const { sounds, emit, mixer, listedClipEvents } = wiredWithFakes();
     listedClipEvents.set("npc-20001-1", clipEvents);
-    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }) });
+    emit({ type: "spawn", entity: entity("npc-20001-1", { npcId: 20001 }), collision: null });
     emit({ type: "despawn", entityId: "npc-20001-1" });
     await settle();
     sounds.update();

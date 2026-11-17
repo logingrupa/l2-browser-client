@@ -7,6 +7,11 @@ type EntityKind = "local-player" | "remote-player" | "monster" | "npc";
 export type BodyPartEquipmentSlot = `body-part:${number}`;
 export type EquipmentSlot = "upper" | BodyPartEquipmentSlot;
 
+export interface SourceCollisionCylinder {
+  readonly radius: number;
+  readonly height: number;
+}
+
 export interface WorldEntity {
   readonly id: string;
   readonly kind: EntityKind;
@@ -28,7 +33,7 @@ export interface WorldEntity {
 }
 
 export type WorldEvent =
-  | { readonly type: "spawn"; readonly entity: WorldEntity }
+  | { readonly type: "spawn"; readonly entity: WorldEntity; readonly collision: SourceCollisionCylinder | null }
   | {
       readonly type: "update";
       readonly entity: WorldEntity;
@@ -55,7 +60,7 @@ export type WorldEvent =
       readonly offset?: number;
       readonly moveType: number;
       readonly speeds: Readonly<Record<string, number>>;
-      readonly collision: { readonly radius: number; readonly height: number };
+      readonly collision: SourceCollisionCylinder;
     }
   | { readonly type: "stop"; readonly entityId: string; readonly position: SourcePosition; readonly heading: number }
   | { readonly type: "correct"; readonly entityId: string; readonly position: SourcePosition; readonly heading: number }

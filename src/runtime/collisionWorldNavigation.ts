@@ -1,6 +1,7 @@
 import type { WorldNavigation } from "../world/WorldNavigation";
 import type { WorldPosition } from "../world/sourceFrame";
-import type { SourceCollisionCylinder, WorldMovement } from "./worldMovementWiring";
+import type { SourceCollisionCylinder } from "../world/worldTypes";
+import type { WorldMovement } from "./worldMovementWiring";
 
 export function createCollisionWorldNavigation(movement: Pick<WorldMovement, "groundBelow" | "isStraightWalkBlocked">,
   cylinder: SourceCollisionCylinder): WorldNavigation {

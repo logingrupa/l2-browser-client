@@ -1,5 +1,5 @@
 import type { GameWorldAdapter } from "./GameWorldAdapter";
-import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent } from "./worldTypes";
+import type { LocomotionMode, SourceCollisionCylinder, WorldCommand, WorldEntity, WorldEvent } from "./worldTypes";
 import { commandRejectedEvent, createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip,
   isLineageIdentifier, reportedPositionRejectionReason, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
 import { sourceHeadingToWorldYaw, sourcePositionToWorld, worldPositionToSource, worldYawToSourceHeading, type WorldPosition } from "./sourceFrame";
@@ -8,10 +8,16 @@ type PreviewActionCommand = Extract<WorldCommand, { readonly type: "preview-acti
 type ReportPositionCommand = Extract<WorldCommand, { readonly type: "report-position" }>;
 type CannotMoveCommand = Extract<WorldCommand, { readonly type: "cannot-move" }>;
 type MoveLocalCommand = Extract<WorldCommand, { readonly type: "move-local" }>;
+type SpawnEvent = Extract<WorldEvent, { readonly type: "spawn" }>;
+export type SpawnCollisionOfEntity = (entity: WorldEntity) => SourceCollisionCylinder | null;
 
-export interface NativeSliceCollisionCylinder {
-  readonly radius: number;
-  readonly height: number;
+export interface NativeSliceLocomotion {
+  readonly walkSupported: boolean;
+  readonly specialAttackPreviewSupported?: boolean;
+  readonly speed?: NativeSliceSpeedProfile;
+  readonly collision?: SourceCollisionCylinder;
+  readonly moveTypes?: NativeSliceMoveTypes;
+  readonly spawnCollision?: SpawnCollisionOfEntity;
 }
 
 export interface NativeSliceMoveTypes {
@@ -20,6 +26,7 @@ export interface NativeSliceMoveTypes {
 }
 
 const sandboxActorSpacingMetres = 1.4;
+const spawnCollisionUnresolved: SpawnCollisionOfEntity = () => null;
 const localCollisionAbsentReason = "local-collision-cylinder-absent";
 const localMoveTypesAbsentReason = "local-move-types-absent";
 const velocityWithoutAccelerationRampRoutine = "APawn::calcVelocity 0x10639950";
@@ -80,11 +87,12 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private readonly speed: NativeSliceSpeedProfile;
   private readonly walkSupported: boolean;
   private readonly specialAttackPreviewSupported: boolean;
-  private readonly localCollision: NativeSliceCollisionCylinder | null;
+  private readonly localCollision: SourceCollisionCylinder | null;
   private readonly moveTypes: NativeSliceMoveTypes | null;
+  private readonly spawnCollision: SpawnCollisionOfEntity;
   constructor(origin: WorldPosition, upperItem: number | null = null,
     presentation: { displayName: string; appearanceId: string } = { displayName: "Human male fighter", appearanceId: "native-human-fighter" },
-    locomotion: { walkSupported: boolean; specialAttackPreviewSupported?: boolean; speed?: NativeSliceSpeedProfile; collision?: NativeSliceCollisionCylinder; moveTypes?: NativeSliceMoveTypes } = { walkSupported: false }) {
+    locomotion: NativeSliceLocomotion = { walkSupported: false }) {
     this.walkSupported = locomotion.walkSupported === true;
     const collision = locomotion.collision ?? null;
     if (collision !== null && !([collision.radius, collision.height].every(value => Number.isFinite(value) && value > 0))) {
@@ -92,6 +100,7 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     }
     this.localCollision = collision;
     this.moveTypes = locomotion.moveTypes ?? null;
+    this.spawnCollision = locomotion.spawnCollision ?? spawnCollisionUnresolved;
     const speed = locomotion.speed ?? speedProfileAbsent;
     if (speed.isSourced && (![speed.walkMetresPerSecond, speed.runMetresPerSecond, speed.walkSourceUnitsPerSecond, speed.runSourceUnitsPerSecond,
       speed.swimSourceUnitsPerSecond].every(value => Number.isFinite(value) && value > 0) ||
@@ -107,6 +116,7 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     this.entities.set(player.id, player); this.entities.set(monster.id, monster);
   }
   getInitialState(): readonly WorldEntity[] { return [...this.entities.values()].map(entity => structuredClone(entity)); }
+  initialSpawnEvents(): readonly SpawnEvent[] { return this.getInitialState().map(entity => this.spawnEventOf(entity)); }
   get isPaused(): boolean { return this.paused; }
   get locomotionMode(): LocomotionMode { return this.entities.get("local-player")?.locomotion ?? "run"; }
   get speedProfile(): NativeSliceSpeedProfile { return this.speed; }
@@ -257,7 +267,10 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   }
   private addSpawnedEntity(entity: WorldEntity): void {
     this.entities.set(entity.id, entity);
-    this.emit({ type: "spawn", entity });
+    this.emit(this.spawnEventOf(entity));
+  }
+  private spawnEventOf(entity: WorldEntity): SpawnEvent {
+    return { type: "spawn", entity, collision: entity.kind === "local-player" ? this.localCollision : this.spawnCollision(entity) };
   }
   dispose(): void { this.disposed = true; this.listeners.clear(); this.commandListeners.clear(); this.entities.clear(); this.localMoveIssued = false; }
 }

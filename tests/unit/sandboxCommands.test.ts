@@ -29,6 +29,18 @@ describe("sandbox by-ID commands on NativeSliceAdapter", () => {
     adapter.dispose();
   });
 
+  it("carries each spawned and initial pawn's collision cylinder from the local cylinder and the spawn collision resolver", () => {
+    const localCylinder = { radius: 9, height: 23 }, musverenCylinder = { radius: 30, height: 36 }, npcCylinder = { radius: 8, height: 21 };
+    const spawnCollision = (entity: WorldEntity) => entity.id === "native-musveren" ? musverenCylinder : entity.npcId === 12345 ? npcCylinder : null;
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: false, collision: localCylinder, spawnCollision });
+    expect(adapter.initialSpawnEvents().map(event => [event.entity.id, event.collision])).toEqual([["local-player", localCylinder], ["native-musveren", musverenCylinder]]);
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-npc", npcId: 12345 });
+    adapter.dispatch({ type: "spawn-npc", npcId: 777 });
+    expect(receivedEvents.map(event => event.type === "spawn" ? event.collision : "other")).toEqual([npcCylinder, null]);
+    adapter.dispose();
+  });
+
   it("gives each spawn of one NPC ID a new entity id", () => {
     const adapter = createAdapter();
     const receivedEvents = recordEvents(adapter);

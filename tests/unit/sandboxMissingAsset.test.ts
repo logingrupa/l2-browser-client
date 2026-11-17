@@ -62,7 +62,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
     dom.document.body.append(labels);
     const registry = new EntityRegistry(scene, adapter, labels as unknown as HTMLElement, () => {}, {
       createVisual: sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactory, appearanceOfNpc) });
-    const spawnNpc = (npcId: number, sequence: number) => emit({ type: "spawn", entity: createSpawnedNpcEntity(npcId, sequence, { x: sequence, y: 0, z: 0 }) });
+    const spawnNpc = (npcId: number, sequence: number) => emit({ type: "spawn", entity: createSpawnedNpcEntity(npcId, sequence, { x: sequence, y: 0, z: 0 }), collision: null });
     const labelOf = (entityId: string) => labels.querySelector(`[data-entity-id="${entityId}"]`) as FakeElement;
     return { registry, spawnNpc, labelOf };
   }

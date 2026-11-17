@@ -46,7 +46,7 @@ describe("mountSandboxWindowLayer", () => {
   it("refreshes the open windows on a local player update and on nothing else", () => {
     const { emit } = mount();
     emit({ type: "update", entity: { ...localPlayer, id: "native-musveren", kind: "monster" } });
-    emit({ type: "spawn", entity: localPlayer });
+    emit({ type: "spawn", entity: localPlayer, collision: null });
     expect(layerDouble.refresh).not.toHaveBeenCalled();
     emit({ type: "update", entity: localPlayer });
     expect(layerDouble.refresh).toHaveBeenCalledOnce();

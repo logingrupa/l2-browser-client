@@ -45,7 +45,7 @@ describe("world environment wiring", () => {
     expect(runningSnapshot(environment)).toMatchObject({ oldType: 1, targetType: 1, persistentTargetType: 1 });
     emit({ type: "environment-red-sky", timeoutSeconds: 5 });
     expect(runningSnapshot(environment)).toMatchObject({ oldType: 1, targetType: 3, persistentTargetType: 1, remainingRevertSeconds: 5 });
-    emit({ type: "spawn", entity: { id: "x", kind: "npc", displayName: "x", position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, health: 1, maximumHealth: 1, animation: "idle" } });
+    emit({ type: "spawn", entity: { id: "x", kind: "npc", displayName: "x", position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, health: 1, maximumHealth: 1, animation: "idle" }, collision: null });
     expect(environment.inspection()).toMatchObject({ appliedEventCount: 3, ignoredEventCount: 0, lastIgnoredEvent: null, rejectedEventCount: 0, lastRejectedEvent: null,
       serverPacket: { producer: "sandbox-command", status: "unresolved", reason: "server-packet-unresolved" } });
   });

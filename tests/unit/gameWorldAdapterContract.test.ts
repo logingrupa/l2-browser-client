@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
-import type { WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worldTypes";
+import type { SourceCollisionCylinder, WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worldTypes";
 
 const createNativeSliceAdapter = (): GameWorldAdapter => new NativeSliceAdapter({ x: 0, y: 0, z: 0 });
 
@@ -37,6 +37,12 @@ describe("GameWorldAdapter contract", () => {
       | "spawn" | "update" | "despawn" | "skill-cast"
       | "command-rejected" | "server-time" | "environment-ssq-info" | "environment-red-sky" | "move" | "stop" | "correct" | "teleport"
     >();
+  });
+
+  it("carries the source collision cylinder, or null when unresolved, on every spawn", () => {
+    expectTypeOf<Extract<WorldEvent, { readonly type: "spawn" }>>()
+      .toEqualTypeOf<{ readonly type: "spawn"; readonly entity: WorldEntity; readonly collision: SourceCollisionCylinder | null }>();
+    expectTypeOf<Extract<WorldEvent, { readonly type: "move" }>["collision"]>().toEqualTypeOf<SourceCollisionCylinder>();
   });
 
   it("NativeSliceAdapter refuses a command type it does not know with a RangeError naming the type", () => {

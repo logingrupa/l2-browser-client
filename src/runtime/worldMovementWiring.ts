@@ -1,6 +1,6 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
-import type { WorldEvent } from "../world/worldTypes";
+import type { SourceCollisionCylinder, WorldEvent } from "../world/worldTypes";
 import {
   sourceDistanceToWorld, sourceHeadingToWorldYaw, sourcePositionToWorld, worldDistanceToSource, worldPositionToSource, type WorldPosition,
 } from "../world/sourceFrame";
@@ -29,11 +29,6 @@ export interface WorldMovementOptions {
   readonly localPlayerId: string;
   readonly localWalkAnimationFramesInMove: number | null;
   readonly signal: AbortSignal;
-}
-
-export interface SourceCollisionCylinder {
-  readonly radius: number;
-  readonly height: number;
 }
 
 export interface MovementPose {
