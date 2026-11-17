@@ -38,7 +38,6 @@ STALE_SILENT_COMBAT_AUDIO_RECORD = {**STALE_GREMLIN_COMBAT_AUDIO_RECORD, 'id': '
 NPCGRP_ROLES = ('attackItem', 'attackVoice', 'defense', 'damage')
 ALAUDIO_LOCK_REFUSAL = 'synthetic lock holds no system/ALAudio.int'
 ACTOR_SOUND_CENSUS_RELATIVE_PATH = 'docs/parts/audio/actor-sound-census.json'
-FIRST_SOUND_UNIT_FINGERPRINT_UNDER_THE_CONVERTER_OUTPUT_VERSION = '20713812383d7497453260969724c8f5c16e14b3bd16b23af3dcf1c53429685c'
 LOCKED_SOUND_PACKAGE_RECORD = {'path': 'Sounds/MonSound.uax', 'sha256': '8' * 64}
 SOUND_PACKAGE_RECORD = {'path': 'Sounds/MonSound.uax', 'package': SimpleNamespace(source_hash='7' * 64)}
 NO_REFERENCES = {'exactIdentity': 0, 'uniquePackageLeafCandidate': 0, 'unresolved': 0, 'empty': 0}
@@ -201,9 +200,9 @@ class ActorSoundHashReuseTests(ActorSoundSliceFixture, unittest.TestCase):
                                                {'stableId': f'SYNTHETIC:{export_index}'}) for export_index in (1, 2, 3)]
             outcomes = run_actor_sound_slice(run, ActorSoundBundles(self.project_root, run.store_root, []), 5, lambda: None)
         self.assertEqual((len(builder_reads), len(outcomes)), (1, 2))
-        self.assertEqual([work.config['converterSha256'] for work in sound_works],
-                         [native_assets.CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE] * 3)
-        self.assertEqual(sound_works[0].fingerprint, FIRST_SOUND_UNIT_FINGERPRINT_UNDER_THE_CONVERTER_OUTPUT_VERSION)
+        self.assertEqual([work.config['converterSha256'] for work in sound_works], [native_assets.implementation_hash()] * 3)
+        self.assertEqual([work.fingerprint for work in sound_works],
+                         [run.sound_ledger.unit_fingerprint([record['sha256'] for record in work.inputs], work.config) for work in sound_works])
         gremlin_receipt = next(receipt for receipt in run.bundle_ledger.sealed_receipts() if receipt['unitKey'] == GREMLIN_KEY)
         self.assertEqual(gremlin_receipt['config']['builderSha256'], hashlib.sha256(builder_path.read_bytes()).hexdigest())
 

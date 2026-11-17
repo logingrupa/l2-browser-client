@@ -25,6 +25,7 @@ from world.mover_step import (MOVER_STEP_NAME, MoverConversion, MoverStepError, 
 from world.static_mesh_step import ConvertedStaticMesh, package_gate_reason
 from world.static_placement_plan import ChunkRectangle
 from world.tile_manifest_step import PENDING_TILE_STEPS, pending_steps_after_sealed, tile_resources
+from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, unit_step_seal
 
 TILE_ID = '00_00'
 LANE_FOLDER = ROOT / 'artifacts' / 'lane-store' / 'world'
@@ -351,6 +352,8 @@ class OracleMoverSubsetTests(unittest.TestCase):
         self.assertEqual(set(manifest['classEvidence']), {'unit', 'evidenceSha256', 'classes'})
 
     def test_a_second_run_is_a_ledger_skip_that_keeps_the_sealed_manifest(self):
+        if unit_step_seal(ROOT, 'tile:20_20', MOVER_STEP_NAME, TILE_STEP_SEAL_CHECKS).state != CURRENT_SEAL_STATE:
+            self.skipTest('the real 20_20 movers unit is not current; a world batch reseals it, a test never begins it')
         first_row = run_mover_step(ROOT, REFERENCE_CLIENT, '20_20')
         product, _ = sealed_tile_movers('20_20')
         receipt = (LANE_FOLDER / 'work/tile__20_20/movers/receipt.json').read_bytes()

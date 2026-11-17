@@ -28,6 +28,7 @@ from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureD
 from native_assets_lib.converter_source_digests import ConverterSourceDigests
 from native_assets_lib.conversion_evidence import write_conversion_evidence
 from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, require_reference_client
+from native_store.converter_source_closure import process_converter_sources_sha256
 from native_store.store_paths import require_converter_output
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
@@ -35,7 +36,7 @@ CONVERTER_DESCRIPTION = 'Convert native Interlude client objects into reproducib
 
 UMODEL = Path('C:/laragon/www/l2-browser-client/.assets/native-tools/umodel/umodel.exe')
 UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
-CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE = 'eccc7503fb98617b806c9590975e220a0ad08be6b6d7f4e84b4a8ac74aaba1e1'
+CONVERTER_SOURCE_MODULES = ('native_assets',)
 SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1]
 MAX_ARCHIVE = 128 * 1024 * 1024
 MAX_PAYLOAD = 96 * 1024 * 1024
@@ -152,15 +153,8 @@ def require_unique_umodel_leaf_name(package, selected):
         raise ValueError('UModel cannot safely select this duplicate leaf name')
 
 
-def implementation_source_paths():
-    scripts = Path(__file__).parent
-    return sorted([Path(__file__), scripts / 'native_audio.py', scripts / 'native_animation_families.py', scripts / 'native_effect_bundle.py',
-                   scripts / 'reference_client_guard.py', scripts / 'native_store' / 'store_paths.py', scripts / 'data' / 'pinned_elbera_module.py',
-                   *(scripts / 'native_catalog').glob('*.py'), *(scripts / 'native_catalog').glob('*.ps1'), *(scripts / 'native_assets_lib').glob('*.py')])
-
-
 def implementation_hash():
-    return CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE
+    return process_converter_sources_sha256(CONVERTER_SOURCE_MODULES)
 
 
 class Converter:

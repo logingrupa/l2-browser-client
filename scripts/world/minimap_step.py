@@ -69,7 +69,7 @@ def upstream_sealed_fingerprints(project_root, tile_id, lock_record):
 
 def current_minimap_receipt(ledger, unit_key, config, inputs):
     receipt = ledger.sealed_receipt(unit_key)
-    if receipt is None or receipt['algorithmVersion'] != MINIMAP_STEP_ALGORITHM_VERSION or receipt['config'] != config or receipt['inputs'] != inputs:
+    if receipt is None or not ledger.has_current_versions(receipt) or receipt['config'] != config or receipt['inputs'] != inputs:
         return None
     return receipt
 

@@ -32,7 +32,7 @@ is the Python validator and `readAssetPackage` is the browser validator.
 | `source.path` | `{ host, absolutePath }` | `socket.gethostname()` (upper case) and the resolved POSIX path of the primary package |
 | `clientBuild.referenceTreeLockSha256` | 64 hex | SHA-256 of `json_bytes` of the parsed `recipes/reference-client-tree.lock.json` |
 | `clientBuild.engineDllSha256` | 64 hex | The lock's `system/Engine.dll` record, which must be class `equal` and match the converted root's own `system/Engine.dll` |
-| `converterVersion` | 64 hex | `implementation_hash()`: the fixed converter output version, a constant of `scripts/native_assets.py` |
+| `converterVersion` | 64 hex | `implementation_hash()`: the source closure SHA-256 of `scripts/native_assets.py` |
 | `coordinates` | Models only, see below | `asset_coordinates_record(SOURCE_TO_GLTF, 100)` |
 | `model`, `image` or `audio` | `{ file, ... }` | Primary payload name; models add `nativeMaterialGraph` and `nativeSkinAdapter` when present |
 | `files` | Path, SHA-256, bytes, MIME per payload | Hashes of the written payloads |
@@ -41,16 +41,13 @@ is the Python validator and `readAssetPackage` is the browser validator.
 The writer refuses when the reference lock is missing, so no package carries
 an invented `clientBuild` or `converterVersion`.
 
-`implementation_hash()` returns a hand-set constant,
-`CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE`, not a hash
-of source bytes. A person gives it a new 64 hex value only when converter
-outputs change; every request key and unit fingerprint that holds it is then
-stale. `tests/pipeline/test_converter_implementation_hash.py` hashes the
-sources of `implementation_source_paths()`, CRLF read as LF, against a
-recorded value, and fails when an imported module is missing from that list.
-A failure has two ways out: prove by a byte comparison of converted outputs
-that they are unchanged, or give the constant a new value. Then record the
-new digest in the test.
+`implementation_hash()` hashes the source closure of `native_assets`
+(`scripts/native_store/converter_source_closure.py`): every module it imports,
+every scripts file a string of it names (PowerShell, node and Python tools),
+CRLF read as LF. An edit of any of them changes every request key and unit
+fingerprint that holds it. A unit ledger adds the closure SHA-256 of its own
+step (`scripts/native_store/step_source_modules.py`) to each fingerprint and
+receipt.
 
 ## Units and handedness per route
 

@@ -134,7 +134,7 @@ def class_evidence_products(ledger):
 def sealed_mover_class_receipt_sha256(project_root):
     ledger = mover_class_defaults_ledger(project_root)
     receipt = ledger.sealed_receipt(MOVER_CLASS_UNIT_KEY)
-    if receipt is None or receipt['algorithmVersion'] != MOVER_CLASS_DEFAULTS_ALGORITHM_VERSION or receipt['config'] != mover_class_defaults_config():
+    if receipt is None or not ledger.has_current_versions(receipt) or receipt['config'] != mover_class_defaults_config():
         return None
     if locked_input_records([record['path'] for record in receipt['inputs']]) != receipt['inputs']:
         return None

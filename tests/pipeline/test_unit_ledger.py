@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import GapRowError
 from native_store.store_paths import StorePathError
+from native_store.step_source_modules import step_converter_sources_sha256
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, BELOW_NORMAL_PRIORITY_CLASS, BatchPreflightRefusedError,
                                       FreeDiskFloorRefusedError, MachineWindowRefusedError, UnitLedger, UnitLedgerError,
                                       locked_input_records, require_batch_preflight, unit_directory_name)
@@ -208,7 +209,8 @@ class UnitLedgerLifecycleTests(unittest.TestCase):
         fingerprint = ledger.unit_fingerprint([FIRST_INPUT_SHA256, SECOND_INPUT_SHA256], TILE_CONFIG)
         self.assertEqual(fingerprint, ledger.unit_fingerprint([SECOND_INPUT_SHA256, FIRST_INPUT_SHA256], TILE_CONFIG))
         self.assertEqual(fingerprint, sha256_of_bytes(canonical_json_bytes(
-            {'algorithmVersion': 1, 'config': TILE_CONFIG, 'inputSha256s': [FIRST_INPUT_SHA256, SECOND_INPUT_SHA256]})))
+            {'algorithmVersion': 1, 'config': TILE_CONFIG, 'converterSourcesSha256': ledger.converter_sources_sha256,
+             'inputSha256s': [FIRST_INPUT_SHA256, SECOND_INPUT_SHA256]})))
         self.assertNotEqual(fingerprint, self.ledger(algorithm_version=2).unit_fingerprint([FIRST_INPUT_SHA256, SECOND_INPUT_SHA256], TILE_CONFIG))
         self.assertNotEqual(fingerprint, ledger.unit_fingerprint([FIRST_INPUT_SHA256, SECOND_INPUT_SHA256], {**TILE_CONFIG, 'chunkSize': 8}))
         for input_sha256s in (['A' * 64], ['a' * 63], [64], 'a' * 64):
@@ -233,7 +235,8 @@ class UnitLedgerLifecycleTests(unittest.TestCase):
                           'pid': os.getpid(), 'startedAtRiga': RIGA_START_TIME})
         self.assertEqual(read_json_file(step_directory / 'receipt.json'), receipt)
         self.assertEqual(receipt, {
-            'unitKey': 'tile:20_21', 'step': 'raw', 'fingerprint': fingerprint, 'algorithmVersion': 1, 'config': TILE_CONFIG,
+            'unitKey': 'tile:20_21', 'step': 'raw', 'fingerprint': fingerprint, 'algorithmVersion': 1,
+            'converterSourcesSha256': step_converter_sources_sha256('world', 'raw'), 'config': TILE_CONFIG,
             'inputs': [{'path': 'maps/input_0.unr', 'sha256': SECOND_INPUT_SHA256}, {'path': 'maps/input_1.unr', 'sha256': FIRST_INPUT_SHA256}],
             'outputs': [first_output, second_output], 'gapRows': [], 'freeBytesBefore': 8000, 'freeBytesAfter': 7000,
             'host': 'DATABASE-PC', 'finishedAtRiga': RIGA_FINISH_TIME})

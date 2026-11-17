@@ -15,6 +15,7 @@ from typing import NamedTuple
 from native_store.canonical_json import canonical_json_bytes
 from native_store.file_identity import file_identity
 from native_store.gap_rows import load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
+from native_store.step_source_modules import StepSourceModulesError, step_converter_sources_sha256
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, STEP_NAME_PATTERN, StorePathError, confined_child_path,
                                       lane_store_root, lane_work_root, refuse_reparse_points, require_known_lane_name,
                                       require_portable_relative_path)
@@ -227,6 +228,10 @@ class UnitLedger:
         self.lane_folder = self.work_root.parent
         self.step = step
         self.algorithm_version = algorithm_version
+        try:
+            self.converter_sources_sha256 = step_converter_sources_sha256(self.lane_name, step)
+        except StepSourceModulesError as error:
+            raise UnitLedgerError(str(error)) from error
         self.riga_clock = riga_clock
         self.free_bytes = free_bytes or (lambda path: shutil.disk_usage(path).free)
         self.host = host or socket.gethostname().upper()
@@ -239,10 +244,14 @@ class UnitLedger:
             require_sha256(value, 'input SHA-256')
         try:
             payload = canonical_json_bytes({'algorithmVersion': self.algorithm_version, 'config': config,
-                                            'inputSha256s': sorted(input_sha256s)})
+                                            'converterSourcesSha256': self.converter_sources_sha256, 'inputSha256s': sorted(input_sha256s)})
         except (TypeError, ValueError) as error:
             raise UnitLedgerError(f'unit config must be finite JSON: {error}') from error
         return sha256_of_bytes(payload)
+
+    def has_current_versions(self, receipt):
+        return (receipt['algorithmVersion'] == self.algorithm_version
+                and receipt.get('converterSourcesSha256') == self.converter_sources_sha256)
 
     def unit_step_directory(self, unit_key):
         return confined_child_path(self.work_root, f'{unit_directory_name(unit_key)}/{self.step}')
@@ -350,7 +359,7 @@ class UnitLedger:
             raise UnitLedgerError(f'unit {unit_key} has no running marker in {step_directory}')
         full_receipt = {
             'unitKey': unit_key, 'step': self.step, 'fingerprint': fingerprint, 'algorithmVersion': self.algorithm_version,
-            'config': receipt['config'], 'inputs': inputs, 'outputs': outputs,
+            'converterSourcesSha256': self.converter_sources_sha256, 'config': receipt['config'], 'inputs': inputs, 'outputs': outputs,
             'gapRows': sorted_gap_rows(receipt['gapRows']),
             'freeBytesBefore': begun_unit['freeBytesBefore'], 'freeBytesAfter': self.free_bytes(step_directory),
             'host': self.host, 'finishedAtRiga': self.riga_clock()}

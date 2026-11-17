@@ -16,7 +16,8 @@ from world import convert_tile
 from world.convert_tile import record_tile_step_gap_row
 from world.map_actor_properties import HAS_STACK
 from world.raw_map_extraction import build_map
-from world.raw_map_step import RAW_MAP_STEP_ALGORITHM_VERSION, RawMapStepError, raw_map_recipe, run_raw_map_step
+from world.raw_map_step import (RAW_MAP_STEP_ALGORITHM_VERSION, RawMapStepError, raw_map_ledger, raw_map_recipe, raw_map_unit_fingerprint,
+                                read_tile_map_lock_record, run_raw_map_step, tile_unit_key)
 from world.tile_step_registry import TILE_STEP_NAMES
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 from ue2_package_fixture import compact, package_bytes, tag
@@ -376,6 +377,11 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
 @unittest.skipUnless((REAL_CLIENT_ROOT / MAP_PATH).is_file(), 'the conversion client E:/Lineage2-client is absent on this host')
 @unittest.skipUnless((ROOT / UNIT_STEP_FOLDER / 'complete.json').is_file(), 'the real 20_21 raw unit has not been sealed in this checkout')
 class RealTileRawUnitTests(unittest.TestCase):
+    def setUp(self):
+        current_fingerprint = raw_map_unit_fingerprint(ROOT, MAP_PATH, read_tile_map_lock_record(TILE_ID))
+        if not raw_map_ledger(ROOT).is_sealed(tile_unit_key(TILE_ID), current_fingerprint):
+            self.skipTest('the real 20_21 raw unit is not sealed under the current fingerprint; a world batch seals it, a test never begins it')
+
     def test_the_sealed_20_21_unit_returns_pass_with_its_lock_identity_and_whole_terrain(self):
         with patch('world.raw_map_step.build_map', side_effect=AssertionError('sealed 20_21 unit rebuilt')):
             row = run_raw_map_step(ROOT, REAL_CLIENT_ROOT, TILE_ID)

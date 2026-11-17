@@ -13,6 +13,7 @@ from unittest.mock import patch
 from native_assets import Converter, sha
 from native_store import identical_file_sharing, share_identical_lane_files as sharing_command
 from native_store.share_identical_lane_files import share_identical_lane_files
+from native_store.step_source_modules import STEP_SOURCE_MODULES_BY_LANE
 from native_store.unit_ledger import UnitLedger
 from reference_client_lock_fixture import lock_client_as_reference_root
 
@@ -21,6 +22,9 @@ WAVE_SAMPLE_COUNT = 4000
 SOUND_CONVERTER_RELATIVE_FOLDER = 'work/sound-converter'
 FIXTURE_HOST = 'DATABASE-PC'
 FIXTURE_RIGA_TIME = '2026-11-13T12:00:00+02:00'
+FIXTURE_LANE_NAMES = ('actors', 'data-ui', 'integration', 'world')
+FIXTURE_STEP_NAMES = ('model', 'skill-effect-root', 'skill-dispatch-class', 'npc-profile-pack')
+FIXTURE_STEP_SOURCE_MODULES = ('native_store.unit_ledger',)
 FIXTURE_INPUT_SHA256 = 'a' * 64
 CONTENT_FOLDER_NAME = 'c' * 64
 CONVERTER_RELATIVE_FOLDER = 'work/static-mesh-converter'
@@ -114,10 +118,18 @@ def run_sharing_command(*arguments):
     return exit_code, standard_output.getvalue(), standard_error.getvalue(), below_normal_priority.call_count
 
 
+def fixture_step_source_modules_by_lane():
+    fixture_steps = {step: FIXTURE_STEP_SOURCE_MODULES for step in FIXTURE_STEP_NAMES}
+    return {lane_name: {**STEP_SOURCE_MODULES_BY_LANE.get(lane_name, {}), **fixture_steps} for lane_name in FIXTURE_LANE_NAMES}
+
+
 class SharedLaneFixture:
     def __init__(self, test_case):
         temporary_directory = tempfile.TemporaryDirectory()
         test_case.addCleanup(temporary_directory.cleanup)
+        fixture_step_table = patch.dict(STEP_SOURCE_MODULES_BY_LANE, fixture_step_source_modules_by_lane())
+        fixture_step_table.start()
+        test_case.addCleanup(fixture_step_table.stop)
         self.project = Path(temporary_directory.name).resolve() / 'project'
         self.lane_stores_root = self.project / 'artifacts' / 'lane-store'
         self.lane_stores_root.mkdir(parents=True)
