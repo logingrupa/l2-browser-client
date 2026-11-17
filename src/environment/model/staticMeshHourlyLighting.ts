@@ -1,13 +1,8 @@
 import { HOURLY_LIGHTING_CONSTANTS } from "./hourlyLightingEngineConstants";
-import { fColorFromPlane, type BgraBytes } from "./nativeColourBytes";
 import { ENVIRONMENT_ENGINE_CONSTANTS } from "./nativeEnvironmentEngineConstants";
-import { scalePlane, type NativePlane } from "./nativePlane";
 import { blendAdjacentHourlyKeys, type HourlyKeyBlend } from "./sampleNativeTimeTables";
 
-export type StaticMeshHourlyPath = "shader-visibility" | "cpu-rebuild";
-export type StaticMeshHourlyEntry = "previous" | "next";
-
-const { staticMeshHourKeyHalfStep, staticMeshCpuEntryScale: cpuEntryScale, staticMeshAuthoredColourDivisor } = HOURLY_LIGHTING_CONSTANTS;
+const { staticMeshHourKeyHalfStep } = HOURLY_LIGHTING_CONSTANTS;
 const { hoursPerDay } = ENVIRONMENT_ENGINE_CONSTANTS;
 const bitsPerByte = 8;
 
@@ -49,24 +44,4 @@ export function staticMeshShaderVisibility(previousContributes: boolean, nextCon
   if (previousContributes) visibility = Math.fround(visibility + (1 - weight));
   if (nextContributes) visibility = Math.fround(visibility + weight);
   return visibility;
-}
-
-export function staticMeshHourlyPath(actorShaderLightingFlag: boolean, gl2ShaderEnabled: boolean): StaticMeshHourlyPath {
-  return actorShaderLightingFlag && gl2ShaderEnabled ? "shader-visibility" : "cpu-rebuild";
-}
-
-export function staticMeshCpuEntryScale(weight: number, entry: StaticMeshHourlyEntry): number {
-  return Math.fround((entry === "previous" ? 1 - weight : weight) * cpuEntryScale.value);
-}
-
-export function staticMeshCpuVertexContribution(sampleIntensity: number, staticSunPlane: NativePlane, entryScale: number): BgraBytes {
-  const scaledPlane = scalePlane(staticSunPlane, entryScale);
-  const intensity = Math.fround(sampleIntensity);
-  return fColorFromPlane([Math.fround(intensity * scaledPlane[0]), Math.fround(intensity * scaledPlane[1]), Math.fround(intensity * scaledPlane[2]), 0]);
-}
-
-export function staticMeshInstanceColourWithAuthored(instanceColour: BgraBytes, authoredColour: BgraBytes, meshColourSelectorSet: boolean): BgraBytes {
-  const modulated = (channel: 0 | 1 | 2) => meshColourSelectorSet
-    ? Math.trunc((instanceColour[channel] * authoredColour[channel]) / staticMeshAuthoredColourDivisor.value) : instanceColour[channel];
-  return [modulated(0), modulated(1), modulated(2), authoredColour[3]];
 }
