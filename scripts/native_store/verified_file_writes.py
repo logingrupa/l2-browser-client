@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 import tempfile
 
+from native_store.store_paths import require_lane_write_outside_real_lane_stores
+
 
 class CatalogWriteError(ValueError):
     pass
@@ -18,6 +20,7 @@ def sha256_of_file(path):
 
 
 def replace_file(path, payload):
+    require_lane_write_outside_real_lane_stores(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + '.', suffix='.tmp', delete=False) as output:
         temporary = Path(output.name)
@@ -36,6 +39,7 @@ def require_same_immutable_file(path, payload):
 
 
 def immutable_write(path, payload):
+    require_lane_write_outside_real_lane_stores(path)
     if path.exists():
         require_same_immutable_file(path, payload)
         return

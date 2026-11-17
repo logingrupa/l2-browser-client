@@ -6,12 +6,16 @@ import os
 from pathlib import Path
 import re
 import stat
+import sys
 from types import MappingProxyType
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 LANE_OWNERSHIP_PATH = REPOSITORY_ROOT / '.planning' / 'lanes.json'
 REAL_LANE_STORES_FOLDER = REPOSITORY_ROOT / 'artifacts' / 'lane-store'
 PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE = 'L2_PIPELINE_TEST_RUN'
+UNITTEST_RUNNER_MAIN_MODULE_NAME = 'unittest.__main__'
+REPOSITORY_TESTS_FOLDER = REPOSITORY_ROOT / 'tests'
+TEST_MODULE_FILE_NAME_PREFIX = 'test_'
 RESERVED_DEVICE_NAME_PATTERN = re.compile(r'(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?', re.IGNORECASE)
 UNSAFE_NAME_CHARACTER_PATTERN = re.compile(r'[:*?<>"|\x00-\x1f]')
 STEP_NAME_PATTERN = re.compile(r'^[a-z][a-z0-9-]{0,63}$')
@@ -31,8 +35,22 @@ class RealLaneStoreWriteRefusedError(ConverterOutputRefusedError):
     pass
 
 
+def is_repository_test_module_file(module_file):
+    path = Path(os.path.abspath(module_file))
+    return path.is_relative_to(REPOSITORY_TESTS_FOLDER) or (path.is_relative_to(REPOSITORY_ROOT) and path.name.startswith(TEST_MODULE_FILE_NAME_PREFIX))
+
+
+def is_test_runner_main_module():
+    main_module = sys.modules.get('__main__')
+    main_specification = getattr(main_module, '__spec__', None)
+    if main_specification is not None and main_specification.name == UNITTEST_RUNNER_MAIN_MODULE_NAME:
+        return True
+    main_file = getattr(main_module, '__file__', None)
+    return isinstance(main_file, str) and is_repository_test_module_file(main_file)
+
+
 def is_pipeline_test_run():
-    return os.environ.get(PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE) == '1'
+    return os.environ.get(PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE) == '1' or is_test_runner_main_module()
 
 
 def require_lane_write_outside_real_lane_stores(path):

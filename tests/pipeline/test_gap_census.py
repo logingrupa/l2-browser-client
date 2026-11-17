@@ -3,9 +3,11 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -17,6 +19,7 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_census import (GAP_CENSUS_STATUS_PRECEDENCE, GAP_CENSUS_STEP_ORDER, GapCensusIncompleteError, build_gap_census,
                                      is_named_emitter_gap_reason, item_census_rows)
 from native_store.gap_census_denominators import census_item_join_rows, load_census_denominators
+from native_store.store_paths import read_lane_parts_by_name, require_known_lane_name
 from native_store.unit_ledger import locked_input_records
 
 SOURCE_SHA256 = 'b' * 64
@@ -310,6 +313,17 @@ SHARED_STORE_CATALOG_PATH = ROOT / 'public' / 'l2' / 'catalog.json'
 CENSUS_GENERATED_AT_RIGA = '2026-11-09T06:30:00+02:00'
 
 
+def scratch_copy_of_the_real_gap_rows(add_cleanup):
+    scratch_folder = tempfile.TemporaryDirectory(prefix='gap-census-gap-rows-')
+    add_cleanup(scratch_folder.cleanup)
+    scratch_gap_rows_root = Path(scratch_folder.name)
+    for lane_name in read_lane_parts_by_name():
+        real_gap_rows_folder = ROOT / 'artifacts' / 'lane-store' / lane_name / 'gap-rows'
+        if real_gap_rows_folder.is_dir():
+            shutil.copytree(real_gap_rows_folder, scratch_gap_rows_root / lane_name)
+    return scratch_gap_rows_root
+
+
 class GapCensusCompletenessTests(unittest.TestCase):
     def setUp(self):
         missing_inputs = [f'artifacts/lane-store/{lane_name}/gap-rows' for lane_name in CENSUS_LANE_NAMES
@@ -319,6 +333,14 @@ class GapCensusCompletenessTests(unittest.TestCase):
                                                          for lane_name in CENSUS_LANE_NAMES)] if not path.is_file()]
         if missing_inputs:
             self.skipTest(f'real-data census needs the lane gap rows and catalogs: missing {", ".join(missing_inputs)}')
+        scratch_gap_rows_root = scratch_copy_of_the_real_gap_rows(self.addCleanup)
+
+        def scratch_lane_gap_rows_folder(project_root, lane_name):
+            return scratch_gap_rows_root / require_known_lane_name(lane_name)
+        for module_name in ('native_store.store_paths', 'native_store.gap_rows'):
+            gap_rows_folder_patch = patch(f'{module_name}.lane_gap_rows_folder', scratch_lane_gap_rows_folder)
+            gap_rows_folder_patch.start()
+            self.addCleanup(gap_rows_folder_patch.stop)
 
     def test_the_shared_store_and_lane_stores_give_every_denominator_key_one_status(self):
         report = build_coverage_report(ROOT, ROOT / 'public' / 'l2', CENSUS_LANE_NAMES, CENSUS_GENERATED_AT_RIGA, CENSUS_LANE_NAMES)

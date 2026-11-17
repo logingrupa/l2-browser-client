@@ -29,7 +29,7 @@ from native_assets_lib.converter_source_digests import ConverterSourceDigests
 from native_assets_lib.conversion_evidence import write_conversion_evidence
 from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, require_reference_client
 from native_store.converter_source_closure import process_converter_sources_sha256
-from native_store.store_paths import require_converter_output
+from native_store.store_paths import require_converter_output, require_lane_write_outside_real_lane_stores
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 CONVERTER_DESCRIPTION = 'Convert native Interlude client objects into reproducible .l2asset packages with the pinned UModel; see docs/ASSET_PIPELINE.md.'
@@ -159,7 +159,7 @@ def implementation_hash():
 
 class Converter:
     def __init__(self, client, output, umodel, *, project_root=REPOSITORY_ROOT):
-        self.output = require_converter_output(project_root, output)
+        self.output = require_lane_write_outside_real_lane_stores(require_converter_output(project_root, output))
         self.client, self.umodel = Path(client).resolve(), Path(umodel).resolve()
         self.reference_client = require_reference_client(self.client)
         self.source_digests = ConverterSourceDigests(self.reference_client)

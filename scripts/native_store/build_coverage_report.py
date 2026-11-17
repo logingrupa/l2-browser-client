@@ -26,7 +26,7 @@ from native_store.load_check_records import is_catalog_key, is_riga_timestamp, r
 from native_store.stage_a_exit_counts import (StageAExitInputs, reference_client_block, stage_a_markdown, stage_a_part_counts,
                                               validate_reference_block, validate_stage_a_counts)
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, StorePathError, confined_child_path, lane_store_root,
-                                      read_lane_parts_by_name, require_converter_output)
+                                      read_lane_parts_by_name, require_converter_output, require_lane_write_outside_real_lane_stores)
 from native_store.unit_ledger import MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW, read_machine_schedule, require_host_clock_on_riga_time
 
 COVERAGE_REPORT_SCHEMA_VERSION = 2
@@ -327,11 +327,11 @@ def coverage_markdown_path(project_root, markdown):
 
 
 def write_coverage_report(project_root, store_root, lane_names, census_lane_names=(), output=None, run_command=subprocess.run):
+    output_path = require_lane_write_outside_real_lane_stores(coverage_output_path(project_root, store_root, output))
     exit_code, schedule, schedule_message = read_machine_schedule(run_command)
     if exit_code == MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW:
         raise CoverageReportError(f'coverage report refused inside a machine window on {schedule["host"]}: {schedule_message}')
     require_host_clock_on_riga_time(schedule['rigaTime'], datetime.now().astimezone())
-    output_path = coverage_output_path(project_root, store_root, output)
     report = build_coverage_report(project_root, store_root, lane_names, schedule['rigaTime'], census_lane_names)
     report = report_keeping_unchanged_generation_time(output_path, report)
     replace_file(output_path, coverage_report_bytes(report))

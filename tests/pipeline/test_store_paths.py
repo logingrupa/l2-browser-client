@@ -171,14 +171,9 @@ class RealLaneStoreWriteGuardTests(StorePathTestCase):
                 require_lane_write_outside_real_lane_stores(real_unit_folder)
             self.assertEqual(require_lane_write_outside_real_lane_stores(scratch_unit_folder), scratch_unit_folder)
 
-    def test_without_the_test_run_flag_a_real_lane_store_path_is_admitted(self):
-        real_unit_folder = REAL_LANE_STORES_FOLDER / 'world' / 'work' / 'tile__20_21' / 'raw'
-        with patch.dict(os.environ):
-            os.environ.pop(PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE, None)
-            self.assertEqual(require_lane_write_outside_real_lane_stores(real_unit_folder), real_unit_folder)
-
     def test_a_pipeline_test_run_refuses_to_create_the_lane_roots_of_the_real_lane_stores(self):
-        with patch.object(store_paths, 'REAL_LANE_STORES_FOLDER', self.project / 'artifacts' / 'lane-store'),                 patch.dict(os.environ, {PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE: '1'}):
+        with patch.object(store_paths, 'REAL_LANE_STORES_FOLDER', self.project / 'artifacts' / 'lane-store'), \
+                patch.dict(os.environ, {PIPELINE_TEST_RUN_ENVIRONMENT_VARIABLE: '1'}):
             with self.assertRaises(RealLaneStoreWriteRefusedError):
                 lane_roots.create_lane_work_and_store_roots(self.project, 'world')
         self.assertFalse((self.project / 'artifacts' / 'lane-store').exists())

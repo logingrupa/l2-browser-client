@@ -7,6 +7,7 @@ SCRIPTS_ROOT = REPOSITORY_ROOT / 'scripts'
 TESTS_ROOT = REPOSITORY_ROOT / 'tests'
 STORE_PATHS_RELATIVE_PATH = 'scripts/native_store/store_paths.py'
 OUTPUT_GUARD_NAME = 'require_converter_output'
+REAL_LANE_STORE_WRITE_GUARD_NAME = 'require_lane_write_outside_real_lane_stores'
 LANE_STORE_ROOT_GUARD_NAME = 'lane_store_root'
 OUTPUT_ROOT_GUARD_NAMES = (OUTPUT_GUARD_NAME, LANE_STORE_ROOT_GUARD_NAME)
 OUTPUT_OPTION = '--output'
@@ -120,7 +121,9 @@ class ConverterOutputGuardScanTests(unittest.TestCase):
         initializer = function_named(converter.body, '__init__')
         guard_calls = calls_named(initializer, OUTPUT_GUARD_NAME)
         self.assertTrue(guard_calls, 'Converter.__init__ must call require_converter_output')
-        self.assertIs(initializer.body[0].value, guard_calls[0])
+        self.assertEqual(calls_named(initializer.body[0], OUTPUT_GUARD_NAME), guard_calls[:1])
+        self.assertTrue(calls_named(initializer.body[0], REAL_LANE_STORE_WRITE_GUARD_NAME),
+                        'Converter.__init__ must refuse a real lane store output in its first statement')
         folder_creations = calls_named(initializer, 'mkdir')
         self.assertTrue(folder_creations)
         self.assertTrue(all(guard_calls[0].lineno < creation.lineno for creation in folder_creations))

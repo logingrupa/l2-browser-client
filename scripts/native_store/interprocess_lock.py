@@ -6,6 +6,7 @@ import msvcrt
 from pathlib import Path
 
 from native_store.canonical_json import canonical_json_bytes
+from native_store.store_paths import require_lane_write_outside_real_lane_stores
 
 INTERPROCESS_LOCK_FOLDER_NAME = 'interprocess-locks'
 LOCK_FILE_SUFFIX = '.lock'
@@ -81,6 +82,7 @@ def unlock_file_part(lock_file, part_offset):
 
 @contextmanager
 def exclusive_lock_file(path):
+    require_lane_write_outside_real_lane_stores(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'ab') as lock_file:
         lock_file_part(lock_file, WAITING_LOCK_PART_OFFSET, LOCKFILE_EXCLUSIVE_LOCK)
@@ -124,7 +126,7 @@ def lane_lock_file_path(lane_work_root):
 
 
 def open_lane_lock_file(lane_work_root):
-    path = lane_lock_file_path(lane_work_root)
+    path = require_lane_write_outside_real_lane_stores(lane_lock_file_path(lane_work_root))
     path.parent.mkdir(parents=True, exist_ok=True)
     return open(path, 'ab')
 

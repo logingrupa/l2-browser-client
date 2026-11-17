@@ -18,7 +18,8 @@ from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
 from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 from native_store.store_file_copy import add_store_file_source, copy_store_files, missing_store_file_sources
-from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name, refuse_reparse_points
+from native_store.store_paths import (REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name, refuse_reparse_points,
+                                      require_lane_write_outside_real_lane_stores)
 from native_store.tile_manifest_collision_pin import TileCollisionPinError, require_tile_manifests_pin_collision
 from native_store.unit_ledger import run_at_below_normal_priority
 
@@ -205,6 +206,8 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
     union_lane_names = list(union_lane_names)
     require_distinct_union_lanes(lane_name, union_lane_names)
     store_root = lane_store_root(project_root, lane_name)
+    if not plan_only:
+        require_lane_write_outside_real_lane_stores(store_root)
     base_sha256 = base_catalog_sha256(project_root)
     catalog, before = read_store_catalog(store_root)
     if plan_only and before is None:
