@@ -14,6 +14,7 @@ from world.bsp_chunk_geometry import (BSP_POLY_FLAGS_PATH, BspPolygonError, assi
                                       drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon)
 from world.bsp_lightmaps import lightmap_texture_of_record, read_bsp_lightmaps
 from world.bsp_material_mapping_size import surface_material_identities
+from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 from world.bsp_surface_materials import convert_surface_material
 from world.level_model import LevelModelLayoutError, read_level_model, reviewed_level_model_layout
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
@@ -28,7 +29,7 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-BSP_STEP_ALGORITHM_VERSION = 6
+BSP_STEP_ALGORITHM_VERSION = 7
 BSP_STEP_NAME = 'bsp'
 BSP_CHUNKS_PRODUCT_NAME = 'bsp-chunks.json'
 CHUNK_BSP_FOLDER = 'native-tile-chunk-bsp'
@@ -59,7 +60,7 @@ def tile_level_model_layout(raw_products):
 
 def bsp_unit_config(chunks_fingerprint, level_model_layout):
     return {'chunksFingerprint': chunks_fingerprint, 'converterSha256': implementation_hash(), 'polyFlagsSha256': poly_flags_recipe_sha256(),
-            'levelModelLayout': level_model_layout}
+            'levelModelLayout': level_model_layout, 'levelModelRulesSha256': read_bsp_model_licensee_rules()['sha256']}
 
 
 def bsp_product_path(ledger, unit_key):

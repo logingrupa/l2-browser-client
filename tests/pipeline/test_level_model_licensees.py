@@ -15,7 +15,8 @@ from data.pinned_elbera_module import ELBERA_ROOT
 from native_catalog.ue2 import FormatError
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, BatchPreflightRefusedError, require_batch_preflight, run_at_below_normal_priority
 from test_world_reader_licensees import layout_completeness_problems
-from world.bsp_model_licensee_rules import BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH
+from world import bsp_step
+from world.bsp_model_licensee_rules import BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH, read_bsp_model_licensee_rules
 from world.bsp_step import RAW_MANIFEST_PRODUCT_NAME, bsp_unit_config, tile_level_model_layout
 from world.elbera_reader_cross_check import ElberaCrossCheckError, elbera_level_model_projection
 from world.level_model import LevelModelLayoutError, read_level_model
@@ -156,6 +157,14 @@ class BspUnitConfigTests(unittest.TestCase):
             without_record = bsp_unit_config('chunks', tile_level_model_layout(products))
         self.assertIsNone(without_record['levelModelLayout'])
         self.assertNotEqual(with_record, without_record)
+
+    def test_the_bsp_unit_config_of_a_123_28_tile_carries_the_level_model_rules_recipe_sha256(self):
+        products = self.raw_products(28)
+        recipe = read_bsp_model_licensee_rules()
+        config = bsp_unit_config('chunks', tile_level_model_layout(products))
+        self.assertEqual(config['levelModelRulesSha256'], recipe['sha256'])
+        with patch.object(bsp_step, 'read_bsp_model_licensee_rules', lambda: {**recipe, 'sha256': 'c' * 64}):
+            self.assertNotEqual(bsp_unit_config('chunks', tile_level_model_layout(products)), config)
 
 
 class ElberaLevelModelGuardTests(unittest.TestCase):

@@ -13,6 +13,7 @@ from tile_step_seal_fixture import (LOCKED_TILE_ID, object_gap_rows, seal_raw_un
                                     write_single_tile_census)
 from native_store.unit_ledger import locked_input_records
 from world import convert_tile_batch, eligible_tile_selection, tile_manifest_step, tile_step_current_seals, world_audio_step
+from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 from world.bsp_step import BSP_STEP_NAME
 from world.bsp_visibility_step import BSP_VISIBILITY_STEP_NAME
 from world.collision_step import COLLISION_STEP_NAME
@@ -20,6 +21,8 @@ from world.eligible_tile_selection import SealedTileStep, sealed_unit_step
 from world.lighting_step import LIGHTING_STEP_NAME
 from world.map_emitter_step import MAP_EMITTER_STEP_NAME
 from world.minimap_step import MINIMAP_STEP_NAME, minimap_input_records
+from world.mover_class_defaults import (MOVER_CLASS_DEFAULTS_ALGORITHM_VERSION, MOVER_CLASS_DEFAULTS_STEP_NAME, MOVER_CLASS_UNIT_KEY,
+                                       mover_class_defaults_config, sealed_mover_class_receipt_sha256)
 from world.mover_step import MOVER_STEP_NAME
 from world.raw_map_step import (RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record, tile_map_path,
                                 tile_step_row, tile_unit_key)
@@ -41,6 +44,7 @@ from world.world_audio_step import WORLD_AUDIO_STEP_NAME, world_audio_unit_confi
 CURRENT_WORLD_AUDIO_VERSION = 3
 CURRENT_UPSTREAM_FINGERPRINT = 'e' * 64
 OLDER_UPSTREAM_FINGERPRINT = 'f' * 64
+OTHER_CONVERTER_SOURCES_SHA256 = 'b' * 64
 DISCOVERED_INPUT_PATH = 'system/Core.dll'
 UNIT_FINGERPRINT_STEP_UNITS = {TERRAIN_STEP_NAME: 'terrain_unit', STATIC_MESH_STEP_NAME: 'static_mesh_unit', COLLISION_STEP_NAME: 'collision_unit',
                                MAP_EMITTER_STEP_NAME: 'map_emitter_unit', BSP_VISIBILITY_STEP_NAME: 'bsp_visibility_unit',
@@ -143,6 +147,13 @@ class WorldAudioCurrentSealTests(CurrentSealTestCase):
         self.seal_world_audio(CURRENT_WORLD_AUDIO_VERSION, {**self.current_world_audio_config(), 'rawFingerprint': OLDER_UPSTREAM_FINGERPRINT})
         self.assertEqual(self.seal_state(WORLD_AUDIO_STEP_NAME).state, STALE_SEAL_STATE)
 
+    def test_a_receipt_sealed_under_other_converter_sources_of_its_step_is_stale(self):
+        seal_raw_unit(self.project_root, LOCKED_TILE_ID)
+        current_config = self.current_world_audio_config()
+        with patch('native_store.unit_ledger.step_converter_sources_sha256', return_value=OTHER_CONVERTER_SOURCES_SHA256):
+            self.seal_world_audio(CURRENT_WORLD_AUDIO_VERSION, current_config)
+        self.assertEqual(self.seal_state(WORLD_AUDIO_STEP_NAME), (STALE_SEAL_STATE, None, f'work/tile__{LOCKED_TILE_ID}/audio/receipt.json'))
+
     def test_a_receipt_whose_raw_unit_is_unsealed_answers_pending(self):
         self.seal_world_audio(CURRENT_WORLD_AUDIO_VERSION, {'rawFingerprint': OLDER_UPSTREAM_FINGERPRINT})
         self.assertEqual(self.seal_state(WORLD_AUDIO_STEP_NAME), (PENDING_SEAL_STATE, None, f'work/tile__{LOCKED_TILE_ID}/audio/receipt.json'))
@@ -224,14 +235,27 @@ class LockedInputConfigStepCurrentSealTests(CurrentSealTestCase):
         with patch.object(tile_step_current_seals, 'static_mesh_materials_unit_config', raising(ChunkPlanStepError('chunk plan is not sealed'))):
             self.assertEqual(self.seal_state(STATIC_MESH_MATERIALS_STEP_NAME).state, PENDING_SEAL_STATE)
 
-    def test_a_sky_receipt_answers_on_its_raw_seal_its_struct_rules_and_its_discovered_input_lock_records(self):
-        struct_rules_sha256 = read_struct_property_tag_rules().sha256
-        self.seal_step(SKY_STEP_NAME, {'rawFingerprint': OLDER_UPSTREAM_FINGERPRINT, 'structPropertyRulesSha256': struct_rules_sha256}, discovered_inputs())
+    def test_a_sky_receipt_answers_on_its_raw_seal_its_rule_recipes_and_its_discovered_input_lock_records(self):
+        rules_config = {'structPropertyRulesSha256': read_struct_property_tag_rules().sha256,
+                        'levelModelRulesSha256': read_bsp_model_licensee_rules()['sha256']}
+        self.seal_step(SKY_STEP_NAME, {'rawFingerprint': OLDER_UPSTREAM_FINGERPRINT, **rules_config}, discovered_inputs())
         self.assertEqual(self.seal_state(SKY_STEP_NAME).state, PENDING_SEAL_STATE)
-        current_config = {'rawFingerprint': seal_raw_unit(self.project_root, LOCKED_TILE_ID), 'structPropertyRulesSha256': struct_rules_sha256}
+        current_config = {'rawFingerprint': seal_raw_unit(self.project_root, LOCKED_TILE_ID), **rules_config}
         self.assert_locked_input_config_states(SKY_STEP_NAME, current_config)
-        self.seal_step(SKY_STEP_NAME, {key: value for key, value in current_config.items() if key != 'structPropertyRulesSha256'}, discovered_inputs())
-        self.assertEqual(self.seal_state(SKY_STEP_NAME).state, STALE_SEAL_STATE)
+        for rules_field in rules_config:
+            with self.subTest(rules_field=rules_field):
+                self.seal_step(SKY_STEP_NAME, {**current_config, rules_field: OLDER_UPSTREAM_FINGERPRINT}, discovered_inputs())
+                self.assertEqual(self.seal_state(SKY_STEP_NAME).state, STALE_SEAL_STATE)
+
+    def test_a_mover_class_receipt_sealed_under_other_converter_sources_of_its_step_is_not_current(self):
+        def seal_mover_class_receipt():
+            seal_unit(self.project_root, MOVER_CLASS_DEFAULTS_STEP_NAME, MOVER_CLASS_DEFAULTS_ALGORITHM_VERSION, MOVER_CLASS_UNIT_KEY,
+                      mover_class_defaults_config(), discovered_inputs())
+        seal_mover_class_receipt()
+        self.assertIsNotNone(sealed_mover_class_receipt_sha256(self.project_root))
+        with patch('native_store.unit_ledger.step_converter_sources_sha256', return_value=OTHER_CONVERTER_SOURCES_SHA256):
+            seal_mover_class_receipt()
+        self.assertIsNone(sealed_mover_class_receipt_sha256(self.project_root))
 
     def test_a_mover_receipt_answers_on_its_config_and_waits_for_the_mover_class_receipt(self):
         current_config = upstream_config(CURRENT_UPSTREAM_FINGERPRINT)
@@ -255,6 +279,18 @@ class MinimapAndTileManifestCurrentSealTests(CurrentSealTestCase):
             states.append((self.seal_state(MINIMAP_STEP_NAME).state, STALE_SEAL_STATE))
         with patch.object(tile_step_current_seals, 'upstream_sealed_fingerprints', lambda *arguments: (RAW_STEP_NAME, None)):
             states.append((self.seal_state(MINIMAP_STEP_NAME).state, PENDING_SEAL_STATE))
+        self.assert_seal_states(MINIMAP_STEP_NAME, states)
+
+    def test_a_minimap_receipt_sealed_under_other_converter_sources_of_its_step_is_stale(self):
+        current_config = upstream_config(CURRENT_UPSTREAM_FINGERPRINT)
+        inputs = minimap_input_records(LOCKED_TILE_ID)
+        seal_synthetic_minimap_route(self.project_root)
+        with patch.object(tile_step_current_seals, 'upstream_sealed_fingerprints', lambda *arguments: (None, (current_config, None))):
+            self.seal_step(MINIMAP_STEP_NAME, current_config, inputs)
+            states = [(self.seal_state(MINIMAP_STEP_NAME).state, CURRENT_SEAL_STATE)]
+            with patch('native_store.unit_ledger.step_converter_sources_sha256', return_value=OTHER_CONVERTER_SOURCES_SHA256):
+                self.seal_step(MINIMAP_STEP_NAME, current_config, inputs)
+            states.append((self.seal_state(MINIMAP_STEP_NAME).state, STALE_SEAL_STATE))
         self.assert_seal_states(MINIMAP_STEP_NAME, states)
 
     def test_a_tile_manifest_receipt_is_stale_when_any_upstream_fingerprint_differs_from_its_current_seal(self):

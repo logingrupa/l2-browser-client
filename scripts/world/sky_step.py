@@ -11,6 +11,7 @@ from native_store.catalog_writer import sha256_hex
 from native_store.store_paths import StorePathError, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_material_mapping_size import mapping_size_outcome, reference_client_class_default_value, surface_material_identities
+from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 from world.level_model import LevelModelLayoutError, read_level_model
 from world.level_zones import read_level_zones, sky_zone_indices, zone_actor_export
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
@@ -34,7 +35,7 @@ from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
 from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row
 
-SKY_STEP_ALGORITHM_VERSION = 5
+SKY_STEP_ALGORITHM_VERSION = 6
 SKY_STEP_NAME = 'sky'
 SKY_PRODUCT_NAME = 'sky.json'
 SKY_BUNDLE_KIND = 'native-sky-source-bundle'
@@ -106,7 +107,7 @@ def sky_ledger(project_root):
 
 def sky_unit_config(project_root, tile_id, lock_record):
     return {'rawFingerprint': raw_unit_fingerprint(project_root, tile_id, lock_record)[0],
-            'structPropertyRulesSha256': read_struct_property_tag_rules().sha256}
+            'structPropertyRulesSha256': read_struct_property_tag_rules().sha256, 'levelModelRulesSha256': read_bsp_model_licensee_rules()['sha256']}
 
 
 def sky_product_path(ledger, unit_key):
