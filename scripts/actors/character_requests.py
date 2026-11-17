@@ -33,13 +33,15 @@ DECODED_STATUS = 'decoded'
 FACE_FIELD_NAME, HAIR_FIELD_NAME = 'face', 'hair'
 HAIR_SELECTION_FIELD = 'hairSelection'
 HAIR_EXPORT_UNRESOLVED_REASON_PREFIX, HAIR_SUBMESH_UNLISTED_REASON_PREFIX = 'hair-export-unresolved:', 'hair-submesh-unlisted:'
+DYNAMIC_HAIR_SIMULATION_UNPORTED_REASON_PREFIX = 'dynamic-hair-simulation-unported:'
 HAIR_HALF_NONE_STATUS, HAIR_HALF_RESOLVED_STATUS = 'none', 'resolved'
+HAIR_HALF_DYNAMIC_ROUTE = 'dynamic'
 HELMET_APPLIED_BY = 'equipment-03-30'
 CHARACTER_REQUEST_LIMITATIONS = (
     'Generated from the decoded chargrp row: body parts follow body_mesh1 upward with their body_texture fields; no recipe value is copied.',
     'The face attaches only through a source-joined actor class.',
     'Hair halves come from the RM-11 hairgrp rule at the default appearance, HairStyle 0 and HairColor 0, with the face texture at Face 0, '
-    'until a server packet selects another one (Phase 4); group-less requested names resolve through the converter rule until RM-13.',
+    'until a server packet selects another one (Phase 4); group-less names resolve by the RM-13 leaf and class rule, and dynamic halves stay a gap (RM-14).',
 )
 
 
@@ -192,7 +194,8 @@ def actor_class_join_limitation(actor_class):
 
 def hair_half_summary(half):
     summary = {'half': half['half'], 'pawnSlot': half['pawnSlot'], 'mappedStyle': half['mappedStyle'], 'status': half['status']}
-    return {**summary, 'mesh': half['mesh']['object'], 'material': half['material']['object']} if half['status'] == HAIR_HALF_RESOLVED_STATUS else summary
+    return ({**summary, 'mesh': half['mesh']['object'], 'material': half['material']['object'], 'route': half['route']}
+            if half['status'] == HAIR_HALF_RESOLVED_STATUS else summary)
 
 
 def class_sub_mesh_index(actor_class, mesh_object):
@@ -208,7 +211,8 @@ def hair_half_part(half, mesh_type, hair_parts, actor_class):
         return None
     package_name, object_name = actor_class['properties'][SUB_MESHES_FIELD][sub_mesh_index]['object'].split('.', 1)
     selection = {'recipe': hair_parts['path'], 'recipeSha256': hair_parts['sha256'], 'meshType': mesh_type['meshType'], 'half': half['half'],
-                 'pawnSlot': half['pawnSlot'], 'mappedStyle': half['mappedStyle'], 'hairColor': hair_parts['defaultAppearance']['hairColor']}
+                 'pawnSlot': half['pawnSlot'], 'mappedStyle': half['mappedStyle'], 'hairColor': hair_parts['defaultAppearance']['hairColor'],
+                 'route': half['route']}
     return {'package': package_name, 'object': object_name, 'materials': [f'0={half["material"]["object"]}'], HAIR_SELECTION_FIELD: selection,
             'rigidAttachment': rigid_head_attachment(actor_class, [SUB_MESHES_FIELD, sub_mesh_index])}
 
@@ -224,6 +228,9 @@ def hair_parts_and_binding(row_index, actor_class, hair_parts):
             continue
         if half['status'] != HAIR_HALF_RESOLVED_STATUS:
             reasons.append(HAIR_EXPORT_UNRESOLVED_REASON_PREFIX + half['half'])
+            continue
+        if half['route'] == HAIR_HALF_DYNAMIC_ROUTE:
+            reasons.append(DYNAMIC_HAIR_SIMULATION_UNPORTED_REASON_PREFIX + half['half'])
             continue
         part = None if class_reason else hair_half_part(half, mesh_type, hair_parts, actor_class)
         if part is None:

@@ -39,11 +39,12 @@ HAIR_PARTS_RECIPE_SHA256 = '8' * 64
 BACK_HAIR_MESH, FRONT_HAIR_MESH = 'Fighter.Hair_m000_m00_bh', 'Fighter.Hair_m000_m00_ah'
 
 
-def resolved_hair_half(half, pawn_slot, mesh):
+def resolved_hair_half(half, pawn_slot, mesh, route='ordinary'):
     material = f'MFighter.Hair.Hair_m000_t00_m00{mesh[-3:]}'
     return {'half': half, 'pawnSlot': pawn_slot, 'mappedStyle': 0, 'status': 'resolved', 'requestedMesh': mesh,
             'requestedMaterial': material.replace('.Hair.', '.'), 'mesh': {'object': mesh, 'exportIndex': 661, 'class': 'Engine.SkeletalMesh'},
-            'material': {'object': material, 'exportIndex': 309, 'class': 'Engine.Texture'}}
+            'material': {'object': material, 'exportIndex': 309, 'class': 'Engine.Texture'}, 'meshMode': 4 if route == 'ordinary' else 7,
+            'route': route}
 
 
 def default_hair_halves():
@@ -353,13 +354,14 @@ class CharacterHairPartTests(unittest.TestCase):
         back, front = self.hair_parts(generated)
         self.assertEqual((back['package'], back['object'], back['materials']), ('Fighter', 'Hair_m000_m00_bh', ['0=MFighter.Hair.Hair_m000_t00_m00_bh']))
         self.assertEqual(back['hairSelection'], {'recipe': HAIR_PARTS_RECIPE_PATH, 'recipeSha256': HAIR_PARTS_RECIPE_SHA256, 'meshType': 0, 'half': 'back',
-                                                 'pawnSlot': 4, 'mappedStyle': 0, 'hairColor': 0})
+                                                 'pawnSlot': 4, 'mappedStyle': 0, 'hairColor': 0, 'route': 'ordinary'})
         self.assertEqual([(part['rigidAttachment']['bone'], part['rigidAttachment']['source']['meshPath']) for part in (back, front)],
                          [('Bip01_head', ['SubMeshes', 4]), ('Bip01_head', ['SubMeshes', 5])])
         self.assertEqual((generated['hair']['status'], generated['hair']['reason'], generated['hair']['appearance']),
                          ('bound', None, {'hairStyle': 0, 'hairColor': 0, 'face': 0}))
         self.assertEqual(generated['hair']['halves'][1], {'half': 'front', 'pawnSlot': 5, 'mappedStyle': 0, 'status': 'resolved',
-                                                          'mesh': FRONT_HAIR_MESH, 'material': 'MFighter.Hair.Hair_m000_t00_m00_ah'})
+                                                          'mesh': FRONT_HAIR_MESH, 'material': 'MFighter.Hair.Hair_m000_t00_m00_ah',
+                                                          'route': 'ordinary'})
 
     def test_a_mapped_none_half_adds_no_part(self):
         halves = [resolved_hair_half('back', 4, BACK_HAIR_MESH), {'half': 'front', 'pawnSlot': 5, 'mappedStyle': -1, 'status': 'none'}]
@@ -382,6 +384,14 @@ class CharacterHairPartTests(unittest.TestCase):
         self.assertEqual([part['object'] for part in self.hair_parts(generated)], ['Hair_m000_m00_ah'])
         self.assertEqual(generated['hair']['reason'], 'hair-export-unresolved:back')
 
+    def test_a_dynamic_half_leaves_the_request_with_the_dynamic_hair_gap_and_the_front_half_stays(self):
+        halves = [resolved_hair_half('back', 4, BACK_HAIR_MESH, 'dynamic'), resolved_hair_half('front', 5, FRONT_HAIR_MESH)]
+        generated = self.generated_with_hair(halves)
+        self.assertEqual([part['object'] for part in self.hair_parts(generated)], ['Hair_m000_m00_ah'])
+        self.assertEqual((generated['hair']['status'], generated['hair']['reason']), ('gap', 'dynamic-hair-simulation-unported:back'))
+        self.assertEqual(generated['hair']['halves'][0]['route'], 'dynamic')
+        self.assertIn({'field': 'hair', 'reason': 'dynamic-hair-simulation-unported:back'}, generated['gaps'])
+
     def test_the_chargrp_hair_fields_do_not_change_the_parts(self):
         other = synthetic_chargrp_row()
         other['hair_mesh'], other['hair_texture'] = [{'param_hair_mesh': 'Orc.MOrc_m000_m00_ah'}], [{'param_hair_texture': 'MOrc.Other'}]
@@ -390,7 +400,8 @@ class CharacterHairPartTests(unittest.TestCase):
     def test_the_hair_gap_reasons_are_listed(self):
         from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
         patterns = load_gap_reason_patterns()
-        self.assertTrue(all(is_listed_reason(reason, patterns) for reason in ('hair-export-unresolved:back', 'hair-submesh-unlisted:front')))
+        self.assertTrue(all(is_listed_reason(reason, patterns) for reason in ('hair-export-unresolved:back', 'hair-submesh-unlisted:front',
+                                                                              'dynamic-hair-simulation-unported:back')))
 
 
 class CharacterEdgeTests(unittest.TestCase):
