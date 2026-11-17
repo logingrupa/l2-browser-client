@@ -8,7 +8,7 @@ from typing import NamedTuple
 from native_assets_lib.gltf import json_bytes
 from native_catalog.effects import SourcePackages, UELIB_SHA256, parse_uc
 from native_catalog.ue2 import FormatError
-from native_effect_bundle import DefaultReader
+from native_assets_lib.class_default_inheritance import DefaultReader
 from native_store.store_paths import REPOSITORY_ROOT, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records, sha256_of_file
 from world.map_sources import file_hash, safe_path

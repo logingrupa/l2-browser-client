@@ -48,7 +48,7 @@ class LazyClassDefinitionReader:
     def __call__(self, reference):
         if self.reader is None:
             from native_catalog.effects import SourcePackages
-            from native_effect_bundle import DefaultReader
+            from native_assets_lib.class_default_inheritance import DefaultReader
             self.reader = DefaultReader(self.client_root, SourcePackages(self.client_root), self.work_root, self.save)
         return self.reader.get(reference)
 

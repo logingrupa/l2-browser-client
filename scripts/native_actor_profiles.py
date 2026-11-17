@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import copy
 import hashlib
 import json
 import math
@@ -9,6 +8,7 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
+from native_assets_lib.class_default_inheritance import DefaultReader, class_default_tool_paths
 from native_assets_lib.gltf import safe_name
 from native_assets_lib.qualified_export_names import is_actor_class_chain, package_export_objects, unique_qualified_export_match
 from native_catalog.cli import file_hash, json_bytes, safe_output, within, write_output
@@ -16,7 +16,6 @@ from native_catalog.effects import SourcePackages, UELIB_SHA256
 from native_catalog.tables import (SCHEMA_ROOT, SCHEMA_HASHES, checked_bytes,
     decode413, decode_table, read_nodes, read_value, table_definition_pins)
 from native_catalog.ue2 import FormatError, Reader
-from native_effect_bundle import DefaultReader, _tool_paths
 from reference_client_guard import require_reference_client
 
 OWNER_FILE = '.native-npc-profiles-owner.json'
@@ -76,12 +75,12 @@ def _recipe(value):
 
 
 def npc_profile_tool_pins():
-    _, library, powershell = _tool_paths()
+    library, powershell = class_default_tool_paths()
     if file_hash(library) != UELIB_SHA256:
         raise FormatError('NPC defaults require the pinned UELib build')
     here = Path(__file__).parent
     implementation = {name: file_hash(here / name) for name in (
-        'native_actor_profiles.py', 'native_effect_bundle.py', 'native_catalog/effects.py',
+        'native_actor_profiles.py', 'native_assets_lib/class_default_inheritance.py', 'native_catalog/effects.py',
         'native_catalog/extract_ue_defaults.ps1', 'native_catalog/tables.py',
         'native_catalog/ue2.py', 'native_catalog/cli.py', 'native_assets_lib/gltf.py', 'native_assets_lib/qualified_export_names.py')}
     return {'implementation': implementation, 'uelibSha256': UELIB_SHA256,

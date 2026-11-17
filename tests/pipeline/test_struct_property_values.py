@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from native_assets_lib.class_defaults import CLASS_DEFAULT_CACHE_FOLDER_NAME, DECOMPILE_WORK_FOLDER_NAME, ClassDefaultError
 from native_catalog.ue2 import FormatError, Package
-from native_effect_bundle import object_values
+from native_assets_lib.object_property_values import object_values
 from synthetic_class_scripts import SyntheticClassScripts, scratch_work_root, synthetic_import_table
 from ue2_package_fixture import compact, package_bytes, tag
 from world.declared_property_types import DeclaredPropertyTypeError, DeclaredPropertyTypes, PropertyScope, struct_member_declarations

@@ -7,7 +7,7 @@ sys.path.insert(0, str(REPOSITORY_ROOT / 'scripts'))
 
 from actors import npc_batch
 from actors.effect_bundle_packing import native_class_closure, pack_items_by_class_closure
-import native_effect_bundle
+from native_assets_lib import class_default_inheritance
 from native_catalog.ue2 import FormatError
 
 SYNTHETIC_CLOSURES = {
@@ -72,8 +72,8 @@ class PackItemsByClassClosureTests(unittest.TestCase):
             with self.subTest(limits=limits), self.assertRaisesRegex(ValueError, 'positive integers'):
                 pack_items_by_class_closure(['first'], synthetic_closure_of, *limits)
 
-    def test_the_npc_batch_class_limit_is_the_imported_effect_bundle_limit(self):
-        self.assertIs(npc_batch.MAX_CLASSES, native_effect_bundle.MAX_CLASSES)
+    def test_the_npc_batch_class_limit_is_the_imported_class_default_limit(self):
+        self.assertIs(npc_batch.MAX_CLASSES, class_default_inheritance.MAX_CLASSES)
 
 
 class NativeClassClosureTests(unittest.TestCase):

@@ -11,17 +11,18 @@ import sys
 import zipfile
 
 from native_assets import Converter, UMODEL, UMODEL_SHA256, implementation_hash, verify_archive
+from native_assets_lib.class_default_inheritance import (DefaultReader, class_default_tool_paths,
+                                                        merge_typed_defaults_replacing_raw_values_whole)
 from native_assets_lib.gltf import safe_name
+from native_assets_lib.object_property_values import object_values
 from native_catalog.cli import file_hash, json_bytes, safe_output, within, write_output
-from native_catalog.effects import (SourcePackages, UELIB, UELIB_SHA256, POWERSHELL,
-    read_class_defaults, references, skill_actions, tagged_values)
+from native_catalog.effects import SourcePackages, UELIB_SHA256, references, skill_actions
 from native_catalog.tables import (decode_table, SCHEMA_ROOT, SCHEMA_HASHES,
     CRYPTO_SOURCE, CRYPTO_HASH, checked_bytes)
 from native_catalog.ue2 import FormatError
 from reference_client_guard import require_reference_client
 
 SCHEMA_VERSION = 1
-MAX_CLASSES = 96
 MAX_DEPENDENCIES = 1024
 OWNER_FILE = '.native-effect-bundle-owner.json'
 MATERIAL_CLASSES = {'Texture', 'Shader', 'FinalBlend', 'TexPanner', 'TexRotator',
@@ -39,23 +40,8 @@ def digest(value):
     return hashlib.sha256(json_bytes(value)).hexdigest()
 
 
-def merge_typed_defaults_replacing_raw_values_whole(base, override):
-    result = copy.deepcopy(base)
-    for key, value in override.items():
-        previous = result.get(key)
-        if (isinstance(value, dict) and isinstance(previous, dict)
-                and 'object' not in value
-                and 'unparsedHex' not in value and 'unparsedHex' not in previous):
-            result[key] = merge_typed_defaults_replacing_raw_values_whole(previous, value)
-        else:
-            result[key] = copy.deepcopy(value)
-    return result
-
-
 def _tool_paths():
-    return (Path(os.environ.get('L2_UMODEL', str(UMODEL))),
-        Path(os.environ.get('L2_UELIB', str(UELIB))),
-        Path(os.environ.get('L2_POWERSHELL', str(POWERSHELL))))
+    return (Path(os.environ.get('L2_UMODEL', str(UMODEL))), *class_default_tool_paths())
 
 
 def _tool_pins():
@@ -265,61 +251,10 @@ def select_effect_roots(packages, recipe, skill, dispatch=None):
     return root, stages, other, [records[key] for key in sorted(records)], associations
 
 
-class DefaultReader:
-    def __init__(self, client, packages, work, save):
-        self.client, self.packages, self.work, self.save = client, packages, work, save
-        self.definitions = {}
-        self.library, self.powershell = _tool_paths()[1:]
-
-    def get(self, reference, trail=()):
-        record, package, item = self.packages.resolve(reference, 'Class')
-        key = record['object'].casefold()
-        if key in trail:
-            raise FormatError('Cyclic native class inheritance: ' + record['object'])
-        if key in self.definitions:
-            return self.definitions[key]
-        if len(self.definitions) + len(trail) >= MAX_CLASSES:
-            raise FormatError('Native class inheritance/dependency limit exceeded')
-        class_work = self.work / 'classes' / hashlib.sha256(key.encode()).hexdigest()[:20]
-        definition = read_class_defaults(self.client, record['object'], class_work,
-            library=self.library, powershell=self.powershell)
-        parent = package.object_name(item['superIndex'])
-        declared = definition['superClass']
-        if bool(parent) != bool(declared) or (parent and parent.rsplit('.', 1)[-1].casefold() != declared.rsplit('.', 1)[-1].casefold()):
-            raise FormatError('Decompiled superclass differs from native export table: ' + record['object'])
-        base = self.get(parent, trail + (key,))['effectiveProperties'] if parent else {}
-        definition['nativeSuperClass'] = parent
-        definition['effectiveProperties'] = merge_typed_defaults_replacing_raw_values_whole(base, definition['properties'])
-        name = record['object']
-        if not re.fullmatch(r'\w+(?:\.\w+)+', name):
-            raise FormatError('Unsafe native class identity')
-        script = class_work / definition['sourceScript']
-        definition['sourceScript'] = self.save('source/classes/' + name + '.uc', script.read_bytes())
-        definition['rawExport'] = self.save('source/classes/' + name + '.bin',
-            package.data[item['offset']:item['offset'] + item['size']])
-        self.definitions[key] = definition
-        return definition
-
-
 def _object_references(tags):
     for tag in tags:
         if tag['type'] in (5, 8) and isinstance(tag.get('value'), dict) and tag['value'].get('object'):
             yield tag['name'] + (f'[{tag["arrayIndex"]}]' if tag.get('arrayIndex') is not None else ''), tag['value']['object']
-
-
-def object_values(package, tags):
-    indexed = {tag['name'] for tag in tags if tag.get('arrayIndex') is not None}
-    normalized, seen = [], set()
-    for tag in tags:
-        value = dict(tag)
-        if value['name'] in indexed and value.get('arrayIndex') is None:
-            value['arrayIndex'] = 0
-        identity = (value['name'], value.get('arrayIndex'))
-        if identity in seen:
-            raise FormatError('Duplicate native property path cannot be collapsed; original tags retained: ' + value['name'])
-        seen.add(identity)
-        normalized.append(value)
-    return tagged_values(package, normalized)
 
 
 def _path_free_gap_reason(error, client, output, converter_output):

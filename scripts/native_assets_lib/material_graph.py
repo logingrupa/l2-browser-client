@@ -3,7 +3,9 @@ import copy
 import hashlib
 from pathlib import Path
 
+from native_assets_lib.class_default_inheritance import DefaultReader
 from native_assets_lib.gltf import json_bytes, safe_name
+from native_assets_lib.object_property_values import object_values
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
 from native_catalog.effects import SourcePackages, references
@@ -39,8 +41,6 @@ def _sha(data):
 
 
 def preserve_material_graph(converter, work, document, source_item, native_materials):
-    from native_effect_bundle import DefaultReader, object_values
-
     _require(source_item['classObject'] == 'Engine.StaticMesh', 'Raw material policy requires exact Engine.StaticMesh')
     native_slots = native_materials['slots']
     materials = document.data.get('materials', [])

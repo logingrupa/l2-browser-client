@@ -19,7 +19,7 @@ from native_actor_profiles import (ACTOR_CLASS_INHERITANCE_MESSAGE, MAXIMUM_NPC_
                                    migrate_npc_profiles, npc_profile_tool_pins)
 from native_assets_lib.qualified_export_names import is_actor_class_chain, package_export_objects, unique_qualified_export_match
 from native_assets_lib.gltf import json_bytes
-from native_effect_bundle import MAX_CLASSES
+from native_assets_lib.class_default_inheritance import MAX_CLASSES
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, BatchPreflightRefusedError, UnitLedger, locked_input_records

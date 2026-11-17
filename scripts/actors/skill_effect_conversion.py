@@ -23,7 +23,8 @@ from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.effects import UELIB_SHA256, SourcePackages, skill_actions
 from native_catalog.ue2 import FormatError
-from native_effect_bundle import MAX_CLASSES, migrate_effect_bundle
+from native_effect_bundle import migrate_effect_bundle
+from native_assets_lib.class_default_inheritance import MAX_CLASSES
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import add_store_file, merge_catalog_slice_records, read_store_catalog, write_store
 from native_store.gap_rows import write_gap_rows

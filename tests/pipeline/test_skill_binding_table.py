@@ -12,7 +12,8 @@ from actors.skill_binding_table import (SKILL_BINDING_ANOMALY_FIELDS, SKILL_BIND
                                         skill_bindings_by_visual_root, visual_roots_in_first_key_order)
 from actors.skill_effect_conversion import (MAXIMUM_SKILL_ROOT_CLASS_CLOSURE, class_limit_reason, read_simulated_emitter_classes,
                                             skill_effect_component_id, skill_root_bundle_id, unbound_simulated_component_reason)
-from native_effect_bundle import CONVERTED_EMITTER_CLASSES, MAX_CLASSES
+from native_effect_bundle import CONVERTED_EMITTER_CLASSES
+from native_assets_lib.class_default_inheritance import MAX_CLASSES
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 
 GAMEPLAY_FIELDS = ('mp_consume', 'hp_consume', 'cast_range', 'hit_time', 'is_magic', 'operate_type', 'reuse_delay', 'power')
