@@ -4,6 +4,7 @@ import io
 import json
 from pathlib import Path
 import struct
+import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -14,8 +15,11 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from native_store.interprocess_lock import lane_batch_lock
 from native_store.store_paths import lane_work_root
+from support.interprocess_lock_programs import event_marker_path, recorded_events
+from support.item_unit_worker_runs import wait_until_path_exists
 from world import minimap_route_step
 from world.format5_texture_pixels import Format5PixelMismatch, require_png_equals_format5_pixels
 from world.minimap_radar_route_recipe import read_minimap_radar_route_recipe
@@ -28,6 +32,16 @@ RECIPE = read_minimap_radar_route_recipe()['document']
 FORMAT5_RULE = RECIPE['textureFormat5']
 RADAR_GROUP = RECIPE['radar']['textureGroup']
 WORLD_MAP_PREFIX = RECIPE['worldMap']['initializeMapDisplay']['english']
+SYNTHETIC_ZONENAME_ROWS = [{'ID': 1, 'Color': 210, 'MapX': 20, 'MapY': 21, 'Top': 100.0, 'Bottom': -100.0, 'Name': 'A'},
+                           {'ID': 2, 'Color': 210, 'MapX': 20, 'MapY': 21, 'Top': 50.0, 'Bottom': -50.0, 'Name': 'B'}]
+ROUTE_PROGRAM = '\n'.join([
+    'import sys',
+    'sys.path[:0] = sys.argv[1:3]',
+    'from support.minimap_route_programs import run_route_program',
+    'run_route_program(*sys.argv[3:])',
+])
+ROUTE_PROGRAM_TIMEOUT_SECONDS = 120
+SECOND_PROCESS_STILL_WAITING_SECONDS = 1
 READABLE_DXT1 = {'status': 'readable', 'format': 'DXT1'}
 FORMAT5_GAP = {'status': 'gap', 'reason': 'texture-format-unsupported:5'}
 
@@ -83,6 +97,22 @@ def pixel_check_of(object_name):
     return {'status': 'equal', 'width': 1024, 'height': 1024, 'pixelOrder': ['B', 'G', 'R', 'A'], 'decodedRgbaSha256': hashlib.sha256(object_name.encode()).hexdigest()}
 
 
+def run_synthetic_route(project_root, converter, pixel_check=pixel_check_of):
+    packages = synthetic_route_packages()
+    with mock.patch.object(minimap_route_step, 'require_reference_client', return_value=SimpleNamespace(root=CLIENT_ROOT)), \
+            mock.patch.object(minimap_route_step.RouteTextureConverter, 'package', lambda converter_self, path: packages[path]), \
+            mock.patch.object(minimap_route_step, 'texture_format_id', return_value=FORMAT5_RULE['formatId']), \
+            mock.patch.object(minimap_route_step, 'require_png_equals_format5_mip0',
+                              side_effect=lambda package, export, png, rule: pixel_check(export['object'])), \
+            mock.patch.object(minimap_route_step, 'decoded_table_rows', return_value={'rows': SYNTHETIC_ZONENAME_ROWS}):
+        return run_minimap_route_step(project_root, CLIENT_ROOT, converter)
+
+
+def route_program_command(project_root, events_folder, process_name, release_path):
+    return [sys.executable, '-B', '-c', ROUTE_PROGRAM, str(ROOT / 'scripts'), str(ROOT / 'tests' / 'pipeline'),
+            str(project_root), str(events_folder), process_name, str(release_path)]
+
+
 class Format5PixelTests(unittest.TestCase):
     def test_a_synthetic_2_by_2_bgra_mip_decodes_to_rgba_and_equals_its_png(self):
         stored = bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
@@ -106,19 +136,44 @@ class MinimapRouteStepTests(unittest.TestCase):
         temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(temporary_directory.cleanup)
         self.project_root = Path(temporary_directory.name)
-        self.packages = synthetic_route_packages()
         self.store_root = self.project_root / 'artifacts' / 'lane-store' / WORLD_LANE_NAME / 'l2'
+        self.events_folder = self.project_root / 'events'
+        self.events_folder.mkdir()
 
     def run_route(self, converter, pixel_check=pixel_check_of):
-        rows = [{'ID': 1, 'Color': 210, 'MapX': 20, 'MapY': 21, 'Top': 100.0, 'Bottom': -100.0, 'Name': 'A'},
-                {'ID': 2, 'Color': 210, 'MapX': 20, 'MapY': 21, 'Top': 50.0, 'Bottom': -50.0, 'Name': 'B'}]
-        with mock.patch.object(minimap_route_step, 'require_reference_client', return_value=SimpleNamespace(root=CLIENT_ROOT)), \
-                mock.patch.object(minimap_route_step.RouteTextureConverter, 'package', lambda converter_self, path: self.packages[path]), \
-                mock.patch.object(minimap_route_step, 'texture_format_id', return_value=FORMAT5_RULE['formatId']), \
-                mock.patch.object(minimap_route_step, 'require_png_equals_format5_mip0',
-                                  side_effect=lambda package, export, png, rule: pixel_check(export['object'])), \
-                mock.patch.object(minimap_route_step, 'decoded_table_rows', return_value={'rows': rows}):
-            return run_minimap_route_step(self.project_root, CLIENT_ROOT, converter)
+        return run_synthetic_route(self.project_root, converter, pixel_check)
+
+    def start_route_program(self, process_name, release_path):
+        process = subprocess.Popen(route_program_command(self.project_root, self.events_folder, process_name, release_path),
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        self.addCleanup(self.end_route_program, process)
+        return process
+
+    def end_route_program(self, process):
+        if process.poll() is None:
+            process.kill()
+        process.communicate()
+
+    def route_program_result(self, process):
+        standard_output, error_output = process.communicate(timeout=ROUTE_PROGRAM_TIMEOUT_SECONDS)
+        self.assertEqual(process.returncode, 0, error_output)
+        return json.loads(standard_output)
+
+    def test_two_processes_that_need_the_route_build_it_once_under_its_unit_lock(self):
+        release_path = self.project_root / 'release'
+        first = self.start_route_program('first', release_path)
+        wait_until_path_exists(event_marker_path(self.events_folder, 'first converting'))
+        second = self.start_route_program('second', release_path)
+        wait_until_path_exists(event_marker_path(self.events_folder, 'second waiting'))
+        with self.assertRaises(subprocess.TimeoutExpired):
+            second.wait(timeout=SECOND_PROCESS_STILL_WAITING_SECONDS)
+        release_path.write_bytes(b'')
+        first_result, second_result = self.route_program_result(first), self.route_program_result(second)
+        self.assertEqual((first_result['status'], first_result['converted']), ('converted', 24))
+        self.assertEqual((second_result['status'], second_result['converted'], second_result['fingerprint']),
+                         ('sealed', 0, first_result['fingerprint']))
+        self.assertEqual(recorded_events(self.events_folder), ['first waiting', 'first converting', 'second waiting'])
+        self.assertIsNotNone(current_minimap_route(self.project_root).product)
 
     def read_manifest(self, result):
         return json.loads((self.store_root / result['manifest']['resource'].removeprefix('/l2/')).read_text(encoding='utf-8'))

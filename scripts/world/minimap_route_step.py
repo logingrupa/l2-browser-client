@@ -12,7 +12,7 @@ from typing import NamedTuple
 from native_assets import implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import sha256_hex
-from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
+from native_store.interprocess_lock import LaneInUseError, lane_batch_lock, unit_lock
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger, locked_input_records, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
@@ -183,6 +183,11 @@ def minimap_route_manifest(recipe_record, inputs, recipe, textures, zone_keys, t
 
 def run_minimap_route_step(project_root, client_root, converter=None):
     project_root = Path(project_root)
+    with unit_lock(lane_work_root(project_root, WORLD_LANE_NAME), MINIMAP_ROUTE_UNIT_KEY):
+        return build_or_read_minimap_route(project_root, client_root, converter)
+
+
+def build_or_read_minimap_route(project_root, client_root, converter):
     ledger = minimap_route_ledger(project_root)
     route = current_minimap_route(project_root)
     if route.product is not None:

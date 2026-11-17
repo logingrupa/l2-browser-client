@@ -7,7 +7,7 @@ from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import sha256_hex
-from native_store.interprocess_lock import interprocess_lock, lane_lock_folder
+from native_store.interprocess_lock import unit_lock
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
@@ -33,7 +33,6 @@ TILE_MOVERS_SCHEMA_VERSION = 1
 TILE_MOVERS_FOLDER = 'movers'
 TILE_MOVERS_NAME = 'tile-movers.json'
 RAW_MAP_PRODUCT_PATH = 'raw/map.unwrapped.bin'
-MOVER_CLASS_UNIT_LOCK_KEY = 'unit:' + MOVER_CLASS_UNIT_KEY
 TILE_MOVER_FIELDS = ('id', 'actorName', 'modelId', 'serverObject', 'closedMatrix', 'openMatrix', 'moveTimeSeconds', 'initialKey', 'initiallyClosed',
                      'keys', 'sounds')
 
@@ -101,7 +100,7 @@ def movers_product_path(ledger, unit_key):
 
 
 def mover_class_unit_lock(project_root):
-    return interprocess_lock(lane_lock_folder(lane_work_root(project_root, WORLD_LANE_NAME)), MOVER_CLASS_UNIT_LOCK_KEY)
+    return unit_lock(lane_work_root(project_root, WORLD_LANE_NAME), MOVER_CLASS_UNIT_KEY)
 
 
 def sealed_mover_unit_config(project_root, tile_id, lock_record):
