@@ -24,8 +24,9 @@ Ports the verified DB-7 hourly lighting rules (claim audit 42 supported, 7 partl
 - Unit: 3,568 passed, 100 skipped; `nativeEffectRetained` does not load (lane lacks research data).
 - Pipeline: 2,936 run, 74 skipped, the 5 known lane errors (unsealed 20_20 and 20_21 raw units, data-ui catalog without npcgrp).
 - Browser: `world-tile-lighting.spec.ts` lists and skips here (3 skipped) until 20_21 is restaged.
+- Review fix `1ef30b0` raises the mover step from 2 to 3: movers carry the colour stream gap rows of the meshes they convert.
 
 ## Open
 
-- Integration thread: restage 20_21 bsp, lighting, terrain, meshes and manifest, then run `world-tile-lighting.spec.ts` and `world-static-mesh-materials.spec.ts`.
+- Integration thread: restage 20_21 bsp, lighting, terrain, meshes, movers and manifest, then run `world-tile-lighting.spec.ts` and `world-static-mesh-materials.spec.ts`.
 - Still gaps: the 13 DB-7 items, the final shader colour, the live device state, the terrain refresh threshold, the static mesh colour selector, the terrain layer draw, TLIT sector origins, BC1 upload, and PROJECT.md D5.
