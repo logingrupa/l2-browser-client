@@ -143,7 +143,7 @@ def lighting_records_array(records):
 
 def bsp_lightmap_arrays(package, lightmaps, model, node_ranges, zones):
     ranges, reasons = lightmap_node_ranges(package, lightmaps, model, node_ranges)
-    section_sun_affect = render_section_sun_affect(model, len(lightmaps.sections), zones)
+    section_sun_affect = render_section_sun_affect(model, len(lightmaps.sections), zones, {node_range['node'] for node_range in node_ranges})
     arrays = [*render_section_arrays(lightmaps, section_sun_affect), *lightmap_texture_arrays(lightmaps), *lightmap_record_arrays(lightmaps),
               *lightmap_page_arrays(lightmaps), *lightmap_node_range_arrays(ranges)]
     counts = {'renderSections': len(lightmaps.sections), 'records': len(lightmaps.records), 'textures': len(lightmaps.textures),

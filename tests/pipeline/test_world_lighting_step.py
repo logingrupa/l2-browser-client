@@ -17,6 +17,7 @@ from support.level_model_fixture import build_synthetic_level_model, square_poin
 from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, INSTANCE_COLOURS, LIGHT_CLASS, LIGHTING_CLASS_DEFAULTS,
                                             SCENE_LIGHTS, SECTOR_LIGHTS, SECTOR_SHADOW_MAPS, read_synthetic_chain, synthetic_actor_rows,
                                             synthetic_lighting_package)
+from native_assets_lib.texture_source_reader import DXT1_FORMAT_ID
 from support.lightmap_tail_fixture import (FIXTURE_COMPRESSED_REVISION, FIXTURE_PAGE_REVISION, FIXTURE_TEXTURE_FORMAT, build_lightmap_tail,
                                            lightmap_model_and_package, lightmap_node, lightmap_zone, page_mip_bytes, render_section_bytes)
 from support.water_volume_fixture import (PHYSICS_VOLUME_CLASS, SYNTHETIC_CHUNK_ID, WATER_VOLUME_CLASS, synthetic_volume_actor, synthetic_volume_context,
@@ -120,13 +121,20 @@ class BspLightmapPayloadTests(unittest.TestCase):
         for front_zones, zones, expected in cases:
             with self.subTest(front_zones=front_zones):
                 package, model, _ = three_surface_lightmaps(front_zones=front_zones)
-                arrays, _, _ = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, [], zones)
+                drawn = [node_range(node, 6 * node) for node in range(3)]
+                arrays, _, _ = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, drawn, zones)
                 self.assertEqual(arrays_by_name(arrays)['LMSC.sunAffect'].values, (expected,))
+
+    def test_a_sun_affected_node_that_is_not_drawn_leaves_its_section_unaffected(self):
+        package, model, _ = three_surface_lightmaps(front_zones=(0, 1, 0))
+        drawn = [node_range(node, 6 * node) for node in (0, 2)]
+        arrays, _, counts = bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, drawn, SUN_ZONES)
+        self.assertEqual((arrays_by_name(arrays)['LMSC.sunAffect'].values, counts['sunAffectedSections']), ((0,), 0))
 
     def test_a_node_front_zone_outside_the_level_zones_is_refused(self):
         package, model, _ = three_surface_lightmaps(front_zones=(0, 0, 9))
         with self.assertRaisesRegex(FormatError, 'zone 9 outside the 2 level zones'):
-            bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, [], SUN_ZONES)
+            bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, [node_range(node, 6 * node) for node in range(3)], SUN_ZONES)
 
     def test_a_page_whose_texture_format_is_not_dxt1_is_refused(self):
         package, model, _ = three_surface_lightmaps()
@@ -278,7 +286,7 @@ class RealClientLightmapTests(unittest.TestCase):
                           'zoneIndex': [record.zone_index for record in records], 'level': [record.tag for record in records],
                           'revision': [record.revision for record in records]}, expected['records'])
         self.assertEqual([len(texture.pages) for texture in lightmaps.textures], expected['groupCounts'])
-        self.assertEqual({(child['format'], child['width'], child['height']) for child in expected['atlasChildren']}, {(FIXTURE_TEXTURE_FORMAT, 512, 512)})
+        self.assertEqual({(child['format'], child['width'], child['height']) for child in expected['atlasChildren']}, {(DXT1_FORMAT_ID, 512, 512)})
         self.assertEqual([{'group': page.texture, 'slot': page.slot, 'revision': page.revision, 'compressedRevision': page.compressed_revision}
                           for page in lightmaps.pages],
                          [{key: child[key] for key in ('group', 'slot', 'revision', 'compressedRevision')} for child in expected['atlasChildren']])
