@@ -1,5 +1,7 @@
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
-import { lightmapTextureNone, type TileLightingModel, type TileLightmapNodeRange } from "./decodeTileLighting";
+import {
+  lightmapTextureNone, renderSectionSunAffectUnresolved, renderSectionSunAffected, type TileLightingModel, type TileLightmapNodeRange,
+} from "./decodeTileLighting";
 
 export interface LightmapSectionChunk {
   readonly chunkId: string;
@@ -12,7 +14,7 @@ export interface LightmapSectionChunk {
 
 export type LightmapSectionPlan =
   | { readonly kind: "unlit"; readonly chunkId: string; readonly primitive: number; readonly reason: "section-unlit" | "section-without-lightmap" }
-  | { readonly kind: "lightmapped"; readonly chunkId: string; readonly primitive: number; readonly lightmapTexture: number; readonly outdoor: boolean;
+  | { readonly kind: "lightmapped"; readonly chunkId: string; readonly primitive: number; readonly lightmapTexture: number; readonly sunAffected: boolean;
     readonly lightmapCoordinates: Float32Array }
   | { readonly kind: "gap"; readonly chunkId: string; readonly primitive: number; readonly reason: string };
 
@@ -40,6 +42,11 @@ function planSection(chunk: LightmapSectionChunk, primitive: number, rangesByNod
   if (section.unlit) return { kind: "unlit", chunkId, primitive, reason: "section-unlit" };
   if (section.lightmap === null || section.lightmap === lightmapTextureNone) return { kind: "unlit", chunkId, primitive, reason: "section-without-lightmap" };
   if (section.lightmap >= model.textureCount) return { kind: "gap", chunkId, primitive, reason: `lighting-section-texture-invalid:${section.lightmap}` };
+  const sunAffect = model.renderSectionSunAffect[section.nativeRenderSection];
+  if (sunAffect === undefined) return { kind: "gap", chunkId, primitive, reason: `lighting-render-section-unlisted:${section.nativeRenderSection}` };
+  if (sunAffect === renderSectionSunAffectUnresolved) {
+    return { kind: "gap", chunkId, primitive, reason: `lighting-render-section-sun-affect-unresolved:${section.nativeRenderSection}` };
+  }
   const vertexCount = chunk.primitiveVertexCount(primitive), indices = chunk.primitiveIndices(primitive);
   const coordinates = new Float32Array(vertexCount * coordinateComponents);
   for (const glbRange of chunk.nodeRanges.filter(range => range.primitive === primitive)) {
@@ -52,7 +59,8 @@ function planSection(chunk: LightmapSectionChunk, primitive: number, rangesByNod
     const placed = placeRangeCoordinates(range, indices, coordinates, vertexCount);
     if (placed !== null) return { kind: "gap", chunkId, primitive, reason: placed };
   }
-  return { kind: "lightmapped", chunkId, primitive, lightmapTexture: section.lightmap, outdoor: section.outdoor, lightmapCoordinates: coordinates };
+  return { kind: "lightmapped", chunkId, primitive, lightmapTexture: section.lightmap, sunAffected: sunAffect === renderSectionSunAffected,
+    lightmapCoordinates: coordinates };
 }
 
 export function planLightmapSections(model: TileLightingModel, chunks: readonly LightmapSectionChunk[]): LightmapSectionPlan[] {

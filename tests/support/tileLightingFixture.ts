@@ -56,6 +56,7 @@ export function tileLightingArrays(records: unknown = tileLightingRecordsDocumen
   return [
     { name: "LMSC.lightmapTexture", type: "int32", values: [0, 1, -1] },
     { name: "LMSC.polyFlags", type: "uint32", values: [0, 0, 0] },
+    { name: "LMSC.sunAffect", type: "int32", values: [1, 0, -1] },
     { name: "LMTX.recordStart", type: "uint32", values: [0, 1, 2] },
     { name: "LMTX.pageStart", type: "uint32", values: [0, hourSetSlotCount, hourSetSlotCount + 1] },
     { name: "LMPG.texture", type: "int32", values: [...hourPages.map(() => 0), 1] },

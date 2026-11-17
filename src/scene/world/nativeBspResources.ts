@@ -18,7 +18,7 @@ export interface NativeBspSection {
   readonly material: string;
   readonly unlit: boolean;
   readonly lightmap: number | null;
-  readonly outdoor: boolean;
+  readonly nativeRenderSection: number;
   readonly translucent: boolean;
 }
 
@@ -35,7 +35,7 @@ export interface NativeBspSectionExtras {
 }
 
 const tileBspResourceFields = ["resource", "sha256"];
-const sectionFields = ["primitive", "material", "unlit", "lightmap", "outdoor", "translucent"];
+const sectionFields = ["primitive", "material", "unlit", "lightmap", "nativeRenderSection", "translucent"];
 const nodeRangeFields = ["node", "primitive", "firstIndex", "indexCount"];
 const tileBspResourcePattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-bsp\/bsp\.glb$/;
 const maximumBspSections = 4096;
@@ -59,11 +59,11 @@ export function parseNativeTileBspResource(input: unknown): NativeTileBspResourc
 function parseSection(value: unknown, index: number): NativeBspSection {
   if (!hasExactKeys(value, sectionFields) || value.primitive !== index || typeof value.material !== "string" || !value.material ||
     typeof value.unlit !== "boolean" || !(value.lightmap === null || (Number.isSafeInteger(value.lightmap) && (value.lightmap as number) >= -1)) ||
-    typeof value.outdoor !== "boolean" || typeof value.translucent !== "boolean") {
+    !isCount(value.nativeRenderSection) || typeof value.translucent !== "boolean") {
     throw new Error(`Native BSP section ${index} is invalid.`);
   }
-  return { primitive: index, material: value.material, unlit: value.unlit, lightmap: value.lightmap as number | null, outdoor: value.outdoor,
-    translucent: value.translucent };
+  return { primitive: index, material: value.material, unlit: value.unlit, lightmap: value.lightmap as number | null,
+    nativeRenderSection: value.nativeRenderSection, translucent: value.translucent };
 }
 
 function parseNodeRange(value: unknown, sectionCount: number): NativeBspNodeRange {

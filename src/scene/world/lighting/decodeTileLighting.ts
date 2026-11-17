@@ -25,12 +25,17 @@ export interface TileLightingModel {
   readonly sourceSha256: string;
   readonly textureCount: number;
   readonly texturePageStart: Uint32Array;
+  readonly renderSectionSunAffect: Int32Array;
   readonly pages: readonly TileLightmapPage[];
   readonly nodeRanges: readonly TileLightmapNodeRange[];
   readonly records: TileLightingRecords;
 }
 
 export const lightmapTextureNone = -1;
+export const renderSectionSunAffected = 1;
+const renderSectionSunUnaffected = 0;
+export const renderSectionSunAffectUnresolved = -1;
+const renderSectionSunAffectValues: readonly number[] = [renderSectionSunAffected, renderSectionSunUnaffected, renderSectionSunAffectUnresolved];
 const mipsPerPage = 2;
 const coordinateComponents = 2;
 
@@ -102,6 +107,14 @@ function decodeNodeRanges(payload: TypedPayload, textureCount: number): TileLigh
   });
 }
 
+function decodeRenderSectionSunAffect(payload: TypedPayload, renderSectionCount: number): Int32Array {
+  const sunAffect = payload.int32("LMSC.sunAffect");
+  requireCount("LMSC.sunAffect", sunAffect.length, renderSectionCount);
+  const invalid = sunAffect.findIndex(value => !renderSectionSunAffectValues.includes(value));
+  requireLighting(invalid === -1, `LMSC.sunAffect[${invalid}] = ${sunAffect[invalid]} is not 1, 0 or -1.`);
+  return sunAffect;
+}
+
 export function decodeTileLighting(assetJson: unknown, payloadBytes: Uint8Array): TileLightingModel {
   const payload = readTypedPayload(assetJson, payloadBytes);
   requireLighting(payload.units === "source", `the payload units are ${String(payload.units)}, not source.`);
@@ -109,8 +122,10 @@ export function decodeTileLighting(assetJson: unknown, payloadBytes: Uint8Array)
   requireLighting(texturePageStart.length >= 1, "LMTX.pageStart is empty.");
   const textureCount = texturePageStart.length - 1;
   requireLighting(payload.uint32("LMTX.recordStart").length === textureCount + 1, "LMTX.recordStart and LMTX.pageStart disagree on the texture count.");
-  requireTextureIndices("LMSC.lightmapTexture", payload.int32("LMSC.lightmapTexture"), textureCount, true);
+  const renderSectionTextures = payload.int32("LMSC.lightmapTexture");
+  requireTextureIndices("LMSC.lightmapTexture", renderSectionTextures, textureCount, true);
+  const renderSectionSunAffect = decodeRenderSectionSunAffect(payload, renderSectionTextures.length);
   const pages = decodePages(payload, textureCount, texturePageStart);
-  return { sourceSha256: payload.sourceSha256, textureCount, texturePageStart, pages, nodeRanges: decodeNodeRanges(payload, textureCount),
+  return { sourceSha256: payload.sourceSha256, textureCount, texturePageStart, renderSectionSunAffect, pages, nodeRanges: decodeNodeRanges(payload, textureCount),
     records: decodeTileLightingRecords(payload.uint8("RECS.canonicalJson")) };
 }

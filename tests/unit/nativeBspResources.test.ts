@@ -9,7 +9,7 @@ const sha256 = "c".repeat(64);
 const resource = `/l2/maps/${sha256}/native-tile-chunk-bsp/bsp.glb`;
 
 function section(primitive: number, overrides: Document = {}): Document {
-  return { primitive, material: "Fixture_T.Floor", unlit: false, lightmap: -1, outdoor: true, translucent: false, ...overrides };
+  return { primitive, material: "Fixture_T.Floor", unlit: false, lightmap: -1, nativeRenderSection: primitive, translucent: false, ...overrides };
 }
 
 function extras(overrides: Document = {}): Document {
@@ -50,7 +50,7 @@ describe("native tile BSP resource", () => {
 describe("native BSP section extras", () => {
   it("reads sections and contiguous node ranges", () => {
     const parsed = parseNativeBspSectionExtras(extras());
-    expect(parsed.sections.map(entry => [entry.primitive, entry.unlit, entry.lightmap])).toEqual([[0, false, -1], [1, true, null]]);
+    expect(parsed.sections.map(entry => [entry.primitive, entry.unlit, entry.lightmap, entry.nativeRenderSection])).toEqual([[0, false, -1, 0], [1, true, null, 1]]);
     expect(parsed.nodeRanges.map(entry => entry.node)).toEqual([4, 9, 2]);
   });
 
@@ -59,6 +59,8 @@ describe("native BSP section extras", () => {
     ["no sections", { nativeBspSections: [] }],
     ["a section whose primitive differs from its position", { nativeBspSections: [section(1)] }],
     ["a section with an unknown field", { nativeBspSections: [{ ...section(0), extra: 1 }, section(1)] }],
+    ["a section keyed by the retired outdoor class", { nativeBspSections: [{ ...section(0, { nativeRenderSection: undefined }), outdoor: true }, section(1)] }],
+    ["a section with a negative native render section", { nativeBspSections: [section(0, { nativeRenderSection: -1 }), section(1)] }],
     ["a range that points at a missing section", { nativeBspNodeRanges: [{ node: 1, primitive: 5, firstIndex: 0, indexCount: 3 }] }],
     ["a range that is not whole triangles", { nativeBspNodeRanges: [{ node: 1, primitive: 0, firstIndex: 0, indexCount: 4 }] }],
     ["a gap between node ranges", { nativeBspNodeRanges: [{ node: 1, primitive: 0, firstIndex: 0, indexCount: 3 }, { node: 2, primitive: 0, firstIndex: 6, indexCount: 3 }] }],

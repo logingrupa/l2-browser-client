@@ -13,7 +13,7 @@ interface TileManifest {
 interface ChunkManifest { readonly bsp: { readonly resource: string } | null }
 interface LightingSection {
   readonly lighting: string;
-  readonly outdoor: boolean | null;
+  readonly sunAffected: boolean | null;
   readonly page: number | null;
   readonly hourPages: readonly number[];
   readonly status: string;
@@ -58,8 +58,8 @@ function servedBspSectionCount(): number {
   }, 0);
 }
 
-function slotAtHour(hour: number, slotCount: number, outdoor: boolean): number {
-  return outdoor ? Math.trunc(Math.fround(Math.fround(Math.fround(hour) * slotCount) / hoursPerDay)) % slotCount : 0;
+function slotAtHour(hour: number, slotCount: number, sunAffected: boolean): number {
+  return sunAffected ? Math.trunc(Math.fround(Math.fround(Math.fround(hour) * slotCount) / hoursPerDay)) % slotCount : 0;
 }
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=world");
@@ -96,10 +96,10 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
   const lightmapped = sections.filter(section => section.lighting === "lightmapped");
   expect(lightmapped.length).toBe(inspection.lightmappedSectionCount);
   for (const section of lightmapped) {
-    expect(section.page).toBe(section.hourPages[slotAtHour(hour, section.hourPages.length, section.outdoor!)]);
+    expect(section.page).toBe(section.hourPages[slotAtHour(hour, section.hourPages.length, section.sunAffected!)]);
   }
-  const hourSetSection = lightmapped.find(section => section.outdoor && section.hourPages.length > 1);
-  expect(hourSetSection, "an outdoor section of tile 20_21 has a lightmap hour set").toBeDefined();
+  const hourSetSection = lightmapped.find(section => section.sunAffected && section.hourPages.length > 1);
+  expect(hourSetSection, "a sun-affected section of tile 20_21 has a lightmap hour set").toBeDefined();
   const laterHour = (hour + hoursPerDay / hourSetSection!.hourPages.length) % hoursPerDay;
   expect(hourSetSection!.hourPages[slotAtHour(laterHour, hourSetSection!.hourPages.length, true)]).not.toBe(hourSetSection!.page);
   await page.screenshot({ path: `test-results/${screenshotName}` });

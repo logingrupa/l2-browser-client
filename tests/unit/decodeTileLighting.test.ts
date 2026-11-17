@@ -18,9 +18,9 @@ import { replaceArray, tileLightingArrays, tileLightingModel, tileLightingPayloa
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
 
 const sections: NativeBspSection[] = [
-  { primitive: 0, material: "Synthetic.Lit", unlit: false, lightmap: 0, outdoor: true, translucent: false },
-  { primitive: 1, material: "Synthetic.Indoor", unlit: false, lightmap: 1, outdoor: false, translucent: false },
-  { primitive: 2, material: "Synthetic.Unlit", unlit: true, lightmap: null, outdoor: true, translucent: false },
+  { primitive: 0, material: "Synthetic.Lit", unlit: false, lightmap: 0, nativeRenderSection: 0, translucent: false },
+  { primitive: 1, material: "Synthetic.Indoor", unlit: false, lightmap: 1, nativeRenderSection: 1, translucent: false },
+  { primitive: 2, material: "Synthetic.Unlit", unlit: true, lightmap: null, nativeRenderSection: 2, translucent: false },
 ];
 const nodeRanges: NativeBspNodeRange[] = [
   { node: 10, primitive: 0, firstIndex: 0, indexCount: 6 }, { node: 11, primitive: 1, firstIndex: 0, indexCount: 3 },
@@ -83,6 +83,12 @@ describe("decodeTileLighting", () => {
     expect(() => decoded(replaceArray(tileLightingArrays(), "LMNR.texture", [0, 2, -1]))).toThrow(/LMNR.texture\[1\] = 2 is not a lightmap texture of the 2/);
   });
 
+  it("reads one sun affect per native render section and refuses other counts or values", () => {
+    expect(Array.from(tileLightingModel().renderSectionSunAffect)).toEqual([1, 0, -1]);
+    expect(() => decoded(replaceArray(tileLightingArrays(), "LMSC.sunAffect", [1, 0]))).toThrow(/LMSC.sunAffect holds 2 values; the counts need 3/);
+    expect(() => decoded(replaceArray(tileLightingArrays(), "LMSC.sunAffect", [1, 2, 0]))).toThrow(/LMSC.sunAffect\[1\] = 2 is not 1, 0 or -1/);
+  });
+
   it("refuses units other than source", () => {
     const payload = tileLightingPayload();
     expect(() => decodeTileLighting({ ...payload.assetRecord, units: "metres" }, payload.payloadBytes)).toThrow(/units must be "source"/);
@@ -90,7 +96,7 @@ describe("decodeTileLighting", () => {
 });
 
 describe("lightmap pages by hour", () => {
-  it("takes truncate(h * n / 24) mod n outdoors and slot 0 indoors", () => {
+  it("takes truncate(h * n / 24) mod n for a sun-affected section and slot 0 otherwise", () => {
     expect([0, 2.99, 3, 12, 23.9].map(hour => lightmapSlotAtHour(hour, 8, true))).toEqual([0, 0, 1, 4, 7]);
     expect(lightmapSlotAtHour(13, 8, false)).toBe(0);
     expect(lightmapSlotAtHour(13, 1, true)).toBe(0);
@@ -111,11 +117,24 @@ describe("lightmap pages by hour", () => {
 
 describe("planLightmapSections", () => {
   it("places each node range's lightmap coordinates on its own vertices and leaves unlit sections unlit", () => {
-    const [outdoor, indoor, unlit] = planLightmapSections(tileLightingModel(), [plainChunk()]);
-    expect(outdoor).toMatchObject({ kind: "lightmapped", lightmapTexture: 0, outdoor: true });
-    expect(Array.from(outdoor?.kind === "lightmapped" ? outdoor.lightmapCoordinates : [])).toEqual([0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75]);
-    expect(indoor).toMatchObject({ kind: "lightmapped", lightmapTexture: 1, outdoor: false });
+    const [sunAffected, sunUnaffected, unlit] = planLightmapSections(tileLightingModel(), [plainChunk()]);
+    expect(sunAffected).toMatchObject({ kind: "lightmapped", lightmapTexture: 0, sunAffected: true });
+    expect(Array.from(sunAffected?.kind === "lightmapped" ? sunAffected.lightmapCoordinates : [])).toEqual([0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75]);
+    expect(sunUnaffected).toMatchObject({ kind: "lightmapped", lightmapTexture: 1, sunAffected: false });
     expect(unlit).toEqual({ kind: "unlit", chunkId: "chunk-0-0", primitive: 2, reason: "section-unlit" });
+  });
+
+  it("takes sun affect from the LMSC row of each section's native render section", () => {
+    const swapped = decoded(replaceArray(tileLightingArrays(), "LMSC.sunAffect", [0, 1, -1]));
+    const [first, second] = planLightmapSections(swapped, [plainChunk()]);
+    expect([first, second].map(plan => plan?.kind === "lightmapped" ? plan.sunAffected : null)).toEqual([false, true]);
+  });
+
+  it("leaves a section whose render section sun affect is unresolved or unlisted as a gap", () => {
+    const unresolved = decoded(replaceArray(tileLightingArrays(), "LMSC.sunAffect", [-1, 0, -1]));
+    expect(planLightmapSections(unresolved, [plainChunk()])[0]).toMatchObject({ kind: "gap", reason: "lighting-render-section-sun-affect-unresolved:0" });
+    const unlisted = { ...plainChunk(), sections: sections.map(section => section.primitive === 1 ? { ...section, nativeRenderSection: 7 } : section) };
+    expect(planLightmapSections(tileLightingModel(), [unlisted])[1]).toMatchObject({ kind: "gap", reason: "lighting-render-section-unlisted:7" });
   });
 
   it("names a node range the lighting resource holds differently from the chunk BSP", () => {

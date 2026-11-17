@@ -38,7 +38,7 @@ export interface TileLightingSectionInspection {
   readonly primitive: number;
   readonly lighting: LightmapSectionPlan["kind"];
   readonly lightmapTexture: number | null;
-  readonly outdoor: boolean | null;
+  readonly sunAffected: boolean | null;
   readonly page: number | null;
   readonly hourPages: readonly number[];
   readonly status: TileLightingSurfaceStatus;
@@ -96,7 +96,7 @@ function lightmapHourGap(hour: number): string | null {
 }
 
 function pageAtHour(model: TileLightingModel, plan: LightmapSectionPlan, hour: number): number | null {
-  return plan.kind === "lightmapped" && isHourOfDay(hour) ? lightmapPageAtHour(model, plan.lightmapTexture, hour, plan.outdoor) : null;
+  return plan.kind === "lightmapped" && isHourOfDay(hour) ? lightmapPageAtHour(model, plan.lightmapTexture, hour, plan.sunAffected) : null;
 }
 
 function disposeSectionMaterials(sections: readonly BoundSection[]): void {
@@ -192,7 +192,7 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
       return { gap: null, sourceSha256: model.sourceSha256, environment, lightmapHourGap: lightmapHourGap(environment.hour), fog: settings.fog(), sectionCount: sections.length,
         lightmappedSectionCount: sections.filter(section => section.plan.kind === "lightmapped").length, statusCounts,
         sections: sections.map(({ plan, status, programMaterialId, reasons }) => ({ chunkId: plan.chunkId, primitive: plan.primitive, lighting: plan.kind,
-          lightmapTexture: plan.kind === "lightmapped" ? plan.lightmapTexture : null, outdoor: plan.kind === "lightmapped" ? plan.outdoor : null,
+          lightmapTexture: plan.kind === "lightmapped" ? plan.lightmapTexture : null, sunAffected: plan.kind === "lightmapped" ? plan.sunAffected : null,
           page: pageAtHour(model, plan, environment.hour), hourPages: plan.kind === "lightmapped" ? lightmapHourPages(model, plan.lightmapTexture) : [],
           status, programMaterialId, reasons: plan.kind === "unlit" ? [plan.reason, ...reasons] : reasons })) };
     },
