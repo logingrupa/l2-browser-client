@@ -77,8 +77,8 @@ def lightmap_node(light_map, section, vertex_offset, vertex_count, front_zone=0)
                            i_zone=(0, front_zone))
 
 
-def lightmap_zone(sun_affect, unresolved=False):
-    return SimpleNamespace(sun_affect=SimpleNamespace(value=sun_affect), unresolved=unresolved)
+def lightmap_zone(sun_affect, unresolved=False, actor='Map.ZoneInfo0'):
+    return SimpleNamespace(actor=actor, sun_affect=SimpleNamespace(value=sun_affect), unresolved=unresolved)
 
 
 def lightmap_model_and_package(tail, nodes, surface_count):

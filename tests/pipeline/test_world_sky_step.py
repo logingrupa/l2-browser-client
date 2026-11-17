@@ -168,18 +168,19 @@ class SkyStepRecordTests(unittest.TestCase):
         self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 6))
         self.assertIn('sky', load_tile_manifest_vocabulary(ROOT).resource_kinds)
         patterns = load_gap_reason_patterns(ROOT)
-        for reason in ('sky-zone-ambiguous:2', 'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):
+        for reason in ('sky-zone-detail-mode-unresolved', 'sky-zone-class-unresolved:Engine.Foo', 'sky-zone-detail-field-unresolved:Map.SkyZoneInfo0.bHighDetail',
+                       'sky-zone-actor-without-zone:Map.SkyZoneInfo0', 'sky-zone-rotation-unported', 'sky-zone-distance-fog-unported', 'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):
             self.assertTrue(is_listed_reason(reason, patterns), reason)
 
-    def test_an_ambiguous_sky_zone_is_a_gap_row_and_a_sealed_sky_leaves_pending(self):
+    def test_an_unresolved_sky_choice_is_a_gap_row_and_a_sealed_sky_leaves_pending(self):
         gaps = TileStepGapRows(TILE_ID, SKY_STEP_NAME, SOURCE_IDENTITY, EVIDENCE)
-        gaps.add('gap', 'sky-zone-ambiguous:2')
+        gaps.add('gap', 'sky-zone-detail-mode-unresolved')
         product = {'manifest': None, 'gapRows': gaps.rows()}
-        self.assertEqual(tile_sky_row(TILE_ID, SOURCE_IDENTITY, product['gapRows'], EVIDENCE)['reason'], 'sky-zone-ambiguous:2')
+        self.assertEqual(tile_sky_row(TILE_ID, SOURCE_IDENTITY, product['gapRows'], EVIDENCE)['reason'], 'sky-zone-detail-mode-unresolved')
         self.assertEqual(tile_resources(None, None, None, None, product), [])
         self.assertNotIn('sky', pending_steps_after_sealed(PENDING_TILE_STEPS, None, None, None, None, None, None, product))
         rows = tile_level_gap_rows(TILE_ID, SOURCE_IDENTITY, EVIDENCE, None, None, None, None, None, None, product)
-        self.assertEqual([row['reason'] for row in rows if row['step'] == 'sky'], ['sky-zone-ambiguous:2'])
+        self.assertEqual([row['reason'] for row in rows if row['step'] == 'sky'], ['sky-zone-detail-mode-unresolved'])
 
     def test_a_tile_without_a_sky_zone_passes_with_no_resource(self):
         product = {'manifest': None, 'gapRows': []}
@@ -201,18 +202,22 @@ class RealClientSkyTests(unittest.TestCase):
         from native_assets_lib.class_defaults import ReferenceClientClassScripts
         from native_store.store_paths import REPOSITORY_ROOT, lane_work_root
         from world.level_model import read_level_model
-        from world.level_zones import read_level_zones, sky_zone_indices
+        from world.level_zones import read_level_zones
+        from world.light_actors import reference_client_class_chains
         from world.raw_map_step import read_tile_map_lock_record
         from world.sky_step import convert_tile_sky
+        from world.sky_zone_selection import select_sky_zone
         from world.static_placement import ClassDefaults
         from world.tile_chunk_plan import read_locked_map_package
         lock_record = read_tile_map_lock_record(tile_id)
         package = read_locked_map_package(REFERENCE_CLIENT, tile_id, lock_record)
         level = read_level_model(package)
-        zones = read_level_zones(package, level.model, ClassDefaults(lane_work_root(REPOSITORY_ROOT, 'world'), ReferenceClientClassScripts(REFERENCE_CLIENT)))
-        [zone_index] = sorted(sky_zone_indices(zones))
+        class_defaults = ClassDefaults(lane_work_root(REPOSITORY_ROOT, 'world'), ReferenceClientClassScripts(REFERENCE_CLIENT))
+        zones = read_level_zones(package, level.model, class_defaults)
+        selection = select_sky_zone(package, level, zones, class_defaults, reference_client_class_chains(class_defaults))
+        zone_index = selection.zone_index
         gaps = TileStepGapRows(tile_id, SKY_STEP_NAME, {'path': f'maps/{tile_id}.unr', 'sha256': lock_record['eSha256']}, EVIDENCE)
-        converted = convert_tile_sky(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, zone_index, gaps)
+        converted = convert_tile_sky(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, zone_index, selection.actor, gaps)
         return converted, gaps.rows()
 
     def test_the_generic_20_20_sky_glb_matches_the_served_sky_except_its_generator_colour_order_and_uv_values(self):

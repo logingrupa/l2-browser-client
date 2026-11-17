@@ -2,7 +2,7 @@ from typing import NamedTuple
 
 from native_store.canonical_json import canonical_json_bytes
 from world.bsp_lightmaps import LIGHTMAP_PAGE_MIPS, NO_LIGHTMAP, node_lightmap_texture, node_lightmap_uvs
-from world.bsp_render_section_sun_affect import SUN_AFFECT_UNRESOLVED, SUN_AFFECTED, render_section_sun_affect
+from world.bsp_node_sun_affect import SUN_AFFECT_UNRESOLVED, SUN_AFFECTED, node_range_sun_affect
 from world.typed_payload import BYTES_PER_ELEMENT_OF_TYPE, TYPED_PAYLOAD_ALIGNMENT, TypedPayloadArray
 
 HOURS_PER_DAY = 24
@@ -54,10 +54,9 @@ def lightmap_node_ranges(package, lightmaps, model, node_ranges):
     return ranges, sorted(reasons)
 
 
-def render_section_arrays(lightmaps, section_sun_affect):
+def render_section_arrays(lightmaps):
     return [array('LMSC.lightmapTexture', 'int32', [section.lightmap_texture for section in lightmaps.sections]),
-            array('LMSC.polyFlags', 'uint32', [section.poly_flags for section in lightmaps.sections]),
-            array('LMSC.sunAffect', 'int32', section_sun_affect)]
+            array('LMSC.polyFlags', 'uint32', [section.poly_flags for section in lightmaps.sections])]
 
 
 def lightmap_texture_arrays(lightmaps):
@@ -87,8 +86,9 @@ def lightmap_page_arrays(lightmaps):
             array('LMPG.texels', 'uint8', b''.join(mips))]
 
 
-def lightmap_node_range_arrays(ranges):
+def lightmap_node_range_arrays(ranges, range_sun_affect):
     return [*(array(f'LMNR.{field}', 'int32', [lightmap_range.node_range[field] for lightmap_range in ranges]) for field in NODE_RANGE_FIELDS),
+            array('LMNR.sunAffect', 'int32', range_sun_affect),
             array('LMNR.record', 'int32', [lightmap_range.record for lightmap_range in ranges]),
             array('LMNR.texture', 'int32', [lightmap_range.texture for lightmap_range in ranges]),
             array('LMNR.uvStart', 'uint32', prefix_starts(len(lightmap_range.uvs) for lightmap_range in ranges)),
@@ -141,13 +141,13 @@ def lighting_records_array(records):
     return array('RECS.canonicalJson', 'uint8', canonical_json_bytes(records))
 
 
-def bsp_lightmap_arrays(package, lightmaps, model, node_ranges, zones):
+def bsp_lightmap_arrays(package, lightmaps, model, node_ranges, zones, level_info_value):
     ranges, reasons = lightmap_node_ranges(package, lightmaps, model, node_ranges)
-    section_sun_affect = render_section_sun_affect(model, len(lightmaps.sections), zones, {node_range['node'] for node_range in node_ranges})
-    arrays = [*render_section_arrays(lightmaps, section_sun_affect), *lightmap_texture_arrays(lightmaps), *lightmap_record_arrays(lightmaps),
-              *lightmap_page_arrays(lightmaps), *lightmap_node_range_arrays(ranges)]
+    range_sun_affect = node_range_sun_affect(model, zones, node_ranges, level_info_value)
+    arrays = [*render_section_arrays(lightmaps), *lightmap_texture_arrays(lightmaps), *lightmap_record_arrays(lightmaps),
+              *lightmap_page_arrays(lightmaps), *lightmap_node_range_arrays(ranges, range_sun_affect)]
     counts = {'renderSections': len(lightmaps.sections), 'records': len(lightmaps.records), 'textures': len(lightmaps.textures),
               'pages': len(lightmaps.pages), 'nodeRanges': len(ranges), 'litNodeRanges': sum(1 for item in ranges if item.uvs),
               'uvs': sum(len(item.uvs) for item in ranges), 'unwalkedTailBytes': lightmaps.unwalked_tail_bytes,
-              'sunAffectedSections': section_sun_affect.count(SUN_AFFECTED), 'sunAffectUnresolvedSections': section_sun_affect.count(SUN_AFFECT_UNRESOLVED)}
+              'sunAffectedNodeRanges': range_sun_affect.count(SUN_AFFECTED), 'sunAffectUnresolvedNodeRanges': range_sun_affect.count(SUN_AFFECT_UNRESOLVED)}
     return arrays, reasons, counts

@@ -13,7 +13,8 @@ from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_inp
 from world.bsp_material_mapping_size import mapping_size_outcome, reference_client_class_default_value, surface_material_identities
 from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 from world.level_model import LevelModelLayoutError, read_level_model
-from world.level_zones import read_level_zones, sky_zone_indices, zone_actor_export
+from world.level_zones import read_level_zones
+from world.light_actors import reference_client_class_chains
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.map_actor_properties import actor_properties, decode_property
 from world.map_sources import MapSources, require_lock_equal_client_path
@@ -21,6 +22,7 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.sky_geometry import SKY_COORDINATE_RULE, SKY_UV_RULE, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
 from world.material_texture_images import write_material_texture_images
+from world.sky_zone_selection import select_sky_zone, sky_actor_rotation
 from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, single_graph_texture_export, sky_material_program, \
     sky_texture_pngs_by_node, sky_texture_products_by_node
 from world.error_detail import conversion_failure_reason
@@ -41,7 +43,10 @@ SKY_PRODUCT_NAME = 'sky.json'
 SKY_BUNDLE_KIND = 'native-sky-source-bundle'
 SKY_SNAPSHOT_KIND = 'native-sky-source-snapshot'
 SKY_STORE_FOLDER = 'skies'
-SKY_ZONE_AMBIGUOUS_REASON_PREFIX = 'sky-zone-ambiguous:'
+SKY_ZONE_ROTATION_UNPORTED_REASON = 'sky-zone-rotation-unported'
+SKY_ZONE_DISTANCE_FOG_UNPORTED_REASON = 'sky-zone-distance-fog-unported'
+ZERO_ROTATION = {'Pitch': 0, 'Yaw': 0, 'Roll': 0}
+DISTANCE_FOG_FIELD = 'bDistanceFog'
 SKY_LOCATION_UNRESOLVED_REASON = 'actor-default-unresolved:Location'
 MATERIAL_FEATURE_UNPORTED_REASON_PREFIX = 'material-feature-unported:'
 RAW_MAP_PRODUCT_PATH = 'raw/map.unwrapped.bin'
@@ -62,10 +67,6 @@ SKY_LIMITATIONS = ['Frozen authored sky source state; no native visible-pixel pa
                    'Original mip blocks are preserved; PNG is an ordinary BC1/BC3 decode of mip 0, without alpha/channel repair, recoloring or generated '
                    'mipmaps.',
                    'Sky source snapshot adds no original-audio parity evidence.']
-
-
-class SkyStepError(ValueError):
-    pass
 
 
 class SkyMaterialPackages:
@@ -250,10 +251,16 @@ def sky_bundle_files(snapshot, texture_files):
     return files, counts
 
 
-def convert_tile_sky(project_root, client, tile_id, lock_record, package, level, zone_index, gaps):
-    sky_actor = zone_actor_export(package, level.model.zones[zone_index][0])
-    if sky_actor is None:
-        raise SkyStepError(f'sky zone {zone_index} of {tile_id} names no exported actor')
+def unported_sky_zone_reasons(package, sky_actor, sky_zone, class_defaults):
+    reasons = []
+    if sky_actor_rotation(package, sky_actor, class_defaults).value not in (None, ZERO_ROTATION):
+        reasons.append(SKY_ZONE_ROTATION_UNPORTED_REASON)
+    if any(field.field == DISTANCE_FOG_FIELD and field.value is True for field in sky_zone.distance_fog):
+        reasons.append(SKY_ZONE_DISTANCE_FOG_UNPORTED_REASON)
+    return reasons
+
+
+def convert_tile_sky(project_root, client, tile_id, lock_record, package, level, zone_index, sky_actor, gaps):
     location, actor_properties_record = sky_actor_location(package, sky_actor)
     if location is None:
         gaps.add(GAP_STATUS, SKY_LOCATION_UNRESOLVED_REASON, sky_actor['object'])
@@ -284,19 +291,25 @@ def run_sky_step(project_root, client_root, tile_id):
     client = Path(client_root).resolve()
     package = read_locked_map_package(client, tile_id, lock_record)
     step_evidence = step_directory.relative_to(ledger.lane_folder).as_posix()
+    class_defaults = ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client))
     try:
         level = read_level_model(package)
-        zones = read_level_zones(package, level.model, ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client)))
+        zones = read_level_zones(package, level.model, class_defaults)
+        selection = select_sky_zone(package, level, zones, class_defaults, reference_client_class_chains(class_defaults))
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, SKY_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except ValueError as error:
         return tile_step_row(tile_id, SKY_STEP_NAME, FAILED_STATUS, conversion_failure_reason(error), source_identity, step_evidence)
-    sky_zones, gaps = sorted(sky_zone_indices(zones)), TileStepGapRows(tile_id, SKY_STEP_NAME, source_identity, receipt_evidence)
+    gaps = TileStepGapRows(tile_id, SKY_STEP_NAME, source_identity, receipt_evidence)
+    sky_zones = [] if selection.zone_index is None else [selection.zone_index]
     converted = TileSkyConversion(None, None, [], [])
-    if len(sky_zones) > 1:
-        gaps.add(GAP_STATUS, f'{SKY_ZONE_AMBIGUOUS_REASON_PREFIX}{len(sky_zones)}')
-    elif sky_zones:
-        converted = convert_tile_sky(project_root, client, tile_id, lock_record, package, level, sky_zones[0], gaps)
+    unported_reasons = [] if selection.zone_index is None else unported_sky_zone_reasons(package, selection.actor, zones[selection.zone_index], class_defaults)
+    if selection.gap_reason is not None:
+        gaps.add(GAP_STATUS, selection.gap_reason)
+    for reason in unported_reasons:
+        gaps.add(GAP_STATUS, reason, selection.actor['object'])
+    if selection.zone_index is not None and not unported_reasons:
+        converted = convert_tile_sky(project_root, client, tile_id, lock_record, package, level, selection.zone_index, selection.actor, gaps)
     inputs = locked_input_records(sorted({tile_map_path(tile_id), *converted.package_paths}))
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     gap_rows = gaps.rows()

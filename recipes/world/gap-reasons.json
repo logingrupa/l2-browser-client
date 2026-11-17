@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 24,
+  "listVersion": 25,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -22,7 +22,12 @@
     "collision-transform-field-unreadable:<field>",
     "bsp-visibility-model-unreadable:<field>",
     "bsp-visibility-solidity-disagreement",
-    "sky-zone-ambiguous:<count>",
+    "sky-zone-class-unresolved:<class>",
+    "sky-zone-detail-field-unresolved:<field>",
+    "sky-zone-detail-mode-unresolved",
+    "sky-zone-actor-without-zone:<actor>",
+    "sky-zone-rotation-unported",
+    "sky-zone-distance-fog-unported",
     "sky-material-external:<package>",
     "sky-texture-format-unsupported:<id>",
     "sky-material-texture-count:<count>",
