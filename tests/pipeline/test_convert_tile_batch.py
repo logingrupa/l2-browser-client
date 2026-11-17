@@ -21,7 +21,7 @@ from native_store.unit_ledger import (RUNNING_MARKER_NAME, SEAL_RECORD_NAME, Fre
 from tile_step_seal_fixture import LOCKED_TILE_ID, seal_raw_unit, seal_unit, tile_map_inputs, unpinned_music_encoder
 from world import convert_tile_batch, world_audio_step
 from world.convert_tile_batch import NOTHING_TO_DO_MESSAGE, TileBatchUsageError, run_tile_batch
-from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, step_level_rows
+from world.eligible_tile_selection import SealedTileStep, failed_step_row, seal_derived_step_row, step_level_rows
 from world.eligible_tiles import select_eligible_tiles
 from world.raw_map_step import read_tile_map_lock_record, tile_step_row, tile_unit_key
 from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATIVE_PATH, TileCensusError
@@ -207,6 +207,12 @@ class EligibleTileSelectionTests(unittest.TestCase):
                           ('manifest', 'pending', 'batch-pending')])
         self.assertTrue(all('object' not in row['sourceIdentity'] for row in rows))
         self.assertEqual(rows[3]['evidence'], TILE_CENSUS_RELATIVE_PATH)
+
+    def test_failed_step_row_names_the_first_error_line_or_the_error_type(self):
+        identity = synthetic_source_identity('10_11')
+        reasons = [failed_step_row('10_11', 'meshes', identity, error, 'evidence.json')['reason']
+                   for error in (ValueError('first line\nsecond line'), KeyError())]
+        self.assertEqual(reasons, ['decode-failed:ValueError:first line', 'decode-failed:KeyError:KeyError'])
 
 
 class TileBatchOrderTests(TileBatchTestCase):
