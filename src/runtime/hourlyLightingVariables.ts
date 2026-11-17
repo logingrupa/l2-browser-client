@@ -2,6 +2,7 @@ import type { NativePlane } from "../environment/model/nativePlane";
 import type { EnvironmentResult } from "../environment/model/nativeEnvironmentColours";
 import type { RgbBytes } from "../environment/model/sampleNativeTimeTables";
 import type { TileLightingRuntimeInspection } from "../scene/world/lighting/attachTileLighting";
+import type { SunAffectNodeSet } from "../scene/world/lighting/tileLightingVisibility";
 import { terrainProbeSample } from "../scene/world/lighting/bindTerrainVertexLighting";
 import type { HourlyAmbientInspection } from "../scene/world/lighting/hourlyLightingTerms";
 import type { VariableInfo } from "../ui/devSheet/types";
@@ -15,6 +16,12 @@ interface HourlyReading {
 
 const hourlyLightingReport = "DB-7 hourly-lighting-composition.json f0a6eb0f, claim audit verified-hourly-lighting.md";
 export const staticMeshVisibilityProbeActor = "20_21.StaticMeshActor1905";
+
+const sunAffectNodeSetText: Readonly<Record<SunAffectNodeSet, string>> = {
+  "visibility-walk": "submitted nodes from the visibility walk",
+  "every-node-culling-off": "every node counts as submitted: culling off",
+  "every-node-no-frame": "every node counts as submitted: no visibility frame",
+};
 
 const nativeReading = (text: string): HourlyReading => ({ text, native: true });
 const unverifiedReading = (text: string): HourlyReading => ({ text, native: false });
@@ -62,9 +69,12 @@ function bspReadings(lighting: TileLightingRuntimeInspection): Record<string, ()
     const modulate = lightmapped.filter(section => section.colourOperation?.operation === "modulate").length;
     return `${modulate} MODULATE (ColorModifier), ${lightmapped.length - modulate} global op at the MODULATE2X image default (d3d-device-live-state)`;
   };
+  const nodeSet = sunAffectNodeSetText[lighting.sunAffectNodeSet];
   return {
-    "lighting.bsp.slots": () => unverifiedReading(lighting.textureSlots.map(slot => `${slot.texture}: ${slot.sunAffectedSlot ?? "-"} of ${slot.childCount}`).join(" | ")),
-    "lighting.bsp.sunAffect": () => unverifiedReading(`${lighting.sunAffectedSectionCount} of ${lighting.lightmappedSectionCount} lightmapped sections sun-affected this frame; others use slot 0`),
+    "lighting.bsp.slots": () => unverifiedReading(`${lighting.textureSlots.map(slot => `${slot.texture}: ${slot.sunAffectedSlot ?? "-"} of ${slot.childCount}`).join(" | ")}`
+      + ` (${nodeSet})`),
+    "lighting.bsp.sunAffect": () => unverifiedReading(`${lighting.sunAffectedSectionCount} of ${lighting.lightmappedSectionCount} lightmapped sections sun-affected this frame; `
+      + `others use slot 0 (${nodeSet})`),
     "lighting.bsp.gaps": () => {
       const gaps = lighting.sections.filter(section => section.lighting === "gap").map(section => section.reasons[0] ?? "lighting-gap");
       const counts = Object.entries(gaps.reduce<Record<string, number>>((sum, reason) => ({ ...sum, [reason]: (sum[reason] ?? 0) + 1 }), {}));

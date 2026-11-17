@@ -19,6 +19,7 @@ import {
 } from "./staticMeshHourlyVisibility";
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
+import type { TileLightingVisibility } from "./tileLightingVisibility";
 import { worldTimeOfDayFor } from "../worldTimeOfDay";
 
 export interface TileLightingGapInspection {
@@ -46,11 +47,6 @@ export interface TileLightingChunkSurfaces {
   readonly terrainMeshes: readonly AbstractMesh[];
 }
 
-export interface TileLightingVisibility {
-  frame(): TileVisibilityFrame | null;
-  nodeRangeVisible(chunkOrdinal: number, node: number): boolean;
-}
-
 export interface AttachedTileLighting {
   readonly materialUniforms: (() => NativeMaterialUniforms) | null;
   readonly binding: TileLightingBinding | null;
@@ -64,7 +60,6 @@ const lightingResourceKind = "lighting";
 export const lightingResourceAbsentReason = "lighting-resource-absent";
 const payloadInvalidReasonPrefix = "lighting-payload-invalid:";
 const millisecondsPerSecond = 1000;
-export const tileLightingWithoutVisibility: TileLightingVisibility = { frame: () => null, nodeRangeVisible: () => true };
 
 function unboundTileLighting(gap: string): AttachedTileLighting {
   return { materialUniforms: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
@@ -77,7 +72,7 @@ function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, frame: Tile
     environmentFogRanges: null, hour });
 }
 
-export async function attachTileLighting(scene: Scene, manifest: NativeTileManifest, visibility: TileLightingVisibility, signal: AbortSignal):
+export async function attachTileLighting(scene: Scene, manifest: NativeTileManifest, visibility: TileLightingVisibility | null, signal: AbortSignal):
   Promise<AttachedTileLighting> {
   const resource = manifest.resources.find(entry => entry.kind === lightingResourceKind);
   if (resource === undefined) return unboundTileLighting(lightingResourceAbsentReason);
@@ -97,10 +92,10 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   const terrainVertexLighting = bindTerrainVertexLighting(model.hourly.terrainIntensityMaps, model.hourly.terrainLightMasks);
   const staticMeshVisibility = bindStaticMeshHourlyVisibility(model.hourly.staticMeshLightLists);
   const hourlyEnvironment = () => timeOfDay.hourlyEnvironmentLighting();
-  let cameraEnvironment = cameraEnvironmentOf(scene, model, visibility.frame(), timeOfDay.sample().hour);
+  let cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay.sample().hour);
   const advance = scene.onBeforeRenderObservable.add(() => {
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
-    cameraEnvironment = cameraEnvironmentOf(scene, model, visibility.frame(), timeOfDay.sample().hour);
+    cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay.sample().hour);
     terrainVertexLighting.update(timeOfDay.manager.snapshot().lightingDirty, hourlyEnvironment);
   });
   const sessionSeed = drawNativeSessionSeed();
@@ -109,8 +104,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     return { levelSeconds: presentationClock.levelSeconds, hour: environment.hour, environmentType: environment.targetType, fog: cameraEnvironment.fog };
   };
   const binding = bindTileLighting({ scene, model, sessionSeed, environment: () => timeOfDay.sample(),
-    levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog,
-    nodeRangeVisible: (chunkOrdinal, node) => visibility.nodeRangeVisible(chunkOrdinal, node), loadProgram: loadNativeMaterial });
+    levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, visibility, loadProgram: loadNativeMaterial });
   const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
     uniforms: materialUniforms, loadProgram: loadNativeMaterial });
   const terrainLayerBinding = bindTerrainLayerMaterials({ scene, load: terrainMaterials, fog: () => cameraEnvironment.fog, loadProgram: loadNativeMaterial });

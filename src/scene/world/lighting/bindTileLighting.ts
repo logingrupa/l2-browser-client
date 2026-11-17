@@ -14,6 +14,9 @@ import { decodeDxt1Texels, lightmapHourPages, lightmapPageAtHour } from "./light
 import { ENVIRONMENT_ENGINE_CONSTANTS } from "../../../environment/model/nativeEnvironmentEngineConstants";
 import { readNativeMaterialProgramPin } from "../../../assets/native/nativeMaterialProgramPin";
 import { planLightmapSections, type LightmapSectionPlan } from "./tileLightmapSections";
+import {
+  planWithVisibilityNodeRanges, sunAffectedNodeVisible, sunAffectNodeSetOf, type SunAffectNodeSet, type TileLightingVisibility,
+} from "./tileLightingVisibility";
 import type { WorldEnvironmentSample } from "../worldTimeOfDay";
 
 export type TileLightingSurfaceStatus = "library-compiled" | "library-diagnostic" | "program-unconverted" | "lighting-gap";
@@ -33,7 +36,7 @@ export interface TileLightingSettings {
   readonly environment: () => WorldEnvironmentSample;
   readonly levelSeconds: () => number;
   readonly fog: () => FogState;
-  readonly nodeRangeVisible: (chunkOrdinal: number, node: number) => boolean;
+  readonly visibility: TileLightingVisibility | null;
   readonly loadProgram: (materialId: string, signal: AbortSignal) => Promise<LoadedNativeMaterial>;
 }
 
@@ -67,6 +70,7 @@ export interface TileLightingInspection {
   readonly sectionCount: number;
   readonly lightmappedSectionCount: number;
   readonly sunAffectedSectionCount: number;
+  readonly sunAffectNodeSet: SunAffectNodeSet;
   readonly textureSlots: readonly LightmapTextureSlot[];
   readonly lightmapUpload: typeof lightmapCpuDecodedUpload;
   readonly statusCounts: Readonly<Record<TileLightingSurfaceStatus, number>>;
@@ -183,19 +187,14 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
     const reasons = colourOperation?.operation === "global-modulation" ? [colourOperation.reason] : [];
     return { section: { plan, status: "library-compiled", programMaterialId, reasons, colourOperation, nativeMaterial, boundPage: null }, mesh };
   };
-  const sunAffectedInFrame = (chunkOrdinal: number, plan: LightmapSectionPlan): boolean => {
-    if (plan.kind !== "lightmapped") return false;
-    const nodes = plan.sunAffectedNodes;
-    for (let position = 0; position < nodes.length; position += 1) if (settings.nodeRangeVisible(chunkOrdinal, nodes[position]!)) return true;
-    return false;
-  };
+  const { visibility } = settings;
   const sortedChunks = () => [...chunks.values()].sort((left, right) => left.chunkOrdinal - right.chunkOrdinal);
   const step = () => {
     const environment = settings.environment(), uniforms = { levelSeconds: settings.levelSeconds(), hour: environment.hour,
       environmentType: environment.targetType, fog: settings.fog() };
     for (const chunk of chunks.values()) for (const section of chunk.sections) {
       if (!section.nativeMaterial) continue;
-      const page = pageAtHour(model, section.plan, environment.hour, sunAffectedInFrame(chunk.chunkOrdinal, section.plan));
+      const page = pageAtHour(model, section.plan, environment.hour, sunAffectedNodeVisible(visibility, chunk.chunkOrdinal, section.plan));
       if (page !== null && page !== section.boundPage) { section.nativeMaterial.setLightmap(pageTexture(page)); section.boundPage = page; }
       section.nativeMaterial.update(uniforms);
     }
@@ -216,7 +215,7 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
       const prepared: PreparedSection[] = [];
       try {
         const plans = planLightmapSections(model, [{ ...chunk, primitiveVertexCount: primitive => chunk.meshes[primitive]!.getTotalVertices(),
-          primitiveIndices: primitive => chunk.meshes[primitive]!.getIndices() ?? [] }]);
+          primitiveIndices: primitive => chunk.meshes[primitive]!.getIndices() ?? [] }]).map(plan => planWithVisibilityNodeRanges(visibility, chunk.chunkOrdinal, plan));
         for (const plan of plans) prepared.push(await prepareSection(plan, chunk.meshes[plan.primitive]!, bound.abort.signal));
         bound.abort.signal.throwIfAborted();
       } catch (error) {
@@ -230,12 +229,13 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
     removeChunk,
     inspection() {
       const environment = settings.environment();
-      const sections = sortedChunks().flatMap(chunk => chunk.sections.map(section => ({ section, sunAffect: sunAffectedInFrame(chunk.chunkOrdinal, section.plan) })));
+      const sections = sortedChunks().flatMap(chunk => chunk.sections.map(section =>
+        ({ section, sunAffect: sunAffectedNodeVisible(visibility, chunk.chunkOrdinal, section.plan) })));
       const statusCounts = { "library-compiled": 0, "library-diagnostic": 0, "program-unconverted": 0, "lighting-gap": 0 };
       for (const { section } of sections) statusCounts[section.status] += 1;
       return { gap: null, sourceSha256: model.sourceSha256, environment, lightmapHourGap: lightmapHourGap(environment.hour), fog: settings.fog(), sectionCount: sections.length,
         lightmappedSectionCount: sections.filter(({ section }) => section.plan.kind === "lightmapped").length,
-        sunAffectedSectionCount: sections.filter(({ sunAffect }) => sunAffect).length,
+        sunAffectedSectionCount: sections.filter(({ sunAffect }) => sunAffect).length, sunAffectNodeSet: sunAffectNodeSetOf(visibility),
         textureSlots: textureSlots(model, environment.hour), lightmapUpload: lightmapCpuDecodedUpload, statusCounts,
         sections: sections.map(({ section: { plan, status, programMaterialId, reasons, colourOperation }, sunAffect }) => ({ chunkId: plan.chunkId,
           primitive: plan.primitive, lighting: plan.kind, lightmapTexture: plan.kind === "lightmapped" ? plan.lightmapTexture : null,

@@ -111,16 +111,27 @@ describe("bindTileVisibility", () => {
     expect(binding.memberVisible(999)).toBe(true);
   });
 
-  it("answers nodeRangeVisible from the latest frame's range visibility and for every node before a frame or outside the model", () => {
+  it("answers nodeRangeVisible from the latest frame's range visibility, every node before a frame, and no node the model does not list", () => {
     const { binding, manual } = bindThreeRooms(poseAt(-500));
     const wallAndFloorNodes = () => [binding.nodeRangeVisible(0, 2), binding.nodeRangeVisible(0, 3), binding.nodeRangeVisible(1, 4)];
+    const unlistedNodes = () => [binding.nodeRangeVisible(0, 4), binding.nodeRangeVisible(0, 0), binding.nodeRangeVisible(0, 99), binding.nodeRangeVisible(0, -1)];
     expect(wallAndFloorNodes()).toEqual([true, true, true]);
+    expect(unlistedNodes()).toEqual([true, true, true, true]);
     manual.render();
     expect(wallAndFloorNodes()).toEqual([true, true, true]);
+    expect(unlistedNodes()).toEqual([false, false, false, false]);
     binding.setCulling(true);
     manual.render();
     expect(wallAndFloorNodes()).toEqual([true, true, false]);
-    expect([binding.nodeRangeVisible(0, 4), binding.nodeRangeVisible(0, 0), binding.nodeRangeVisible(0, 99)]).toEqual([true, true, true]);
+    expect(unlistedNodes()).toEqual([false, false, false, false]);
+    binding.dispose();
+  });
+
+  it("lists a node range only for the chunk ordinal the model gives it", () => {
+    const { binding } = bindThreeRooms(poseAt(-500));
+    expect([binding.nodeRangeListed(0, 2), binding.nodeRangeListed(0, 3), binding.nodeRangeListed(1, 4)]).toEqual([true, true, true]);
+    expect([binding.nodeRangeListed(0, 4), binding.nodeRangeListed(1, 2), binding.nodeRangeListed(0, 0), binding.nodeRangeListed(0, 99), binding.nodeRangeListed(0, -1)])
+      .toEqual([false, false, false, false, false]);
     binding.dispose();
   });
 

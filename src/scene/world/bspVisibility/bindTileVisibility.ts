@@ -83,6 +83,7 @@ export interface TileVisibilityBinding {
   frame(): TileVisibilityFrame | null;
   memberVisible(exportIndex: number): boolean;
   nodeRangeVisible(chunkOrdinal: number, node: number): boolean;
+  nodeRangeListed(chunkOrdinal: number, node: number): boolean;
   setCulling(enabled: boolean): void;
   addChunkTargets(chunkId: string, targets: ChunkVisibilityTargets): void;
   removeChunkTargets(chunkId: string): void;
@@ -158,6 +159,10 @@ export function bindTileVisibility(input: TileVisibilityBindingInput): TileVisib
     applyVisibility(frame);
     applyTranslucentOrder(frame);
   };
+  const listedRange = (chunkOrdinal: number, node: number): number => {
+    const range = Number.isInteger(node) && node >= 0 && node < model.nodeCount ? model.nodeRange[node]! : indexNone;
+    return range !== indexNone && model.ranges.chunk[range] === chunkOrdinal ? range : indexNone;
+  };
   const forgetAppliedOrder = (targets: ChunkVisibilityTargets) => { for (const section of targets.translucentSections.keys()) appliedOrder.delete(section); };
   const stopFrames = view.onFrame(step);
   return {
@@ -167,9 +172,11 @@ export function bindTileVisibility(input: TileVisibilityBindingInput): TileVisib
       return member === undefined || latest === null || latest.memberVisible[member] === 1;
     },
     nodeRangeVisible(chunkOrdinal, node) {
-      const range = model.nodeRange[node] ?? indexNone;
-      return latest === null || range === indexNone || model.ranges.chunk[range] !== chunkOrdinal || latest.rangeVisible[range] === 1;
+      if (latest === null) return true;
+      const range = listedRange(chunkOrdinal, node);
+      return range !== indexNone && latest.rangeVisible[range] === 1;
     },
+    nodeRangeListed: (chunkOrdinal, node) => listedRange(chunkOrdinal, node) !== indexNone,
     setCulling(enabled) { cullingEnabled = enabled; },
     addChunkTargets(chunkId, targets) {
       if (disposed || targetsByChunkId.has(chunkId)) return;

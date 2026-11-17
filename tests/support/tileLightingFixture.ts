@@ -84,9 +84,9 @@ export function tileLightingArrays(records: unknown = tileLightingRecordsDocumen
 export const sharedSectionSunNode = 10;
 export const sharedSectionShelteredNode = 13;
 
-export function sharedSectionArrays(sunAffect: readonly number[] = [1, 0, 0, 0]): TypedPayloadFixtureArray[] {
+export function sharedSectionArrays(sunAffect: readonly number[] = [1, 0, 0, 0], chunkOrdinal = 0): TypedPayloadFixtureArray[] {
   const nodeRangeArrays: TypedPayloadFixtureArray[] = [
-    { name: "LMNR.chunk", type: "int32", values: [0, 0, 0, 0] },
+    { name: "LMNR.chunk", type: "int32", values: [chunkOrdinal, chunkOrdinal, chunkOrdinal, chunkOrdinal] },
     { name: "LMNR.node", type: "int32", values: [sharedSectionSunNode, sharedSectionShelteredNode, 11, 12] },
     { name: "LMNR.primitive", type: "int32", values: [0, 0, 1, 2] },
     { name: "LMNR.firstIndex", type: "int32", values: [0, 3, 0, 0] },

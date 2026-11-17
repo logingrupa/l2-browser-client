@@ -7,8 +7,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { FOG_DISABLED, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/material";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
+import type { TileVisibilityFrame } from "../../src/scene/world/bspVisibility/core/tileVisibilityFrame";
+import { emptyZoneSet } from "../../src/scene/world/bspVisibility/core/zoneSet";
 import { bindTileLighting } from "../../src/scene/world/lighting/bindTileLighting";
 import { decodeTileLighting, type TileLightingModel } from "../../src/scene/world/lighting/decodeTileLighting";
+import { visibilityNodeRangeMissingReason, type TileLightingVisibility } from "../../src/scene/world/lighting/tileLightingVisibility";
 import {
   planLightmapSections, sectionSunAffectUnresolvedReason, sortedSectionMixedSunAffectReason, type LightmapSectionChunk,
 } from "../../src/scene/world/lighting/tileLightmapSections";
@@ -32,6 +35,13 @@ const primitiveVertexCounts = [6, 3, 3];
 const sortedSections = sections.map(section => section.primitive === 0 ? { ...section, translucent: true } : section);
 const scenes: Scene[] = [];
 
+interface VisibilityStub {
+  readonly visibility: TileLightingVisibility;
+  readonly visibleNodes: Set<number>;
+  readonly listedNodes: Set<number>;
+  frame: TileVisibilityFrame | null;
+}
+
 afterEach(() => {
   for (const scene of scenes.splice(0)) {
     const engine = scene.getEngine();
@@ -40,8 +50,8 @@ afterEach(() => {
   }
 });
 
-function sharedSectionModel(sunAffect?: readonly number[]): TileLightingModel {
-  const payload = tileLightingPayload(sharedSectionArrays(sunAffect));
+function sharedSectionModel(sunAffect?: readonly number[], chunkOrdinal = 0): TileLightingModel {
+  const payload = tileLightingPayload(sharedSectionArrays(sunAffect, chunkOrdinal));
   return decodeTileLighting(payload.assetRecord, payload.payloadBytes);
 }
 
@@ -52,6 +62,21 @@ function sharedSectionChunk(chunkSections: readonly NativeBspSection[] = section
 
 function environmentAtHour(hour: number): WorldEnvironmentSample {
   return { hour, hourSource: "server-time", oldType: 0, targetType: 0, weight: 0 };
+}
+
+function visibilityFrame(culling: boolean): TileVisibilityFrame {
+  return { culling, cameraLeaf: 0, cameraZone: 0, outdoorView: false, visibleZones: emptyZoneSet, visibleZoneCount: 0, openedPortalCount: 0, skyZones: [],
+    sectionVisible: new Uint8Array(0), rangeVisible: new Uint8Array(0), memberVisible: new Uint8Array(0), terrainVisible: true, translucentOrder: new Map() };
+}
+
+function visibilityStub(listedChunkOrdinal: number): VisibilityStub {
+  const stub: VisibilityStub = { visibleNodes: new Set(), listedNodes: new Set([sharedSectionSunNode, sharedSectionShelteredNode, 11, 12]),
+    frame: visibilityFrame(true), visibility: {
+      frame: () => stub.frame,
+      nodeRangeVisible: (chunkOrdinal, node) => stub.frame === null || (chunkOrdinal === listedChunkOrdinal && stub.visibleNodes.has(node)),
+      nodeRangeListed: (chunkOrdinal, node) => chunkOrdinal === listedChunkOrdinal && stub.listedNodes.has(node),
+    } };
+  return stub;
 }
 
 function swatchMaterial(): LoadedNativeMaterial {
@@ -70,6 +95,21 @@ function sharedSectionMeshes(scene: Scene, materialId: string): Mesh[] {
     mesh.material.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: `native-materials/${materialId}`, programSha256: materialId } } } };
     return mesh;
   });
+}
+
+async function bindSharedSection(chunkOrdinal: number, visibility: TileLightingVisibility | null) {
+  const scene = new Scene(new NullEngine());
+  scenes.push(scene);
+  const loaded = swatchMaterial(), meshes = sharedSectionMeshes(scene, loaded.materialId);
+  let hour = 0;
+  const binding = bindTileLighting({ scene, model: sharedSectionModel(undefined, chunkOrdinal), sessionSeed: 1, environment: () => environmentAtHour(hour),
+    levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility, loadProgram: async () => loaded });
+  await binding.addChunk({ chunkId: `chunk-${chunkOrdinal}`, chunkOrdinal, sections, nodeRanges, meshes });
+  const renderAtHour = (nextHour: number) => {
+    hour = nextHour;
+    scene.onBeforeRenderObservable.notifyObservers(scene);
+  };
+  return { binding, meshes, renderAtHour };
 }
 
 describe("planLightmapSections with a section of several node ranges", () => {
@@ -101,33 +141,55 @@ describe("planLightmapSections with a section of several node ranges", () => {
 });
 
 describe("bindTileLighting sun affect per frame", () => {
-  it("draws a shared section with the sun slot while its sun node is visible and slot 0 while only its sheltered node is", async () => {
-    const scene = new Scene(new NullEngine());
-    scenes.push(scene);
-    const loaded = swatchMaterial(), meshes = sharedSectionMeshes(scene, loaded.materialId);
-    const visibleNodes = new Set([sharedSectionSunNode, sharedSectionShelteredNode]);
-    let environment = environmentAtHour(0);
-    const binding = bindTileLighting({ scene, model: sharedSectionModel(), sessionSeed: 1, environment: () => environment, levelSeconds: () => 0,
-      fog: () => FOG_DISABLED, nodeRangeVisible: (chunkOrdinal, node) => chunkOrdinal === 0 && visibleNodes.has(node), loadProgram: async () => loaded });
-    await binding.addChunk({ chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes });
-    const boundLightmapPages = () => meshes[0]!.material!.getActiveTextures().map(texture => texture.name).filter(name => name.startsWith("Tile lightmap page"));
-    const bspRows = readHourlyLightingFixtures().fixtures.filter(row => row.surfaceType === "BSP");
-    expect(bspRows.map(row => row.hour)).toEqual([0, 6, 12, 18]);
-    const readSlots = (visible: readonly number[]) => bspRows.map(row => {
-      visibleNodes.clear();
-      for (const node of visible) visibleNodes.add(node);
-      environment = environmentAtHour(row.hour);
-      scene.onBeforeRenderObservable.notifyObservers(scene);
-      const inspection = binding.inspection(), shared = inspection.sections[0]!;
-      expect(boundLightmapPages()).toEqual([`Tile lightmap page ${shared.page}`]);
-      return { page: shared.page, sunAffect: shared.sunAffect, sunAffectedSectionCount: inspection.sunAffectedSectionCount };
+  it.each([0, 3])("draws a shared section of chunk ordinal %i with the sun slot while its sun node is visible and slot 0 while only its sheltered node is",
+    async chunkOrdinal => {
+      const stub = visibilityStub(chunkOrdinal);
+      const { binding, meshes, renderAtHour } = await bindSharedSection(chunkOrdinal, stub.visibility);
+      const boundLightmapPages = () => meshes[0]!.material!.getActiveTextures().map(texture => texture.name).filter(name => name.startsWith("Tile lightmap page"));
+      const bspRows = readHourlyLightingFixtures().fixtures.filter(row => row.surfaceType === "BSP");
+      expect(bspRows.map(row => row.hour)).toEqual([0, 6, 12, 18]);
+      for (const row of bspRows) expect(fixtureNumber(row.input, "atlasCount")).toBe(hourSetSlotCount);
+      const readSlots = (visible: readonly number[]) => bspRows.map(row => {
+        stub.visibleNodes.clear();
+        for (const node of visible) stub.visibleNodes.add(node);
+        renderAtHour(row.hour);
+        const inspection = binding.inspection(), shared = inspection.sections[0]!;
+        expect(boundLightmapPages()).toEqual([`Tile lightmap page ${shared.page}`]);
+        return { page: shared.page, sunAffect: shared.sunAffect, sunAffectedSectionCount: inspection.sunAffectedSectionCount };
+      });
+      expect(readSlots([sharedSectionSunNode, sharedSectionShelteredNode]))
+        .toEqual(bspRows.map(row => ({ page: fixtureNumber(row.output, "selectedAtlasChild"), sunAffect: true, sunAffectedSectionCount: 1 })));
+      expect(readSlots([sharedSectionShelteredNode])).toEqual(bspRows.map(() => ({ page: 0, sunAffect: false, sunAffectedSectionCount: 0 })));
+      expect(readSlots([sharedSectionSunNode]).map(reading => reading.page)).toEqual([0, 2, 4, 6]);
+      expect(binding.inspection().sections.map(section => section.sunAffect)).toEqual([true, false, null]);
+      binding.dispose();
     });
-    for (const row of bspRows) expect(fixtureNumber(row.input, "atlasCount")).toBe(hourSetSlotCount);
-    expect(readSlots([sharedSectionSunNode, sharedSectionShelteredNode]))
-      .toEqual(bspRows.map(row => ({ page: fixtureNumber(row.output, "selectedAtlasChild"), sunAffect: true, sunAffectedSectionCount: 1 })));
-    expect(readSlots([sharedSectionShelteredNode])).toEqual(bspRows.map(() => ({ page: 0, sunAffect: false, sunAffectedSectionCount: 0 })));
-    expect(readSlots([sharedSectionSunNode]).map(reading => reading.page)).toEqual([0, 2, 4, 6]);
-    expect(binding.inspection().sections.map(section => section.sunAffect)).toEqual([true, false, null]);
+
+  it("names the node set the sun choice used: the visibility walk, every node with culling off, or every node without a frame", async () => {
+    const stub = visibilityStub(0);
+    stub.visibleNodes.add(sharedSectionShelteredNode);
+    const { binding } = await bindSharedSection(0, stub.visibility);
+    const reading = () => [binding.inspection().sunAffectNodeSet, binding.inspection().sections[0]!.sunAffect];
+    expect(reading()).toEqual(["visibility-walk", false]);
+    stub.frame = visibilityFrame(false);
+    expect(reading()[0]).toBe("every-node-culling-off");
+    stub.frame = null;
+    expect(reading()).toEqual(["every-node-no-frame", true]);
+    binding.dispose();
+    const withoutVisibility = await bindSharedSection(0, null);
+    expect([withoutVisibility.binding.inspection().sunAffectNodeSet, withoutVisibility.binding.inspection().sections[0]!.sunAffect])
+      .toEqual(["every-node-no-frame", true]);
+    withoutVisibility.binding.dispose();
+  });
+
+  it("names a section a gap when the visibility model lists no range of one of its sun-affected nodes in its chunk", async () => {
+    const stub = visibilityStub(0);
+    stub.listedNodes.delete(sharedSectionSunNode);
+    const { binding } = await bindSharedSection(0, stub.visibility);
+    expect(binding.inspection().sections[0]).toMatchObject({ lighting: "gap", status: "lighting-gap", sunAffect: null, page: null,
+      reasons: [`${visibilityNodeRangeMissingReason}:${sharedSectionSunNode}`] });
+    expect(visibilityNodeRangeMissingReason).toBe("bsp-visibility-node-range-missing");
+    expect(binding.inspection().sections[1]).toMatchObject({ lighting: "lightmapped", status: "library-compiled" });
     binding.dispose();
   });
 });

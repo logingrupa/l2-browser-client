@@ -162,7 +162,7 @@ describe("bindTileLighting", () => {
     const chunk: TileLightingBspChunk = { chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes };
     let environment = environmentAtHour(1);
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1, environment: () => environment,
-      levelSeconds: () => 0, fog: () => FOG_DISABLED, nodeRangeVisible: () => true, loadProgram: async () => loaded });
+      levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility: null, loadProgram: async () => loaded });
     await binding.addChunk(chunk);
     const pagesAtOne = binding.inspection().sections.map(section => section.page);
     expect(binding.inspection().sections.map(section => section.status)).toEqual(["library-compiled", "library-compiled", "program-unconverted"]);
@@ -226,7 +226,7 @@ describe("bindTileLighting", () => {
     const originalMaterials = meshes.map(mesh => mesh.material);
     let releaseProgram: (() => void) | null = null;
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1,
-      environment: () => environmentAtHour(1), levelSeconds: () => 0, fog: () => FOG_DISABLED, nodeRangeVisible: () => true,
+      environment: () => environmentAtHour(1), levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility: null,
       loadProgram: (_materialId, signal) => new Promise((_resolve, reject) => { releaseProgram = () => reject(signal.reason); }) });
     const adding = binding.addChunk({ chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes });
     await Promise.resolve();
