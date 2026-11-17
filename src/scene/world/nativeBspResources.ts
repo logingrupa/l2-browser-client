@@ -18,7 +18,7 @@ export interface NativeBspSection {
   readonly material: string;
   readonly unlit: boolean;
   readonly lightmap: number | null;
-  readonly nativeRenderSection: number;
+  readonly nativeRenderSection: number | null;
   readonly translucent: boolean;
 }
 
@@ -36,6 +36,7 @@ export interface NativeBspSectionExtras {
 
 const tileBspResourceFields = ["resource", "sha256"];
 const sectionFields = ["primitive", "material", "unlit", "lightmap", "nativeRenderSection", "translucent"];
+const outdoorClassSectionFields = ["primitive", "material", "unlit", "lightmap", "outdoor", "translucent"];
 const nodeRangeFields = ["node", "primitive", "firstIndex", "indexCount"];
 const tileBspResourcePattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-bsp\/bsp\.glb$/;
 const maximumBspSections = 4096;
@@ -56,14 +57,22 @@ export function parseNativeTileBspResource(input: unknown): NativeTileBspResourc
   return { resource: input.resource, sha256: input.sha256 };
 }
 
+function sectionRecord(value: unknown): { readonly record: Record<string, unknown>; readonly keyedByRenderSection: boolean } | null {
+  if (hasExactKeys(value, sectionFields)) return { record: value, keyedByRenderSection: true };
+  if (hasExactKeys(value, outdoorClassSectionFields)) return { record: value, keyedByRenderSection: false };
+  return null;
+}
+
 function parseSection(value: unknown, index: number): NativeBspSection {
-  if (!hasExactKeys(value, sectionFields) || value.primitive !== index || typeof value.material !== "string" || !value.material ||
-    typeof value.unlit !== "boolean" || !(value.lightmap === null || (Number.isSafeInteger(value.lightmap) && (value.lightmap as number) >= -1)) ||
-    !isCount(value.nativeRenderSection) || typeof value.translucent !== "boolean") {
+  const parsed = sectionRecord(value);
+  const record = parsed?.record;
+  if (parsed === null || record === undefined || record.primitive !== index || typeof record.material !== "string" || !record.material ||
+    typeof record.unlit !== "boolean" || !(record.lightmap === null || (Number.isSafeInteger(record.lightmap) && (record.lightmap as number) >= -1)) ||
+    (parsed.keyedByRenderSection ? !isCount(record.nativeRenderSection) : typeof record.outdoor !== "boolean") || typeof record.translucent !== "boolean") {
     throw new Error(`Native BSP section ${index} is invalid.`);
   }
-  return { primitive: index, material: value.material, unlit: value.unlit, lightmap: value.lightmap as number | null,
-    nativeRenderSection: value.nativeRenderSection, translucent: value.translucent };
+  return { primitive: index, material: record.material, unlit: record.unlit, lightmap: record.lightmap as number | null,
+    nativeRenderSection: parsed.keyedByRenderSection ? record.nativeRenderSection as number : null, translucent: record.translucent };
 }
 
 function parseNodeRange(value: unknown, sectionCount: number): NativeBspNodeRange {

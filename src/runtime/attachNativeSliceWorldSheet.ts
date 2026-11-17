@@ -101,9 +101,10 @@ function attachDisplayGammaGroup(section: DevSection, displayGamma: DisplayGamma
 export function attachNativeSliceWorldSheet(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): NativeSliceWorldSheet {
   attachCameraGroup(section, context, tools);
   attachSkyGroup(section, context);
-  const { timeOfDay, sky, skyFailure } = context.world;
+  const { timeOfDay, sky, skyFailure, section: worldSection } = context.world;
   attachTimeOfDayGroup(section, { timeOfDay, adapter: context.adapter,
-    skyEnvironmentColours: sky ? () => sky.inspection().environmentColours : null, skyAbsentReason: skyFailure === null ? "sky-not-staged" : "sky-failed" });
+    skyEnvironmentColours: sky ? () => sky.inspection().environmentColours : null, skyAbsentReason: skyFailure === null ? "sky-not-staged" : "sky-failed",
+    tileLighting: () => worldSection?.inspection().lighting ?? { gap: worldSection ? "tile-lighting-absent" : "world-section-absent" } });
   attachDisplayGammaGroup(section, context.displayGamma, tools);
   const flameSheet = attachFlameGroup(section, context, tools);
   attachScenePresentationGroup(section, nativeSandboxPresentation, { sceneName: "native sandbox scene", readoutTestId: "native-scene-presentation" });

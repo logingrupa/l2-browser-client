@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  actorAmbientRenderColour, bspAmbientRenderColour, environmentColour, environmentLightPlane, environmentScale,
-} from "../../src/environment/model/nativeEnvironmentColours";
+import { bspLightmapRebuildAmbient } from "../../src/environment/model/bspLightmapSelection";
+import { actorAmbientLight } from "../../src/environment/model/meshLightingTerms";
+import { environmentColour, environmentLightPlane, environmentScale } from "../../src/environment/model/nativeEnvironmentColours";
 import type { NativeEnvironmentBlend } from "../../src/environment/model/nativeEnvironmentManager";
 import {
   blackStartColourSections, hsvLightSections, scaleSections, skyLayerColourSections, type ScaleSection,
@@ -14,6 +14,7 @@ const tables = readDayNightLoadedTables();
 const fixtureRows = readDayNightFixtureRows();
 const harnessCelestialPhiDegrees = 180;
 const harnessSettledWeight = 1;
+const harnessActorSunAffect = true;
 const settledBlend = (environmentType: number): NativeEnvironmentBlend => ({ oldType: environmentType, targetType: environmentType, weight: harnessSettledWeight });
 
 const isMember = <Section extends string>(sections: readonly Section[], consumer: string): consumer is Section => (sections as readonly string[]).includes(consumer);
@@ -49,10 +50,10 @@ function modelValueFor(row: DayNightFixtureRow): number | readonly number[] {
   }
   if (isMember(hsvLightSections, consumer)) return resolvedValue(environmentLightPlane(tables, settledBlend(environmentType), consumer, hour));
   if (consumer === "ActorAmbient half-intensity consumer branch") {
-    return actorAmbientRenderColour(resolvedValue(environmentColour(tables, settledBlend(environmentType), "ActorAmbient", hour))).slice(0, 3);
+    return resolvedValue(actorAmbientLight(resolvedValue(environmentColour(tables, settledBlend(environmentType), "ActorAmbient", hour)), harnessActorSunAffect)).slice(0, 3);
   }
   if (consumer === "BSPAmbient half-intensity consumer branch") {
-    return bspAmbientRenderColour(resolvedValue(environmentColour(tables, settledBlend(environmentType), "BSPAmbient", hour)));
+    return bspLightmapRebuildAmbient(resolvedValue(environmentColour(tables, settledBlend(environmentType), "BSPAmbient", hour)));
   }
   if (consumer === "SunAngles" || consumer === "MoonAngles") {
     const angles = (consumer === "SunAngles" ? sunAngles : moonAngles)(hour, harnessCelestialPhiDegrees);

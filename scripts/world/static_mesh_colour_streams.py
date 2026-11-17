@@ -5,6 +5,7 @@ from typing import NamedTuple
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from world.terrain_coordinates import f32
+from world.error_detail import first_line_of_error
 
 REVIEWED_COLOUR_STREAM_LAYOUTS = frozenset({(123, 12)})
 PRIMITIVE_BOUNDS_BYTES = 25 + 16
@@ -26,9 +27,11 @@ GLB_CHUNK_HEADER_BYTES = 8
 COLOUR_STREAMS_KIND = 'native-static-mesh-colour-streams'
 COLOUR_STREAMS_SCHEMA_VERSION = 1
 COLOUR_STREAMS_FILE_NAME = 'colour-streams.json'
+COLOUR_STREAMS_STORE_FOLDER = 'static-mesh-colour-streams'
 COLOUR_SELECTOR_UNRESOLVED_REASON = 'static-mesh-colour-selector-unresolved'
 COLOUR_STREAM_LAYOUT_UNREVIEWED_REASON_PREFIX = 'static-mesh-colour-stream-layout-unreviewed:'
 COLOUR_STREAM_JOIN_MISMATCH_REASON = 'static-mesh-colour-stream-join-mismatch'
+COLOUR_STREAM_UNREAD_REASON_PREFIX = 'static-mesh-colour-stream-unread:'
 
 
 class StaticMeshSection(NamedTuple):
@@ -54,6 +57,14 @@ class ColourStreamOutcome(NamedTuple):
 
 def colour_stream_layout_unreviewed_reason(package_version, licensee):
     return f'{COLOUR_STREAM_LAYOUT_UNREVIEWED_REASON_PREFIX}{package_version}/{licensee}'
+
+
+def colour_stream_unread_reason(error):
+    return f'{COLOUR_STREAM_UNREAD_REASON_PREFIX}{first_line_of_error(error)}'
+
+
+def colour_streams_store_path(payload_sha256):
+    return f'{COLOUR_STREAMS_STORE_FOLDER}/{payload_sha256}/{COLOUR_STREAMS_FILE_NAME}'
 
 
 def counted(reader, label, maximum=MAXIMUM_STREAM_ELEMENTS):
@@ -183,9 +194,12 @@ def static_mesh_colour_stream_outcome(package_version, load_package, request, gl
     if package_version not in REVIEWED_COLOUR_STREAM_LAYOUTS:
         return ColourStreamOutcome(None, colour_stream_layout_unreviewed_reason(*package_version))
     package, package_record = load_package(request['package'])
-    export = static_mesh_export(package, request['object'])
-    streams = read_static_mesh_colour_streams(package, export)
-    primitives = joined_primitive_vertices(glb, streams)
+    try:
+        export = static_mesh_export(package, request['object'])
+        streams = read_static_mesh_colour_streams(package, export)
+        primitives = joined_primitive_vertices(glb, streams)
+    except FormatError as error:
+        return ColourStreamOutcome(None, colour_stream_unread_reason(error))
     if primitives is None:
         return ColourStreamOutcome(None, COLOUR_STREAM_JOIN_MISMATCH_REASON)
     return ColourStreamOutcome(json_bytes(colour_streams_document(export['object'], package_record, streams, primitives)), None)

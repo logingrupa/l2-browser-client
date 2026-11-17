@@ -7,7 +7,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from native_catalog.ue2 import FormatError, Package
+from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from world.lighting_payload import terrain_intensity_map_arrays
+from world.lighting_step import terrain_intensity_map_outcome
 from world.terrain_intensity_maps import read_terrain_intensity_maps
 from ue2_package_fixture import compact, package_bytes, tag
 
@@ -62,6 +64,14 @@ class TerrainIntensityMapTests(unittest.TestCase):
         for body, message in cases:
             with self.subTest(message=message), self.assertRaisesRegex(FormatError, message):
                 read_terrain_intensity_maps(*terrain_of(body))
+
+    def test_unreadable_intensity_maps_give_no_arrays_and_a_listed_gap_instead_of_an_error(self):
+        arrays, map_count, reasons = terrain_intensity_map_outcome(*terrain_of(terrain_info_body(declared_count=3)))
+        self.assertEqual((arrays, map_count), ([], 0))
+        self.assertEqual(reasons, ['terrain-intensity-map-layout-unread:terrain 00_00.TerrainInfo0 NumIntMap is 3, but TIntMap holds 2 maps'])
+        self.assertTrue(is_listed_reason(reasons[0], load_gap_reason_patterns()))
+        arrays, map_count, reasons = terrain_intensity_map_outcome(*terrain_of(terrain_info_body()))
+        self.assertEqual(([typed_array.name for typed_array in arrays], map_count, reasons), (['TINT.time', 'TINT.width', 'TINT.height', 'TINT.intensity'], 2, []))
 
 
 if __name__ == '__main__':

@@ -81,8 +81,6 @@ def lightmap_page_arrays(lightmaps):
             array('LMPG.slotCount', 'int32', [page.slot_count for page in pages]),
             array('LMPG.hourStart', 'float32', [start for start, _ in hours]), array('LMPG.hourEnd', 'float32', [end for _, end in hours]),
             array('LMPG.revision', 'int32', [page.revision for page in pages]),
-            array('LMPG.format', 'uint8', [page.texture_format for page in pages]),
-            array('LMPG.width', 'int32', [page.width for page in pages]), array('LMPG.height', 'int32', [page.height for page in pages]),
             array('LMPG.compressedRevision', 'int32', [page.compressed_revision for page in pages]),
             array('LMPG.mipEdge', 'uint32', [edge for _ in pages for edge, _ in LIGHTMAP_PAGE_MIPS]),
             array('LMPG.texelStart', 'uint32', prefix_starts(len(mip) for mip in mips)),
@@ -118,8 +116,6 @@ def static_mesh_light_list_arrays(light_lists):
     return [array('SMLL.actorExportIndex', 'int32', [light_list.actor_export_index for light_list in light_lists]),
             array('SMLL.instanceExportIndex', 'int32', [light_list.instance_export_index for light_list in light_lists]),
             array('SMLL.colorCount', 'uint32', [light_list.color_count for light_list in light_lists]),
-            array('SMIC.bytes', 'uint8', b''.join(light_list.instance_colours for light_list in light_lists)),
-            array('SMIC.revision', 'int32', [light_list.instance_colour_revision for light_list in light_lists]),
             array('SMLL.sceneStart', 'uint32', prefix_starts(len(light_list.scene_lights) for light_list in light_lists)),
             array('SMLL.environmentStart', 'uint32', prefix_starts(len(light_list.environment_lights) for light_list in light_lists)),
             *visibility_entry_arrays('SMSC', scene), array('SMSC.applied', 'int32', [entry.applied for entry in scene]),
@@ -147,7 +143,7 @@ def lighting_records_array(records):
 
 def bsp_lightmap_arrays(package, lightmaps, model, node_ranges, zones):
     ranges, reasons = lightmap_node_ranges(package, lightmaps, model, node_ranges)
-    section_sun_affect = render_section_sun_affect(model, len(lightmaps.sections), zones)
+    section_sun_affect = render_section_sun_affect(model, len(lightmaps.sections), zones, {node_range['node'] for node_range in node_ranges})
     arrays = [*render_section_arrays(lightmaps, section_sun_affect), *lightmap_texture_arrays(lightmaps), *lightmap_record_arrays(lightmaps),
               *lightmap_page_arrays(lightmaps), *lightmap_node_range_arrays(ranges)]
     counts = {'renderSections': len(lightmaps.sections), 'records': len(lightmaps.records), 'textures': len(lightmaps.textures),

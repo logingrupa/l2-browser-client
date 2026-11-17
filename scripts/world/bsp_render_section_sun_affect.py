@@ -21,9 +21,10 @@ def combined_sun_affect(node_states):
     return SUN_AFFECT_UNRESOLVED if SUN_AFFECT_UNRESOLVED in node_states else NOT_SUN_AFFECTED
 
 
-def render_section_sun_affect(model, section_count, zones):
+def render_section_sun_affect(model, section_count, zones, drawn_node_indices):
     node_states = [set() for _ in range(section_count)]
-    for node in model.nodes:
+    for node_index in sorted(drawn_node_indices):
+        node = model.nodes[node_index]
         if node.num_vertices > 0 and 0 <= node.i_section < section_count:
             node_states[node.i_section].add(zone_sun_affect(zones, node.i_zone[SUN_AFFECT_ZONE_SIDE]))
     return tuple(combined_sun_affect(states) for states in node_states)

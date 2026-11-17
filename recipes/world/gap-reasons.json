@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 22,
+  "listVersion": 23,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -14,6 +14,7 @@
     "static-mesh-reference-unresolved",
     "static-mesh-colour-stream-layout-unreviewed:<version>",
     "static-mesh-colour-stream-join-mismatch",
+    "static-mesh-colour-stream-unread:<detail>",
     "bsp-node-outside-chunk-grid",
     "bsp-chunk-without-nodes",
     "material-mapping-size-zero",
@@ -38,6 +39,7 @@
     "lighting-payload-too-large",
     "lighting-water-volume-unlinked:<class>",
     "lighting-class-chain-unresolved:<class>",
+    "terrain-intensity-map-layout-unread:<detail>",
     "object-gaps:<count>",
     "batch-pending",
     "upstream-step-failed:<step>",
