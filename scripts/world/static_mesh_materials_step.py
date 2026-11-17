@@ -4,7 +4,7 @@ from pathlib import Path
 from native_assets import implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.glb_container import glb_document_and_binary
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
@@ -14,7 +14,7 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_mesh_step import sealed_static_meshes
 from world.surface_material_programs import (material_outcome_gap_rows, material_package_paths, material_program_outcome, program_root_is_ported,
                                              world_material_sources)
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
 STATIC_MESH_MATERIALS_STEP_ALGORITHM_VERSION = 1

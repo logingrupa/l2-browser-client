@@ -14,7 +14,7 @@ from native_assets_lib.asset_manifest import reference_client_build
 from native_assets_lib.material_graph import REVIEWED_MATERIAL_CLASSES, material_class_unported_reason
 from native_catalog.ue2 import FormatError, Reader, summary, unwrap
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.store_paths import refuse_reparse_points
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client

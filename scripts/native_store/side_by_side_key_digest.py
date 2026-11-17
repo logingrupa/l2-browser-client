@@ -7,7 +7,7 @@ from native_store.catalog_index_keys import (ITEM_MODEL_RECORD_ID_PATTERN, LEGAC
                                              model_source_objects_by_id,
                                              npc_profile_model_id, npc_profile_npc_key, player_profile_model_ids_by_key,
                                              read_profile_manifest_profiles, require_key, store_root_candidates, validated_slice_records)
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.coverage_denominators import CoverageReportError
 from native_store.store_paths import SHA256_PATTERN
 

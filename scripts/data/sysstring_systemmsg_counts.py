@@ -17,7 +17,7 @@ from native_catalog.tables import (SAFE_PACKAGE_TRAILER, decode413, decode_table
                                    read_value, table_source_path)
 from native_catalog.ue2 import FormatError, Reader
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from reference_client_guard import require_reference_client
 
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent

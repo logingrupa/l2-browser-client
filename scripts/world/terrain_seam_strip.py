@@ -5,7 +5,7 @@ from typing import NamedTuple
 
 import reference_client_guard
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.unit_ledger import process_reference_client_lock
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.native_terrain_sectors import vertex_normal

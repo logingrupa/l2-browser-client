@@ -17,7 +17,7 @@ from native_store.store_paths import lane_work_root
 from world import class_default_reads, tile_chunk_plan
 from world.class_default_reads import kept_class_chain, kept_class_default_values, kept_material_class_defaults
 from world.static_placement import ClassDefaults
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_chunk_plan import PLAYER_START_CLASS, PLAYER_START_ENABLED_FIELD, player_start_class_defaults
 
 FROZEN_CLASS_DEFAULT_READERS = ('read_class_defaults_with_provenance', 'cached_class_chain', 'read_material_class_defaults')

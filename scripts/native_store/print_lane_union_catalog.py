@@ -8,7 +8,8 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import MAXIMUM_CATALOG_BYTES, STORE_CATALOG_NAME, sha256_hex
+from native_store.catalog_writer import MAXIMUM_CATALOG_BYTES, STORE_CATALOG_NAME
+from native_store.verified_file_writes import sha256_hex
 from native_store.merge_lane_store import lane_union_catalog, read_required_catalog_bytes
 from native_store.store_paths import refuse_reparse_points
 

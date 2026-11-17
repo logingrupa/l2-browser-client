@@ -6,7 +6,7 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
 
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.store_paths import StorePathError, refuse_reparse_points, require_portable_relative_path
 
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent

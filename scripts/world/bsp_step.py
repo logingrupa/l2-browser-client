@@ -5,7 +5,7 @@ from native_assets import implementation_hash
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -21,11 +21,11 @@ from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_i
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles
 from world.surface_material_programs import material_gap_row_status, world_material_sources
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 

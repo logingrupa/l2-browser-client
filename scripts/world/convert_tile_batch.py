@@ -26,8 +26,10 @@ from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATU
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, locked_tile_map_bytes, tile_unit_key
 from world.terrain_seam_strip import SEAM_ROLE_TILE_STEPS, neighbour_tile_id
-from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
+from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
+from world.tile_step_gap_rows import first_blocking_row
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, STALE_SEAL_STATE, TILE_STEP_SEAL_CHECKS, UNSEALED_STATE, unit_step_seal
 from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
 from world.tile_step_workers import BATCH_EXIT_DONE, BATCH_EXIT_ERROR, TileBatchStop, TileStepRun, TileStepsTask, TileStepWorkers
@@ -159,15 +161,11 @@ def seam_input_raw_results(workers, seam_inputs, selected, source_identities, ex
     return raw_results_by_tile, stop
 
 
-def failed_raw_step(raw_results):
-    return RAW_STEP_NAME if RAW_STEP_NAME in raw_results and raw_results[RAW_STEP_NAME]['status'] == FAILED_STATUS else None
-
-
 def selected_tile_step_results(workers, selected, source_identities, expected_costs, step_names, raw_results_by_tile, preflights_by_tile):
     step_results_by_tile, stop = {}, None
     worker_step_names = tuple(step for step in step_names if step not in (RAW_STEP_NAME, TILE_MANIFEST_STEP_NAME))
-    tasks = [TileStepsTask(position, tile_id, source_identities[tile_id], worker_step_names, failed_raw_step(raw_results_by_tile[tile_id]),
-                           expected_costs[tile_id])
+    tasks = [TileStepsTask(position, tile_id, source_identities[tile_id], worker_step_names,
+                           first_blocking_row((RAW_STEP_NAME,), raw_results_by_tile[tile_id]), expected_costs[tile_id])
              for position, tile_id in enumerate(selected)]
     for task, outcome in zip(tasks, workers.outcomes(tasks), strict=True):
         if stop is None:
@@ -177,7 +175,8 @@ def selected_tile_step_results(workers, selected, source_identities, expected_co
         step_results_by_tile[task.tile_id] = {**raw_results_by_tile[task.tile_id], **outcome.step_results}
         preflights_by_tile[task.tile_id].extend(outcome.preflights)
         if stop is None and TILE_MANIFEST_STEP_NAME in step_names:
-            manifest_outcome = workers.coordinator_outcome(task._replace(step_names=(TILE_MANIFEST_STEP_NAME,), failed_earlier_step=None))
+            blocking_row = first_blocking_row((RAW_STEP_NAME, *worker_step_names), step_results_by_tile[task.tile_id])
+            manifest_outcome = workers.coordinator_outcome(task._replace(step_names=(TILE_MANIFEST_STEP_NAME,), blocking_earlier_row=blocking_row))
             step_results_by_tile[task.tile_id].update(manifest_outcome.step_results)
             preflights_by_tile[task.tile_id].extend(manifest_outcome.preflights)
             stop = manifest_outcome.stop

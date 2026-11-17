@@ -1,5 +1,6 @@
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import add_store_file, sha256_hex
+from native_store.catalog_writer import add_store_file
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_file_publish import publish_store_files
 
 BUNDLE_MANIFEST_NAME = 'manifest.json'

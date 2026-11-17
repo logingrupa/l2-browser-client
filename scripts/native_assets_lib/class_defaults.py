@@ -10,7 +10,7 @@ import re
 from native_catalog.effects import SourcePackages, UELIB_SHA256, parse_uc, read_class_defaults
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 
 CLASS_DEFAULT_PROVENANCES = ('authored', 'class-default', 'ue-zero')

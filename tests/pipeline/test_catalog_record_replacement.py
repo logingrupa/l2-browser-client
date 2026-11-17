@@ -8,11 +8,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
-from actors import npc_store_records
-from actors.npc_store_records import catalog_with_records_replaced, catalog_without_records, write_catalog_without_record
 from catalog_store_fixture import write_store_catalog
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import CatalogWriteError
+from native_store import catalog_record_replacement
+from native_store.catalog_record_replacement import catalog_with_records_replaced, catalog_without_records, write_catalog_without_record
+from native_store.verified_file_writes import CatalogWriteError
 
 
 def revised_record(record_id, revision):
@@ -34,15 +34,15 @@ class CatalogRecordsReplacedTests(unittest.TestCase):
     def test_one_replacement_of_many_records_merges_once(self):
         catalog = catalog_of(revised_record('a', 1), revised_record('b', 1), revised_record('c', 1))
         incoming = [revised_record('b', 2), revised_record('d', 1), revised_record('b', 3)]
-        with mock.patch.object(npc_store_records, 'merge_catalog_slice_records',
-                               wraps=npc_store_records.merge_catalog_slice_records) as merge_catalog_slice_records:
+        with mock.patch.object(catalog_record_replacement, 'merge_catalog_slice_records',
+                               wraps=catalog_record_replacement.merge_catalog_slice_records) as merge_catalog_slice_records:
             catalog_with_records_replaced(catalog, 'models', incoming, 4)
         self.assertEqual(merge_catalog_slice_records.call_count, 1)
 
     def test_no_incoming_record_returns_the_same_catalog_and_adds_no_slice(self):
         catalog = catalog_of(revised_record('a', 1))
-        with mock.patch.object(npc_store_records, 'merge_catalog_slice_records',
-                               wraps=npc_store_records.merge_catalog_slice_records) as merge_catalog_slice_records:
+        with mock.patch.object(catalog_record_replacement, 'merge_catalog_slice_records',
+                               wraps=catalog_record_replacement.merge_catalog_slice_records) as merge_catalog_slice_records:
             replaced = catalog_with_records_replaced(catalog, 'npcProfiles', [], 1)
         self.assertIs(replaced, catalog)
         self.assertEqual((catalog, merge_catalog_slice_records.call_count), (catalog_of(revised_record('a', 1)), 0))
@@ -90,7 +90,7 @@ class WriteCatalogWithoutRecordTests(unittest.TestCase):
 
     def test_an_absent_id_writes_nothing_and_a_present_id_is_removed(self):
         seeded_bytes = self.catalog_path.read_bytes()
-        with mock.patch.object(npc_store_records, 'write_store', wraps=npc_store_records.write_store) as write_store:
+        with mock.patch.object(catalog_record_replacement, 'write_store', wraps=catalog_record_replacement.write_store) as write_store:
             write_catalog_without_record(self.store_root, 'models', 'absent')
             write_catalog_without_record(self.store_root, 'npcProfiles', 'a')
             self.assertEqual((write_store.call_count, self.catalog_path.read_bytes()), (0, seeded_bytes))

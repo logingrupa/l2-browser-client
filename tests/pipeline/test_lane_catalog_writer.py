@@ -15,10 +15,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
+from catalog_store_fixture import minimal_runtime_tile_record_and_files
 from native_assets_lib.gltf import json_bytes
 from native_store import catalog_writer
-from native_store.catalog_writer import (CatalogWriteError, NATIVE_RESOURCE_PATH_PATTERN, add_store_file, merge_catalog_slice,
-                                         read_store_catalog, write_store)
+from native_store.catalog_writer import NATIVE_RESOURCE_PATH_PATTERN, add_store_file, merge_catalog_slice, read_store_catalog, write_store
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.interprocess_lock import LOCK_FILE_SUFFIX
 from native_store.merge_lane_store import main_checkout_root
 from native_store.store_paths import StorePathError, lane_store_root
@@ -181,18 +182,23 @@ class LaneCatalogWriterTests(unittest.TestCase):
                 self.assertEqual(snapshot_tree(self.project), snapshot)
                 self.assertFalse(self.world_store.exists())
 
-    def test_golden_manifest_records_merge_and_pass_the_lane_catalog(self):
+    def test_golden_table_and_window_records_and_a_collision_pinning_tile_merge_and_pass_the_lane_catalog(self):
         catalog, before = read_store_catalog(self.world_store)
         files = {}
-        for slice_name in MALFORMED_MANIFEST_RECORD_FIELDS:
+        for slice_name in ('tables', 'windows'):
             catalog = merge_catalog_slice(catalog, slice_name, GOLDEN_CATALOG[slice_name][0], 1)
             for relative in golden_store_relative_paths(slice_name):
                 add_store_file(files, relative, (GOLDEN_ROOT / 'l2' / relative).read_bytes())
+        tile_record, tile_files = minimal_runtime_tile_record_and_files('20_20', pins_collision=True)
+        catalog = merge_catalog_slice(catalog, 'tiles', tile_record, 1)
+        for resource_path, payload in tile_files.items():
+            add_store_file(files, resource_path[len('/l2/'):], payload)
         write_store(self.world_store, files, before, json_bytes(catalog))
         summary = write_lane_catalog(self.project, 'world')
         self.assertEqual(summary['recordsBySlice'], {'models': 0, 'tiles': 1, 'tables': 1, 'windows': 1})
         lane_catalog = json.loads((self.world_store / 'catalog.json').read_bytes())
-        for slice_name in MALFORMED_MANIFEST_RECORD_FIELDS:
+        self.assertEqual(lane_catalog['tiles'], [tile_record])
+        for slice_name in ('tables', 'windows'):
             self.assertEqual(lane_catalog[slice_name], GOLDEN_CATALOG[slice_name])
 
     def test_add_store_file_refuses_unsafe_unbounded_and_case_conflicting_names(self):

@@ -13,7 +13,8 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from actors.actor_sound_bindings import AUDIO_PART_NAME
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_index_keys import catalog_index_keys, read_measured_catalog
-from native_store.catalog_writer import STORE_CATALOG_NAME, is_table_name_index_id, replace_file
+from native_store.catalog_writer import STORE_CATALOG_NAME, is_table_name_index_id
+from native_store.verified_file_writes import replace_file
 from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError
 from native_store.gap_census import (GAP_CENSUS_LOAD_STATUSES, ITEM_CENSUS_STEP, ITEMS_PART, NAMED_EMITTER_GAP_REASONS, build_gap_census,
                                      is_named_emitter_gap_reason)

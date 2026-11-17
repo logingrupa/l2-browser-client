@@ -30,9 +30,13 @@ SYNTHETIC_SCRIPTS_FILES = {
     'stage-effect-packing.mjs': 'export function pack() { return 5; }\n',
     'effect_readiness.py': 'def inspect():\n    return 6\n',
     'unrelated_tool.py': 'def unrelated():\n    return 7\n',
+    'catalog_reader.py': 'from unrelated_tool import unrelated\nfrom catalog_reader.package_decoder import decode_package\n',
+    'catalog_reader/__init__.py': '',
+    'catalog_reader/package_decoder.py': 'def decode_package():\n    return 8\n',
+    'world/package_step.py': 'from catalog_reader.package_decoder import decode_package\n',
 }
 STEP_ENTRY_MODULES = {'sky': ('world.sky_step',), 'meshes': ('world.mesh_step',), 'dynamic': ('world.dynamic_step',),
-                      'node': ('world.node_step',), 'file-loader': ('world.file_loader_step',)}
+                      'node': ('world.node_step',), 'file-loader': ('world.file_loader_step',), 'package': ('world.package_step',)}
 ONE_SECOND_NS = 10 ** 9
 
 
@@ -81,10 +85,15 @@ class StepSourceClosureTests(SyntheticScriptsTestCase):
     def test_an_edit_of_a_shared_module_makes_every_importing_step_stale(self):
         self.assertEqual(self.steps_changed_by_edit('shared_library.py', 'SHARED_FACTOR = 4\n'), ['meshes', 'sky'])
         self.assertEqual(self.steps_changed_by_edit('world/__init__.py', 'PACKAGE_FACTOR = 5\n'),
-                         ['dynamic', 'file-loader', 'meshes', 'node', 'sky'])
+                         ['dynamic', 'file-loader', 'meshes', 'node', 'package', 'sky'])
 
     def test_an_edit_of_a_module_no_step_reaches_makes_no_step_stale(self):
         self.assertEqual(self.steps_changed_by_edit('unrelated_tool.py', 'UNRELATED_FACTOR = 6\n'), [])
+
+    def test_an_import_resolves_to_the_package_not_the_script_of_the_same_name(self):
+        self.assertEqual(self.closure('package'), ['catalog_reader/__init__.py', 'catalog_reader/package_decoder.py', 'world/__init__.py',
+                                                   'world/package_step.py'])
+        self.assertEqual(self.steps_changed_by_edit('catalog_reader.py', 'SCRIPT_FACTOR = 9\n'), [])
 
     def test_a_literal_dynamic_import_is_covered(self):
         self.assertIn('vendor_reader/decoder.py', self.closure('dynamic'))

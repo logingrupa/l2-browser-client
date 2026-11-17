@@ -10,7 +10,7 @@ from native_assets_lib.world_ambience import wav_facts
 from native_catalog.ue2 import FormatError, Package
 from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_paths import lane_work_root
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 SOUND_PACKAGE_SUFFIX = '.uax'
 SOUND_CLASS_NAME = 'Sound'

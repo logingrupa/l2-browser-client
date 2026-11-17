@@ -1,4 +1,5 @@
 import copy
+import inspect
 import json
 from pathlib import Path
 import sys
@@ -183,6 +184,14 @@ class ReceiptTests(unittest.TestCase):
 
 SYNTHETIC_MESH_PACKAGE_PATH = 'animations/LineageMonsters.ukx'
 RESOLVED_ACTOR_PROPERTIES = {'DrawScale': 1.0, 'DrawScale3D': {'X': 1.0, 'Y': 1.0, 'Z': 1.0}, 'CollisionRadius': 10.0, 'CollisionHeight': 15.0}
+
+
+class ToolPinTests(unittest.TestCase):
+    def test_the_implementation_pins_cover_the_source_of_the_class_default_reader(self):
+        with patch.object(profiles, 'file_hash', return_value=profiles.UELIB_SHA256):
+            implementation = profiles.npc_profile_tool_pins()['implementation']
+        reader_source = Path(inspect.getsourcefile(profiles.DefaultReader)).resolve().relative_to(ROOT / 'scripts').as_posix()
+        self.assertIn(reader_source, implementation)
 
 
 class SyntheticDefaultReader:

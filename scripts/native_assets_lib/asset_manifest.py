@@ -1,8 +1,7 @@
-import hashlib
 import math
 import re
 
-from native_assets_lib.gltf import json_bytes
+from hash_reference_client_tree import reference_tree_lock_sha256
 from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH
 
 SUPPORTED_ASSET_MANIFEST_VERSIONS = (1, 2)
@@ -36,7 +35,7 @@ def reference_client_build(lock):
     engine = lock.record(ENGINE_LIBRARY_RELATIVE_PATH)
     if engine is None or engine['class'] != 'equal' or not HEX_DIGEST_PATTERN.match(str(engine['importaSha256'])):
         raise ValueError(f'reference client lock does not record {ENGINE_LIBRARY_RELATIVE_PATH} as equal')
-    return {'referenceTreeLockSha256': hashlib.sha256(json_bytes(lock.document)).hexdigest(), 'engineDllSha256': engine['importaSha256']}
+    return {'referenceTreeLockSha256': reference_tree_lock_sha256(lock.document), 'engineDllSha256': engine['importaSha256']}
 
 
 def source_path_record(host, absolute_path):

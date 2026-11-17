@@ -16,7 +16,7 @@ from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RawMapStepError, raw_map_ledger, raw_map_unit_fingerprint, read_tile_map_lock_record,
                                 require_tile_id, tile_map_path, tile_step_row, tile_unit_key)
 from world.terrain_coordinates import SOURCE_TO_GLTF, xyz
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
 CHUNK_PLAN_STEP_ALGORITHM_VERSION = 1

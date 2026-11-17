@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from native_store import interprocess_lock as interprocess_lock_module
 from native_store.interprocess_lock import (INTERPROCESS_LOCK_FOLDER_NAME, LOCK_FILE_SUFFIX, InterprocessLockError, convert_under_request_lock,
-                                            interprocess_lock, lane_lock_folder, lock_file_path)
+                                            interprocess_lock, lane_lock_folder, lock_file_path, unit_lock)
 from support.interprocess_lock_programs import event_marker_path, recorded_events
 from support.item_unit_worker_runs import wait_until_path_exists
 
@@ -117,6 +117,35 @@ class InterprocessLockTests(unittest.TestCase):
         self.run_lock_program('announce-then-enter', self.lock_folder, SHARED_KEY, self.events_folder, 'second')
         with interprocess_lock(self.lock_folder, OTHER_KEY):
             self.assertEqual(interprocess_lock_module.held_lock_file_path, lock_file_path(self.lock_folder, OTHER_KEY))
+
+    def test_a_unit_lock_admits_one_inner_lock_and_refuses_a_second_unit_lock_or_a_unit_lock_inside_another_lock(self):
+        work_root = self.lock_folder.parent
+        with unit_lock(work_root, 'minimap-route:interlude'):
+            self.assertEqual(interprocess_lock_module.held_unit_lock_file_path, lock_file_path(self.lock_folder, 'unit:minimap-route:interlude'))
+            with interprocess_lock(self.lock_folder, OTHER_KEY):
+                self.assertEqual(interprocess_lock_module.held_lock_file_path, lock_file_path(self.lock_folder, OTHER_KEY))
+            with self.assertRaises(InterprocessLockError):
+                with unit_lock(work_root, 'class:Engine.Mover'):
+                    self.fail('a second unit lock was granted')
+        self.assertIsNone(interprocess_lock_module.held_unit_lock_file_path)
+        with interprocess_lock(self.lock_folder, OTHER_KEY):
+            with self.assertRaises(InterprocessLockError):
+                with unit_lock(work_root, 'minimap-route:interlude'):
+                    self.fail('a unit lock was granted inside another lock')
+        self.assertEqual((interprocess_lock_module.held_unit_lock_file_path, interprocess_lock_module.held_lock_file_path), (None, None))
+
+    def test_a_second_process_enters_a_unit_lock_only_after_the_first_leaves(self):
+        work_root = self.lock_folder.parent
+        first = self.start_lock_program('hold-unit-until-released', work_root, 'minimap-route:interlude', self.events_folder, 'first', self.release_path)
+        wait_until_path_exists(event_marker_path(self.events_folder, 'first entered'))
+        second = self.start_lock_program('announce-then-enter-unit', work_root, 'minimap-route:interlude', self.events_folder, 'second')
+        wait_until_path_exists(event_marker_path(self.events_folder, 'second waiting'))
+        with self.assertRaises(subprocess.TimeoutExpired):
+            second.wait(timeout=SECOND_PROCESS_STILL_WAITING_SECONDS)
+        self.release_path.write_bytes(b'')
+        self.require_exit_code_zero(first)
+        self.require_exit_code_zero(second)
+        self.assertEqual(recorded_events(self.events_folder), ['first entered', 'second waiting', 'first leaving', 'second entered'])
 
     def test_the_lock_file_is_named_by_the_sha256_of_its_key_and_stays_after_release(self):
         expected_path = self.lock_folder / (hashlib.sha256(SHARED_KEY.encode('utf-8')).hexdigest() + LOCK_FILE_SUFFIX)

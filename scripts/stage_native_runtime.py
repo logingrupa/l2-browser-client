@@ -11,7 +11,8 @@ from native_assets_lib.gltf import json_bytes, safe_name
 from native_actor_profiles import UNMATCHED_ACTOR_CLASS_MESSAGE, UNMATCHED_NPC_MESH_MESSAGE
 from native_assets_lib.qualified_export_names import ROOT_OBJECT_CLASS, is_actor_class_chain, unique_qualified_export_match
 from native_catalog.cli import json_bytes as profile_json_bytes
-from native_store.catalog_writer import add_store_file, decode_store_catalog, read_current_catalog_bytes, sha256_hex, write_store
+from native_store.catalog_writer import add_store_file, decode_store_catalog, read_current_catalog_bytes, write_store
+from native_store.verified_file_writes import sha256_hex
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNTIME_STAGE_DESCRIPTION = 'Stage verified migration models and textures for this local browser, keeping every other catalog record.'

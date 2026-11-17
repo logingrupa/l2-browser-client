@@ -10,7 +10,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
-from actors.skill_effect_conversion import read_simulated_emitter_classes
+from native_assets_lib.emitter_classes import read_simulated_emitter_classes
 from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import validate_gap_row
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary

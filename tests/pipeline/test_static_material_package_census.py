@@ -45,6 +45,10 @@ SYNTHETIC_PACKAGES = {
     'staticmeshes/Neighbour_S.usx': ((123, 13), ['Arch', 'Gate', 'Door'], []),
     'staticmeshes/Older_S.usx': ((118, 11), ['Old'], []),
 }
+SYNTHETIC_MAPS = {
+    'maps/20_20.unr': ((123, 28), ['wispray01'], ['Skin']),
+    'maps/20_21.unr': ((123, 28), [], ['Skin']),
+}
 NOT_EQUAL_PACKAGE = 'staticmeshes/Changed_S.usx'
 
 
@@ -55,7 +59,8 @@ class SyntheticStaticMeshPackageCensusTests(unittest.TestCase):
         self.client_root = Path(client_directory.name)
         write_synthetic_engine_library(self.client_root)
         files = {ENGINE_LIBRARY_RELATIVE_PATH: equal_lock_record(self.client_root / ENGINE_LIBRARY_RELATIVE_PATH)}
-        for relative_path, (version, static_meshes, textures) in {**SYNTHETIC_PACKAGES, NOT_EQUAL_PACKAGE: ((123, 28), ['Lost'], [])}.items():
+        for relative_path, (version, static_meshes, textures) in {**SYNTHETIC_PACKAGES, **SYNTHETIC_MAPS,
+                                                                  NOT_EQUAL_PACKAGE: ((123, 28), ['Lost'], [])}.items():
             package_path = self.client_root / relative_path
             package_path.parent.mkdir(parents=True, exist_ok=True)
             package_path.write_bytes(synthetic_static_mesh_package(version, static_meshes, textures))
@@ -66,12 +71,13 @@ class SyntheticStaticMeshPackageCensusTests(unittest.TestCase):
     def census(self):
         return census_module.build_static_mesh_package_census(require_reference_client(self.client_root))
 
-    def test_every_lock_equal_usx_is_listed_by_path_with_its_header_and_static_mesh_count(self):
+    def test_every_lock_equal_usx_and_every_lock_equal_map_with_a_static_mesh_is_listed_with_its_header_and_static_mesh_count(self):
         census = self.census()
         rows = {row['path']: row for row in census['packages']}
-        self.assertEqual([row['path'] for row in census['packages']], ['staticmeshes/Neighbour_S.usx', 'staticmeshes/Older_S.usx',
+        self.assertEqual([row['path'] for row in census['packages']], ['maps/20_20.unr', 'staticmeshes/Neighbour_S.usx', 'staticmeshes/Older_S.usx',
                                                                       'staticmeshes/reviewed_s.usx', 'staticmeshes/Twelve_S.usx'])
         self.assertEqual({path: (row['packageVersion'], row['licensee'], row['staticMeshExportCount']) for path, row in rows.items()}, {
+            'maps/20_20.unr': (123, 28, 1),
             'staticmeshes/Neighbour_S.usx': (123, 13, 3), 'staticmeshes/Older_S.usx': (118, 11, None),
             'staticmeshes/reviewed_s.usx': (123, 28, 1), 'staticmeshes/Twelve_S.usx': (123, 12, 2)})
         for path, row in rows.items():
@@ -104,7 +110,7 @@ class SyntheticStaticMeshPackageCensusTests(unittest.TestCase):
     def test_a_census_with_a_stale_reviewed_flag_or_unsorted_rows_is_refused(self):
         census = self.census()
         stale_flag = json.loads(json.dumps(census))
-        stale_flag['packages'][2]['reviewed'] = False
+        next(row for row in stale_flag['packages'] if row['path'] == 'staticmeshes/reviewed_s.usx')['reviewed'] = False
         unsorted_rows = json.loads(json.dumps(census))
         unsorted_rows['packages'].reverse()
         missing_count = json.loads(json.dumps(census))
@@ -139,12 +145,17 @@ class RecordedRealClientCaseTests(unittest.TestCase):
 
 
 class CommittedStaticMeshPackageCensusTests(unittest.TestCase):
-    def test_the_committed_census_is_valid_pinned_to_the_lock_and_lists_every_lock_equal_usx(self):
+    def test_the_committed_census_is_valid_pinned_to_the_lock_and_lists_every_lock_equal_usx_and_the_maps_with_static_meshes(self):
         census = json.loads((ROOT / census_module.STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH).read_bytes())
         census_module.validate_static_mesh_package_census(census)
         lock = read_reference_client_lock(REFERENCE_CLIENT_LOCK_PATH)
         self.assertEqual(census['referenceTreeLockSha256'], reference_client_build(lock)['referenceTreeLockSha256'])
-        self.assertEqual([row['path'] for row in census['packages']], census_module.lock_equal_static_mesh_package_paths(lock))
+        usx_paths = census_module.lock_equal_package_paths(lock, census_module.STATIC_MESH_PACKAGE_SUFFIX)
+        map_rows = [row for row in census['packages'] if row['path'] not in usx_paths]
+        self.assertEqual([row['path'] for row in census['packages'] if row['path'] in usx_paths], usx_paths)
+        self.assertLessEqual({row['path'] for row in map_rows}, set(census_module.lock_equal_package_paths(lock, census_module.MAP_PACKAGE_SUFFIX)))
+        self.assertIn('maps/24_18.unr', {row['path'] for row in map_rows})
+        self.assertTrue(all(row['staticMeshExportCount'] > 0 for row in map_rows))
         for row in census['packages']:
             self.assertEqual(row['sha256'], lock.record(row['path'])['eSha256'])
             self.assertEqual(row['reviewed'], (row['packageVersion'], row['licensee']) in REVIEWED_VERSIONS)

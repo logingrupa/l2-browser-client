@@ -13,7 +13,7 @@ from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME, ru
 from world.static_mesh_step import STATIC_MESH_STEP_NAME, run_static_mesh_step
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, run_terrain_chunk_step
 from world.terrain_material_step import TERRAIN_MATERIAL_STEP_NAME, run_terrain_material_step
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, run_chunk_plan_step
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, run_tile_manifest_step
 from world.tile_step_current_seals import TILE_STEP_SEAL_CHECKS

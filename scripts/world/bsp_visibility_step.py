@@ -6,7 +6,7 @@ from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_chunk_geometry import BSP_POLY_FLAGS_PATH
@@ -20,7 +20,7 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_mesh_step import sealed_static_meshes
 from world.static_placement import ClassDefaults
 from world.struct_property_tag_rules import read_struct_property_tag_rules
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource

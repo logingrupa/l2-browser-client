@@ -6,8 +6,8 @@ from native_assets import implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
-from native_store.interprocess_lock import interprocess_lock, lane_lock_folder
+from native_store.verified_file_writes import sha256_hex
+from native_store.interprocess_lock import unit_lock
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
@@ -16,11 +16,12 @@ from world.mover_class_defaults import MOVER_CLASS, MOVER_CLASS_UNIT_KEY, mover_
 from world.mover_records import MoverUnsupportedError, read_mover_actor
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_collision_sources import COLLISION_RULES_PATH, decide_placement_collision, load_collision_rules, model_slot_properties, static_mesh_selectors
-from world.static_mesh_step import (ConvertedStaticMesh, colour_stream_gap_rows, conversion_failure_reason, model_sort_key, static_mesh_outcomes,
+from world.static_mesh_step import (ConvertedStaticMesh, colour_stream_gap_rows, model_sort_key, static_mesh_outcomes,
                                     write_static_mesh_store_files)
+from world.error_detail import conversion_failure_reason
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_json_resource import write_tile_json_resource
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
@@ -33,7 +34,6 @@ TILE_MOVERS_SCHEMA_VERSION = 1
 TILE_MOVERS_FOLDER = 'movers'
 TILE_MOVERS_NAME = 'tile-movers.json'
 RAW_MAP_PRODUCT_PATH = 'raw/map.unwrapped.bin'
-MOVER_CLASS_UNIT_LOCK_KEY = 'unit:' + MOVER_CLASS_UNIT_KEY
 TILE_MOVER_FIELDS = ('id', 'actorName', 'modelId', 'serverObject', 'closedMatrix', 'openMatrix', 'moveTimeSeconds', 'initialKey', 'initiallyClosed',
                      'keys', 'sounds')
 
@@ -101,7 +101,7 @@ def movers_product_path(ledger, unit_key):
 
 
 def mover_class_unit_lock(project_root):
-    return interprocess_lock(lane_lock_folder(lane_work_root(project_root, WORLD_LANE_NAME)), MOVER_CLASS_UNIT_LOCK_KEY)
+    return unit_lock(lane_work_root(project_root, WORLD_LANE_NAME), MOVER_CLASS_UNIT_KEY)
 
 
 def sealed_mover_unit_config(project_root, tile_id, lock_record):

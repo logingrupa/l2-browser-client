@@ -5,7 +5,7 @@ from typing import NamedTuple
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.blocking_volume_geometry import read_volume
@@ -23,13 +23,14 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_collision_sources import (COLLISION_RULES_PATH, COLLISION_UNREADABLE_REASON, GAP_DECISION, SLOTS_DECISION,
                                             decide_placement_collision, load_collision_rules, model_slot_properties, static_mesh_collision_triangles,
                                             static_mesh_selectors)
-from world.static_mesh_step import conversion_failure_reason, sealed_static_meshes, static_mesh_requests_by_reference
+from world.static_mesh_step import sealed_static_meshes, static_mesh_requests_by_reference
+from world.error_detail import conversion_failure_reason
 from world.static_placement import TransformFieldError, read_class_evidence, resolved_static_values, static_matrix
 from world.static_placement_plan import (FAILED_STATUS, PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX, chunk_for_origin, chunk_rectangles,
                                          static_mesh_actor_subclass_actors, static_mesh_actors)
 from world.terrain_chunk_step import sealed_terrain_chunks
 from world.terrain_collision_source import read_terrain_collision
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource

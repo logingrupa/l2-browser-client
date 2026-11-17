@@ -8,7 +8,7 @@ from native_store.unit_ledger import UnitLedger, locked_input_records
 from world import tile_music
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record,
                                 tile_map_path, tile_step_row, tile_unit_key)
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
 
 LOCKED_TILE_ID = '20_15'

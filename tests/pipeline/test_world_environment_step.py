@@ -8,12 +8,13 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_store.catalog_writer import CatalogWriteError, read_store_catalog, validate_catalog_record
+from native_store.catalog_writer import read_store_catalog, validate_catalog_record
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.pinned_store_verification import verify_pinned_store_files
 from support.environment_source_files import SETUP_FILE_TEXT, encoded_environment_file
 from world import environment_step
 from world.environment_step import ENVIRONMENT_INPUT_PATHS, EnvironmentStepError, current_environment, run_environment_step
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 CLIENT_ROOT = Path('E:/Lineage2-client')
 TIME_ENVIRONMENT_FILE_TEXT = '[SkyBoxColor]\r\nNUM=2\r\nCOLOR1=(T=0,R=40,G=49,B=70)\r\nCOLOR2=(T=12,R=66,G=124,B=176)\r\n'

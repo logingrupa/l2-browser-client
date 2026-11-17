@@ -13,8 +13,8 @@ from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import process_reference_client_lock
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
-from world.static_mesh_step import MODEL_CONVERSION_ERRORS, conversion_failure_reason
-from world.tile_census import WORLD_LANE_NAME
+from world.error_detail import MODEL_CONVERSION_ERRORS, conversion_failure_reason
+from world.world_lane_names import WORLD_LANE_NAME
 
 MINIMAP_TEXTURE_CONVERTER_FOLDER = 'minimap-texture-converter'
 TEXTURE_ARCHIVE_NAME = 'asset.l2asset'

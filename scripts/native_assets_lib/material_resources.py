@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import immutable_write
+from native_store.verified_file_writes import immutable_write
 from native_store.native_material_program_pins import MATERIAL_PROGRAM_FILE_NAME, native_material_program_directory
 from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 

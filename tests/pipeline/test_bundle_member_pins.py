@@ -12,9 +12,11 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from catalog_store_fixture import runtime_tile_record_and_files
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import CatalogWriteError
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.merge_lane_store import LaneStoreMergeRefusedError, merge_lane_store
 from native_store import pinned_store_verification
 from native_store.pinned_store_verification import verify_pinned_store_files
@@ -360,13 +362,12 @@ class SyntheticWorldTile:
         self.sky_folder = f'skies/{sha256_hex(sky_manifest)}'
         self.bsp_glb = synthetic_glb_with_materials([{'name': 'surface', 'extras': {'nativeMaterialProgram': pin}} for pin in program_pins])
         self.bsp_relative = f'native-tile-chunk-bsp/{sha256_hex(self.bsp_glb)}/bsp.glb'
-        tile = json_bytes({'schemaVersion': 1, 'resources': [
-            {'kind': 'sky', 'resource': f'/l2/{self.sky_folder}/manifest.json', 'sha256': sha256_hex(sky_manifest)},
-            {'kind': 'bsp', 'resource': f'/l2/{self.bsp_relative}', 'sha256': sha256_hex(self.bsp_glb)}]})
-        self.tile_relative = f'tiles/{sha256_hex(tile)}/tile.json'
-        self.record = {'id': '15_20', 'manifest': f'/l2/{self.tile_relative}', 'manifestSha256': sha256_hex(tile), 'manifestBytes': len(tile)}
-        write_file(store_root / self.tile_relative, tile)
-        write_file(store_root / self.sky_folder / 'manifest.json', sky_manifest)
+        chunk_manifest = json_bytes({'bsp': {'resource': f'/l2/{self.bsp_relative}', 'sha256': sha256_hex(self.bsp_glb)}})
+        collision_manifest = json_bytes({'tileId': '15_20'})
+        self.record, self.tile_files = runtime_tile_record_and_files('15_20', chunk_manifest,
+                                                                     {'native-tile-collision': collision_manifest, 'sky': sky_manifest})
+        for resource_path, payload in self.tile_files.items():
+            write_file(store_root / resource_path[len(NATIVE_RESOURCE_PREFIX):], payload)
         for name, payload in self.sky_members.items():
             write_file(store_root / self.sky_folder / name, payload)
         write_file(store_root / self.bsp_relative, self.bsp_glb)
@@ -379,8 +380,9 @@ class SyntheticWorldTile:
         return catalog
 
     def runtime_relative_paths(self):
-        return sorted([self.tile_relative, f'{self.sky_folder}/manifest.json', *(f'{self.sky_folder}/{name}' for name in self.sky_members),
-                       self.bsp_relative, f'native-materials/{self.program_sha256}/program.json'])
+        return sorted([*(resource_path[len(NATIVE_RESOURCE_PREFIX):] for resource_path in self.tile_files),
+                       *(f'{self.sky_folder}/{name}' for name in self.sky_members), self.bsp_relative,
+                       f'native-materials/{self.program_sha256}/program.json'])
 
 
 class WorldTileRuntimePinTests(TemporaryStoreTestCase):

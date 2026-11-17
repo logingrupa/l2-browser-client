@@ -19,7 +19,8 @@ from catalog_store_fixture import model_record, write_store_catalog
 from native_assets_lib.gltf import json_bytes
 from native_store import gap_rows
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import CatalogWriteError, add_store_file
+from native_store.catalog_writer import add_store_file
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.gap_rows import GapRowError, gap_reason_list_versions
 from native_store.store_paths import lane_gap_rows_path, lane_store_root
 from native_store.unit_ledger import UnitLedger

@@ -11,6 +11,7 @@ import hashlib
 import json
 import struct
 
+from hash_reference_client_tree import reference_tree_lock_sha256
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.unit_ledger import run_at_below_normal_priority
@@ -20,7 +21,6 @@ from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.native_terrain_sectors import native_terrain, read_height_samples
 from world.raw_map_step import RAW_STEP_NAME, read_tile_map_lock_record
 from world.terrain_coordinates import calculated_coords, coords_point, xyz
-from world.tile_census import reference_tree_lock_sha256
 from world.tile_chunk_plan import (TERRAIN_HEIGHT_PACKAGE_MISSING_REASON, ChunkPlanStepError, raw_unit_fingerprint, read_locked_map_package,
                                    read_raw_terrain_record, serialized_location)
 

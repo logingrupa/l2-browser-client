@@ -6,7 +6,7 @@ from world import minimap_route_step
 from world.minimap_route_step import (MINIMAP_ROUTE_MANIFEST_NAME, MINIMAP_ROUTE_PRODUCT_NAME, MINIMAP_ROUTE_STORE_FOLDER, MINIMAP_ROUTE_UNIT_KEY,
                                       current_minimap_route, minimap_route_inputs, minimap_route_ledger)
 from world.raw_map_step import PRODUCTS_FOLDER_NAME
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_json_resource import write_tile_json_resource
 
 SYNTHETIC_ROUTE_GAPS = [{'reason': 'minimap-join-unresolved:zone-title-source', 'evidence': 'synthetic zone title source'},

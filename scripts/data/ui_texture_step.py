@@ -6,16 +6,16 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-from hash_reference_client_tree import canonical_json_bytes
+from hash_reference_client_tree import canonical_json_bytes, reference_tree_lock_sha256
 from interface_layout_adapter import INTERFACE_XDAT_PATH
 from lane_unit_outcomes import DECODE_FAILED_REASON_PREFIX, lane_relative_path, replace_step_gap_row
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX, TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX
-from actors.npc_store_records import catalog_with_records_replaced, catalog_without_records
+from native_store.catalog_record_replacement import catalog_with_records_replaced, catalog_without_records
 from native_store.catalog_writer import add_store_file, read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN, read_gap_rows
 from native_store.store_paths import SHA256_PATTERN, STEP_NAME_PATTERN
 from reference_client_guard import ReferenceClientLockError
-from texture_package_census import reference_tree_lock_sha256, validate_texture_package_census
+from texture_package_census import validate_texture_package_census
 
 UI_TEXTURE_ALGORITHM_VERSION = 2
 UI_TEXTURE_RECIPE_SCHEMA_VERSION = 1
@@ -78,7 +78,7 @@ def texture_request(reference, window_ids, packages_by_stem, census_rows_by_path
 
 def ui_texture_requests(window_manifests, texture_census, lock):
     validate_texture_package_census(texture_census)
-    if texture_census['referenceTreeLockSha256'] != reference_tree_lock_sha256(lock):
+    if texture_census['referenceTreeLockSha256'] != reference_tree_lock_sha256(lock.document):
         raise UiTextureStepError('texture package census was written for another reference client lock; rerun texture_package_census.py')
     interface_sha256, window_ids_by_reference = window_references(window_manifests)
     packages_by_stem = lock_equal_packages_by_casefolded_stem(lock)

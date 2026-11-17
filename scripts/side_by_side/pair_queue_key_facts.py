@@ -7,7 +7,8 @@ from native_store.catalog_index_keys import (ITEM_MODEL_RECORD_ID_PATTERN, SKILL
                                              legacy_single_mesh_candidate_model_ids_by_source_object, model_source_objects_by_id,
                                              npc_profile_model_id, npc_profile_npc_key, read_profile_manifest_profiles, store_root_candidates,
                                              validated_slice_records)
-from native_store.catalog_writer import CatalogWriteError, read_pinned_file, require_file_pin
+from native_store.catalog_writer import read_pinned_file, require_file_pin
+from native_store.verified_file_writes import CatalogWriteError
 from side_by_side.pair_queue_union import PairQueueError, decode_strict_store_json, read_strict_json_file
 
 TILE_CENSUS_PATH = 'docs/parts/world/tile-census.json'

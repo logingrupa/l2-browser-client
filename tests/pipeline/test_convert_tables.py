@@ -17,7 +17,8 @@ from convert_tables import (DECODE_TABLE_ALGORITHM_VERSION, LOCAL_DESCRIPTOR_ROU
 from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import LaneUnitOutcomeError, replace_unit_gap_row, seal_unit_manifest
 from native_catalog.tables import CRYPTO_SOURCE, NON_FINITE_FLOAT32_KEY, SAFE_PACKAGE_TRAILER, SCHEMA_ROOT, interlude_descriptor_links
-from native_store.catalog_writer import TABLE_MANIFEST_PATH_PATTERN, CatalogWriteError, validate_catalog_record
+from native_store.catalog_writer import TABLE_MANIFEST_PATH_PATTERN, validate_catalog_record
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.data_ui_table_manifest import native_table_manifest
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root

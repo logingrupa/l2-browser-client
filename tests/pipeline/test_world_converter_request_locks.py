@@ -13,13 +13,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
-from native_store.interprocess_lock import lane_lock_folder
 from native_store.store_paths import lane_work_root
 from test_world_audio_step import wav_bytes
 from world import exact_sound_sources, minimap_textures, mover_step, static_mesh_step
 from world.exact_sound_sources import ResolvedSound
 from world.mover_class_defaults import MOVER_CLASS_UNIT_KEY
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 TILE_ID = '20_20'
 LOCK_RECORD = {'eSha256': 'e' * 64}
@@ -39,8 +38,8 @@ class RecordingLock:
         self.held, self.entered_with, self.left_count = False, [], 0
 
     @contextmanager
-    def interprocess_lock(self, lock_folder, key):
-        self.entered_with.append((lock_folder, key))
+    def unit_lock(self, lane_work_root, unit_key):
+        self.entered_with.append((lane_work_root, unit_key))
         self.held = True
         try:
             yield
@@ -102,10 +101,10 @@ class MoverClassUnitLockTests(unittest.TestCase):
         self.project_root = Path(temporary_directory.name).resolve()
         self.lock = RecordingLock()
         self.held_at_each_call = []
-        lock_patcher = mock.patch.object(mover_step, 'interprocess_lock', self.lock.interprocess_lock)
+        lock_patcher = mock.patch.object(mover_step, 'unit_lock', self.lock.unit_lock)
         lock_patcher.start()
         self.addCleanup(lock_patcher.stop)
-        self.expected_lock = (lane_lock_folder(lane_work_root(self.project_root, WORLD_LANE_NAME)), mover_step.MOVER_CLASS_UNIT_LOCK_KEY)
+        self.expected_lock = (lane_work_root(self.project_root, WORLD_LANE_NAME), MOVER_CLASS_UNIT_KEY)
 
     def recording(self, name, result=None, error=None):
         def stand_in(*arguments):
@@ -123,7 +122,6 @@ class MoverClassUnitLockTests(unittest.TestCase):
                 mock.patch.object(mover_step, 'mover_unit', self.recording('mover_unit', error=StepEndedAfterTheLock())):
             with self.assertRaises(StepEndedAfterTheLock):
                 mover_step.run_mover_step(self.project_root, self.project_root / 'client', TILE_ID)
-        self.assertEqual(mover_step.MOVER_CLASS_UNIT_LOCK_KEY, 'unit:' + MOVER_CLASS_UNIT_KEY)
         self.assertEqual(self.lock.entered_with, [self.expected_lock])
         self.assertEqual(self.held_at_each_call, [('mover_class_evidence', True), ('mover_unit', False)])
         self.assertEqual(self.lock.left_count, 1)

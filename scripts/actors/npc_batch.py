@@ -9,15 +9,17 @@ from actors.effect_bundle_packing import native_class_closure, pack_items_by_cla
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
                                  NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_RECIPE_ID_PREFIX, NPC_PROFILE_STEP, PASS_STATUS,
                                  TRANSIENT_FAILURES, npc_profile_selection, npc_profiles_recipe)
-from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, catalog_with_records_replaced,
-                                      converted_model_store_files_and_record, profile_bundle_store_files_and_record, profile_slice_with_pack_record)
+from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, profile_bundle_store_files_and_record,
+                                      profile_slice_with_pack_record)
+from native_store.catalog_record_replacement import catalog_with_records_replaced
+from native_store.converted_model_store_files import converted_model_store_files_and_record
 from data.lane_unit_outcomes import replace_step_gap_rows
 from native_actor_profiles import (ACTOR_CLASS_INHERITANCE_MESSAGE, MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE,
                                    NATIVE_SKELETAL_MESH_EXPORT_KIND, UNMATCHED_ACTOR_CLASS_MESSAGE, UNMATCHED_NPC_MESH_MESSAGE,
                                    migrate_npc_profiles, npc_profile_tool_pins)
 from native_assets_lib.qualified_export_names import is_actor_class_chain, package_export_objects, unique_qualified_export_match
 from native_assets_lib.gltf import json_bytes
-from native_effect_bundle import MAX_CLASSES
+from native_assets_lib.class_default_inheritance import MAX_CLASSES
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, BatchPreflightRefusedError, UnitLedger, locked_input_records

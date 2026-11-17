@@ -14,7 +14,7 @@ from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, NPC_MOD
 from data import lane_unit_outcomes
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import CatalogWriteError
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.gap_rows import gap_reason_list_versions
 from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 from native_store.store_paths import lane_gap_rows_path, lane_store_root, lane_work_root

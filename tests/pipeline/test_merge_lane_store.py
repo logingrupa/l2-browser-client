@@ -17,7 +17,9 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from catalog_store_fixture import minimal_runtime_tile_record_and_files
 from native_assets_lib.gltf import json_bytes
 from native_store import merge_lane_store as merge_lane_store_module
 from native_store.merge_lane_store import LaneStoreMergeRefusedError, merge_lane_store
@@ -145,21 +147,20 @@ class LaneStoreMergeTests(unittest.TestCase):
 
     def test_identical_files_already_in_the_target_keep_their_modification_time_and_count_as_unchanged(self):
         target_root = self.fixture.target_root
-        target_catalog = json.loads((target_root / 'catalog.json').read_bytes())
-        tile_record = target_catalog.pop('tiles')[0]
-        write_file(target_root / 'catalog.json', json_bytes(target_catalog))
-        tile_manifest_relative = relative_resource(tile_record['manifest'])
-        chunk_manifest_relative = relative_resource(json.loads((target_root / tile_manifest_relative).read_bytes())['chunks'][0]['manifest'])
+        target_tiles = json.loads((target_root / 'catalog.json').read_bytes())['tiles']
+        tile_record, tile_files = minimal_runtime_tile_record_and_files('20_20', pins_collision=True)
+        for resource_path, payload in tile_files.items():
+            write_file(target_root / relative_resource(resource_path), payload)
         self.fixture.lane_records['tiles'] = [tile_record]
-        for relative in (tile_manifest_relative, chunk_manifest_relative):
-            self.fixture.lane_files['/l2/' + relative] = (target_root / relative).read_bytes()
+        self.fixture.lane_files.update(tile_files)
         self.fixture.write_lane_store()
-        modification_times = {relative: (target_root / relative).stat().st_mtime_ns for relative in (tile_manifest_relative, chunk_manifest_relative)}
+        tile_relatives = sorted(relative_resource(resource_path) for resource_path in tile_files)
+        modification_times = {relative: (target_root / relative).stat().st_mtime_ns for relative in tile_relatives}
         result = self.fixture.merge()
-        self.assertEqual(result['unchangedFiles'], sorted([chunk_manifest_relative, tile_manifest_relative]))
+        self.assertEqual(result['unchangedFiles'], tile_relatives)
         self.assertEqual(result['addedRecordsBySlice'], {'models': 1, 'tiles': 1})
         self.assertEqual({relative: (target_root / relative).stat().st_mtime_ns for relative in modification_times}, modification_times)
-        self.assertEqual(json.loads((target_root / 'catalog.json').read_bytes())['tiles'], [tile_record])
+        self.assertEqual(json.loads((target_root / 'catalog.json').read_bytes())['tiles'], [*target_tiles, tile_record])
 
     def test_one_merge_verifies_the_lane_once_with_the_verification_walk_and_its_worker_count(self):
         base_sha256 = self.fixture.target_catalog_sha256()

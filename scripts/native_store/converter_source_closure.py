@@ -28,7 +28,7 @@ def lf_normalized_sha256(path):
 
 def module_source_path(scripts_root, module_name):
     parts = module_name.split('.')
-    for candidate in (scripts_root.joinpath(*parts[:-1], parts[-1] + PYTHON_SOURCE_SUFFIX), scripts_root.joinpath(*parts, '__init__.py')):
+    for candidate in (scripts_root.joinpath(*parts, '__init__.py'), scripts_root.joinpath(*parts[:-1], parts[-1] + PYTHON_SOURCE_SUFFIX)):
         if candidate.is_file():
             return candidate
     return None

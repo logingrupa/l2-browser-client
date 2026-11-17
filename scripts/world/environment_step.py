@@ -10,16 +10,17 @@ import json
 import subprocess
 from typing import NamedTuple
 
-from actors.npc_store_records import catalog_with_records_replaced
+from native_store.catalog_record_replacement import catalog_with_records_replaced
 from native_assets_lib.gltf import json_bytes
 from native_environment import DEFAULT_FILES, IMPLEMENTATION_FILES, convert
-from native_store.catalog_writer import add_store_file, read_store_catalog, sha256_hex, sha256_of_file, validate_catalog_record, write_store
+from native_store.catalog_writer import add_store_file, read_store_catalog, validate_catalog_record, write_store
+from native_store.verified_file_writes import sha256_hex, sha256_of_file
 from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger, locked_input_records, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.raw_map_step import PRODUCTS_FOLDER_NAME
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 ENVIRONMENT_STEP_NAME = 'environment'
 ENVIRONMENT_STEP_ALGORITHM_VERSION = 1

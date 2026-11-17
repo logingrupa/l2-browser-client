@@ -1,15 +1,14 @@
 import json
 from pathlib import Path
-import re
-import subprocess
 from typing import NamedTuple
 
-from actors.npc_store_records import converted_model_store_files_and_record
+from native_store.converted_model_store_files import converted_model_store_files_and_record
 from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.static_materials import REVIEWED_VERSIONS, static_material_layout_unreviewed_reason
 from native_catalog.ue2 import FormatError, Package
-from native_store.catalog_writer import add_store_file, sha256_hex
+from native_store.catalog_writer import add_store_file
+from native_store.verified_file_writes import sha256_hex
 from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
@@ -19,22 +18,23 @@ from static_material_package_census import STATIC_MESH_PACKAGE_CENSUS_RELATIVE_P
 from world.light_actors import reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
+from world.error_detail import MODEL_CONVERSION_ERRORS, conversion_failure_reason
 from world.static_mesh_colour_streams import colour_streams_store_path, static_mesh_colour_stream_outcome
+from world.static_mesh_converter_folder import STATIC_MESH_CONVERTER_FOLDER
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actor_subclass_actors, static_mesh_actors
-from world.tile_census import WORLD_LANE_NAME, read_package_header
+from world.package_header import read_package_header
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
 STATIC_MESH_STEP_ALGORITHM_VERSION = 5
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
-STATIC_MESH_CONVERTER_FOLDER = 'static-mesh-converter'
 STATIC_MESH_REQUESTS_PRODUCT_NAME = 'static-mesh-requests.json'
 STATIC_MESH_BINDINGS_PRODUCT_NAME = 'section-bindings.json'
 PLACEMENT_MATERIAL_OVERRIDE_REASON = 'placement-material-override-unsupported'
 STATIC_MESH_REFERENCE_UNRESOLVED_REASON = 'static-mesh-reference-unresolved'
-MODEL_CONVERSION_ERRORS = (FormatError, ValueError, subprocess.TimeoutExpired)
 
 
 class StaticMeshStepError(ValueError):
@@ -123,15 +123,6 @@ def package_gate_reason(header):
     if (header['packageVersion'], header['licensee']) not in REVIEWED_VERSIONS:
         return GAP_STATUS, static_material_layout_unreviewed_reason(header['packageVersion'], header['licensee'])
     return None
-
-
-CONVERSION_FAILURE_DETAIL_SEPARATOR = re.compile(r'[:;]')
-
-
-def conversion_failure_reason(error):
-    message = str(error).strip()
-    sentence = CONVERSION_FAILURE_DETAIL_SEPARATOR.split(message.splitlines()[0], maxsplit=1)[0].strip() if message else ''
-    return f'decode-failed:{type(error).__name__}:{sentence or "no message"}'
 
 
 def model_sort_key(model_record):

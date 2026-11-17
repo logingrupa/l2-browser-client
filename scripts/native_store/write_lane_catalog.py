@@ -11,13 +11,15 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import catalog_record_unit, require_npc_profiles_join_models_of_their_mesh
 from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, empty_store_catalog, merge_catalog_slice_records, read_store_catalog,
-                                         sha256_hex, sha256_of_file, validate_catalog_record, write_store)
+                                         validate_catalog_record, write_store)
+from native_store.verified_file_writes import sha256_hex, sha256_of_file
 from native_store.gap_rows import read_gap_rows
 from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
 from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 from native_store.store_file_copy import add_store_file_source, copy_store_files, missing_store_file_sources
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name, refuse_reparse_points
+from native_store.tile_manifest_collision_pin import TileCollisionPinError, require_tile_manifests_pin_collision
 from native_store.unit_ledger import run_at_below_normal_priority
 
 LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shared public/l2 catalog it was built on, '
@@ -73,6 +75,13 @@ def require_union_lanes_agree(union_lane_name, slice_name, incoming_records, own
                                    f'{union_lane_name}; preserved')
 
 
+def require_lane_tile_manifests_pin_collision(lane_label, store_root, catalog):
+    try:
+        require_tile_manifests_pin_collision(store_root, catalog)
+    except TileCollisionPinError as error:
+        raise LaneCatalogError(f'{lane_label} {error}; preserved') from error
+
+
 def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_file_sources, owner_and_record_by_record_key):
     union_store_root = lane_store_root(project_root, union_lane_name)
     union_catalog, union_catalog_bytes = read_store_catalog(union_store_root)
@@ -84,6 +93,7 @@ def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_
         raise LaneCatalogError(f'union lane {union_lane_name} was built on base catalog sha256 {union_base_sha256}; '
                                f'the current base catalog sha256 is {base_sha256}')
     verified_store_file_by_key = verify_pinned_store_files(union_store_root, union_catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+    require_lane_tile_manifests_pin_collision(f'union lane {union_lane_name}', union_store_root, union_catalog)
     require_npc_profiles_join_models_of_their_mesh(union_store_root, union_catalog, shared_store_root(project_root))
     for relative in union_lane_store_relative_paths(union_store_root):
         add_store_file_source(store_file_sources, relative, confined_child_path(union_store_root, relative), verified_store_file_by_key)
@@ -206,6 +216,7 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
         union_report = {'retiredRecords': retired_records}
     else:
         verify_pinned_store_files(store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+        require_lane_tile_manifests_pin_collision(f'lane {lane_name}', store_root, catalog)
         require_npc_profiles_join_models_of_their_mesh(store_root, catalog, shared_store_root(project_root))
     catalog['sourceCatalogSha256'] = base_sha256
     after = json_bytes(catalog)

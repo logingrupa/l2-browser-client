@@ -22,7 +22,7 @@ from world.level_model import read_level_model, read_model_body
 from world.level_model_reference import read_level_model_reference
 from world.map_sources import MapSources
 from world.reader_licensee_layouts import LEVEL_MODEL_READER, READER_LICENSEE_LAYOUTS
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 
 RECIPE_PATH = ROOT / BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH
 VERIFIED_FACTS_SHA256 = '79d11661af9e67ea4f4090185012ec6220d562380b6322a14df272edf23d7ae5'

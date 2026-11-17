@@ -7,7 +7,7 @@ from native_assets_lib.gltf import json_bytes
 from native_assets_lib.material_resources import write_material_program_record
 from native_assets_lib.texture_package_118 import read_unreal_package
 from native_catalog.ue2 import FormatError
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import StorePathError, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_material_mapping_size import mapping_size_outcome, reference_client_class_default_value, surface_material_identities
@@ -23,13 +23,13 @@ from world.sky_geometry import SKY_COORDINATE_RULE, SKY_UV_RULE, SkyRootSurface,
 from world.material_texture_images import write_material_texture_images
 from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, single_graph_texture_export, sky_material_program, \
     sky_texture_pngs_by_node, sky_texture_products_by_node
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
 from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.struct_property_values import decode_binary_struct_hex
 from world.surface_material_programs import material_gap_row_status
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle

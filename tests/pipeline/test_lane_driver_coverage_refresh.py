@@ -23,7 +23,8 @@ from coverage_census_fixture import DECODE_FAILED_REASON, DECODE_PENDING_REASON,
 from native_assets_lib.gltf import json_bytes
 from native_catalog.tables import CRYPTO_SOURCE, SAFE_PACKAGE_TRAILER, SCHEMA_ROOT
 from native_store.build_coverage_report import write_coverage_report
-from native_store.catalog_writer import read_store_catalog, sha256_of_file, write_store
+from native_store.catalog_writer import read_store_catalog, write_store
+from native_store.verified_file_writes import sha256_of_file
 from native_store.gap_census_denominators import load_census_denominators
 from native_store.gap_rows import write_gap_rows
 from native_store.store_paths import lane_store_root

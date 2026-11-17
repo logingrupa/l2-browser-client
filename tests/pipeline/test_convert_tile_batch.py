@@ -21,7 +21,7 @@ from native_store.unit_ledger import (RUNNING_MARKER_NAME, SEAL_RECORD_NAME, Fre
 from tile_step_seal_fixture import LOCKED_TILE_ID, seal_raw_unit, seal_unit, tile_map_inputs, unpinned_music_encoder
 from world import convert_tile_batch, world_audio_step
 from world.convert_tile_batch import NOTHING_TO_DO_MESSAGE, TileBatchUsageError, run_tile_batch
-from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, step_level_rows
+from world.eligible_tile_selection import SealedTileStep, failed_step_row, seal_derived_step_row, step_level_rows
 from world.eligible_tiles import select_eligible_tiles
 from world.raw_map_step import read_tile_map_lock_record, tile_step_row, tile_unit_key
 from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATIVE_PATH, TileCensusError
@@ -208,6 +208,12 @@ class EligibleTileSelectionTests(unittest.TestCase):
         self.assertTrue(all('object' not in row['sourceIdentity'] for row in rows))
         self.assertEqual(rows[3]['evidence'], TILE_CENSUS_RELATIVE_PATH)
 
+    def test_failed_step_row_names_the_first_error_line_or_the_error_type(self):
+        identity = synthetic_source_identity('10_11')
+        reasons = [failed_step_row('10_11', 'meshes', identity, error, 'evidence.json')['reason']
+                   for error in (ValueError('first line\nsecond line'), KeyError())]
+        self.assertEqual(reasons, ['decode-failed:ValueError:first line', 'decode-failed:KeyError:KeyError'])
+
 
 class TileBatchOrderTests(TileBatchTestCase):
     def test_runs_registry_steps_in_order_on_the_first_unsealed_tile_and_marks_the_rest_pending(self):
@@ -247,7 +253,9 @@ class TileBatchOrderTests(TileBatchTestCase):
         self.assertEqual((rows[('tile:10_11', 'chunks')]['status'], rows[('tile:10_11', 'chunks')]['reason']),
                          ('failed', 'decode-failed:ValueError:synthetic decode failure'))
         self.assertEqual(rows[('tile:10_11', 'meshes')]['reason'], 'upstream-step-failed:chunks')
-        self.assertIn(('10_11', 'manifest'), steps.calls)
+        self.assertEqual((rows[('tile:10_11', 'manifest')]['status'], rows[('tile:10_11', 'manifest')]['reason']),
+                         ('pending', 'upstream-step-failed:chunks'))
+        self.assertNotIn(('10_11', 'manifest'), steps.calls)
         self.assertNotIn(('10_11', 'meshes'), steps.calls)
         self.assertEqual(rows[('tile:12_13', 'manifest')]['status'], 'pass')
 
@@ -272,6 +280,10 @@ class TileBatchOrderTests(TileBatchTestCase):
         first = self.run_batch(steps)
         self.assertEqual(first.attempted_tile_ids, ['10_11'])
         self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
+        self.assertEqual([(step, row['status'], row['reason']) for (key, step), row in self.rows_by_tile_and_step().items()
+                          if key == 'tile:10_11' and step in ('meshes', 'manifest')],
+                         [('manifest', 'gap', 'upstream-step-gap:chunks'), ('meshes', 'gap', 'upstream-step-gap:chunks')])
+        self.assertEqual([step for tile_id, step in steps.calls if tile_id == '10_11'], ['raw', 'chunks'])
         steps.calls.clear()
         self.assertEqual(self.run_batch(steps).attempted_tile_ids, ['12_13'])
         self.assertNotIn(('10_11', 'chunks'), steps.calls)

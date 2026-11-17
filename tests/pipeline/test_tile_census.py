@@ -9,8 +9,9 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from tile_census_fixture import (NO_TERRAIN_MAP_PROPERTY, UNREADABLE_PACKAGE_HEADER, SyntheticMapClient, census_reviewed_reader_pairs,
                                  lineage_version_111_package_header, plain_package_header, synthetic_terrain_map_package)
+from world.package_header import read_package_header
 from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, MAP_READERS, RAW_MAP_READER, reviewed_reader_pairs
-from world.tile_census import (census_gap_row, declared_terrain_map_package, map_census_keys, map_reader_gate, read_package_header,
+from world.tile_census import (census_gap_row, declared_terrain_map_package, map_census_keys, map_reader_gate,
                                terrain_height_gate_by_package_name, tile_census_bytes)
 from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH, TileCensusError, validate_tile_census
 

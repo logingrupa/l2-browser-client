@@ -7,7 +7,7 @@ from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_lightmaps import read_bsp_lightmaps
@@ -21,17 +21,16 @@ from world.lighting_payload import (bsp_lightmap_arrays, lighting_records_array,
                                     terrain_lighting_arrays, typed_payload_byte_count)
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
-from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
 from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.terrain_intensity_maps import read_terrain_intensity_maps
 from world.terrain_lighting import read_terrain_lighting
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
-from world.error_detail import first_line_of_error
+from world.error_detail import conversion_failure_reason, first_line_of_error
 
 LIGHTING_STEP_ALGORITHM_VERSION = 5
 LIGHTING_STEP_NAME = 'lighting'

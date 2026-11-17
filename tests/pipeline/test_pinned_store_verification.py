@@ -13,8 +13,8 @@ from actors.skill_effect_conversion import add_staged_effect_store_files, skill_
 from effect_source_bundle_fixture import write_sprite_effect_source_bundle
 from native_store.canonical_json import canonical_json_bytes
 from native_store import catalog_writer
-from native_store.catalog_writer import (CatalogWriteError, PinnedFileReference, catalog_pinned_file_references, merge_catalog_slice,
-                                         write_store)
+from native_store.catalog_writer import PinnedFileReference, catalog_pinned_file_references, merge_catalog_slice, write_store
+from native_store.verified_file_writes import CatalogWriteError
 from native_store import pinned_store_verification
 from native_store.pinned_store_verification import (PINNED_STORE_VERIFICATION_WORKER_COUNT, verified_chunk_outcomes,
                                                     verified_file_child_references, verify_pinned_store_files)
@@ -49,7 +49,9 @@ class VerifyOnlyWalkTests(TemporaryStoreTestCase):
         tile = SyntheticWorldTile(self.store_root)
         tile_manifest_reference = catalog_pinned_file_references(tile.catalog())[0]
         child_references = verified_file_child_references(self.store_root, tile_manifest_reference)
-        self.assertEqual([reference.relative for reference in child_references], [f'{tile.sky_folder}/manifest.json', tile.bsp_relative])
+        tile_manifest = json.loads(tile.tile_files[tile.record['manifest']])
+        self.assertEqual([reference.relative for reference in child_references],
+                         [entry['manifest'][len('/l2/'):] for entry in (*tile_manifest['chunks'], *tile_manifest['resources'])])
         for reference in child_references:
             self.assertIs(type(reference), PinnedFileReference)
 

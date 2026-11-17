@@ -17,7 +17,7 @@ from actors.character_hair_recipe import (CHARACTER_HAIR_PARTS_RELATIVE_PATH, HA
                                           HELMETGRP_TABLE_NAME, character_hair_table_manifests)
 from actors.character_requests import CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASSINFO_TABLE_NAME
 from catalog_store_fixture import write_store_catalog
-from native_store.catalog_writer import CatalogWriteError
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.data_ui_table_manifest import (DATA_UI_LANE_NAME, ELBERA_ADAPTER_ROUTE, LOCAL_DESCRIPTOR_ROUTE, DataUiTableManifestError,
                                                  data_ui_table_manifest)
 from native_store.store_paths import StorePathError, lane_store_root

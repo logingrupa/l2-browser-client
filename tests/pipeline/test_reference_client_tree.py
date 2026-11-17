@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -14,7 +15,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 import build_reference_client_lock
 from build_reference_client_lock import (ReferenceClientManifestError, classify_reference_client_trees,
     hashing_script_sha256, write_reference_client_lock)
-from hash_reference_client_tree import canonical_json_bytes
+from hash_reference_client_tree import canonical_json_bytes, reference_tree_lock_sha256
 from native_assets_lib.gltf import json_bytes
 
 HASHING_SCRIPT = ROOT / 'scripts' / 'hash_reference_client_tree.py'
@@ -147,6 +148,10 @@ class ReferenceClientTreeTests(unittest.TestCase):
     def test_walker_serialiser_matches_repository_canonical_json(self):
         value = {'b': [1, 2.5, None], 'a': 'Līnija ünïcode', 'nested': {'z': True, 'y': 'x'}}
         self.assertEqual(canonical_json_bytes(value), json_bytes(value))
+
+    def test_reference_tree_lock_sha256_is_the_sha256_of_the_canonical_lock_bytes(self):
+        lock_document = {'schemaVersion': 1, 'records': [{'path': 'maps/20_20.unr', 'class': 'equal'}]}
+        self.assertEqual(reference_tree_lock_sha256(lock_document), hashlib.sha256(canonical_json_bytes(lock_document)).hexdigest())
 
     def test_empty_or_missing_root_fails_naming_the_root(self):
         empty = Path(self.temporary_directory.name) / 'empty root'

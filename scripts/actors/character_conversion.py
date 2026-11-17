@@ -15,8 +15,9 @@ from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, CLA
 from actors.npc_requests import (CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, PASS_STATUS, TRANSIENT_FAILURES,
                                  animation_reference_gap_reason, serialized_animation_reference)
 from actors.path_free_messages import path_free_reason
-from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_records_replaced, converted_model_store_files_and_record,
-                                      file_output_record, write_catalog_without_record)
+from actors.npc_store_records import file_output_record
+from native_store.catalog_record_replacement import catalog_with_records_replaced, write_catalog_without_record
+from native_store.converted_model_store_files import MODEL_ARCHIVE_FILE_NAME, converted_model_store_files_and_record
 from data.lane_unit_outcomes import replace_step_gap_row
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
@@ -47,7 +48,7 @@ class LazyClassDefinitionReader:
     def __call__(self, reference):
         if self.reader is None:
             from native_catalog.effects import SourcePackages
-            from native_effect_bundle import DefaultReader
+            from native_assets_lib.class_default_inheritance import DefaultReader
             self.reader = DefaultReader(self.client_root, SourcePackages(self.client_root), self.work_root, self.save)
         return self.reader.get(reference)
 

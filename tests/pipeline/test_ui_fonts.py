@@ -9,7 +9,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
-from native_store.catalog_writer import CatalogWriteError, validate_catalog_record
+from native_store.catalog_writer import validate_catalog_record
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
 import ui_font_step

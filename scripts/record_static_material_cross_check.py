@@ -14,7 +14,7 @@ from native_assets_lib.static_materials import (STATIC_MATERIAL_CROSS_CHECKS_PAT
                                                 read_static_material_slots)
 from native_catalog.ue2 import Package
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from static_material_package_census import STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH, validate_static_mesh_package_census

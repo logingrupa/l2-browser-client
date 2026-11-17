@@ -4,7 +4,7 @@ from typing import NamedTuple
 
 from world.bsp_chunk_geometry import BspSurfaceMaterial
 from world.bsp_material_mapping_size import mapping_size_outcome, reference_client_class_default_value
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.surface_material_programs import MATERIAL_CONVERSION_ERRORS, material_program_outcome, program_root_is_ported, root_program_node
 
 SHADER_CLASS = 'Engine.Shader'

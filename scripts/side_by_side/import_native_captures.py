@@ -12,7 +12,7 @@ from typing import NamedTuple
 SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
-from native_store.catalog_writer import sha256_of_file
+from native_store.verified_file_writes import sha256_of_file
 from native_store.load_check_records import is_catalog_key
 from native_store.side_by_side_check_records import (current_reference_tree_lock_sha256, read_project_reference_client_lock,
                                                      read_side_by_side_records, write_side_by_side_records)

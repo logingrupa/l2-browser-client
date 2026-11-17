@@ -12,7 +12,7 @@ from native_assets_lib.gltf import json_bytes
 from native_assets_lib.guard_clauses import require_condition
 from native_assets_lib.sha256_identity import SHA256_HEX_PATTERN, sha256_hex_digest
 from native_assets_lib.strict_json import decode_strict_json
-from native_store.catalog_writer import immutable_write, replace_file
+from native_store.verified_file_writes import immutable_write, replace_file
 from stage_native_runtime import verified_archive
 from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
 

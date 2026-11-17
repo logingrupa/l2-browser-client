@@ -17,6 +17,7 @@ LOCKED_BYTE_COUNT = 1
 WAITING_LOCK_PART_OFFSET = 0
 CONVERTER_LOCK_KEY_PREFIX = 'converter:'
 STORE_LOCK_KEY_PREFIX = 'store:'
+UNIT_LOCK_KEY_PREFIX = 'unit:'
 LANE_LOCK_KEY = 'lane'
 LANE_ONE_BATCH_PART_OFFSET = 0
 LANE_IN_USE_PART_OFFSET = 1
@@ -27,6 +28,7 @@ LANE_STORES_FOLDER_NAME = 'lane-store'
 LANE_STORE_FOLDER_NAME = 'l2'
 LANE_WORK_FOLDER_NAME = 'work'
 held_lock_file_path = None
+held_unit_lock_file_path = None
 lane_lock_files_held_until_process_end = []
 
 
@@ -78,20 +80,43 @@ def unlock_file_part(lock_file, part_offset):
 
 
 @contextmanager
+def exclusive_lock_file(path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'ab') as lock_file:
+        lock_file_part(lock_file, WAITING_LOCK_PART_OFFSET, LOCKFILE_EXCLUSIVE_LOCK)
+        try:
+            yield
+        finally:
+            unlock_file_part(lock_file, WAITING_LOCK_PART_OFFSET)
+
+
+@contextmanager
 def interprocess_lock(lock_folder, key):
     global held_lock_file_path
     path = lock_file_path(lock_folder, key)
     if held_lock_file_path is not None:
         raise InterprocessLockError(f'this process holds the lock {held_lock_file_path} and may not take a second lock: {path}')
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'ab') as lock_file:
-        lock_file_part(lock_file, WAITING_LOCK_PART_OFFSET, LOCKFILE_EXCLUSIVE_LOCK)
+    with exclusive_lock_file(path):
         held_lock_file_path = path
         try:
             yield
         finally:
             held_lock_file_path = None
-            unlock_file_part(lock_file, WAITING_LOCK_PART_OFFSET)
+
+
+@contextmanager
+def unit_lock(lane_work_root, unit_key):
+    global held_unit_lock_file_path
+    path = lock_file_path(lane_lock_folder(lane_work_root), UNIT_LOCK_KEY_PREFIX + unit_key)
+    if held_unit_lock_file_path is not None or held_lock_file_path is not None:
+        raise InterprocessLockError(f'a unit lock is taken first and alone, but this process holds '
+                                    f'{held_unit_lock_file_path or held_lock_file_path}: {path}')
+    with exclusive_lock_file(path):
+        held_unit_lock_file_path = path
+        try:
+            yield
+        finally:
+            held_unit_lock_file_path = None
 
 
 def lane_lock_file_path(lane_work_root):

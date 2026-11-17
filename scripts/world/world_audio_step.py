@@ -5,7 +5,7 @@ from native_assets_lib.gltf import json_bytes
 from native_assets_lib.world_ambience import FIELDS, KIND as AMBIENCE_KIND, pe_export_f32
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import sha256_hex
+from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError, require_reference_client
@@ -15,9 +15,9 @@ from world.exact_sound_sources import ExactSoundPackages, SoundSourceGap, conver
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.placement_audio_inventory import inventory_placement_audio, placement_audio_properties
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_unit_key
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.static_placement_plan import FAILED_STATUS
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle

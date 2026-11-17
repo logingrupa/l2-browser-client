@@ -4,7 +4,8 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from hash_reference_client_tree import canonical_json_bytes
-from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, write_store
+from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, write_store
+from native_store.verified_file_writes import sha256_hex
 from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
 from native_store.unit_ledger import RECEIPT_RECORD_NAME
 

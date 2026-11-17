@@ -15,8 +15,8 @@ from interface_layout_adapter import (ELBERA_INTERFACE_JSON_PATH, ELBERA_PARSE_X
                                       interface_window_census, window_identifiers, window_layout_manifest)
 from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_manifest, write_pinned_manifest_to_store
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
-from native_store.catalog_writer import (read_pinned_file, read_store_catalog, replace_file, require_file_pin, sha256_hex,
-                                         validate_catalog_record)
+from native_store.catalog_writer import read_pinned_file, read_store_catalog, require_file_pin, validate_catalog_record
+from native_store.verified_file_writes import replace_file, sha256_hex
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,

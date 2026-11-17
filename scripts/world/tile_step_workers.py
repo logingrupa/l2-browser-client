@@ -11,8 +11,8 @@ from native_store.unit_ledger import FreeDiskFloorRefusedError, MachineWindowRef
 from world.eligible_tile_selection import (FAILED_STATUS, PASS_STATUS, StepSealMissingError, failed_step_row, own_step_row, sealed_tile_step,
                                            unit_step_evidence)
 from world.raw_map_step import tile_unit_key
-from world.tile_census import WORLD_LANE_NAME
-from world.tile_step_gap_rows import upstream_failed_row
+from world.world_lane_names import WORLD_LANE_NAME
+from world.tile_step_gap_rows import UPSTREAM_BLOCKING_STATUSES, inherited_upstream_row
 
 BATCH_EXIT_DONE = 0
 BATCH_EXIT_ERROR = 1
@@ -38,7 +38,7 @@ class TileStepsTask(NamedTuple):
     tile_id: str
     source_identity: dict
     step_names: tuple
-    failed_earlier_step: str | None
+    blocking_earlier_row: dict | None
     expected_cost: int
 
 
@@ -76,12 +76,12 @@ class TileStepRun:
         except Exception as error:
             return failed_step_row(tile_id, step, source_identity, error, evidence)
 
-    def run_tile(self, tile_id, source_identity, step_names, failed_earlier_step, earlier_tile_stopped):
-        step_results, preflights, failed_step = {}, [], failed_earlier_step
+    def run_tile(self, tile_id, source_identity, step_names, blocking_earlier_row, earlier_tile_stopped):
+        step_results, preflights, blocking_row = {}, [], blocking_earlier_row
         for step in step_names:
-            if failed_step is not None:
-                step_results[step] = upstream_failed_row(tile_id, step, source_identity, failed_step,
-                                                         unit_step_evidence(self.project_root, tile_id, failed_step, self.step_seal_checks))
+            if blocking_row is not None:
+                step_results[step] = inherited_upstream_row(tile_id, step, source_identity, blocking_row,
+                                                            unit_step_evidence(self.project_root, tile_id, blocking_row['step'], self.step_seal_checks))
                 continue
             if earlier_tile_stopped():
                 return TileStepsOutcome(True, step_results, None, preflights)
@@ -92,8 +92,8 @@ class TileStepRun:
             if result is None:
                 continue
             step_results[step] = result
-            if result['status'] == FAILED_STATUS:
-                failed_step = step
+            if result['status'] in UPSTREAM_BLOCKING_STATUSES:
+                blocking_row = result
         return TileStepsOutcome(True, step_results, None, preflights)
 
 
@@ -103,7 +103,7 @@ def ordered_tile_steps_outcome(tile_step_run, first_stopped_position, task):
 
     if earlier_tile_stopped():
         return TileStepsOutcome(False, {}, None, [])
-    outcome = tile_step_run.run_tile(task.tile_id, task.source_identity, task.step_names, task.failed_earlier_step, earlier_tile_stopped)
+    outcome = tile_step_run.run_tile(task.tile_id, task.source_identity, task.step_names, task.blocking_earlier_row, earlier_tile_stopped)
     if outcome.stop is not None:
         with first_stopped_position.get_lock():
             first_stopped_position.value = min(first_stopped_position.value, task.position)

@@ -16,7 +16,7 @@ from native_assets_lib.static_materials import (REVIEWED_VERSIONS, STATIC_MATERI
                                                 static_material_layout_unreviewed_reason)
 from native_catalog.ue2 import FormatError, read_package_index, summary
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import replace_file
+from native_store.verified_file_writes import replace_file
 from native_store.store_paths import refuse_reparse_points
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
@@ -26,6 +26,7 @@ CENSUS_OUTPUT_DIRECTORY_RELATIVE_PATH = 'docs/parts/adapter-dispatch'
 STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH = f'{CENSUS_OUTPUT_DIRECTORY_RELATIVE_PATH}/static-mesh-package-census.json'
 STATIC_MESH_PACKAGE_CENSUS_SCHEMA_VERSION = 1
 STATIC_MESH_PACKAGE_SUFFIX = '.usx'
+MAP_PACKAGE_SUFFIX = '.unr'
 PACKAGE_SUMMARY_BYTES = 128
 RESEARCH_UNREVIEWED_PACKAGE_COUNT = 56
 RESEARCH_PACKAGE_COUNT = 212
@@ -43,10 +44,10 @@ def census_sort_key(path):
     return (path.casefold(), path)
 
 
-def lock_equal_static_mesh_package_paths(lock):
+def lock_equal_package_paths(lock, suffix):
     paths_by_casefolded_path = {}
     for path, record in lock.records_by_path.items():
-        if record['class'] != 'equal' or PurePosixPath(path).suffix.lower() != STATIC_MESH_PACKAGE_SUFFIX:
+        if record['class'] != 'equal' or PurePosixPath(path).suffix.lower() != suffix:
             continue
         if path.casefold() in paths_by_casefolded_path:
             raise StaticMeshPackageCensusError(f'reference client lock holds casefold-equal paths {paths_by_casefolded_path[path.casefold()]} and {path}')
@@ -74,13 +75,19 @@ def static_mesh_package_row(client_access, relative_path):
             'reason': None if reviewed else static_material_layout_unreviewed_reason(*version)}
 
 
+def map_rows_with_static_meshes(client_access):
+    rows = (static_mesh_package_row(client_access, relative_path) for relative_path in lock_equal_package_paths(client_access.lock, MAP_PACKAGE_SUFFIX))
+    return [row for row in rows if row['staticMeshExportCount']]
+
+
 def build_static_mesh_package_census(client_access):
+    rows = [static_mesh_package_row(client_access, relative_path)
+            for relative_path in lock_equal_package_paths(client_access.lock, STATIC_MESH_PACKAGE_SUFFIX)]
     return validate_static_mesh_package_census({
         'schemaVersion': STATIC_MESH_PACKAGE_CENSUS_SCHEMA_VERSION,
         'referenceTreeLockSha256': reference_client_build(client_access.lock)['referenceTreeLockSha256'],
         'reviewedVersions': [list(version) for version in sorted(REVIEWED_VERSIONS)],
-        'packages': [static_mesh_package_row(client_access, relative_path)
-                     for relative_path in lock_equal_static_mesh_package_paths(client_access.lock)],
+        'packages': sorted([*rows, *map_rows_with_static_meshes(client_access)], key=lambda row: census_sort_key(row['path'])),
     })
 
 
@@ -155,7 +162,8 @@ def write_static_mesh_package_census(census, output_path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='List the header version and StaticMesh export count of every lock-equal .usx package.')
+    parser = argparse.ArgumentParser(description='List the header version and StaticMesh export count of every lock-equal .usx package and '
+                                                 'every lock-equal map that holds a StaticMesh export.')
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=REPOSITORY_ROOT / STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH)
     arguments = parser.parse_args(argv)

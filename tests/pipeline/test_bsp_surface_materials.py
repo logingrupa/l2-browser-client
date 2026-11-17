@@ -18,7 +18,7 @@ from test_material_program_images import synthetic_png_bytes
 from world import bsp_surface_materials, surface_material_programs
 from world.bsp_material_mapping_size import MAPPING_SIZE_ZERO_REASON, MaterialMappingSize
 from world.bsp_surface_materials import convert_surface_material, program_blend_is_translucent
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 
 TEXTURED_MATERIAL_FIXTURE = 'shader-combiner-panner-texture.json'
 TEXTURED_MATERIAL = 'SyntheticMaterials.SkyShader'

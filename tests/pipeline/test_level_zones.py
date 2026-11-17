@@ -21,7 +21,7 @@ from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_i
 from world.raw_map_step import read_tile_map_lock_record
 from world.sky_step import sealed_sky
 from world.static_placement import ClassDefaults
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_chunk_plan import read_locked_map_package
 
 BOOL_PROPERTY_TYPE = 3

@@ -2,7 +2,7 @@ import math
 
 from native_catalog.effects import tagged_values
 from native_catalog.ue2 import FormatError, Reader
-from native_effect_bundle import object_values
+from native_assets_lib.object_property_values import object_values
 from world.declared_property_types import PropertyScope, container_inner_type
 from world.map_actor_properties import MAXIMUM_ARRAY_ELEMENTS, MAXIMUM_PROPERTY_NESTING_DEPTH
 

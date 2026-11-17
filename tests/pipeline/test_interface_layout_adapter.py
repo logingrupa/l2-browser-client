@@ -16,7 +16,8 @@ sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 sys.path.insert(0, str(ROOT / 'tests' / 'fixtures' / 'xdat'))
 import convert_ui
 import interface_layout_adapter as adapter
-from native_store.catalog_writer import WINDOW_MANIFEST_PATH_PATTERN, CatalogWriteError, validate_catalog_record
+from native_store.catalog_writer import WINDOW_MANIFEST_PATH_PATTERN, validate_catalog_record
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module

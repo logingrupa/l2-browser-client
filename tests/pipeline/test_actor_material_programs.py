@@ -17,8 +17,8 @@ from actors.actor_material_programs import (MATERIAL_PROGRAMS_STEP, ActorMateria
                                             convert_actor_material_programs, material_program_listing, model_records_of_catalog_key,
                                             model_slot_source_objects)
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import (CatalogWriteError, merge_catalog_slice, pinned_file_references, read_store_catalog,
-                                         validate_catalog_record)
+from native_store.catalog_writer import merge_catalog_slice, pinned_file_references, read_store_catalog, validate_catalog_record
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
 from synthetic_class_scripts import scratch_work_root

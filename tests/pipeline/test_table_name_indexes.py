@@ -14,7 +14,8 @@ sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 import table_name_indexes
 from convert_tables import LOCAL_DESCRIPTOR_ROUTE, write_table_to_store
 from hash_reference_client_tree import canonical_json_bytes
-from native_store.catalog_writer import CatalogWriteError, validate_catalog_record
+from native_store.catalog_writer import validate_catalog_record
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.gap_rows import write_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger

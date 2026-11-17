@@ -13,8 +13,9 @@ SCRIPTS_ROOT = ROOT / 'scripts'
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import (NATIVE_RESOURCE_PATH_PATTERN, TABLE_ID_PATTERN, TABLE_MANIFEST_MAXIMUM_BYTES, CatalogWriteError,
-                                         merge_catalog_slice, merge_catalog_slice_records, validate_catalog_record)
+from native_store.catalog_writer import (NATIVE_RESOURCE_PATH_PATTERN, TABLE_ID_PATTERN, TABLE_MANIFEST_MAXIMUM_BYTES, merge_catalog_slice,
+                                         merge_catalog_slice_records, validate_catalog_record)
+from native_store.verified_file_writes import CatalogWriteError
 from native_store import tile_manifest_validation
 from native_store.data_ui_table_manifest import DECODED_TABLE_KIND, DECODED_TABLE_RECORDS_TYPE_BY_ROUTE, DECODED_TABLE_SCHEMA_VERSION
 from native_store.tile_manifest_validation import (CHUNK_COMPONENT_PATH_TEMPLATES, CHUNK_MANIFEST_PATH_TEMPLATE, MASK_UV_RULES_BASE,

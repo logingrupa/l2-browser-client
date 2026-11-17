@@ -16,9 +16,10 @@ from world.map_sources import MapSources
 from world.raw_map_step import tile_step_row
 from world.material_texture_images import (material_texture_image_pins, reviewed_texture_nodes, stored_material_texture_images,
                                            write_material_texture_images)
-from world.static_mesh_step import STATIC_MESH_CONVERTER_FOLDER, conversion_failure_reason
+from world.error_detail import conversion_failure_reason
+from world.static_mesh_converter_folder import STATIC_MESH_CONVERTER_FOLDER
 from world.static_placement_plan import FAILED_STATUS
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
 UNPORTED_NODE_STATUS = 'unported'

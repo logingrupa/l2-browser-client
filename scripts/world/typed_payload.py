@@ -5,7 +5,7 @@ import re
 import struct
 from typing import NamedTuple
 
-from native_store.catalog_writer import immutable_write, sha256_hex
+from native_store.verified_file_writes import immutable_write, sha256_hex
 from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 
 TYPED_PAYLOAD_UNITS = 'source'

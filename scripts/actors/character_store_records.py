@@ -2,11 +2,12 @@ import json
 import math
 import re
 
-from actors.npc_store_records import NATIVE_RESOURCE_PREFIX, catalog_with_records_replaced, native_resource_store_path, write_catalog_without_record
+from actors.npc_store_records import native_resource_store_path
+from native_store.catalog_record_replacement import catalog_with_records_replaced, write_catalog_without_record
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.guard_clauses import require_condition
 from native_assets_lib.sha256_identity import SHA256_HEX_PATTERN, sha256_hex_digest
-from native_store.catalog_writer import add_store_file, read_store_catalog, write_store
+from native_store.catalog_writer import NATIVE_RESOURCE_PREFIX, add_store_file, read_store_catalog, write_store
 
 PLAYER_PROFILE_ID_PATTERN = re.compile(r'[a-z0-9][a-z0-9-]{0,79}')
 PLAYER_CATALOG_ID_PATTERN = re.compile(r'[a-z0-9][a-z0-9:-]{0,95}')

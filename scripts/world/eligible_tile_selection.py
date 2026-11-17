@@ -1,13 +1,12 @@
 from typing import NamedTuple
 
+from world.error_detail import first_line_of_error
 from world.raw_map_step import read_tile_map_lock_record, tile_map_path, tile_step_row, tile_unit_key, unit_step_row
-from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
+from world.tile_census_validation import GAP_STATUS, TILE_CENSUS_RELATIVE_PATH
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, unit_step_directory_evidence, unit_step_seal
-from world.tile_step_gap_rows import PENDING_STATUS
+from world.tile_step_gap_rows import FAILED_STATUS, PENDING_STATUS
 
 PASS_STATUS = 'pass'
-GAP_STATUS = 'gap'
-FAILED_STATUS = 'failed'
 BATCH_PENDING_REASON = 'batch-pending'
 OBJECT_GAPS_REASON_PREFIX = 'object-gaps:'
 DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
@@ -47,11 +46,6 @@ def sealed_tile_step(project_root, tile_id, step, step_seal_checks):
 
 def unit_step_evidence(project_root, tile_id, step, step_seal_checks=TILE_STEP_SEAL_CHECKS):
     return unit_step_directory_evidence(project_root, tile_unit_key(tile_id), step, step_seal_checks)
-
-
-def first_line_of_error(error):
-    message_lines = str(error).strip().splitlines()
-    return message_lines[0] if message_lines else 'no message'
 
 
 def failed_step_row(tile_id, step, source_identity, error, evidence):

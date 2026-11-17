@@ -37,6 +37,18 @@ class GapRowValidationTests(unittest.TestCase):
         self.assertEqual(validate_gap_row(qualified_object), qualified_object)
         self.assertEqual(validate_gap_row(gap_row(status='pass', reason=None)), gap_row(status='pass', reason=None))
 
+    def test_object_names_hold_the_characters_found_in_client_static_mesh_exports(self):
+        client_object_names = ('v_obj_s.H_Wares.O_Hatchet-Wood01', 'azit_a_s.azit_A_12-0',
+                               "field_deco_artifact2_s.quest_witch_house.witch's_house01")
+        for object_name in client_object_names:
+            with self.subTest(object_name=object_name):
+                row = gap_row(sourceIdentity={'path': 'staticmeshes/v_obj_s.usx', 'sha256': SOURCE_SHA256, 'object': object_name})
+                self.assertEqual(validate_gap_row(row), row)
+        refused_object_names = ('v-obj_s.H_Wares.O_Hatchet', 'v_obj_s.H_Wares.O Hatchet', 'v_obj_s.H_Wares.O_Hatchet#1', 'v_obj_s..O_Hatchet')
+        for object_name in refused_object_names:
+            with self.subTest(object_name=object_name), self.assertRaises(GapRowError):
+                validate_gap_row(gap_row(sourceIdentity={'path': 'staticmeshes/v_obj_s.usx', 'sha256': SOURCE_SHA256, 'object': object_name}))
+
     def test_malformed_rows_are_refused(self):
         row_without_evidence = gap_row()
         del row_without_evidence['evidence']

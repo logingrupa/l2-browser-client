@@ -13,7 +13,8 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from native_store import catalog_writer, store_file_publish
 from native_store import interprocess_lock as interprocess_lock_module
-from native_store.catalog_writer import STORE_CATALOG_NAME, CatalogWriteError, write_store
+from native_store.catalog_writer import STORE_CATALOG_NAME, write_store
+from native_store.verified_file_writes import CatalogWriteError
 from native_store.interprocess_lock import STORE_LOCK_KEY_PREFIX, InterprocessLockError, interprocess_lock, lane_lock_folder, lock_file_path
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import StorePathError, lane_store_root, lane_work_root

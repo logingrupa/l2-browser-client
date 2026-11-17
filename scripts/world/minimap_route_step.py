@@ -11,8 +11,8 @@ from typing import NamedTuple
 
 from native_assets import implementation_hash
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import sha256_hex
-from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
+from native_store.verified_file_writes import sha256_hex
+from native_store.interprocess_lock import LaneInUseError, lane_batch_lock, unit_lock
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger, locked_input_records, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
@@ -23,7 +23,7 @@ from world.minimap_sources import decoded_table_rows
 from world.minimap_textures import (TEXTURE_SOURCE_READABLE_STATUS, convert_minimap_texture, converter_package_request, export_named,
                                     minimap_texture_converter, read_texture_package, store_converted_texture, texture_package_index)
 from world.raw_map_step import PRODUCTS_FOLDER_NAME
-from world.tile_census import WORLD_LANE_NAME
+from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_json_resource import write_tile_json_resource
 from world.zone_name_keys import zone_key_table
 
@@ -183,6 +183,11 @@ def minimap_route_manifest(recipe_record, inputs, recipe, textures, zone_keys, t
 
 def run_minimap_route_step(project_root, client_root, converter=None):
     project_root = Path(project_root)
+    with unit_lock(lane_work_root(project_root, WORLD_LANE_NAME), MINIMAP_ROUTE_UNIT_KEY):
+        return build_or_read_minimap_route(project_root, client_root, converter)
+
+
+def build_or_read_minimap_route(project_root, client_root, converter):
     ledger = minimap_route_ledger(project_root)
     route = current_minimap_route(project_root)
     if route.product is not None:

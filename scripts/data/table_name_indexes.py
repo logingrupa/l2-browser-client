@@ -12,7 +12,8 @@ from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import seal_unit_manifest, write_pinned_manifest_to_store
 from convert_tables import DECODE_STEP, LANE_NAME, TABLES_CATALOG_CAPACITY, TABLES_CATALOG_SLICE
 from native_store.catalog_writer import (TABLE_NAME_INDEX_ID_SUFFIX, is_table_name_index_id, read_pinned_file, read_store_catalog,
-                                         require_file_pin, sha256_hex, validate_catalog_record)
+                                         require_file_pin, validate_catalog_record)
+from native_store.verified_file_writes import sha256_hex
 from native_store.data_ui_table_manifest import DECODED_TABLE_KIND
 from native_store.gap_rows import read_gap_rows
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
