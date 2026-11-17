@@ -43,24 +43,29 @@ def zone_actor_export(package, zone_actor_reference):
     return package.exports[zone_actor_reference - 1]
 
 
-def read_level_zone(package, zone_index, zone, class_defaults):
+def is_sky_zone_class(class_chains, class_name):
+    return class_chains.is_subclass(class_name, SKY_ZONE_CLASS)
+
+
+def read_level_zone(package, zone_index, zone, class_defaults, class_chains):
     actor_reference, connectivity, visibility, _ = zone
     export = zone_actor_export(package, actor_reference)
     if export is None:
         fields = [unresolved_actor_field(field) for field in (SUN_AFFECT_FIELD, *AMBIENT_FIELDS, *DISTANCE_FOG_FIELDS)]
-        actor, actor_class = None, None
+        actor, actor_class, class_resolved = None, None, False
     else:
         serialized_values, actor, actor_class = serialized_actor_values(package, export), export['object'], export['classObject']
         fields = [resolved_actor_field(field, serialized_values, actor_class, class_defaults)
                   for field in (SUN_AFFECT_FIELD, *AMBIENT_FIELDS, *DISTANCE_FOG_FIELDS)]
+        class_resolved = class_chains.chain(actor_class) is not None
     sun_affect, ambient, distance_fog = fields[0], tuple(fields[1:1 + len(AMBIENT_FIELDS)]), tuple(fields[1 + len(AMBIENT_FIELDS):])
     return LevelZone(zone_index, actor, actor_class, connectivity, visibility, sun_affect, ambient, distance_fog,
-                     zone_index == OUTDOOR_ZONE_INDEX or sun_affect.value is True, actor_class == SKY_ZONE_CLASS,
-                     sun_affect.provenance == UNRESOLVED_PROVENANCE)
+                     zone_index == OUTDOOR_ZONE_INDEX or sun_affect.value is True, class_resolved and is_sky_zone_class(class_chains, actor_class),
+                     sun_affect.provenance == UNRESOLVED_PROVENANCE or (export is not None and not class_resolved))
 
 
-def read_level_zones(package, model, class_defaults):
-    return tuple(read_level_zone(package, zone_index, zone, class_defaults) for zone_index, zone in enumerate(model.zones))
+def read_level_zones(package, model, class_defaults, class_chains):
+    return tuple(read_level_zone(package, zone_index, zone, class_defaults, class_chains) for zone_index, zone in enumerate(model.zones))
 
 
 def outdoor_zone_indices(zones):

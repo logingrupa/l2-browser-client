@@ -148,9 +148,9 @@ def lighting_records(actors, zones, water_volumes, rules):
 def tile_lighting_payload(package, unit, class_defaults):
     level = read_level_model(package)
     model = level.model
-    zones = read_level_zones(package, model, class_defaults)
-    lightmaps = read_bsp_lightmaps(package, model)
     class_chains = reference_client_class_chains(class_defaults)
+    zones = read_level_zones(package, model, class_defaults, class_chains)
+    lightmaps = read_bsp_lightmaps(package, model)
     bsp_arrays, reasons, bsp_counts = bsp_lightmap_arrays(package, lightmaps, model, tile_node_ranges(unit.bsp, unit.chunk_plan), zones,
                                                           level_info_sun_affect(package, level, class_defaults, class_chains))
     actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))

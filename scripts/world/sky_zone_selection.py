@@ -2,8 +2,8 @@ from typing import NamedTuple
 
 from world.actor_field_values import UNRESOLVED_PROVENANCE, resolved_actor_field, serialized_actor_values
 from world.level_actors import level_actor_exports
+from world.level_zones import is_sky_zone_class
 
-SKY_ZONE_BASE_CLASS = 'Engine.SkyZoneInfo'
 HIGH_DETAIL_FIELD = 'bHighDetail'
 SUPER_HIGH_DETAIL_FIELD = 'bSuperHighDetail'
 ROTATION_FIELD = 'Rotation'
@@ -53,7 +53,7 @@ def sky_zone_exports(package, level, class_chains):
     for export in level_actor_exports(package, level):
         if class_chains.chain(export['classObject']) is None:
             unresolved_classes.add(export['classObject'])
-        elif class_chains.is_subclass(export['classObject'], SKY_ZONE_BASE_CLASS):
+        elif is_sky_zone_class(class_chains, export['classObject']):
             exports.append(export)
     return exports, sorted(unresolved_classes)
 

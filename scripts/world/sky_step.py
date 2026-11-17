@@ -303,8 +303,9 @@ def run_sky_step(project_root, client_root, tile_id):
     class_defaults = ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client))
     try:
         level = read_level_model(package)
-        zones = read_level_zones(package, level.model, class_defaults)
-        selection = select_sky_zone(package, level, zones, class_defaults, reference_client_class_chains(class_defaults))
+        class_chains = reference_client_class_chains(class_defaults)
+        zones = read_level_zones(package, level.model, class_defaults, class_chains)
+        selection = select_sky_zone(package, level, zones, class_defaults, class_chains)
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, SKY_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except ValueError as error:

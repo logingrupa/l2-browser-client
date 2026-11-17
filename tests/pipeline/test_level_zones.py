@@ -6,7 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
-from native_assets_lib.class_defaults import ReferenceClientClassScripts
+from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts
 from native_catalog.ue2 import Package
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, BatchPreflightRefusedError, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
@@ -18,6 +18,7 @@ from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE
 from world.bsp_step import sealed_bsp_chunks
 from world.level_model import read_level_model
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
+from world.light_actors import ClassChains, reference_client_class_chains
 from world.raw_map_step import read_tile_map_lock_record
 from world.sky_step import sealed_sky
 from world.static_placement import ClassDefaults
@@ -40,6 +41,17 @@ ZONE_DEFAULTS = {
     'DistanceFogColor': ({'A': 0, 'B': 128, 'G': 128, 'R': 128}, 'class-default', ZONE_INFO), 'DistanceFogStart': (3000.0, 'class-default', ZONE_INFO),
     'DistanceFogEnd': (8000.0, 'class-default', ZONE_INFO)}
 CLASS_DEFAULTS = SyntheticActorClassDefaults({ZONE_INFO: ZONE_DEFAULTS, SKY_ZONE_INFO: ZONE_DEFAULTS})
+ZONE_CLASS_CHAIN_NAMES = {ZONE_INFO: (ZONE_INFO,), SKY_ZONE_INFO: (SKY_ZONE_INFO, ZONE_INFO)}
+
+
+def read_zone_class_chain(class_name):
+    if class_name not in ZONE_CLASS_CHAIN_NAMES:
+        raise ClassDefaultError(f'no class script for {class_name}')
+    return [{'identity': {'object': name}, 'declaredFields': []} for name in ZONE_CLASS_CHAIN_NAMES[class_name]]
+
+
+def zone_class_chains():
+    return ClassChains(CLASS_DEFAULTS, read_zone_class_chain)
 
 
 def bool_tag(names, name, value):
@@ -66,7 +78,7 @@ def synthetic_zone_model():
 
 class LevelZoneTableTests(unittest.TestCase):
     def setUp(self):
-        self.zones = read_level_zones(synthetic_zone_package(), synthetic_zone_model(), CLASS_DEFAULTS)
+        self.zones = read_level_zones(synthetic_zone_package(), synthetic_zone_model(), CLASS_DEFAULTS, zone_class_chains())
 
     def field(self, zone, name):
         return next(field for field in (zone.sun_affect, *zone.ambient, *zone.distance_fog) if field.field == name)
@@ -101,7 +113,7 @@ class LevelZoneTableTests(unittest.TestCase):
 
     def test_an_import_or_out_of_table_zone_actor_reference_is_unresolved(self):
         model = build_synthetic_level_model([], zones=(synthetic_zone(), synthetic_zone(9), synthetic_zone(-3)))
-        zones = read_level_zones(synthetic_zone_package(), model, CLASS_DEFAULTS)
+        zones = read_level_zones(synthetic_zone_package(), model, CLASS_DEFAULTS, zone_class_chains())
         self.assertEqual([(zone.actor, zone.unresolved, zone.outdoor) for zone in zones], [(None, True, True), (None, True, False), (None, True, False)])
 
     def test_connectivity_and_visibility_masks_come_from_the_model_zones(self):
@@ -142,7 +154,7 @@ class RealMapZoneInputTests(unittest.TestCase):
         package = read_locked_map_package(REAL_CLIENT_ROOT, REAL_TILE_ID, lock_record)
         class_defaults = ClassDefaults(scratch_work_root_with_world_class_default_cache(self.addCleanup, 'level-zones-class-defaults-'),
                                        ReferenceClientClassScripts(REAL_CLIENT_ROOT))
-        zones = read_level_zones(package, read_level_model(package).model, class_defaults)
+        zones = read_level_zones(package, read_level_model(package).model, class_defaults, reference_client_class_chains(class_defaults))
         self.assertEqual(sorted(outdoor_zone_indices(zones)), bsp['outdoorZones'])
         self.assertEqual(sorted(sky_zone_indices(zones)), bsp['skyZones'])
         self.assertEqual(len(sky['skyZones']), 1)

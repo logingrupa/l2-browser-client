@@ -10,6 +10,7 @@ from native_catalog.ue2 import FormatError
 from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE, ActorField
 from world.bsp_node_sun_affect import NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED, SUN_AFFECTED, level_info_sun_affect
 from world.level_actors import level_actor_exports
+from world.level_zones import read_level_zones, sky_zone_indices
 from world.sky_zone_selection import SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON, select_sky_zone
 
 SKY_CLASS = 'Engine.SkyZoneInfo'
@@ -40,6 +41,10 @@ def resolved_field(field, serialized, object_class, class_defaults):
         value = serialized[field]
         return ActorField(field, value, UNRESOLVED_PROVENANCE if value == 'unresolved' else AUTHORED_PROVENANCE, object_class)
     return ActorField(field, False if field.startswith('b') else None, 'class-default', object_class)
+
+
+def model_zone(actor_reference):
+    return (actor_reference, 0, 0, 0)
 
 
 def zone(index, actor_name):
@@ -94,6 +99,28 @@ class SkyZoneSelectionTests(unittest.TestCase):
     def test_a_level_needs_exactly_one_actors_array_at_0x38(self):
         with self.assertRaisesRegex(FormatError, 'names 0 Actors arrays at 0x38'):
             level_actor_exports(SimpleNamespace(exports=[]), SimpleNamespace(binding={'actorArrays': []}))
+
+
+class SkyZoneRuleAgreementTests(unittest.TestCase):
+    def test_a_sky_zone_subclass_is_both_the_selected_sky_and_a_sky_zone_of_the_level(self):
+        exports = [actor('LevelInfo0', 'Engine.LevelInfo'), actor('CustomSky0', 'Map.CustomSkyZone'), actor('ZoneInfo0', 'Engine.ZoneInfo')]
+        package, model = SimpleNamespace(exports=exports), SimpleNamespace(zones=[model_zone(0), model_zone(2), model_zone(3)])
+        with mock.patch('world.level_zones.serialized_actor_values', lambda package, export: export['fields']), \
+                mock.patch('world.level_zones.resolved_actor_field', resolved_field), \
+                mock.patch('world.sky_zone_selection.serialized_actor_values', lambda package, export: export['fields']), \
+                mock.patch('world.sky_zone_selection.resolved_actor_field', resolved_field):
+            zones = read_level_zones(package, model, None, SyntheticClassChains())
+            selection = select_sky_zone(package, level_of(exports), zones, None, SyntheticClassChains())
+        self.assertEqual((selection.zone_index, selection.gap_reason), (1, None))
+        self.assertEqual(sky_zone_indices(zones), frozenset({selection.zone_index}))
+
+    def test_a_zone_actor_of_an_unknown_class_is_an_unresolved_zone_and_not_a_sky_zone(self):
+        exports = [actor('Mystery0', 'Game.Mystery', bSunAffect=True)]
+        with mock.patch('world.level_zones.serialized_actor_values', lambda package, export: export['fields']), \
+                mock.patch('world.level_zones.resolved_actor_field', resolved_field):
+            zones = read_level_zones(SimpleNamespace(exports=exports), SimpleNamespace(zones=[model_zone(0), model_zone(1)]), None,
+                                     SyntheticClassChains())
+        self.assertEqual([(zone.sky, zone.unresolved) for zone in zones], [(False, True), (False, True)])
 
 
 class LevelInfoSunAffectTests(unittest.TestCase):
