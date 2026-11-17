@@ -15,7 +15,7 @@ GAP_ROW_STATUSES = ('pass', 'gap', 'pending', 'failed')
 GAP_ROW_FIELDS = ('key', 'part', 'step', 'status', 'reason', 'sourceIdentity', 'evidence')
 SOURCE_IDENTITY_REQUIRED_FIELDS = frozenset({'path', 'sha256'})
 SOURCE_IDENTITY_OPTIONAL_FIELDS = frozenset({'object'})
-QUALIFIED_OBJECT_NAME_PATTERN = re.compile(r'^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$')
+QUALIFIED_OBJECT_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_'-]+)+$")
 CATALOG_KEY_PATTERNS = {
     'tile': re.compile(r'^tile:\d{2}_\d{2}$'),
     'map': re.compile(r'^map:[A-Za-z][A-Za-z0-9_]{0,63}$'),
