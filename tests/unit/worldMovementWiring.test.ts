@@ -39,7 +39,9 @@ async function wiredWorld(boxes: readonly BoxVolumeDeclaration[] = [floorSlab(0)
   const engine = new NullEngine(), scene = new Scene(engine);
   scene.useRightHandedSystem = true;
   const camera = new ArcRotateCamera("follow", Math.PI / 2, Math.PI / 3, 4, new Vector3(0, 1, 0), scene);
-  const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
+  const adapter = new NativeSliceAdapter(origin, null, undefined, {
+    walkSupported: true, specialAttackPreviewSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes,
+  });
   const commands: WorldCommand[] = [];
   adapter.subscribeCommands(command => commands.push(command));
   const loader = boxCellLoader(boxes);
@@ -81,6 +83,19 @@ describe("world movement wiring", () => {
     expect(settled.feetPosition.y).toBeCloseTo(settled.location.y - .23, 6);
     adapter.dispatch({ type: "spawn-npc", npcId: 20001 });
     expect(movement.pose("npc-20001-1")).toBeNull();
+  });
+
+  it("faces the local pawn pose toward Musveren after a special-attack preview", async () => {
+    const { adapter, movement, advanceFrames, settle } = await wiredWorld();
+    await settle();
+    advanceFrames(2);
+    const musveren = adapter.getInitialState().find(entity => entity.id === "native-musveren")!, player = playerOf(adapter);
+    const towardMusveren = Math.atan2(musveren.position.x - player.position.x, musveren.position.z - player.position.z);
+    expect(movement.pose(localPlayerId)!.orientationRadians).not.toBeCloseTo(towardMusveren, 4);
+    adapter.dispatch({ type: "preview-action", action: "special-attack", targetId: "native-musveren" });
+    advanceFrames(2);
+    expect(movement.pose(localPlayerId)!.orientationRadians).toBeCloseTo(towardMusveren, 4);
+    expect(movement.inspection().rejectedRecordCount).toBe(0);
   });
 
   it("walks the local pawn on an adapter move record through the port and sends its positions back as intents", async () => {

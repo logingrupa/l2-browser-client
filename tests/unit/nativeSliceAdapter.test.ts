@@ -120,6 +120,16 @@ describe("native slice adapter boundary", () => {
     adapter.dispose();
   });
 
+  it("turns a standing pawn toward the special-attack target with a stop record at the target heading", () => {
+    const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, specialAttackPreviewSupported: true, speed, collision, moveTypes });
+    const events = recorded(adapter);
+    adapter.dispatch({ type: "preview-action", action: "special-attack", targetId: "native-musveren" });
+    expect(events.filter(event => event.type === "stop")).toEqual([{ type: "stop", entityId: "local-player", position: { x: 200, y: 400, z: 300 }, heading: 0 }]);
+    adapter.dispatch({ type: "set-animation", animation: "idle" });
+    expect(events.filter(event => event.type === "stop")).toHaveLength(1);
+    adapter.dispose();
+  });
+
   it("answers cannot-move with one stop at the reported source position and heading and ends the sandbox move", () => {
     const adapter = movingAdapter();
     adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });

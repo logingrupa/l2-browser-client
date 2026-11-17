@@ -210,11 +210,16 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     const target = command.targetId === undefined ? null : this.entities.get(command.targetId);
     if (command.targetId !== undefined && (!target || target.id === player.id || target.health <= 0 ||
       ![target.position.x, target.position.y, target.position.z].every(Number.isFinite))) return;
-    this.stopLocalMove(player);
+    const facing = target ? Math.atan2(target.position.x - player.position.x, target.position.z - player.position.z) : player.orientationRadians;
+    this.stopLocalPawnFacing(player, facing);
     const { actionTargetId: _previousTarget, ...unbound } = player;
-    this.update({ ...unbound, animation: "attack", actionPreview: command.action,
-      ...(target ? { actionTargetId: target.id, orientationRadians: Math.atan2(target.position.x - player.position.x, target.position.z - player.position.z) } : {}),
-      animationSequence: (player.animationSequence ?? 0) + 1 });
+    this.update({ ...unbound, animation: "attack", actionPreview: command.action, orientationRadians: facing,
+      ...(target ? { actionTargetId: target.id } : {}), animationSequence: (player.animationSequence ?? 0) + 1 });
+  }
+  private stopLocalPawnFacing(player: WorldEntity, facing: number): void {
+    this.localMoveIssued = false;
+    if (this.localCollision === null) return;
+    this.emit({ type: "stop", entityId: player.id, position: worldPositionToSource(player.position), heading: worldYawToSourceHeading(facing) });
   }
   private moveLocalPlayer(player: WorldEntity, command: MoveLocalCommand): void {
     const origin = command.origin ?? player.position, destination = command.position;
@@ -233,9 +238,7 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       collision: { radius: this.localCollision.radius, height: this.localCollision.height } });
   }
   private stopLocalMove(player: WorldEntity): void {
-    if (!this.localMoveIssued) return;
-    this.localMoveIssued = false;
-    this.emit({ type: "stop", entityId: player.id, position: worldPositionToSource(player.position), heading: worldYawToSourceHeading(player.orientationRadians) });
+    if (this.localMoveIssued) this.stopLocalPawnFacing(player, player.orientationRadians);
   }
   private acceptReportedPosition(player: WorldEntity, command: ReportPositionCommand): void {
     const rejectionReason = reportedPositionRejectionReason(command);
