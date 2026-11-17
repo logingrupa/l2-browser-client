@@ -10,31 +10,31 @@ export type TileLightingReading = TileLightingRuntimeInspection | { readonly gap
 
 interface HourlyReading {
   readonly text: string;
-  readonly resolved: boolean;
+  readonly native: boolean;
 }
 
 const hourlyLightingReport = "DB-7 hourly-lighting-composition.json f0a6eb0f, claim audit verified-hourly-lighting.md";
 export const staticMeshVisibilityProbeActor = "20_21.StaticMeshActor1905";
 
-const resolvedReading = (text: string): HourlyReading => ({ text, resolved: true });
-const gapReading = (text: string): HourlyReading => ({ text, resolved: false });
+const nativeReading = (text: string): HourlyReading => ({ text, native: true });
+const unverifiedReading = (text: string): HourlyReading => ({ text, native: false });
 const planeText = (plane: NativePlane) => plane.map(component => String(component)).join(", ");
 
 function environmentText<Value>(result: EnvironmentResult<Value>, text: (value: Value) => string): HourlyReading {
-  return result.status === "resolved" ? resolvedReading(text(result.value)) : gapReading(result.reason);
+  return result.status === "resolved" ? nativeReading(text(result.value)) : unverifiedReading(result.reason);
 }
 
 function ambientText(ambient: HourlyAmbientInspection): HourlyReading {
-  return ambient.status === "resolved" ? resolvedReading(`${ambient.value.join(", ")} (${ambient.condition})`) : gapReading(`${ambient.reason} (${ambient.condition})`);
+  return ambient.status === "resolved" ? nativeReading(`${ambient.value.join(", ")} (${ambient.condition})`) : unverifiedReading(`${ambient.reason} (${ambient.condition})`);
 }
 
 function terrainReadings(lighting: TileLightingRuntimeInspection): Record<string, () => HourlyReading> {
   const terrain = () => lighting.hourly.terrain;
   const latched = (text: (value: TileLightingRuntimeInspection["hourly"]["terrain"]) => string | null) => () => {
     const current = terrain();
-    if (current.gap !== null) return gapReading(current.gap);
+    if (current.gap !== null) return unverifiedReading(current.gap);
     const value = text(current);
-    return value === null ? gapReading(current.heldReason ?? "terrain-vertex-colour-unbuilt") : resolvedReading(value);
+    return value === null ? unverifiedReading(current.heldReason ?? "terrain-vertex-colour-unbuilt") : nativeReading(value);
   };
   return {
     "lighting.terrain.rebuild": latched(current => current.lastRebuildHour === null ? null
@@ -48,10 +48,10 @@ function terrainReadings(lighting: TileLightingRuntimeInspection): Record<string
     "lighting.terrain.vertices": latched(current => `${current.colouredVertexCount} vertices in ${current.colouredMeshCount} meshes; gaps ${JSON.stringify(current.meshGaps)}`),
     "lighting.terrain.staticBase": () => {
       const { staticBase } = terrain();
-      return staticBase.status === "resolved" ? resolvedReading("black, alpha 255 (no serialized light covers a vertex)") : gapReading(staticBase.reasons.join(", "));
+      return staticBase.status === "resolved" ? nativeReading("black, alpha 255 (no serialized light covers a vertex)") : unverifiedReading(staticBase.reasons.join(", "));
     },
-    "lighting.terrain.drawn": () => gapReading(`not drawn (${terrain().drawn.reason})`),
-    "lighting.terrain.refreshThreshold": () => gapReading(terrain().refreshThreshold.reason),
+    "lighting.terrain.drawn": () => unverifiedReading(`not drawn (${terrain().drawn.reason})`),
+    "lighting.terrain.refreshThreshold": () => unverifiedReading(terrain().refreshThreshold.reason),
   };
 }
 
@@ -63,17 +63,17 @@ function bspReadings(lighting: TileLightingRuntimeInspection): Record<string, ()
     return `${modulate} MODULATE (ColorModifier), ${lightmapped.length - modulate} global op at the MODULATE2X image default (d3d-device-live-state)`;
   };
   return {
-    "lighting.bsp.slots": () => resolvedReading(lighting.textureSlots.map(slot => `${slot.texture}: ${slot.sunAffectedSlot ?? "-"} of ${slot.childCount}`).join(" | ")),
-    "lighting.bsp.sunAffect": () => resolvedReading(`${lighting.sunAffectedSectionCount} of ${lighting.lightmappedSectionCount} lightmapped sections; others use slot 0`),
+    "lighting.bsp.slots": () => unverifiedReading(lighting.textureSlots.map(slot => `${slot.texture}: ${slot.sunAffectedSlot ?? "-"} of ${slot.childCount}`).join(" | ")),
+    "lighting.bsp.sunAffect": () => unverifiedReading(`${lighting.sunAffectedSectionCount} of ${lighting.lightmappedSectionCount} lightmapped sections; others use slot 0`),
     "lighting.bsp.gaps": () => {
       const gaps = lighting.sections.filter(section => section.lighting === "gap").map(section => section.reasons[0] ?? "lighting-gap");
       const counts = Object.entries(gaps.reduce<Record<string, number>>((sum, reason) => ({ ...sum, [reason]: (sum[reason] ?? 0) + 1 }), {}));
-      return counts.length === 0 ? resolvedReading("none") : gapReading(counts.map(([reason, count]) => `${reason} ${count}`).join(", "));
+      return counts.length === 0 ? nativeReading("none") : unverifiedReading(counts.map(([reason, count]) => `${reason} ${count}`).join(", "));
     },
-    "lighting.bsp.compressedGate": () => gapCount("bsp-live-cache-state") === 0 ? resolvedReading("every bound page has revision == compressed revision")
-      : gapReading(`${gapCount("bsp-live-cache-state")} sections bsp-live-cache-state`),
-    "lighting.bsp.colourOperation": () => gapReading(operations()),
-    "lighting.bsp.upload": () => gapReading(`${lighting.lightmapUpload.format} (${lighting.lightmapUpload.reason})`),
+    "lighting.bsp.compressedGate": () => gapCount("bsp-live-cache-state") === 0 ? nativeReading("every bound page has revision == compressed revision")
+      : unverifiedReading(`${gapCount("bsp-live-cache-state")} sections bsp-live-cache-state`),
+    "lighting.bsp.colourOperation": () => unverifiedReading(operations()),
+    "lighting.bsp.upload": () => unverifiedReading(`${lighting.lightmapUpload.format} (${lighting.lightmapUpload.reason})`),
     "lighting.bsp.rebuildAmbient": () => {
       const reading = environmentText(lighting.hourly.terms.bsp.rebuildAmbient, (rgb: RgbBytes) => rgb.join(", "));
       return { ...reading, text: `${reading.text} (rebuild only, not bound)` };
@@ -87,27 +87,27 @@ function meshAndDeviceReadings(lighting: TileLightingRuntimeInspection): Record<
     "lighting.staticMesh.ambient": () => ambientText(terms().staticMesh.ambient),
     "lighting.staticMesh.levelOfDetailSunTerm": () => {
       const reading = ambientText(terms().staticMesh.levelOfDetailSunTermAmbient);
-      return gapReading(`${reading.text}; which placements take it is ${terms().staticMesh.levelOfDetailSelection.reason}`);
+      return unverifiedReading(`${reading.text}; which placements take it is ${terms().staticMesh.levelOfDetailSelection.reason}`);
     },
     "lighting.staticMesh.visibility": () => {
       const visibility = lighting.hourly.staticMeshVisibility;
-      if (visibility.gap !== null) return gapReading(visibility.gap);
+      if (visibility.gap !== null) return unverifiedReading(visibility.gap);
       const probe = visibility.placements.find(placement => placement.sourceActor === staticMeshVisibilityProbeActor);
       const probeText = probe === undefined ? `${staticMeshVisibilityProbeActor} not placed`
         : `${staticMeshVisibilityProbeActor} vertex 0 ${probe.vertexZeroVisibility} (entries ${probe.entryBlend.index} > ${probe.entryBlend.nextIndex} at ${probe.entryBlend.weight})`;
-      return resolvedReading(`${visibility.placements.length} of ${visibility.placementCount} placements hourly; ${probeText}`);
+      return nativeReading(`${visibility.placements.length} of ${visibility.placementCount} placements hourly; ${probeText}`);
     },
-    "lighting.staticMesh.colour0": () => gapReading(`unbound (${terms().staticMesh.colour0.reason})`),
-    "lighting.staticMesh.colour1": () => gapReading(`unbound (${terms().staticMesh.colour1.reasons.join(", ")})`),
-    "lighting.staticMesh.instanceColour": () => gapReading(terms().staticMesh.serializedInstanceColour),
+    "lighting.staticMesh.colour0": () => unverifiedReading(`unbound (${terms().staticMesh.colour0.reason})`),
+    "lighting.staticMesh.colour1": () => unverifiedReading(`unbound (${terms().staticMesh.colour1.reasons.join(", ")})`),
+    "lighting.staticMesh.instanceColour": () => unverifiedReading(terms().staticMesh.serializedInstanceColour),
     "lighting.actor.ambient": () => ambientText(terms().actor.ambient),
-    "lighting.dynamicLights": () => gapReading(`not applied (${terms().dynamicLights.reasons.join(", ")})`),
-    "lighting.device.modulationOperation": () => gapReading(`image default opcode ${terms().device.modulationOperation.imageDefaultOpcode} (${terms().device.modulationOperation.reason})`),
-    "lighting.device.gl2Shader": () => gapReading(terms().device.gl2Shader.reason),
-    "lighting.device.materialSourceBit": () => gapReading(terms().device.materialSourceBit.reason),
-    "lighting.device.lightList": () => gapReading(terms().device.lightList.reason),
-    "lighting.device.finalShaderColour": () => gapReading(terms().device.finalShaderColour.reason),
-    "lighting.unresolved": () => gapReading(terms().unresolvedItems.join(", ")),
+    "lighting.dynamicLights": () => unverifiedReading(`not applied (${terms().dynamicLights.reasons.join(", ")})`),
+    "lighting.device.modulationOperation": () => unverifiedReading(`image default opcode ${terms().device.modulationOperation.imageDefaultOpcode} (${terms().device.modulationOperation.reason})`),
+    "lighting.device.gl2Shader": () => unverifiedReading(terms().device.gl2Shader.reason),
+    "lighting.device.materialSourceBit": () => unverifiedReading(terms().device.materialSourceBit.reason),
+    "lighting.device.lightList": () => unverifiedReading(terms().device.lightList.reason),
+    "lighting.device.finalShaderColour": () => unverifiedReading(terms().device.finalShaderColour.reason),
+    "lighting.unresolved": () => unverifiedReading(terms().unresolvedItems.join(", ")),
   };
 }
 
@@ -121,8 +121,8 @@ const hourlyVariableSources: Readonly<Record<string, string>> = {
   "lighting.terrain.staticBase": "TLIT serialized light masks; a covered vertex needs SampleIntensity (terrain-general-staticlight-sampleintensity)",
   "lighting.terrain.drawn": "layer texture x vertex colour with the global op waits for terrain lighting in the library terrain layer material",
   "lighting.terrain.refreshThreshold": "manager +0x160 threshold; DB-7 did not confirm it holds Env.int ShadowTick",
-  "lighting.bsp.slots": "slot = trunc(f32(hour) * N / 24) % N per lightmap texture (claim bsp-discrete-selection)",
-  "lighting.bsp.sunAffect": "LMSC.sunAffect: any node zone of the native render section with bSunAffect (claim bsp-zone-flag)",
+  "lighting.bsp.slots": "slot = trunc(f32(hour) * N / 24) % N per lightmap texture (claim bsp-discrete-selection); a section takes it only when LMSC.sunAffect is set, which is unconfirmed",
+  "lighting.bsp.sunAffect": "LMSC.sunAffect: any drawn node of the native render section whose front zone has bSunAffect (lighting-rules bsp-section-sun-affect, unconfirmed: the flag scope is an open REA question)",
   "lighting.bsp.gaps": "sections without a bound lightmap, by reason",
   "lighting.bsp.compressedGate": "LMPG.revision == LMPG.compressedRevision selects the compressed child (claim bsp-compressed-choice)",
   "lighting.bsp.colourOperation": "EnableLighting argument 3: MODULATE for UColorModifier, the global op otherwise (claim bsp-compressed-choice, d3d-modulation)",
@@ -133,7 +133,7 @@ const hourlyVariableSources: Readonly<Record<string, string>> = {
   "lighting.staticMesh.visibility": "SMEN hourly masks, key 24 (i + 0.5) / n, (1 - w) bit(prev) + w bit(next) (claim ma-hour-keys)",
   "lighting.staticMesh.colour0": "instance FRawColorStream COLOR0, the emissive source (claim ma-stream-colours)",
   "lighting.staticMesh.colour1": "authored FStaticMeshColorStream COLOR1; the mesh+0x188 selector and device+0x4244 bit 0x02 are unresolved",
-  "lighting.staticMesh.instanceColour": "StaticMeshInstance serialized colours, read and not staged (20_21 vertex 0 is 27, 27, 27)",
+  "lighting.staticMesh.instanceColour": "StaticMeshInstance serialized colours, read and not staged",
   "lighting.actor.ambient": "ActorAmbient >> 1, alpha 255, light ambient only, COLORVERTEX off (claim ma-actor-ambient)",
   "lighting.dynamicLights": "no Babylon light or scene ambient reaches native materials",
   "lighting.device.modulationOperation": "D3DDrv.dll 0x1011c578 image default 5 (D3DTOP_MODULATE2X); vendor 0x121a writes 4",
@@ -148,16 +148,39 @@ function hourlyReadings(lighting: TileLightingRuntimeInspection): Record<string,
   return { ...terrainReadings(lighting), ...bspReadings(lighting), ...meshAndDeviceReadings(lighting) };
 }
 
-export function hourlyLightingVariables(readLighting: () => TileLightingReading): VariableInfo[] {
-  const read = (name: string): HourlyReading => {
-    const lighting = readLighting();
-    if (!("hourly" in lighting)) return gapReading(lighting.gap);
-    const reading = hourlyReadings(lighting)[name];
+interface LightingTaskSnapshot {
+  readonly readingByName: Record<string, () => HourlyReading> | null;
+  readonly gap: string;
+  readonly readings: Map<string, HourlyReading>;
+}
+
+function lightingTaskSnapshot(lighting: TileLightingReading): LightingTaskSnapshot {
+  return "hourly" in lighting ? { readingByName: hourlyReadings(lighting), gap: "", readings: new Map() }
+    : { readingByName: null, gap: lighting.gap, readings: new Map() };
+}
+
+function readingsOncePerTask(readLighting: () => TileLightingReading): (name: string) => HourlyReading {
+  let snapshot: LightingTaskSnapshot | null = null;
+  return name => {
+    if (snapshot === null) {
+      snapshot = lightingTaskSnapshot(readLighting());
+      queueMicrotask(() => { snapshot = null; });
+    }
+    const known = snapshot.readings.get(name);
+    if (known !== undefined) return known;
+    if (snapshot.readingByName === null) return unverifiedReading(snapshot.gap);
+    const reading = snapshot.readingByName[name];
     if (reading === undefined) throw new Error(`No hourly lighting reading ${name}.`);
-    return reading();
+    const value = reading();
+    snapshot.readings.set(name, value);
+    return value;
   };
+}
+
+export function hourlyLightingVariables(readLighting: () => TileLightingReading): VariableInfo[] {
+  const read = readingsOncePerTask(readLighting);
   return Object.entries(hourlyVariableSources).map(([name, source]): VariableInfo => ({
     name, values: "value | named gap", source: `${source}. ${hourlyLightingReport}`, value: () => read(name).text,
-    get status() { return read(name).resolved ? "native" : "unverified"; },
+    get status() { return read(name).native ? "native" : "unverified"; },
   }));
 }

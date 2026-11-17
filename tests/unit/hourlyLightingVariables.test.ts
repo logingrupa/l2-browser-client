@@ -65,7 +65,8 @@ describe("hourly lighting developer variables", () => {
       + `BGRA ${fixtureNumbers(noonTerrainRow.output, "vertexBGRA").join(", ")}` });
     expect(byName("lighting.terrain.drawn")).toMatchObject({ value: "not drawn (library-terrain-lighting-unported)", status: "unverified" });
     expect(byName("lighting.terrain.refreshThreshold")).toMatchObject({ value: "terrain-refresh-threshold-unresolved", status: "unverified" });
-    expect(byName("lighting.bsp.slots")).toMatchObject({ value: "0: 4 of 8 | 1: 0 of 1", status: "native" });
+    expect(byName("lighting.bsp.slots")).toMatchObject({ value: "0: 4 of 8 | 1: 0 of 1", status: "unverified" });
+    expect(byName("lighting.bsp.sunAffect")).toMatchObject({ status: "unverified" });
     expect(byName("lighting.bsp.rebuildAmbient").value).toMatch(/\(rebuild only, not bound\)$/);
     expect(byName("lighting.staticMesh.ambient")).toMatchObject({ status: "native" });
     expect(byName("lighting.staticMesh.visibility")).toMatchObject({ status: "native",
@@ -75,5 +76,15 @@ describe("hourly lighting developer variables", () => {
     expect(byName("lighting.unresolved").value.split(", ")).toHaveLength(13);
     timeOfDay.dispose();
     attached.dispose();
+  });
+
+  it("reads the tile lighting once per task for every value and status, and again in the next task", async () => {
+    const readLighting = vi.fn(() => ({ gap: "world-section-absent" }));
+    const variables = hourlyLightingVariables(readLighting);
+    for (const entry of variables) expect([entry.value(), entry.status]).toEqual(["world-section-absent", "unverified"]);
+    expect(readLighting).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    variables[0]!.value();
+    expect(readLighting).toHaveBeenCalledTimes(2);
   });
 });

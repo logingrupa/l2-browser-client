@@ -170,12 +170,11 @@ export function attachTimeOfDayGroup(section: DevSection, context: TimeOfDayGrou
     testId: "time-of-day-status", tone: "info", variables,
     hint: "Terrain vertex colour, static mesh visibility and ambient, and actor ambient follow the hour under Hourly lighting; their final colour is d3d-programmable-composition. Sun and moon have no Babylon applier (environment-lighting-composition-unresolved)." });
   attachTimeOfDayControls(group, timeOfDay, context, variables);
-  const lightingVariables = () => hourlyLightingVariables(context.tileLighting);
-  group.readout({ label: "Hourly lighting", testId: "time-of-day-hourly-lighting", variables: lightingVariables,
+  const lightingVariables = hourlyLightingVariables(context.tileLighting);
+  group.readout({ label: "Hourly lighting", testId: "time-of-day-hourly-lighting", variables: () => lightingVariables,
     hint: "DB-7 hourly lighting per surface: BSP lightmap slot, terrain vertex colour, static mesh visibility and ambient, actor ambient, and every named gap.",
     value: () => {
-      const values = lightingVariables();
-      const ported = values.filter(entry => entry.status === "native").length;
-      return `${ported} ported values · ${values.length - ported} named gaps`;
+      const ported = lightingVariables.filter(entry => entry.status === "native").length;
+      return `${ported} ported values · ${lightingVariables.length - ported} named gaps`;
     } });
 }
