@@ -20,6 +20,7 @@ export interface TileVisibilityFrame {
   readonly openedPortalCount: number;
   readonly skyZones: readonly number[];
   readonly sectionVisible: Uint8Array;
+  readonly rangeVisible: Uint8Array;
   readonly memberVisible: Uint8Array;
   readonly terrainVisible: boolean;
   readonly translucentOrder: ReadonlyMap<number, Int32Array>;
@@ -37,6 +38,7 @@ interface CullingResult {
   readonly visibleZones: ZoneSet;
   readonly openedPortalCount: number;
   readonly sectionVisible: Uint8Array;
+  readonly rangeVisible: Uint8Array;
   readonly memberVisible: Uint8Array;
 }
 
@@ -63,19 +65,20 @@ function cullTile(model: BspVisibilityModel, camera: Vector3, location: ZoneLoca
   CullingResult {
   if (location.leaf === indexNone) {
     const outdoor = outdoorViewSections(model, outdoorZones);
-    return { outdoorView: true, visibleZones: outdoorZones, openedPortalCount: 0, sectionVisible: outdoor.sectionVisible,
+    return { outdoorView: true, visibleZones: outdoorZones, openedPortalCount: 0, sectionVisible: outdoor.sectionVisible, rangeVisible: outdoor.rangeVisible,
       memberVisible: gateMembers(model, camera, outdoorZones, outdoor.leafVisible, limits) };
   }
   const frustum = createViewFrustum({ ...pose, position: camera });
   const { visibleZones, openedPortalCount } = expandThroughPortals(model, camera, seedZoneSet(model, location), frustum, limits);
   const walked = walkVisibleSections(model, camera, visibleZones, frustum);
-  return { outdoorView: false, visibleZones, openedPortalCount, sectionVisible: walked.sectionVisible,
+  return { outdoorView: false, visibleZones, openedPortalCount, sectionVisible: walked.sectionVisible, rangeVisible: walked.rangeVisible,
     memberVisible: gateMembers(model, camera, visibleZones, walked.leafVisible, limits) };
 }
 
 function everythingVisible(model: BspVisibilityModel): CullingResult {
   return { outdoorView: false, visibleZones: zoneSetOfAllZones(model.zoneCount), openedPortalCount: 0,
-    sectionVisible: new Uint8Array(model.sections.count).fill(1), memberVisible: new Uint8Array(model.members.count).fill(1) };
+    sectionVisible: new Uint8Array(model.sections.count).fill(1), rangeVisible: new Uint8Array(model.ranges.count).fill(1),
+    memberVisible: new Uint8Array(model.members.count).fill(1) };
 }
 
 export function computeTileVisibilityFrame(model: BspVisibilityModel, translucentSectionRanges: ReadonlyMap<number, Int32Array>, pose: ViewPose,
@@ -86,7 +89,8 @@ export function computeTileVisibilityFrame(model: BspVisibilityModel, translucen
   const visibleTranslucentRanges = new Map([...translucentSectionRanges].filter(([section]) => result.sectionVisible[section] === 1));
   return { culling, cameraLeaf: location.leaf, cameraZone: location.zone, outdoorView: result.outdoorView, visibleZones: result.visibleZones,
     visibleZoneCount: zoneSetMembers(result.visibleZones, model.zoneCount).length, openedPortalCount: result.openedPortalCount,
-    skyZones: zonesWithClassBit(model, zoneClassSkyBit), sectionVisible: result.sectionVisible, memberVisible: result.memberVisible,
+    skyZones: zonesWithClassBit(model, zoneClassSkyBit), sectionVisible: result.sectionVisible, rangeVisible: result.rangeVisible,
+    memberVisible: result.memberVisible,
     terrainVisible: !culling || !isEmptyZoneSet(zoneSetIntersection(result.visibleZones, outdoorZones)),
     translucentOrder: orderTranslucentSections(model, camera, visibleTranslucentRanges) };
 }

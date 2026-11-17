@@ -81,7 +81,6 @@ const intensityLevels = 256;
 const rgbaChannels = 4;
 const byteMaximum = 255;
 const { terrainIntensityMapWidth } = HOURLY_LIGHTING_CONSTANTS;
-const blackStaticBase = terrainVertexStaticBase(false);
 
 function intensityMapsGap(input: StagedLightingInput<TerrainIntensityMaps>): string | null {
   if (input.status === "unstaged") return input.reason;
@@ -101,12 +100,13 @@ function halved(ambient: RgbBytes): RgbBytes {
   return [ambient[0] >> 1, ambient[1] >> 1, ambient[2] >> 1];
 }
 
-function latchTerrainLighting(maps: TerrainIntensityMaps, environment: HourlyEnvironmentLighting): LatchedTerrainLighting | string {
+function latchTerrainLighting(maps: TerrainIntensityMaps, environment: HourlyEnvironmentLighting, staticBaseState: TerrainStaticBaseInspection): LatchedTerrainLighting | string {
   const { terrainAmbient, terrainLight, hour } = environment;
   if (terrainAmbient.status !== "resolved") return terrainAmbient.reason;
   if (terrainLight.status !== "resolved") return terrainLight.reason;
-  if (blackStaticBase.status !== "resolved") return blackStaticBase.reason;
-  const staticBase = blackStaticBase.value;
+  const vertexStaticBase = terrainVertexStaticBase(staticBaseState.status !== "resolved");
+  if (vertexStaticBase.status !== "resolved") return staticBaseState.reasons.join(", ");
+  const staticBase = vertexStaticBase.value;
   const colourByIntensity = Array.from({ length: intensityLevels }, (_, intensity) => terrainVertexColour(staticBase, terrainLight.value, intensity, terrainAmbient.value));
   return { hour, mapBlend: terrainIntensityMapBlend(maps.times, hour), ambient: terrainAmbient.value, light: terrainLight.value, colourByIntensity };
 }
@@ -148,7 +148,7 @@ export function bindTerrainVertexLighting(intensityMaps: StagedLightingInput<Ter
   };
   const rebuild = (environment: HourlyEnvironmentLighting) => {
     if (maps === null) return;
-    const latchedNow = latchTerrainLighting(maps, environment);
+    const latchedNow = latchTerrainLighting(maps, environment, staticBase);
     if (typeof latchedNow === "string") { heldReason = latchedNow; return; }
     latched = latchedNow;
     heldReason = null;

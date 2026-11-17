@@ -7,6 +7,7 @@ import { zoneSetHas, zoneSetWordsEmpty, zoneSetWordsMeet, type ZoneSet } from ".
 
 export interface VisibleSections {
   readonly sectionVisible: Uint8Array;
+  readonly rangeVisible: Uint8Array;
   readonly leafVisible: Uint8Array;
 }
 
@@ -26,16 +27,17 @@ function renderBoundOutside(model: BspVisibilityModel, node: number, frustum: Vi
     { x: box[offset + 3]!, y: box[offset + 4]!, z: box[offset + 5]! });
 }
 
-function emitCoplanarChain(model: BspVisibilityModel, node: number, frustum: ViewFrustum | null, sectionVisible: Uint8Array): void {
+function emitCoplanarChain(model: BspVisibilityModel, node: number, frustum: ViewFrustum | null, sectionVisible: Uint8Array, rangeVisible: Uint8Array): void {
   for (let member = node; member !== indexNone; member = model.nodeCoplanar[member]!) {
     const range = model.nodeRange[member]!;
     if (range === indexNone || (frustum !== null && !nodeSphereInsideFrustum(model, member, frustum))) continue;
     sectionVisible[model.ranges.section[range]!] = 1;
+    rangeVisible[range] = 1;
   }
 }
 
 export function walkVisibleSections(model: BspVisibilityModel, camera: Vector3, visibleZones: ZoneSet, frustum: ViewFrustum | null): VisibleSections {
-  const sectionVisible = new Uint8Array(model.sections.count), leafReached = new Uint8Array(model.leafCount);
+  const sectionVisible = new Uint8Array(model.sections.count), rangeVisible = new Uint8Array(model.ranges.count), leafReached = new Uint8Array(model.leafCount);
   const pending = [rootNode * stepKindCount + descendStep];
   const pushSide = (node: number, side: number) => {
     const child = side === frontSide ? model.nodeFront[node]! : model.nodeBack[node]!;
@@ -45,7 +47,7 @@ export function walkVisibleSections(model: BspVisibilityModel, camera: Vector3, 
   while (pending.length) {
     const step = pending.pop()!, node = Math.floor(step / stepKindCount);
     if (step % stepKindCount === emitStep) {
-      emitCoplanarChain(model, node, frustum, sectionVisible);
+      emitCoplanarChain(model, node, frustum, sectionVisible, rangeVisible);
       continue;
     }
     if (!zoneSetWordsEmpty(model.nodeZoneSet, node) && !zoneSetWordsMeet(model.nodeZoneSet, node, visibleZones)) continue;
@@ -56,15 +58,17 @@ export function walkVisibleSections(model: BspVisibilityModel, camera: Vector3, 
     pushSide(node, nearSide);
   }
   const leafVisible = Uint8Array.from(leafReached, (reached, leaf) => reached === 1 && zoneSetHas(visibleZones, model.leafZone[leaf]!) ? 1 : 0);
-  return { sectionVisible, leafVisible };
+  return { sectionVisible, rangeVisible, leafVisible };
 }
 
 export function outdoorViewSections(model: BspVisibilityModel, outdoorZones: ZoneSet): VisibleSections {
-  const sectionVisible = new Uint8Array(model.sections.count);
+  const sectionVisible = new Uint8Array(model.sections.count), rangeVisible = new Uint8Array(model.ranges.count);
   for (let node = 0; node < model.nodeCount; node++) {
     const range = model.nodeRange[node]!;
-    if (range !== indexNone && zoneSetHas(outdoorZones, model.nodeZone[node * 2 + frontSide]!)) sectionVisible[model.ranges.section[range]!] = 1;
+    if (range === indexNone || !zoneSetHas(outdoorZones, model.nodeZone[node * 2 + frontSide]!)) continue;
+    sectionVisible[model.ranges.section[range]!] = 1;
+    rangeVisible[range] = 1;
   }
   const leafVisible = Uint8Array.from(model.leafZone, zone => zoneSetHas(outdoorZones, zone) ? 1 : 0);
-  return { sectionVisible, leafVisible };
+  return { sectionVisible, rangeVisible, leafVisible };
 }

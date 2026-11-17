@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  staticMeshCpuEntryScale, staticMeshCpuVertexContribution, staticMeshHourKey, staticMeshHourlyEntryBlend, staticMeshHourlyPath,
-  staticMeshInstanceColourWithAuthored, staticMeshPreviousEntryIndex, staticMeshShaderVisibility, staticMeshVertexVisible,
+  staticMeshHourKey, staticMeshHourlyEntryBlend, staticMeshPreviousEntryIndex, staticMeshShaderVisibility, staticMeshVertexVisible,
 } from "../../src/environment/model/staticMeshHourlyLighting";
 
 const keysOf = (entryCount: number) => Array.from({ length: entryCount }, (_, index) => staticMeshHourKey(index, entryCount));
@@ -39,28 +38,5 @@ describe("static mesh shader visibility (0x10678b80)", () => {
     expect(staticMeshShaderVisibility(true, true, 0.25)).toBe(1);
     expect(staticMeshShaderVisibility(false, false, 0.25)).toBe(0);
     expect(staticMeshShaderVisibility(true, false, 2 ** -30)).toBe(1);
-  });
-
-  it("takes the shader path only when the actor flag and GL2Shader are both set", () => {
-    expect(staticMeshHourlyPath(true, true)).toBe("shader-visibility");
-    expect(staticMeshHourlyPath(true, false)).toBe("cpu-rebuild");
-    expect(staticMeshHourlyPath(false, true)).toBe("cpu-rebuild");
-  });
-});
-
-describe("static mesh CPU rebuild arithmetic (0x10679960)", () => {
-  it("scales each entry by float32((1 - w) or w times 0.5)", () => {
-    expect(staticMeshCpuEntryScale(0.25, "previous")).toBe(0.375);
-    expect(staticMeshCpuEntryScale(0.25, "next")).toBe(0.125);
-  });
-
-  it("converts SampleIntensity times the scaled static sun plane through FColor with alpha 0", () => {
-    expect(staticMeshCpuVertexContribution(1, [1, 0.5, 0, 1], 0.5)).toEqual([0, 63, 127, 0]);
-    expect(staticMeshCpuVertexContribution(0.5, [1, 1, 1, 1], 1)).toEqual([127, 127, 127, 0]);
-  });
-
-  it("multiplies RGB by the authored colour / 255 only with the mesh colour selector, and always copies the authored alpha", () => {
-    expect(staticMeshInstanceColourWithAuthored([27, 27, 27, 255], [255, 128, 0, 200], true)).toEqual([27, 13, 0, 200]);
-    expect(staticMeshInstanceColourWithAuthored([27, 27, 27, 255], [255, 128, 0, 200], false)).toEqual([27, 27, 27, 200]);
   });
 });

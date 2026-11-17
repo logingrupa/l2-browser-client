@@ -12,7 +12,7 @@ const rules = committedMovementRules();
 
 function frameInZone(cameraZone: number): TileVisibilityFrame {
   return { culling: false, cameraLeaf: 0, cameraZone, outdoorView: false, visibleZones: zoneSetOf(cameraZone < 0 ? 0 : cameraZone), visibleZoneCount: 1, openedPortalCount: 0,
-    skyZones: [], sectionVisible: new Uint8Array(0), memberVisible: new Uint8Array(0), terrainVisible: true, translucentOrder: new Map() };
+    skyZones: [], sectionVisible: new Uint8Array(0), rangeVisible: new Uint8Array(0), memberVisible: new Uint8Array(0), terrainVisible: true, translucentOrder: new Map() };
 }
 
 describe("computeCameraEnvironment", () => {

@@ -39,11 +39,13 @@ describe("portal walk", () => {
     expect(frame).toMatchObject({ cameraZone: threeRoomZones.camera, outdoorView: false, openedPortalCount: 1, visibleZoneCount: 2,
       skyZones: [threeRoomZones.behindWall], terrainVisible: false });
     expect([...frame.sectionVisible]).toEqual([1, 0]);
+    expect([...frame.rangeVisible]).toEqual([1, 1, 0]);
   });
 
   it("closes the portal when the view turns away from it", () => {
     expect(visibleZones(pose(-500, facingNegativeX))).toEqual([threeRoomZones.camera]);
     expect([...culledFrame(pose(-500, facingNegativeX)).sectionVisible]).toEqual([0, 0]);
+    expect([...culledFrame(pose(-500, facingNegativeX)).rangeVisible]).toEqual([0, 0, 0]);
     expect(visibleZones(pose(500))).toEqual([threeRoomZones.throughPortal]);
     expect(visibleZones(pose(500, facingNegativeX))).toEqual([threeRoomZones.camera, threeRoomZones.throughPortal]);
   });
@@ -73,6 +75,20 @@ describe("portal walk", () => {
     expect(frame).toMatchObject({ cameraLeaf: -1, cameraZone: threeRoomZones.behindWall, outdoorView: true, terrainVisible: true });
     expect(zoneSetMembers(frame.visibleZones, solidModel.zoneCount)).toEqual([threeRoomZones.outside]);
     expect([...frame.sectionVisible]).toEqual([0, 0]);
+    expect([...frame.rangeVisible]).toEqual([0, 0, 0]);
+  });
+
+  it("marks the node ranges whose front zone is outdoors in the outdoor view", () => {
+    const outsideFloorZones = [threeRoomZones.camera, threeRoomZones.throughPortal, threeRoomZones.throughPortal, threeRoomZones.behindWall, threeRoomZones.camera,
+      threeRoomZones.throughPortal, threeRoomZones.throughPortal, threeRoomZones.behindWall, threeRoomZones.behindWall, threeRoomZones.outside];
+    const arrays = threeRoomVisibilityArrays().map(array => array.name === "NODE.leaf" ? { ...array, values: [0, -1, 1, -1, -1, -1, -1, -1, -1, -1] } : array)
+      .map(array => array.name === "MEMB.leaves" ? { ...array, values: [0, 1, 1, 1] } : array)
+      .map(array => array.name === "NODE.zone" ? { ...array, values: outsideFloorZones } : array);
+    const payload = threeRoomVisibilityPayload(arrays);
+    const frame = computeTileVisibilityFrame(decodeBspVisibility(payload.assetRecord, payload.payloadBytes), new Map(), pose(2500), true, mostVisible);
+    expect(frame.outdoorView).toBe(true);
+    expect([...frame.sectionVisible]).toEqual([0, 1]);
+    expect([...frame.rangeVisible]).toEqual([0, 0, 1]);
   });
 });
 
@@ -96,6 +112,7 @@ describe("member gating", () => {
   it("keeps every section, member and terrain visible with culling off", () => {
     const frame = computeTileVisibilityFrame(model, new Map(), pose(-500, facingNegativeX), false, mostVisible);
     expect([...frame.sectionVisible]).toEqual([1, 1]);
+    expect([...frame.rangeVisible]).toEqual([1, 1, 1]);
     expect([...frame.memberVisible]).toEqual([1, 1, 1, 1, 1]);
     expect(frame).toMatchObject({ culling: false, terrainVisible: true, visibleZoneCount: model.zoneCount, cameraZone: threeRoomZones.camera });
   });

@@ -57,7 +57,6 @@ export function tileLightingArrays(records: unknown = tileLightingRecordsDocumen
   return [
     { name: "LMSC.lightmapTexture", type: "int32", values: [0, 1, -1] },
     { name: "LMSC.polyFlags", type: "uint32", values: [0, 0, 0] },
-    { name: "LMSC.sunAffect", type: "int32", values: [1, 0, 0] },
     { name: "LMTX.recordStart", type: "uint32", values: [0, 1, 2] },
     { name: "LMTX.pageStart", type: "uint32", values: [0, hourSetSlotCount, hourSetSlotCount + 1] },
     { name: "LMPG.texture", type: "int32", values: [...hourPages.map(() => 0), 1] },
@@ -73,12 +72,33 @@ export function tileLightingArrays(records: unknown = tileLightingRecordsDocumen
     { name: "LMNR.primitive", type: "int32", values: [0, 1, 2] },
     { name: "LMNR.firstIndex", type: "int32", values: [0, 0, 0] },
     { name: "LMNR.indexCount", type: "int32", values: [6, 3, 3] },
+    { name: "LMNR.sunAffect", type: "int32", values: [1, 0, 0] },
     { name: "LMNR.record", type: "int32", values: [0, 1, -1] },
     { name: "LMNR.texture", type: "int32", values: [0, 1, -1] },
     { name: "LMNR.uvStart", type: "uint32", values: [0, 4, 7, 7] },
     { name: "LMUV.uv", type: "float32", values: [0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75, 0.125, 0.125, 0.25, 0.125, 0.25, 0.25] },
     { name: "RECS.canonicalJson", type: "uint8", values: json },
   ];
+}
+
+export const sharedSectionSunNode = 10;
+export const sharedSectionShelteredNode = 13;
+
+export function sharedSectionArrays(sunAffect: readonly number[] = [1, 0, 0, 0], chunkOrdinal = 0): TypedPayloadFixtureArray[] {
+  const nodeRangeArrays: TypedPayloadFixtureArray[] = [
+    { name: "LMNR.chunk", type: "int32", values: [chunkOrdinal, chunkOrdinal, chunkOrdinal, chunkOrdinal] },
+    { name: "LMNR.node", type: "int32", values: [sharedSectionSunNode, sharedSectionShelteredNode, 11, 12] },
+    { name: "LMNR.primitive", type: "int32", values: [0, 0, 1, 2] },
+    { name: "LMNR.firstIndex", type: "int32", values: [0, 3, 0, 0] },
+    { name: "LMNR.indexCount", type: "int32", values: [3, 3, 3, 3] },
+    { name: "LMNR.sunAffect", type: "int32", values: sunAffect },
+    { name: "LMNR.record", type: "int32", values: [0, 0, 1, -1] },
+    { name: "LMNR.texture", type: "int32", values: [0, 0, 1, -1] },
+    { name: "LMNR.uvStart", type: "uint32", values: [0, 3, 6, 9, 9] },
+    { name: "LMUV.uv", type: "float32", values: [0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75, 0.5, 0.75, 0.5, 0.875, 0.125, 0.125, 0.25, 0.125, 0.25, 0.25] },
+  ];
+  const replaced = new Map(nodeRangeArrays.map(array => [array.name, array]));
+  return tileLightingArrays().map(array => replaced.get(array.name) ?? array);
 }
 
 export function tileLightingPayload(arrays: readonly TypedPayloadFixtureArray[] = tileLightingArrays()): TypedPayloadFixture {

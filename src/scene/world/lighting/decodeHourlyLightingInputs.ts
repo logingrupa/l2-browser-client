@@ -36,7 +36,7 @@ export interface StaticMeshLightList {
 }
 
 export interface HourlyLightingInputs {
-  readonly sectionSunAffect: StagedLightingInput<Int32Array>;
+  readonly nodeRangeSunAffect: StagedLightingInput<Int32Array>;
   readonly pageRevisions: StagedLightingInput<LightmapPageRevisions>;
   readonly terrainIntensityMaps: StagedLightingInput<TerrainIntensityMaps>;
   readonly terrainLightMasks: StagedLightingInput<TerrainLightMaskSummary>;
@@ -44,8 +44,9 @@ export interface HourlyLightingInputs {
 }
 
 export const sunAffectUnresolved = -1;
+export const sunAffected = 1;
 export const hourlyLightingInputUnstagedPrefix = "hourly-lighting-input-unstaged:";
-const sunAffectValues: ReadonlySet<number> = new Set([sunAffectUnresolved, 0, 1]);
+const sunAffectValues: ReadonlySet<number> = new Set([sunAffectUnresolved, 0, sunAffected]);
 const bitsPerByte = 8;
 
 function requireInput(condition: boolean, message: string): asserts condition {
@@ -64,11 +65,11 @@ function requirePrefixStarts(name: string, starts: Uint32Array, count: number, t
   requireInput(descending === -1, `${name}[${descending}] runs backwards.`);
 }
 
-function decodeSectionSunAffect(payload: TypedPayload): Int32Array {
-  const sunAffect = payload.int32("LMSC.sunAffect"), sectionCount = payload.int32("LMSC.lightmapTexture").length;
-  requireInput(sunAffect.length === sectionCount, `LMSC.sunAffect holds ${sunAffect.length} values for ${sectionCount} native render sections.`);
+function decodeNodeRangeSunAffect(payload: TypedPayload): Int32Array {
+  const sunAffect = payload.int32("LMNR.sunAffect"), nodeRangeCount = payload.int32("LMNR.node").length;
+  requireInput(sunAffect.length === nodeRangeCount, `LMNR.sunAffect holds ${sunAffect.length} values for ${nodeRangeCount} lightmap node ranges.`);
   const outside = sunAffect.findIndex(value => !sunAffectValues.has(value));
-  requireInput(outside === -1, `LMSC.sunAffect[${outside}] = ${sunAffect[outside]} is not -1, 0 or 1.`);
+  requireInput(outside === -1, `LMNR.sunAffect[${outside}] = ${sunAffect[outside]} is not -1, 0 or 1.`);
   return sunAffect;
 }
 
@@ -127,7 +128,7 @@ function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, 
 
 export function decodeHourlyLightingInputs(payload: TypedPayload): HourlyLightingInputs {
   return {
-    sectionSunAffect: stagedWhenListed(payload, ["LMSC.sunAffect"], () => decodeSectionSunAffect(payload)),
+    nodeRangeSunAffect: stagedWhenListed(payload, ["LMNR.sunAffect"], () => decodeNodeRangeSunAffect(payload)),
     pageRevisions: stagedWhenListed(payload, ["LMPG.revision", "LMPG.compressedRevision"], () => decodePageRevisions(payload)),
     terrainIntensityMaps: stagedWhenListed(payload, ["TINT.time", "TINT.width", "TINT.height", "TINT.intensity"], () => decodeTerrainIntensityMaps(payload)),
     terrainLightMasks: stagedWhenListed(payload, ["TSEC.exportIndex", "TSEC.lightStart", "TLIT.light", "TLIT.bitStart", "TLIT.bits"],

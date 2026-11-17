@@ -19,6 +19,7 @@ import {
 } from "./staticMeshHourlyVisibility";
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
+import type { TileLightingVisibility } from "./tileLightingVisibility";
 import { worldTimeOfDayFor } from "../worldTimeOfDay";
 
 export interface TileLightingGapInspection {
@@ -64,14 +65,14 @@ function unboundTileLighting(gap: string): AttachedTileLighting {
   return { materialUniforms: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
 }
 
-function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, cameraFrame: () => TileVisibilityFrame | null, hour: number): CameraEnvironment {
+function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, frame: TileVisibilityFrame | null, hour: number): CameraEnvironment {
   const cameraPosition = scene.activeCamera?.globalPosition;
   const cameraSourcePosition = cameraPosition === undefined ? null : worldPositionToSource({ x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z });
-  return computeCameraEnvironment({ frame: cameraFrame(), cameraSourcePosition, collision: null, records: model.records,
+  return computeCameraEnvironment({ frame, cameraSourcePosition, collision: null, records: model.records,
     environmentFogRanges: null, hour });
 }
 
-export async function attachTileLighting(scene: Scene, manifest: NativeTileManifest, cameraFrame: () => TileVisibilityFrame | null, signal: AbortSignal):
+export async function attachTileLighting(scene: Scene, manifest: NativeTileManifest, visibility: TileLightingVisibility | null, signal: AbortSignal):
   Promise<AttachedTileLighting> {
   const resource = manifest.resources.find(entry => entry.kind === lightingResourceKind);
   if (resource === undefined) return unboundTileLighting(lightingResourceAbsentReason);
@@ -91,10 +92,10 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   const terrainVertexLighting = bindTerrainVertexLighting(model.hourly.terrainIntensityMaps, model.hourly.terrainLightMasks);
   const staticMeshVisibility = bindStaticMeshHourlyVisibility(model.hourly.staticMeshLightLists);
   const hourlyEnvironment = () => timeOfDay.hourlyEnvironmentLighting();
-  let cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame, timeOfDay.sample().hour);
+  let cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay.sample().hour);
   const advance = scene.onBeforeRenderObservable.add(() => {
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
-    cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame, timeOfDay.sample().hour);
+    cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay.sample().hour);
     terrainVertexLighting.update(timeOfDay.manager.snapshot().lightingDirty, hourlyEnvironment);
   });
   const sessionSeed = drawNativeSessionSeed();
@@ -103,7 +104,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     return { levelSeconds: presentationClock.levelSeconds, hour: environment.hour, environmentType: environment.targetType, fog: cameraEnvironment.fog };
   };
   const binding = bindTileLighting({ scene, model, sessionSeed, environment: () => timeOfDay.sample(),
-    levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, loadProgram: loadNativeMaterial });
+    levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, visibility, loadProgram: loadNativeMaterial });
   const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
     uniforms: materialUniforms, loadProgram: loadNativeMaterial });
   const terrainLayerBinding = bindTerrainLayerMaterials({ scene, load: terrainMaterials, fog: () => cameraEnvironment.fog, loadProgram: loadNativeMaterial });

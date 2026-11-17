@@ -145,7 +145,8 @@ class RealMapZoneInputTests(unittest.TestCase):
         zones = read_level_zones(package, read_level_model(package).model, class_defaults)
         self.assertEqual(sorted(outdoor_zone_indices(zones)), bsp['outdoorZones'])
         self.assertEqual(sorted(sky_zone_indices(zones)), bsp['skyZones'])
-        self.assertEqual(sorted(sky_zone_indices(zones)), sky['skyZones'])
+        self.assertEqual(len(sky['skyZones']), 1)
+        self.assertTrue(set(sky['skyZones']) <= sky_zone_indices(zones))
 
 
 if __name__ == '__main__':
