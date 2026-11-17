@@ -29,15 +29,9 @@
   "profilesWritten": 14,
   "rows": 15
  },
- "hairFieldProof": "client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
- "hairgrpSourceSha256": "03df44930cd3752e0f67c99ad2f402028a4406d53a5e30978adc92b589c8fa59",
- "helmetgrpSourceSha256": "ace5b171bf7bd6203de614257a4a523fe07e6fb14abc19af351f7b51c1809237",
- "layoutRecordFields": {
-  "hairgrp": [],
-  "helmetgrp": [
-   "key",
-   "pairs"
-  ]
+ "hairParts": {
+  "path": "recipes/actors/character-hair-parts.json",
+  "sha256": "dfea6a6b1f5236d2c1e1eb4e52a0b4bb47a62a5463b3a4b6b3bbc0d9af72dce9"
  },
  "rows": [
   {
@@ -48,27 +42,39 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "MFighter.Hair.MFighter_m000_t00_m00_bh",
+      "mesh": "Fighter.MFighter_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": 0,
+      "material": "MFighter.Hair.MFighter_m000_t00_m00_ah",
+      "mesh": "Fighter.MFighter_m000_m00_ah",
+      "pawnSlot": 5,
+      "status": "resolved"
+     }
+    ],
+    "meshType": 0,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:0",
    "model": "converted",
@@ -97,7 +103,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -110,27 +116,39 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "FFighter.Hair.FFighter_m000_t00_m00_bh",
+      "mesh": "Fighter.FFighter_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": 0,
+      "material": "FFighter.Hair.FFighter_m000_t00_m00_ah",
+      "mesh": "Fighter.FFighter_m000_m00_ah",
+      "pawnSlot": 5,
+      "status": "resolved"
+     }
+    ],
+    "meshType": 1,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:1",
    "model": "converted",
@@ -159,7 +177,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -172,27 +190,37 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "mdarkelf.Hair.MDarkElf_m000_t00_m00_bh",
+      "mesh": "DarkElf.MDarkElf_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": -1,
+      "pawnSlot": 5,
+      "status": "none"
+     }
+    ],
+    "meshType": 2,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:2",
    "model": "converted",
@@ -221,7 +249,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -237,24 +265,41 @@
    "gaps": [
     {
      "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
+     "reason": "skinned-part-bone-missing:Hair01,Hair10,Hair11,Hair12,Hair13,Hair06,Hair07,Hair08,Hair09,Hair02,Hair03,Hair04,Hair05"
     }
    ],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "fdarkelf.Hair.FDarkElf_m000_t00_m00_bh",
+      "mesh": "DarkElf.FDarkElf_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": 0,
+      "material": "fdarkelf.Hair.FDarkElf_m000_t00_m00_ah",
+      "mesh": "DarkElf.FDarkElf_m000_m00_ah",
+      "pawnSlot": 5,
+      "status": "resolved"
+     }
+    ],
+    "meshType": 3,
+    "reason": "skinned-part-bone-missing:Hair01,Hair10,Hair11,Hair12,Hair13,Hair06,Hair07,Hair08,Hair09,Hair02,Hair03,Hair04,Hair05",
     "status": "gap"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:3",
    "model": "converted",
@@ -283,7 +328,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -296,27 +341,37 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "mdwarf.Hair.MDwarf_m000_t00_m00_bh",
+      "mesh": "Dwarf.MDwarf_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": -1,
+      "pawnSlot": 5,
+      "status": "none"
+     }
+    ],
+    "meshType": 4,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:4",
    "model": "converted",
@@ -345,7 +400,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -358,27 +413,39 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "fdwarf.Hair.FDwarf_m000_t00_m00_bh",
+      "mesh": "Dwarf.FDwarf_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": 0,
+      "material": "fdwarf.Hair.FDwarf_m000_t00_m00_ah",
+      "mesh": "Dwarf.FDwarf_m000_m00_ah",
+      "pawnSlot": 5,
+      "status": "resolved"
+     }
+    ],
+    "meshType": 5,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:5",
    "model": "converted",
@@ -407,7 +474,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -420,27 +487,39 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "melf.Hair.MElf_m000_t00_m00_bh",
+      "mesh": "Elf.MElf_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": 0,
+      "material": "melf.Hair.MElf_m000_t00_m00_ah",
+      "mesh": "Elf.MElf_m000_m00_ah",
+      "pawnSlot": 5,
+      "status": "resolved"
+     }
+    ],
+    "meshType": 6,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:6",
    "model": "converted",
@@ -469,7 +548,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -485,24 +564,41 @@
    "gaps": [
     {
      "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
+     "reason": "skinned-part-bone-missing:Hair01,Hair02,Hair03,Hair04,Hair05,Hair10,Hair11,Hair12,Hair13,Hair06,Hair07,Hair08,Hair09"
     }
    ],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "felf.Hair.FElf_m000_t00_m00_bh",
+      "mesh": "Elf.FElf_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": 0,
+      "material": "felf.Hair.FElf_m000_t00_m00_ah",
+      "mesh": "Elf.FElf_m000_m00_ah",
+      "pawnSlot": 5,
+      "status": "resolved"
+     }
+    ],
+    "meshType": 7,
+    "reason": "skinned-part-bone-missing:Hair01,Hair02,Hair03,Hair04,Hair05,Hair10,Hair11,Hair12,Hair13,Hair06,Hair07,Hair08,Hair09",
     "status": "gap"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:7",
    "model": "converted",
@@ -531,7 +627,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -544,27 +640,39 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "MMagic.Hair.MMagic_m000_t00_m00_bh",
+      "mesh": "Magic.MMagic_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": 0,
+      "material": "MMagic.Hair.MMagic_m000_t00_m00_ah",
+      "mesh": "Magic.MMagic_m000_m00_ah",
+      "pawnSlot": 5,
+      "status": "resolved"
+     }
+    ],
+    "meshType": 8,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:8",
    "model": "converted",
@@ -593,7 +701,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -606,27 +714,39 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "FMagic.Hair.FMagic_m000_t00_m00_bh",
+      "mesh": "Magic.FMagic_M000_M00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": 0,
+      "material": "FMagic.Hair.FMagic_m000_t00_m00_ah",
+      "mesh": "Magic.FMagic_m000_m00_ah",
+      "pawnSlot": 5,
+      "status": "resolved"
+     }
+    ],
+    "meshType": 9,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:9",
    "model": "converted",
@@ -655,7 +775,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -671,24 +791,39 @@
    "gaps": [
     {
      "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
+     "reason": "rigid-part-bone-unmatched:Bip01 Pelvis,Bip01 Spine,Bip01 Spine1,bip01 spine2,Bip01 Neck,Bip01 head,Bip01 HeadNub,Bip01 L Clavicle,Bip01 L UpperArm,Bip01 L Forearm,Bip01 L Hand,Bip01 L Finger0,Bip01 L Finger01,Bip01 L Finger0Nub,Bip01 L Finger1,Bip01 L Finger11,Bip01 L Finger1Nub,Shield_L_Bone,Weapon_L_Bone,Shoulder_L_Bone,Bip01 R Clavicle,Bip01 R UpperArm,Bip01 R Forearm,Bip01 R Hand,Bip01 R Finger0,Bip01 R Finger01,Bip01 R Finger0Nub,Bip01 R Finger1,Bip01 R Finger11,Bip01 R Finger1Nub,Shield_R_Bone,Weapon_R_Bone,Shoulder_R_Bone,Cape_Bone,Bip01 L Thigh,Bip01 L Calf,Bip01 L Foot,Bip01 L Toe0,Bip01 L Toe0Nub,Bip01 R Thigh,Bip01 R Calf,Bip01 R Foot,Bip01 R Toe0,Bip01 R Toe0Nub,Sheath_L_Bone,Bone08"
     }
    ],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "MOrc.Hair.MOrc_m000_t00_m00_bh",
+      "mesh": "Orc.MOrc_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": -1,
+      "pawnSlot": 5,
+      "status": "none"
+     }
+    ],
+    "meshType": 10,
+    "reason": "rigid-part-bone-unmatched:Bip01 Pelvis,Bip01 Spine,Bip01 Spine1,bip01 spine2,Bip01 Neck,Bip01 head,Bip01 HeadNub,Bip01 L Clavicle,Bip01 L UpperArm,Bip01 L Forearm,Bip01 L Hand,Bip01 L Finger0,Bip01 L Finger01,Bip01 L Finger0Nub,Bip01 L Finger1,Bip01 L Finger11,Bip01 L Finger1Nub,Shield_L_Bone,Weapon_L_Bone,Shoulder_L_Bone,Bip01 R Clavicle,Bip01 R UpperArm,Bip01 R Forearm,Bip01 R Hand,Bip01 R Finger0,Bip01 R Finger01,Bip01 R Finger0Nub,Bip01 R Finger1,Bip01 R Finger11,Bip01 R Finger1Nub,Shield_R_Bone,Weapon_R_Bone,Shoulder_R_Bone,Cape_Bone,Bip01 L Thigh,Bip01 L Calf,Bip01 L Foot,Bip01 L Toe0,Bip01 L Toe0Nub,Bip01 R Thigh,Bip01 R Calf,Bip01 R Foot,Bip01 R Toe0,Bip01 R Toe0Nub,Sheath_L_Bone,Bone08",
     "status": "gap"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:10",
    "model": "converted",
@@ -717,7 +852,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -730,27 +865,37 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "FOrc.Hair.FOrc_m000_t00_m00_bh",
+      "mesh": "Orc.FOrc_m000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": -1,
+      "pawnSlot": 5,
+      "status": "none"
+     }
+    ],
+    "meshType": 11,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:11",
    "model": "converted",
@@ -779,7 +924,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -792,27 +937,37 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "MShaman.Hair.MShaman_m000_t00_m00_bh",
+      "mesh": "Shaman.MShaman_M000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": -1,
+      "pawnSlot": 5,
+      "status": "none"
+     }
+    ],
+    "meshType": 12,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:12",
    "model": "converted",
@@ -841,7 +996,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
@@ -854,27 +1009,37 @@
     "reason": null,
     "status": "resolved"
    },
-   "gaps": [
-    {
-     "field": "hair",
-     "reason": "hair-layout-undecoded"
-    },
-    {
-     "field": "helmet",
-     "reason": "helmet-layout-undecoded"
-    }
-   ],
+   "gaps": [],
    "hair": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "hair-layout-undecoded",
-    "status": "gap"
+    "appearance": {
+     "face": 0,
+     "hairColor": 0,
+     "hairStyle": 0
+    },
+    "halves": [
+     {
+      "half": "back",
+      "mappedStyle": 0,
+      "material": "FShaman.Hair.FShaman_m000_t00_m00_bh",
+      "mesh": "Shaman.FShaman_M000_m00_bh",
+      "pawnSlot": 4,
+      "status": "resolved"
+     },
+     {
+      "half": "front",
+      "mappedStyle": -1,
+      "pawnSlot": 5,
+      "status": "none"
+     }
+    ],
+    "meshType": 13,
+    "reason": null,
+    "status": "bound"
    },
    "helmet": {
-    "candidateCount": null,
-    "joinField": null,
-    "reason": "helmet-layout-undecoded",
-    "status": "gap"
+    "appliedBy": "equipment-03-30",
+    "reason": null,
+    "status": "decoded"
    },
    "key": "character:13",
    "model": "converted",
@@ -903,7 +1068,7 @@
     {
      "field": "face",
      "reason": null,
-     "status": "requested-unbound"
+     "status": "requested"
     }
    ],
    "profile": "written"
