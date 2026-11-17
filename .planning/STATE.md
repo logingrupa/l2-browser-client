@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-37-PLAN.md
-last_updated: "2026-11-16T21:00:32.701Z"
+stopped_at: Completed 03-39-PLAN.md
+last_updated: "2026-11-17T10:37:49.437Z"
 last_activity: 2026-11-14
 last_activity_desc: "Phase 03 plan 03-25 complete (shared skeletal material programs: 3,381 material-program units in the materialPrograms slice; skinned slots draw through the UE2 library with bone influences)"
-state_head: 80aef8738f0568a72b8235bd687de0bbbc1c784b
+state_head: 8b0afaf55274f8029a06d86da21049c7e53dacfb
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 153
-  completed_plans: 132
+  total_plans: 154
+  completed_plans: 133
   percent: 0
 ---
 
@@ -178,6 +178,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P27 | 81min | 3 tasks | 15 files |
 | Phase 03 P32 | 60min | 3 tasks | 22 files |
 | Phase 03 P37 | 80min | 3 tasks | 30 files |
+| Phase 03 P39 | 62min | 3 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -484,6 +485,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 03]: 03-37: RM-9 answered; a unique ASCII case-insensitive clip match binds as case-only (row 1227)
 - [Phase 03]: 03-37: player profiles face [1,0,0]; the face shows on character:0 (row 1229)
 - [Phase 03]: 03-37: the R2 retirement of the hand-staged human profiles moves to follow-up plan 03-38 (row 1230)
+- [Phase 03]: 03-39: the default appearance is HairStyle 0, HairColor 0, Face 0 until a server packet selects one (row 1231)
+- [Phase 03]: 03-39: the hair mesh family is the chargrp face_mesh[0] package, an Engine.dll family literal, until RM-13 (row 1232)
+- [Phase 03]: 03-39: helmetgrp and hairaccessarygrp hair mappings are stored in the hair recipe and applied by 03-30 (row 1234)
+- [Phase 03]: 03-39: a hair part whose bones the body skeleton lacks is left out with a hair gap; the character still converts (row 1236)
 
 ### Pending Todos
 
@@ -528,7 +533,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 ## Needs Human
 
 Owner decisions:
-- Needs Human (2026-11-14, DATABASE-PC hardware): a pinned file read with one flipped bit in memory (the file on disk is intact), after two 0x0A bugchecks (11-12, 11-13), Windows removing bad memory regions (11-12), WHEA events on four days and a stornvme reset on C: (11-13). Check the RAM (memory diagnostic) and the NVMe drive and move the page file off the failing D: disk; until then every union and catalog write keeps its pin check, which refuses on a bad read. Second occurrence (03-25 union, 22:47 Riga): actors b9973a89.../model.glb read with one bit flipped (offset 5,484,658, 0xeb as 0xfb) on every cached read, while an unbuffered read of the disk matches its pin. Third (after the 2026-11-15 reboot, 2026-11-16 pipeline suite): a Bad CRC-32 on animation-source.json in actors 025cfa16.../asset.l2asset (item 5773); the file matches its catalog SHA-256 and the test class passes on rerun.
+- Needs Human (2026-11-14, DATABASE-PC hardware): a pinned file read with one flipped bit in memory (the file on disk is intact), after two 0x0A bugchecks (11-12, 11-13), Windows removing bad memory regions (11-12), WHEA events on four days and a stornvme reset on C: (11-13). Check the RAM (memory diagnostic) and the NVMe drive and move the page file off the failing D: disk; until then every union and catalog write keeps its pin check, which refuses on a bad read. Second occurrence (03-25 union, 22:47 Riga): actors b9973a89.../model.glb read with one bit flipped (offset 5,484,658, 0xeb as 0xfb) on every cached read, while an unbuffered read of the disk matches its pin. Third (after the 2026-11-15 reboot, 2026-11-16 pipeline suite): a Bad CRC-32 on animation-source.json in actors 025cfa16.../asset.l2asset (item 5773); the file matches its catalog SHA-256 and the test class passes on rerun. Again in the 03-39 union (2026-11-17 12:24 Riga): actors 5e48ce18.../model.glb (item 472) read as 457077fb... through the actors path, while the integration path of the same inode and an unbuffered read match its pin e5f3598f...; the union stopped (03-39-SUMMARY open follow-ups).
 - Needs Human (phase 1 code review, OVERNIGHT-DECISIONS row 49, now with P810): review the behaviour-changing fixes CR-101, CR-102, WR-102, WR-401, CR-301 and the partial WR-310 and WR-501, and P810 (02-93: a profile with no sourced speed is refused with `speed-unresolved` instead of the 70 UU/s stand-in). Steps: read the row 49 and P810 entries, then either accept them or restore a labelled stand-in in `src/world/NativeSliceAdapter.ts` with its unit case and run `pnpm vitest run tests/unit/nativeSliceAdapter.test.ts`.
 - Needs Human (01-VERIFICATION.md): confirm the five prohibitions that can only be judged, not tested.
 - Needs Human (phase 1 verification): Phase 1 is human_needed with 6 of 6 criteria verified; it stays pending until the two items above are reviewed (OVERNIGHT-DECISIONS row 59); Phase 1 is not marked complete.
@@ -641,6 +646,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-16T21:00:31.708Z
-Stopped at: Completed 03-37-PLAN.md
+Last session: 2026-11-17T10:37:48.416Z
+Stopped at: Completed 03-39-PLAN.md
 Resume file: None
