@@ -23,7 +23,7 @@ from world.sky_geometry import SKY_COORDINATE_RULE, SKY_UV_RULE, SkyRootSurface,
 from world.material_texture_images import write_material_texture_images
 from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, single_graph_texture_export, sky_material_program, \
     sky_texture_pngs_by_node, sky_texture_products_by_node
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
 from world.struct_property_tag_rules import read_struct_property_tag_rules

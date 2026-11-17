@@ -16,8 +16,9 @@ from world.mover_class_defaults import MOVER_CLASS, MOVER_CLASS_UNIT_KEY, mover_
 from world.mover_records import MoverUnsupportedError, read_mover_actor
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_collision_sources import COLLISION_RULES_PATH, decide_placement_collision, load_collision_rules, model_slot_properties, static_mesh_selectors
-from world.static_mesh_step import (ConvertedStaticMesh, colour_stream_gap_rows, conversion_failure_reason, model_sort_key, static_mesh_outcomes,
+from world.static_mesh_step import (ConvertedStaticMesh, colour_stream_gap_rows, model_sort_key, static_mesh_outcomes,
                                     write_static_mesh_store_files)
+from world.error_detail import conversion_failure_reason
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS
 from world.world_lane_names import WORLD_LANE_NAME

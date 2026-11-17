@@ -15,7 +15,7 @@ from world.exact_sound_sources import ExactSoundPackages, SoundSourceGap, conver
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.placement_audio_inventory import inventory_placement_audio, placement_audio_properties
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_unit_key
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.static_placement_plan import FAILED_STATUS
 from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS

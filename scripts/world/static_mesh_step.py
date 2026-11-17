@@ -1,7 +1,5 @@
 import json
 from pathlib import Path
-import re
-import subprocess
 from typing import NamedTuple
 
 from native_store.converted_model_store_files import converted_model_store_files_and_record
@@ -19,7 +17,9 @@ from static_material_package_census import STATIC_MESH_PACKAGE_CENSUS_RELATIVE_P
 from world.light_actors import reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
+from world.error_detail import MODEL_CONVERSION_ERRORS, conversion_failure_reason
 from world.static_mesh_colour_streams import colour_streams_store_path, static_mesh_colour_stream_outcome
+from world.static_mesh_converter_folder import STATIC_MESH_CONVERTER_FOLDER
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actor_subclass_actors, static_mesh_actors
 from world.package_header import read_package_header
@@ -30,12 +30,10 @@ from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 STATIC_MESH_STEP_ALGORITHM_VERSION = 5
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
-STATIC_MESH_CONVERTER_FOLDER = 'static-mesh-converter'
 STATIC_MESH_REQUESTS_PRODUCT_NAME = 'static-mesh-requests.json'
 STATIC_MESH_BINDINGS_PRODUCT_NAME = 'section-bindings.json'
 PLACEMENT_MATERIAL_OVERRIDE_REASON = 'placement-material-override-unsupported'
 STATIC_MESH_REFERENCE_UNRESOLVED_REASON = 'static-mesh-reference-unresolved'
-MODEL_CONVERSION_ERRORS = (FormatError, ValueError, subprocess.TimeoutExpired)
 
 
 class StaticMeshStepError(ValueError):
@@ -124,15 +122,6 @@ def package_gate_reason(header):
     if (header['packageVersion'], header['licensee']) not in REVIEWED_VERSIONS:
         return GAP_STATUS, static_material_layout_unreviewed_reason(header['packageVersion'], header['licensee'])
     return None
-
-
-CONVERSION_FAILURE_DETAIL_SEPARATOR = re.compile(r'[:;]')
-
-
-def conversion_failure_reason(error):
-    message = str(error).strip()
-    sentence = CONVERSION_FAILURE_DETAIL_SEPARATOR.split(message.splitlines()[0], maxsplit=1)[0].strip() if message else ''
-    return f'decode-failed:{type(error).__name__}:{sentence or "no message"}'
 
 
 def model_sort_key(model_record):

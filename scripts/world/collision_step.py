@@ -23,7 +23,8 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_collision_sources import (COLLISION_RULES_PATH, COLLISION_UNREADABLE_REASON, GAP_DECISION, SLOTS_DECISION,
                                             decide_placement_collision, load_collision_rules, model_slot_properties, static_mesh_collision_triangles,
                                             static_mesh_selectors)
-from world.static_mesh_step import conversion_failure_reason, sealed_static_meshes, static_mesh_requests_by_reference
+from world.static_mesh_step import sealed_static_meshes, static_mesh_requests_by_reference
+from world.error_detail import conversion_failure_reason
 from world.static_placement import TransformFieldError, read_class_evidence, resolved_static_values, static_matrix
 from world.static_placement_plan import (FAILED_STATUS, PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX, chunk_for_origin, chunk_rectangles,
                                          static_mesh_actor_subclass_actors, static_mesh_actors)

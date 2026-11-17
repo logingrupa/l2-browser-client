@@ -21,7 +21,6 @@ from world.lighting_payload import (bsp_lightmap_arrays, lighting_records_array,
                                     terrain_lighting_arrays, typed_payload_byte_count)
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
-from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
 from world.struct_property_tag_rules import read_struct_property_tag_rules
@@ -31,7 +30,7 @@ from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
-from world.error_detail import first_line_of_error
+from world.error_detail import conversion_failure_reason, first_line_of_error
 
 LIGHTING_STEP_ALGORITHM_VERSION = 5
 LIGHTING_STEP_NAME = 'lighting'

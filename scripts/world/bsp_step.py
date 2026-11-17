@@ -21,7 +21,7 @@ from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_i
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles
 from world.surface_material_programs import material_gap_row_status, world_material_sources

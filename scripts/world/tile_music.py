@@ -11,7 +11,7 @@ from native_store.file_identity import file_identity
 from native_store.store_paths import REPOSITORY_ROOT
 from world.music_volume_join import MUSICINFO_TABLE, join_music_volumes, musicinfo_rows
 from world.static_placement_plan import FAILED_STATUS
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.tile_census_validation import GAP_STATUS
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME
 

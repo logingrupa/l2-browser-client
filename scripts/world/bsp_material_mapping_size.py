@@ -2,7 +2,7 @@ from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
 from world.class_default_reads import kept_class_default_values
-from world.static_mesh_step import conversion_failure_reason
+from world.error_detail import conversion_failure_reason
 from world.surface_material_programs import MATERIAL_CONVERSION_ERRORS, resolve_material_export
 
 INTEGER_PROPERTY_TYPE = 2
