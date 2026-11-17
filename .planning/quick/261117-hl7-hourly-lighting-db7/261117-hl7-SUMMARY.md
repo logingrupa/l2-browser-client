@@ -13,7 +13,7 @@ Ports the verified DB-7 hourly lighting rules (claim audit 42 supported, 7 partl
 
 ## Commits
 
-- Stage 1, converter: `a15af76` tile lighting inputs (LMSC.sunAffect, LMPG footer, TINT, SMIC), `a87750a` BSP sections keyed by native render section, `005f467` terrain sample keys, `c0b5d66` static mesh colour stream sidecars.
+- Stage 1, converter: `a15af76` tile lighting inputs (LMSC.sunAffect, LMPG revisions, TINT), `a87750a` BSP sections keyed by native render section, `005f467` terrain sample keys, `c0b5d66` static mesh colour stream sidecars.
 - Stage 2, model: `b802826` the 32 DB-7 fixtures, `d7e8378` the model in `src/environment/model/`.
 - Stage 3, runtime: `73de1aa` BSP slot by sun affect, revision gate and D3D colour op; `019929c` terrain vertex colour on the dirty flag, static mesh and actor terms; `2c01965` Hourly lighting in the Time of day group; `053cdd6` hourly browser check; `1f12cde` dirty flag read before sampling.
 - This SUMMARY, the docs, DEC-ENV-2 and the STATE row.
