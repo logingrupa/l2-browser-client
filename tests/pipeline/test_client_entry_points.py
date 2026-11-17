@@ -6,7 +6,8 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_ROOT = REPOSITORY_ROOT / 'scripts'
 CLIENT_OPTION_PREFIX = '--client'
 REFERENCE_CLIENT_GUARD_NAME = 'require_reference_client'
-PER_FILE_GUARD_METHOD_NAME = 'require_equal_file'
+PER_FILE_GUARD_METHOD_NAMES = frozenset({'require_equal_file', 'require_equal_file_with_sha256'})
+LOCK_RECORD_CHECK_METHOD_NAME = 'require_lock_equal_record'
 REFERENCE_CLIENT_GUARD_MODULE_NAME = 'reference_client_guard'
 SCRIPT_FILE_LOADER_NAME = 'spec_from_file_location'
 ARGUMENT_PARSING_METHOD_NAME = 'parse_args'
@@ -103,7 +104,7 @@ class PerFileGuardReachability:
     def referenced_definitions(self, module_name, node, imported_definitions, module_aliases, local_definitions):
         references, calls_per_file_guard = set(), False
         for child in ast.walk(node):
-            if isinstance(child, ast.Attribute) and child.attr == PER_FILE_GUARD_METHOD_NAME:
+            if isinstance(child, ast.Attribute) and child.attr in PER_FILE_GUARD_METHOD_NAMES:
                 calls_per_file_guard = True
             elif isinstance(child, ast.Attribute) and isinstance(child.value, ast.Name) and child.value.id in module_aliases:
                 references.add((module_aliases[child.value.id], child.attr))
@@ -221,6 +222,8 @@ class ClientEntryPointScanTests(unittest.TestCase):
         trees_by_module_name = synthetic_trees(
             root_guard_only=CLIENT_OPTION_SOURCE + "require_reference_client(args.client_snapshot)\n(args.client_snapshot / 'system/a.dat').read_bytes()\n",
             direct_per_file_guard=CLIENT_OPTION_SOURCE + "require_reference_client(args.client_snapshot).require_equal_file('system/a.dat').read_bytes()\n",
+            per_file_guard_with_sha256=CLIENT_OPTION_SOURCE
+                + "path, sha256 = require_reference_client(args.client_snapshot).require_equal_file_with_sha256('system/a.dat')\n",
             guarded_reader="def read_lock_equal_table(client):\n    return require_reference_client(client).require_equal_file('system/a.dat').read_bytes()\n",
             imported_per_file_guard='from guarded_reader import read_lock_equal_table\n' + CLIENT_OPTION_SOURCE
                 + 'require_reference_client(args.client_snapshot)\nread_lock_equal_table(args.client_snapshot)\n',
@@ -230,6 +233,14 @@ class ClientEntryPointScanTests(unittest.TestCase):
             reexported_per_file_guard='from reexporting_reader import read_lock_equal_table\n' + CLIENT_OPTION_SOURCE
                 + 'require_reference_client(args.client_snapshot)\nread_lock_equal_table(args.client_snapshot)\n')
         self.assertEqual(entry_point_guard_failures(trees_by_module_name), {'root_guard_only': 'reads client files without the per-file lock check'})
+
+    def test_every_per_file_guard_method_checks_the_lock_record_of_its_file(self):
+        guard_tree = script_trees_by_module_name()[REFERENCE_CLIENT_GUARD_MODULE_NAME]
+        methods = {node.name: node for node in ast.walk(guard_tree) if isinstance(node, ast.FunctionDef) and node.name in PER_FILE_GUARD_METHOD_NAMES}
+        self.assertEqual(set(methods), PER_FILE_GUARD_METHOD_NAMES)
+        for name, method in methods.items():
+            with self.subTest(method=name):
+                self.assertIn(LOCK_RECORD_CHECK_METHOD_NAME, {called_function_name(call) for call in ast.walk(method) if isinstance(call, ast.Call)})
 
     def test_scan_ignores_a_client_option_named_only_in_help_text(self):
         module_tree = ast.parse("parser.add_argument('--output', help='never --client')\n")
