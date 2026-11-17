@@ -1,8 +1,12 @@
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from world.raw_map_step import tile_step_row
+from world.tile_census_validation import GAP_STATUS
 
 PENDING_STATUS = 'pending'
+FAILED_STATUS = 'failed'
+UPSTREAM_BLOCKING_STATUSES = (FAILED_STATUS, GAP_STATUS)
 UPSTREAM_STEP_FAILED_REASON_PREFIX = 'upstream-step-failed:'
+UPSTREAM_STEP_GAP_REASON_PREFIX = 'upstream-step-gap:'
 
 
 class TileStepGapRows:
@@ -25,6 +29,17 @@ class TileStepGapRows:
 
 def upstream_failed_row(tile_id, step, source_identity, failed_step, evidence):
     return tile_step_row(tile_id, step, PENDING_STATUS, f'{UPSTREAM_STEP_FAILED_REASON_PREFIX}{failed_step}', source_identity, evidence)
+
+
+def inherited_upstream_row(tile_id, step, source_identity, blocking_row, evidence):
+    if blocking_row['status'] == GAP_STATUS:
+        return tile_step_row(tile_id, step, GAP_STATUS, f'{UPSTREAM_STEP_GAP_REASON_PREFIX}{blocking_row["step"]}', source_identity, evidence)
+    return upstream_failed_row(tile_id, step, source_identity, blocking_row['step'], evidence)
+
+
+def first_blocking_row(step_names, step_results):
+    return next((step_results[step] for step in step_names if step in step_results and step_results[step]['status'] in UPSTREAM_BLOCKING_STATUSES),
+                None)
 
 
 def tile_step_summary_row(tile_id, step, source_identity, gap_rows, evidence):

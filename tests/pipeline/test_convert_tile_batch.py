@@ -253,7 +253,9 @@ class TileBatchOrderTests(TileBatchTestCase):
         self.assertEqual((rows[('tile:10_11', 'chunks')]['status'], rows[('tile:10_11', 'chunks')]['reason']),
                          ('failed', 'decode-failed:ValueError:synthetic decode failure'))
         self.assertEqual(rows[('tile:10_11', 'meshes')]['reason'], 'upstream-step-failed:chunks')
-        self.assertIn(('10_11', 'manifest'), steps.calls)
+        self.assertEqual((rows[('tile:10_11', 'manifest')]['status'], rows[('tile:10_11', 'manifest')]['reason']),
+                         ('pending', 'upstream-step-failed:chunks'))
+        self.assertNotIn(('10_11', 'manifest'), steps.calls)
         self.assertNotIn(('10_11', 'meshes'), steps.calls)
         self.assertEqual(rows[('tile:12_13', 'manifest')]['status'], 'pass')
 
@@ -278,6 +280,10 @@ class TileBatchOrderTests(TileBatchTestCase):
         first = self.run_batch(steps)
         self.assertEqual(first.attempted_tile_ids, ['10_11'])
         self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
+        self.assertEqual([(step, row['status'], row['reason']) for (key, step), row in self.rows_by_tile_and_step().items()
+                          if key == 'tile:10_11' and step in ('meshes', 'manifest')],
+                         [('manifest', 'gap', 'upstream-step-gap:chunks'), ('meshes', 'gap', 'upstream-step-gap:chunks')])
+        self.assertEqual([step for tile_id, step in steps.calls if tile_id == '10_11'], ['raw', 'chunks'])
         steps.calls.clear()
         self.assertEqual(self.run_batch(steps).attempted_tile_ids, ['12_13'])
         self.assertNotIn(('10_11', 'chunks'), steps.calls)

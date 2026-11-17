@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 23,
+  "listVersion": 24,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -43,6 +43,7 @@
     "object-gaps:<count>",
     "batch-pending",
     "upstream-step-failed:<step>",
+    "upstream-step-gap:<step>",
     "minimap-join-unresolved:<what>"
   ]
 }

@@ -217,17 +217,16 @@ class SeamInputPhaseTests(TileBatchPhaseTestCase):
         self.run_batch(inspecting_steps)
         self.assertEqual(sealed_neighbours_at_the_second_step, dict.fromkeys(SEAM_NEIGHBOUR_TILE_IDS, True))
 
-    def test_a_selected_tile_whose_raw_failed_in_phase_a_is_not_run_again_and_its_other_steps_become_upstream_failed_rows(self):
+    def test_a_selected_tile_whose_raw_failed_in_phase_a_is_not_run_again_and_its_other_steps_and_manifest_become_upstream_failed_rows(self):
         steps = RawFailingOnceSteps(self.project_root, failing={(ROW_NEIGHBOUR_TILE_ID, 'raw')})
         outcome = self.run_batch(steps, limit=2)
         self.assertEqual(outcome.attempted_tile_ids, [OWNER_TILE_ID, ROW_NEIGHBOUR_TILE_ID])
-        self.assertEqual([step for tile_id, step in steps.calls if tile_id == ROW_NEIGHBOUR_TILE_ID], ['raw', 'manifest'])
+        self.assertEqual([step for tile_id, step in steps.calls if tile_id == ROW_NEIGHBOUR_TILE_ID], ['raw'])
         self.assertFalse(raw_is_sealed(self.project_root, ROW_NEIGHBOUR_TILE_ID))
         rows = self.rows_by_tile_and_step()
         self.assertEqual([(rows[(f'tile:{ROW_NEIGHBOUR_TILE_ID}', step)]['status'], rows[(f'tile:{ROW_NEIGHBOUR_TILE_ID}', step)]['reason'])
                           for step in SYNTHETIC_STEP_NAMES],
-                         [('failed', SYNTHETIC_FAILURE_REASON), ('pending', 'upstream-step-failed:raw'), ('pending', 'upstream-step-failed:raw'),
-                          ('pass', None)])
+                         [('failed', SYNTHETIC_FAILURE_REASON), *[('pending', 'upstream-step-failed:raw')] * 3])
 
     def test_no_raw_step_runs_after_phase_a(self):
         steps = LedgerBackedSteps(self.project_root)
@@ -276,7 +275,7 @@ class TileStepsPhaseTests(TileBatchPhaseTestCase):
                          ['pass', 'pending', 'pending', 'pending'])
 
     def test_a_running_tile_ends_before_its_next_preflight_once_an_earlier_tile_has_stopped(self):
-        steps, preflight = LedgerBackedSteps(self.project_root, layout_gaps={(LONE_TILE_ID, 'chunks')}), RecordingPreflight()
+        steps, preflight = LedgerBackedSteps(self.project_root), RecordingPreflight()
         first_stopped_position = multiprocessing.Value('q', NO_STOPPED_POSITION)
 
         def steps_with_a_refusal_of_another_worker(step, tile_id):
@@ -287,7 +286,7 @@ class TileStepsPhaseTests(TileBatchPhaseTestCase):
         outcome = ordered_tile_steps_outcome(tile_step_run, first_stopped_position,
                                              TileStepsTask(2, LONE_TILE_ID, synthetic_source_identity(LONE_TILE_ID), ('chunks', 'meshes'), None,
                                                            SYNTHETIC_EXPECTED_COST))
-        self.assertEqual((outcome.started, outcome.stop, list(outcome.step_results)), (True, None, ['chunks']))
+        self.assertEqual((outcome.started, outcome.stop, list(outcome.step_results)), (True, None, []))
         self.assertEqual([(record['tile'], record['step']) for record in outcome.preflights], [(LONE_TILE_ID, 'chunks')])
         self.assertEqual((steps.calls, preflight.calls, first_stopped_position.value), ([(LONE_TILE_ID, 'chunks')], 1, 1))
 

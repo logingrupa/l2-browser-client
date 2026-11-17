@@ -141,7 +141,7 @@ class OneWorkerAgainstTwoWorkersTests(TileBatchWorkerProcessTestCase):
         summary = two_worker_run.report['summary']
         self.assertEqual((summary['exitCode'], summary['attemptedTiles']), (BATCH_EXIT_DONE, list(SEPARATE_TILE_IDS)))
         self.assertEqual(tile_step_rows(two_worker_run.project_root, SECOND_TILE_ID),
-                         [PASS_ROW, CHUNKS_FAILED_ROW, ('pending', 'upstream-step-failed:chunks'), PASS_ROW])
+                         [PASS_ROW, CHUNKS_FAILED_ROW, ('pending', 'upstream-step-failed:chunks'), ('pending', 'upstream-step-failed:chunks')])
         self.assertEqual(tile_step_rows(two_worker_run.project_root, THIRD_TILE_ID), [PASS_ROW] * len(SYNTHETIC_STEP_NAMES))
 
     def test_two_workers_give_the_same_outcome_when_a_preflight_refuses_on_the_second_tile(self):
@@ -166,10 +166,10 @@ class OneWorkerAgainstTwoWorkersTests(TileBatchWorkerProcessTestCase):
         runs = self.compared_scenario_runs('raw-fails-once')
         for run in runs:
             self.assertEqual(run.report['summary']['attemptedTiles'], [OWNER_TILE_ID, ROW_NEIGHBOUR_TILE_ID])
-            self.assertEqual(called_steps_of_tile(run.report, ROW_NEIGHBOUR_TILE_ID), ['manifest', 'raw'])
+            self.assertEqual(called_steps_of_tile(run.report, ROW_NEIGHBOUR_TILE_ID), ['raw'])
             self.assertEqual(run.report['tilesWithARawSeal'], [OWNER_TILE_ID])
             self.assertEqual(tile_step_rows(run.project_root, ROW_NEIGHBOUR_TILE_ID),
-                             [RAW_FAILED_ROW, ('pending', 'upstream-step-failed:raw'), ('pending', 'upstream-step-failed:raw'), PASS_ROW])
+                             [RAW_FAILED_ROW, *[('pending', 'upstream-step-failed:raw')] * 3])
 
 
 class TwoWorkerStopTests(TileBatchWorkerProcessTestCase):
