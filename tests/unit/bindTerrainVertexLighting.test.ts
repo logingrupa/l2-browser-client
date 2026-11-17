@@ -64,7 +64,7 @@ describe("bindTerrainVertexLighting", () => {
 
   it("rebuilds only when the environment manager raises its lighting dirty flag and holds the last colours through a type transition", () => {
     const mesh = terrainMesh(keyedExtras);
-    const inputs = hourlyInputs(terrainIntensityArrays());
+    const inputs = hourlyInputs([...terrainIntensityArrays(), ...terrainLightMaskArrays([0, 0, 0])]);
     const binding = bindTerrainVertexLighting(inputs.terrainIntensityMaps, inputs.terrainLightMasks);
     binding.addChunk("chunk-0-0", [mesh], () => hourlyEnvironmentAt(0));
     const coloursAtZero = Array.from(mesh.getVerticesData(VertexBuffer.ColorKind)!);
@@ -79,11 +79,25 @@ describe("bindTerrainVertexLighting", () => {
     expect(Array.from(mesh.getVerticesData(VertexBuffer.ColorKind)!)).toEqual(coloursAtNoon);
   });
 
-  it("names the static base gap when a serialized terrain light covers a vertex the payload cannot place", () => {
+  it("names the static base gap and writes no colours when a serialized terrain light covers a vertex the payload cannot place", () => {
+    const mesh = terrainMesh(keyedExtras);
     const inputs = hourlyInputs([...terrainIntensityArrays(), ...terrainLightMaskArrays([0, 0x80, 0])]);
     const binding = bindTerrainVertexLighting(inputs.terrainIntensityMaps, inputs.terrainLightMasks);
-    expect(binding.inspection().staticBase).toEqual({ status: "unresolved", lightsCoveringAVertex: 1,
-      reasons: ["terrain-general-staticlight-sampleintensity", terrainLightMaskSectorOriginUnstagedReason] });
+    binding.addChunk("chunk-0-0", [mesh], () => hourlyEnvironmentAt(12));
+    const reasons = ["terrain-general-staticlight-sampleintensity", terrainLightMaskSectorOriginUnstagedReason];
+    expect(binding.inspection()).toMatchObject({ staticBase: { status: "unresolved", lightsCoveringAVertex: 1, reasons },
+      heldReason: reasons.join(", "), rebuildCount: 0, colouredMeshCount: 0 });
+    expect(mesh.isVerticesDataPresent(VertexBuffer.ColorKind)).toBe(false);
+  });
+
+  it("holds the terrain colours while the light masks are unstaged, because a covered vertex cannot be ruled out", () => {
+    const mesh = terrainMesh(keyedExtras);
+    const inputs = hourlyInputs(terrainIntensityArrays());
+    const binding = bindTerrainVertexLighting(inputs.terrainIntensityMaps, inputs.terrainLightMasks);
+    binding.addChunk("chunk-0-0", [mesh], () => hourlyEnvironmentAt(12));
+    expect(binding.inspection()).toMatchObject({ staticBase: { status: "unresolved" }, rebuildCount: 0, colouredMeshCount: 0 });
+    expect(binding.inspection().heldReason).toMatch(/^hourly-lighting-input-unstaged:/);
+    expect(mesh.isVerticesDataPresent(VertexBuffer.ColorKind)).toBe(false);
   });
 
   it("reports a visible gap and writes no colours for terrain converted before the TIntMap or the sample keys", () => {
