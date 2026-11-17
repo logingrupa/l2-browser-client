@@ -1,23 +1,18 @@
 import math
 import re
 
-from actors.actor_unit_inventory import CHARACTER_PART_NAME, NO_MESH_IN_ROW_REASON, decoded_string_values
+from actors.actor_unit_inventory import CHARACTER_PART_NAME, NO_MESH_IN_ROW_REASON
 from actors.npc_requests import ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX
-from data.hair_table_adapter import HAIR_LAYOUT_UNDECODED_REASON, HAIR_TABLE_FIELD_PROOF, HELMET_LAYOUT_UNDECODED_REASON
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN, validate_gap_row
 
 CHARGRP_TABLE_NAME = 'chargrp'
 CHARGRP_ROW_COLLECTION = 'Char'
 CLASSINFO_TABLE_NAME = 'classinfo-e'
-HAIRGRP_TABLE_NAME = 'hairgrp'
-HELMETGRP_TABLE_NAME = 'helmetgrp'
 CHARACTER_STEP = 'characters'
 BODY_MESH_GROUP, BODY_TEXTURE_GROUP = 'body_mesh', 'body_texture'
 BODY_MESH_FIELD_PATTERN = re.compile(r'^body_mesh([1-9][0-9]*)$')
 FACE_MESH_GROUP, FACE_MESH_FIELD = 'face_mesh', 'param_face_mesh'
 FACE_TEXTURE_GROUP, FACE_TEXTURE_FIELD = 'face_texture', 'param_face_texture'
-HAIR_MESH_GROUP, HAIR_MESH_FIELD = 'hair_mesh', 'param_hair_mesh'
-HAIR_TEXTURE_GROUP, HAIR_TEXTURE_FIELD = 'hair_texture', 'param_hair_texture'
 CLASSINFO_CHARGRP_INDEX_FIELD = 'chargrp_index'
 CLASSINFO_ACTOR_CLASS_FIELD = 'actor_class'
 CONVERTER_ASSEMBLY_PART_LIMIT = 16
@@ -34,10 +29,17 @@ CHARACTER_PIVOT_UNAPPLIED_REASON = 'character-pivot-unapplied'
 PROFILE_REQUIRED_FAMILY_FIELDS = ('WaitAnimName', 'RunAnimName', 'Atk01AnimName', 'DeathAnimName')
 PROFILE_WEAPON_TYPE = 'WT_HAND'
 REQUESTED_STATUS, UNBOUND_TEXTURE_STATUS, BOUND_STATUS, GAP_STATUS, RESOLVED_STATUS = 'requested', 'requested-unbound', 'bound', 'gap', 'resolved'
-FACE_FIELD_NAME = 'face'
+DECODED_STATUS = 'decoded'
+FACE_FIELD_NAME, HAIR_FIELD_NAME = 'face', 'hair'
+HAIR_SELECTION_FIELD = 'hairSelection'
+HAIR_EXPORT_UNRESOLVED_REASON_PREFIX, HAIR_SUBMESH_UNLISTED_REASON_PREFIX = 'hair-export-unresolved:', 'hair-submesh-unlisted:'
+HAIR_HALF_NONE_STATUS, HAIR_HALF_RESOLVED_STATUS = 'none', 'resolved'
+HELMET_APPLIED_BY = 'equipment-03-30'
 CHARACTER_REQUEST_LIMITATIONS = (
     'Generated from the decoded chargrp row: body parts follow body_mesh1 upward with their body_texture fields; no recipe value is copied.',
-    'The face attaches only through a source-joined actor class; hair and helmet bind only from decoded hairgrp and helmetgrp joins.',
+    'The face attaches only through a source-joined actor class.',
+    'Hair halves come from the RM-11 hairgrp rule at the default appearance, HairStyle 0 and HairColor 0, with the face texture at Face 0, '
+    'until a server packet selects another one (Phase 4); group-less requested names resolve through the converter rule until RM-13.',
 )
 
 
@@ -119,7 +121,7 @@ def rigid_head_attachment(actor_class, mesh_path):
                        'meshPath': mesh_path}}
 
 
-def face_part(chargrp_row, row_index, chargrp_table, actor_class):
+def face_part(chargrp_row, row_index, chargrp_table, actor_class, face):
     meshes = [entry[FACE_MESH_FIELD] for entry in chargrp_row[FACE_MESH_GROUP]]
     texture_entries = chargrp_row[FACE_TEXTURE_GROUP]
     reason = (NO_MESH_IN_ROW_REASON if len(meshes) != 1 or not meshes[0] else
@@ -127,19 +129,19 @@ def face_part(chargrp_row, row_index, chargrp_table, actor_class):
               or class_face_mesh_reason(actor_class, meshes[0]))
     if reason:
         return None, part_status(FACE_FIELD_NAME, GAP_STATUS, reason)
-    single_texture = len(texture_entries) == 1
-    texture = texture_entries[0][FACE_TEXTURE_FIELD] if single_texture else ''
+    selected = face < len(texture_entries)
+    texture = texture_entries[face][FACE_TEXTURE_FIELD] if selected else ''
     part = table_mesh_part(actor_class['properties'][CLASS_MESH_FIELD]['object'], texture, [CHARGRP_ROW_COLLECTION, row_index, FACE_MESH_GROUP, 0, FACE_MESH_FIELD],
-                           [CHARGRP_ROW_COLLECTION, row_index, FACE_TEXTURE_GROUP, 0, FACE_TEXTURE_FIELD] if single_texture else None,
+                           [CHARGRP_ROW_COLLECTION, row_index, FACE_TEXTURE_GROUP, face, FACE_TEXTURE_FIELD] if selected else None,
                            chargrp_table)
     part['rigidAttachment'] = rigid_head_attachment(actor_class, [CLASS_MESH_FIELD])
     return part, part_status(FACE_FIELD_NAME, REQUESTED_STATUS if texture else UNBOUND_TEXTURE_STATUS)
 
 
-def unbound_face_limitation(chargrp_row, row_index, actor_class):
+def unbound_face_limitation(chargrp_row, row_index, actor_class, face):
     return (f'The face mesh is chargrp {CHARGRP_ROW_COLLECTION}/{row_index}/{FACE_MESH_GROUP}/0, checked against the {actor_class["class"]} '
-            f'{CLASS_MESH_FIELD} default; its {len(chargrp_row[FACE_TEXTURE_GROUP])} {FACE_TEXTURE_GROUP} entries leave slot 0 unbound '
-            'until a source selects one.')
+            f'{CLASS_MESH_FIELD} default; its {len(chargrp_row[FACE_TEXTURE_GROUP])} {FACE_TEXTURE_GROUP} entries hold no entry for Face {face}, '
+            'so slot 0 stays unbound.')
 
 
 def classinfo_rows(classinfo_table):
@@ -188,51 +190,49 @@ def actor_class_join_limitation(actor_class):
             f'{join["source"]} (sha256 {join["sha256"]}).')
 
 
-def layout_gap(reason, join_field, candidate_count, record_fields):
-    return {'status': GAP_STATUS, 'reason': reason, 'joinField': join_field, 'candidateCount': candidate_count, 'recordFields': record_fields}
+def hair_half_summary(half):
+    summary = {'half': half['half'], 'pawnSlot': half['pawnSlot'], 'mappedStyle': half['mappedStyle'], 'status': half['status']}
+    return {**summary, 'mesh': half['mesh']['object'], 'material': half['material']['object']} if half['status'] == HAIR_HALF_RESOLVED_STATUS else summary
 
 
-def manifest_record_fields(manifest):
-    return sorted({field for record in manifest['records'] if isinstance(record, dict) for field in record}) if manifest else None
+def class_sub_mesh_index(actor_class, mesh_object):
+    sub_meshes = actor_class['properties'].get(SUB_MESHES_FIELD, [])
+    matching = [index for index, mesh in enumerate(sub_meshes) if isinstance(mesh, dict) and isinstance(mesh.get('object'), str)
+                and mesh['object'].casefold() == mesh_object.casefold()]
+    return matching[0] if len(matching) == 1 else None
 
 
-def layout_binding(table_name, manifest, reason, chargrp_row):
-    if manifest is None:
-        return layout_gap(reason, None, None, None)
-    records, record_fields = manifest['records'], manifest_record_fields(manifest)
-    join_fields = sorted(set(record_fields) & set(chargrp_row) - {HAIR_MESH_GROUP, HAIR_TEXTURE_GROUP})
-    if len(join_fields) != 1:
-        return layout_gap(reason, None, None, record_fields)
-    join_field = join_fields[0]
-    joined = [(ordinal, record) for ordinal, record in enumerate(records)
-              if isinstance(record, dict) and record.get(join_field) == chargrp_row[join_field]]
-    if len(joined) != 1:
-        return layout_gap(reason, join_field, len(joined), record_fields)
-    ordinal, record = joined[0]
-    meshes = [mesh for mesh in decoded_string_values(record.get(HAIR_MESH_GROUP, [])) if mesh]
-    textures = [texture for texture in decoded_string_values(record.get(HAIR_TEXTURE_GROUP, [])) if texture]
-    if len(meshes) != 1 or len(textures) != 1 or any(unqualified_reference_reason(HAIR_MESH_FIELD, value) for value in meshes + textures):
-        return layout_gap(reason, join_field, len(textures), record_fields)
-    return {'status': BOUND_STATUS, 'reason': None, 'joinField': join_field, 'candidateCount': 1, 'recordFields': record_fields,
-            'mesh': meshes[0], 'texture': textures[0],
-            'binding': {'table': table_name, 'sourceSha256': manifest['sourceSha256'], 'recordOrdinal': ordinal,
-                        'fieldPath': [HAIR_TEXTURE_GROUP, 0, HAIR_TEXTURE_FIELD]}}
+def hair_half_part(half, mesh_type, hair_parts, actor_class):
+    sub_mesh_index = class_sub_mesh_index(actor_class, half['mesh']['object'])
+    if sub_mesh_index is None:
+        return None
+    package_name, object_name = actor_class['properties'][SUB_MESHES_FIELD][sub_mesh_index]['object'].split('.', 1)
+    selection = {'recipe': hair_parts['path'], 'recipeSha256': hair_parts['sha256'], 'meshType': mesh_type['meshType'], 'half': half['half'],
+                 'pawnSlot': half['pawnSlot'], 'mappedStyle': half['mappedStyle'], 'hairColor': hair_parts['defaultAppearance']['hairColor']}
+    return {'package': package_name, 'object': object_name, 'materials': [f'0={half["material"]["object"]}'], HAIR_SELECTION_FIELD: selection,
+            'rigidAttachment': rigid_head_attachment(actor_class, [SUB_MESHES_FIELD, sub_mesh_index])}
 
 
-def layout_part(binding, actor_class):
-    package_name, object_name = binding['mesh'].split('.', 1)
-    part = {'package': package_name, 'object': object_name, 'materials': [f'0={binding["texture"]}'], 'layoutBinding': binding['binding']}
-    sub_meshes = actor_class['properties'].get(SUB_MESHES_FIELD, []) if actor_class else []
-    matching = [index for index, mesh in enumerate(sub_meshes) if isinstance(mesh, dict) and mesh.get('object') == binding['mesh']]
-    if len(matching) == 1 and class_head_bone_reason(actor_class) is None:
-        part['rigidAttachment'] = rigid_head_attachment(actor_class, [SUB_MESHES_FIELD, matching[0]])
-    return part
-
-
-def layout_binding_limitation(binding):
-    citation = binding['binding']
-    return (f'{citation["table"]} record {citation["recordOrdinal"]} field {"/".join(map(str, citation["fieldPath"]))} binds the texture; '
-            f'{HAIR_TABLE_FIELD_PROOF}; unverified presentation until the side-by-side check.')
+def hair_parts_and_binding(row_index, actor_class, hair_parts):
+    mesh_type = hair_parts['byChargrpRow'].get(row_index)
+    if mesh_type is None:
+        raise CharacterRequestError(f'{hair_parts["path"]} holds no mesh type for chargrp row {row_index}; rerun scripts/actors/character_hair_recipe.py')
+    appearance = {field: hair_parts['defaultAppearance'][field] for field in ('hairStyle', 'hairColor', 'face')}
+    parts, reasons, class_reason = [], [], class_head_bone_reason(actor_class)
+    for half in mesh_type['defaultHalves']:
+        if half['status'] == HAIR_HALF_NONE_STATUS:
+            continue
+        if half['status'] != HAIR_HALF_RESOLVED_STATUS:
+            reasons.append(HAIR_EXPORT_UNRESOLVED_REASON_PREFIX + half['half'])
+            continue
+        part = None if class_reason else hair_half_part(half, mesh_type, hair_parts, actor_class)
+        if part is None:
+            reasons.append(class_reason or HAIR_SUBMESH_UNLISTED_REASON_PREFIX + half['half'])
+            continue
+        parts.append(part)
+    binding = {'status': GAP_STATUS if reasons else BOUND_STATUS, 'reason': reasons[0] if reasons else None, 'appearance': appearance,
+               'meshType': mesh_type['meshType'], 'halves': [hair_half_summary(half) for half in mesh_type['defaultHalves']]}
+    return parts, binding, [{'field': HAIR_FIELD_NAME, 'reason': reason} for reason in reasons]
 
 
 def is_finite_number(value):
@@ -336,20 +336,19 @@ def root_mesh_animation_limitation(root_mesh, animation_families):
 
 def build_character_request(chargrp_row, row_index, actor_class, sources):
     parts, statuses = body_parts(chargrp_row, row_index, sources.chargrp)
-    face, face_status = face_part(chargrp_row, row_index, sources.chargrp, actor_class)
-    hair = layout_binding(HAIRGRP_TABLE_NAME, sources.hairgrp, HAIR_LAYOUT_UNDECODED_REASON, chargrp_row)
-    helmet = layout_binding(HELMETGRP_TABLE_NAME, sources.helmetgrp, HELMET_LAYOUT_UNDECODED_REASON, chargrp_row)
-    parts += [face] if face else []
-    parts += [layout_part(binding, actor_class) for binding in (hair, helmet) if binding['status'] == BOUND_STATUS]
+    face_index = sources.hair_parts['defaultAppearance']['face']
+    face, face_status = face_part(chargrp_row, row_index, sources.chargrp, actor_class, face_index)
+    hair_parts, hair, hair_gaps = hair_parts_and_binding(row_index, actor_class, sources.hair_parts)
+    helmet = {'status': DECODED_STATUS, 'reason': None, 'appliedBy': HELMET_APPLIED_BY}
+    parts += ([face] if face else []) + hair_parts
     gaps = [{'field': status['field'], 'reason': status['reason']} for status in statuses + [face_status] if status['status'] == GAP_STATUS]
-    gaps += [{'field': name, 'reason': binding['reason']} for name, binding in (('hair', hair), ('helmet', helmet)) if binding['status'] == GAP_STATUS]
+    gaps += hair_gaps
     request, root_mesh = None, root_mesh_animation_source(actor_class)
     if len(parts) > CONVERTER_ASSEMBLY_PART_LIMIT:
         gaps.insert(0, {'field': 'parts', 'reason': ASSEMBLY_PART_LIMIT_EXCEEDED_REASON_PREFIX + str(len(parts))})
     elif parts:
         limitations = (list(CHARACTER_REQUEST_LIMITATIONS) + ([actor_class_join_limitation(actor_class)] if actor_class else [])
-                       + ([unbound_face_limitation(chargrp_row, row_index, actor_class)] if face and 'sourceBinding' not in face else [])
-                       + [layout_binding_limitation(binding) for binding in (hair, helmet) if binding['status'] == BOUND_STATUS]
+                       + ([unbound_face_limitation(chargrp_row, row_index, actor_class, face_index)] if face and 'sourceBinding' not in face else [])
                        + ([root_mesh_animation_limitation(root_mesh, sources.animation_families)] if root_mesh['reason'] is None else []))
         request = {'kind': 'model', 'name': character_key(row_index).replace(':', '-'), 'animation': None, 'withEventAudio': True,
                    'parts': parts, 'limitations': limitations}

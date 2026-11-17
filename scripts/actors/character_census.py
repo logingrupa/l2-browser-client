@@ -11,18 +11,15 @@ import json
 from actors.actor_unit_inventory import NO_MESH_IN_ROW_REASON
 from actors.character_conversion import PADDING_STATUS, CharacterConversionRun, read_character_sources
 from actors.character_player_profiles import write_character_player_profile_pack
+from actors.character_hair_recipe import character_lane_converter
 from actors.character_requests import (BODY_MESH_GROUP, CHARGRP_ROW_COLLECTION, CLASSINFO_ACTOR_CLASS_FIELD, CLASSINFO_CHARGRP_INDEX_FIELD,
-                                       CLASSINFO_TABLE_NAME, GAP_STATUS, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME, character_key,
-                                       classinfo_class_resolution, is_padding_row, manifest_record_fields)
+                                       CLASSINFO_TABLE_NAME, GAP_STATUS, character_key, classinfo_class_resolution, is_padding_row)
 from actors.character_store_records import CHARACTER_PLAYER_PROFILES_RECORD_ID, stored_player_profiles
-from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF
-from native_assets import UMODEL, Converter
 from native_catalog.tables import decode_table
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from reference_client_guard import require_reference_client
 
 CHARACTER_LANE_NAME = 'actors'
-CONVERTER_WORK_FOLDER = 'converter'
 CHARACTER_CENSUS_DESCRIPTION = ('Write docs/parts/player-characters/character-census.json from the sealed character units of the actors lane. '
                                 '--check compares and writes nothing.')
 
@@ -34,7 +31,6 @@ CHARACTER_CENSUS_RELATIVE_PATH = 'docs/parts/player-characters/character-census.
 CHARACTER_CENSUS_SCHEMA_VERSION = 1
 CHARACTER_BATCH_NAME = 'characters'
 RESOLVED_STATUS, PENDING_STATUS, CONVERTED_STATUS, WRITTEN_STATUS = 'resolved', 'pending', 'converted', 'written'
-LAYOUT_CENSUS_FIELDS = ('status', 'reason', 'joinField', 'candidateCount')
 
 
 def census_collision(profile_fields):
@@ -67,8 +63,7 @@ def character_census_row(row_index, receipt, written_indexes):
     profile = generated['profileFields']
     return {'chargrpIndex': row_index, 'key': character_key(row_index), 'padding': False,
             'model': CONVERTED_STATUS if receipt['outputs'] else GAP_STATUS, 'parts': generated['parts'],
-            'hair': {field: generated['hair'][field] for field in LAYOUT_CENSUS_FIELDS},
-            'helmet': {field: generated['helmet'][field] for field in LAYOUT_CENSUS_FIELDS},
+            'hair': generated['hair'], 'helmet': generated['helmet'],
             'collision': census_collision(profile),
             'gaps': model_gaps + generated['gaps'] + profile_gaps(receipt),
             'profile': census_profile_status(row_index, gap_rows[0]['reason'] if gap_rows else None, written_indexes)}
@@ -108,17 +103,14 @@ def character_census(run):
     receipts, written_indexes = current_character_receipts(run), written_profile_indexes(run)
     rows = [padding_census_row(index, row) if is_padding_row(row) else character_census_row(index, receipts[index], written_indexes)
             for index, row in enumerate(chargrp_rows)]
-    sources = {table: manifest['sourceSha256'] if manifest else None for table, manifest in
-               ((CLASSINFO_TABLE_NAME, run.sources.classinfo), (HAIRGRP_TABLE_NAME, run.sources.hairgrp), (HELMETGRP_TABLE_NAME, run.sources.helmetgrp))}
+    classinfo = run.sources.classinfo
     return {'schemaVersion': CHARACTER_CENSUS_SCHEMA_VERSION, 'chargrpSourceSha256': run.sources.chargrp['sourceSha256'],
-            'classinfoSourceSha256': sources[CLASSINFO_TABLE_NAME], 'hairgrpSourceSha256': sources[HAIRGRP_TABLE_NAME],
-            'helmetgrpSourceSha256': sources[HELMETGRP_TABLE_NAME], 'hairFieldProof': HAIR_TABLE_FIELD_PROOF,
+            'classinfoSourceSha256': classinfo['sourceSha256'] if classinfo else None,
+            'hairParts': {'path': run.sources.hair_parts['path'], 'sha256': run.sources.hair_parts['sha256']},
             'classJoin': {'requiredFields': [CLASSINFO_CHARGRP_INDEX_FIELD, CLASSINFO_ACTOR_CLASS_FIELD],
                           'decodedFields': classinfo_class_resolution(run.sources.classinfo, 0)['evidence']['fields'],
                           'classSources': {'path': run.sources.class_sources['path'], 'resultSha256': run.sources.class_sources['sha256'],
                                            'verdict': run.sources.class_sources['document']['verdict']}},
-            'layoutRecordFields': {HAIRGRP_TABLE_NAME: manifest_record_fields(run.sources.hairgrp),
-                                   HELMETGRP_TABLE_NAME: manifest_record_fields(run.sources.helmetgrp)},
             'animationFamilies': {'path': run.sources.animation_families['path'], 'sha256': run.sources.animation_families['sha256']},
             'counts': census_counts(rows), 'rows': rows}
 
@@ -169,7 +161,7 @@ def run_character_conversion(project_root, client_access, converter, output_root
 
 def lane_character_run(project_root, client_access):
     work_root, store_root = lane_work_root(project_root, CHARACTER_LANE_NAME), lane_store_root(project_root, CHARACTER_LANE_NAME)
-    converter = Converter(client_access.root, store_root.parent / CONVERTER_WORK_FOLDER, UMODEL)
+    converter = character_lane_converter(project_root, client_access.root)
     sources = read_character_sources(project_root, client_access.root, decode_table, work_root / 'class-defaults')
     return CharacterConversionRun(project_root, client_access, converter, work_root, store_root, sources)
 

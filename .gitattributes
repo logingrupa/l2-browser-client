@@ -2,6 +2,7 @@ recipes/*.lock.json text eol=lf
 recipes/actors/combat-sound-routes.json text eol=lf
 recipes/actors/skill-dispatch-candidates.json text eol=lf
 recipes/actors/character-animation-families.json text eol=lf
+recipes/actors/character-hair-parts.json text eol=lf
 docs/parts/player-characters/character-census.json text eol=lf
 recipes/world/bsp-model-licensee-rules.json text eol=lf
 recipes/world/struct-property-tag-rules.json text eol=lf

@@ -6,10 +6,10 @@ if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
 
 import argparse
-import hashlib
 import json
 import re
 
+from actors.pinned_answer_files import pinned_bytes, require_lock_equal, sha256_hex
 from native_animation_families import decode_localization111
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import replace_file
@@ -55,29 +55,12 @@ def require(condition, message):
         raise CharacterAnimationFamilyRecipeError(f'{CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH}: {message}')
 
 
-def sha256_hex(payload):
-    return hashlib.sha256(payload).hexdigest()
-
-
-def pinned_bytes(path, sha256, label):
-    payload = Path(path).read_bytes()
-    require(sha256_hex(payload) == sha256, f'{label} {Path(path).name} is not the pinned {sha256}')
-    return payload
-
-
 def replay_counts(replay, label):
     instructions, data = replay['instructions'], replay['data']
     require(instructions['checked'] == instructions['matched'] and not instructions['mismatches']
             and data['checked'] == data['matched'] and not data['mismatches'], f'the {label} replay records a mismatch')
     return {'instructions': {'checked': instructions['checked'], 'matched': instructions['matched']},
             'data': {'checked': data['checked'], 'matched': data['matched']}}
-
-
-def require_lock_equal(lock, relative_path, sha256):
-    record = lock.record(relative_path)
-    require(record is not None and record['class'] == 'equal' and record['eSha256'] == record['importaSha256'] == sha256,
-            f'{relative_path} pin {sha256} differs from the reference client lock')
-    return {'path': relative_path, 'sha256': sha256}
 
 
 def replayed_file_sha256(replay, relative_path):
@@ -232,8 +215,8 @@ def character_animation_family_document(player_animation_facts_payload, answer_p
                              'rootMeshAnimationReplay': {'path': ROOT_MESH_ANIMATION_REPLAY_RESULT_RELATIVE_PATH,
                                                          'sha256': sha256_hex(root_mesh_replay_payload),
                                                          **replay_counts(root_mesh_replay, 'root mesh animation')}},
-            'engine': {**require_lock_equal(lock, ENGINE_RELATIVE_PATH, engine_sha256), 'imageBase': root_mesh_replay['engineImageBase']},
-            'source': require_lock_equal(lock, LOCALIZATION_RELATIVE_PATH, localization_sha256),
+            'engine': {**require_lock_equal(lock, ENGINE_RELATIVE_PATH, engine_sha256, CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH), 'imageBase': root_mesh_replay['engineImageBase']},
+            'source': require_lock_equal(lock, LOCALIZATION_RELATIVE_PATH, localization_sha256, CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH),
             'weaponTypeSelector': WEAPON_TYPE_SELECTOR_PROPERTY, 'weaponTypes': weapon_types,
             'families': family_getter_rows(answer, families), 'absentValue': absent_rule,
             'meshTypes': mesh_type_animation_families(localization_payload, answer, mesh_types, weapon_types, families, absent_rule),

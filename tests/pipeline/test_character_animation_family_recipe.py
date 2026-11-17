@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from actors.character_animation_family_recipe import (CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH, CharacterAnimationFamilyRecipeError,
                                                       character_animation_family_document, read_character_animation_families,
                                                       write_character_animation_families)
+from actors.pinned_answer_files import PinnedAnswerFileError
 from native_store.canonical_json import canonical_json_bytes
 
 WEAPON_TYPES = ['WT_HAND', 'WT_1HS', 'WT_THROW']
@@ -130,7 +131,7 @@ class CharacterAnimationFamilyRecipeTests(unittest.TestCase):
         self.assertEqual(self.document()['engine'], {'path': 'system/engine.dll', 'sha256': ENGINE_SHA256, 'imageBase': '0x10300000'})
 
     def test_a_localization_pin_that_differs_from_the_lock_is_refused(self):
-        with self.assertRaisesRegex(CharacterAnimationFamilyRecipeError, 'differs from the reference client lock'):
+        with self.assertRaisesRegex(PinnedAnswerFileError, 'character-animation-families.json: system/lineagewarrior.int pin .* differs from the reference client lock'):
             self.document(lock=SyntheticLock({'system/lineagewarrior.int': 'f' * 64, 'system/engine.dll': ENGINE_SHA256}))
 
     def test_a_localization_other_than_the_answered_one_is_refused(self):

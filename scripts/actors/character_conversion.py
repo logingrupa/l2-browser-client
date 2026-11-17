@@ -8,9 +8,10 @@ from actors.character_class_sources import read_character_class_sources
 from actors.character_head_part_routes import decoded_skeleton_summary, generated_with_head_part_routes
 from actors.character_player_profiles import CLIP_BINDING_FILE_NAME, archive_animation_clip_names, clip_binding_reason, family_clip_binding
 from actors.character_animation_family_recipe import read_character_animation_families
-from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, CLASS_SOURCES_ROUTE, GAP_STATUS, HAIRGRP_TABLE_NAME,
-                                       HELMETGRP_TABLE_NAME, CharacterRequestError, build_character_request, character_gap_rows, character_key,
-                                       chargrp_row_at, is_padding_row, resolve_character_actor_class)
+from actors.character_hair_recipe import read_character_hair_parts
+from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, CLASS_SOURCES_ROUTE, GAP_STATUS, CharacterRequestError,
+                                       build_character_request, character_gap_rows, character_key, chargrp_row_at, is_padding_row,
+                                       resolve_character_actor_class)
 from actors.npc_requests import (CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, PASS_STATUS, TRANSIENT_FAILURES,
                                  animation_reference_gap_reason, serialized_animation_reference)
 from actors.path_free_messages import path_free_reason
@@ -22,7 +23,7 @@ from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import character_model_record_id
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
-from native_store.data_ui_table_manifest import ELBERA_ADAPTER_ROUTE, data_ui_table_manifest
+from native_store.data_ui_table_manifest import data_ui_table_manifest
 from native_store.linked_file_copy import link_or_copy_file
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
@@ -30,7 +31,7 @@ from reference_client_guard import ReferenceClientLockError
 CHARACTER_ALGORITHM_VERSION = 1
 CHARACTER_LANE_NAME = 'actors'
 PADDING_STATUS = 'padding'
-CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition class_sources animation_families')
+CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hair_parts read_class_definition class_sources animation_families')
 
 
 class LazyClassDefinitionReader:
@@ -53,9 +54,7 @@ class LazyClassDefinitionReader:
 
 def read_character_sources(project_root, client_root, decode_table, class_work_root):
     return CharacterSources(decode_table(Path(client_root), 'chargrp'), data_ui_table_manifest(project_root, CLASSINFO_TABLE_NAME),
-                            data_ui_table_manifest(project_root, HAIRGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
-                            data_ui_table_manifest(project_root, HELMETGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
-                            LazyClassDefinitionReader(client_root, class_work_root), read_character_class_sources(project_root),
+                            read_character_hair_parts(project_root), LazyClassDefinitionReader(client_root, class_work_root), read_character_class_sources(project_root),
                             read_character_animation_families(project_root))
 
 
@@ -119,9 +118,8 @@ class CharacterConversionRun:
         generated = self.routed_head_parts(build_character_request(row, row_index, self.actor_class(class_resolution), self.sources))
         config = {'censusReason': self.units_by_key[character_key(row_index)]['reason'], 'classResolution': class_resolution,
                   'generated': generated, 'converterSha256': implementation_hash(), 'umodelSha256': UMODEL_SHA256,
-                  'tableSources': {table: manifest_source_sha256(manifest) for table, manifest in
-                                   ((CLASSINFO_TABLE_NAME, self.sources.classinfo), (HAIRGRP_TABLE_NAME, self.sources.hairgrp),
-                                    (HELMETGRP_TABLE_NAME, self.sources.helmetgrp))}}
+                  'tableSources': {CLASSINFO_TABLE_NAME: manifest_source_sha256(self.sources.classinfo)},
+                  'hairParts': {'path': self.sources.hair_parts['path'], 'sha256': self.sources.hair_parts['sha256']}}
         inputs = self.unit_inputs(generated['request'])
         return generated, config, inputs, self.ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
 

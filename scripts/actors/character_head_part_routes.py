@@ -1,11 +1,10 @@
-from actors.character_requests import FACE_FIELD_NAME, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME
+from actors.character_requests import FACE_FIELD_NAME, HAIR_FIELD_NAME, HAIR_SELECTION_FIELD
 from native_assets_lib.weights import native_vertices
 from native_catalog.skeletal import decode_skeletal_source
 
 SKINNED_PART_BONE_MISSING_REASON_PREFIX = 'skinned-part-bone-missing:'
 RIGID_HEAD_PART_ROUTE, SKINNED_HEAD_PART_ROUTE = 'rigid', 'skinned'
 ROOT_BONE_INDEX = 0
-HEAD_PART_FIELD_BY_LAYOUT_TABLE = {HAIRGRP_TABLE_NAME: 'hair', HELMETGRP_TABLE_NAME: 'helmet'}
 RIGID_ATTACHMENT_FIELD = 'rigidAttachment'
 
 
@@ -36,7 +35,7 @@ def is_root_only_rigid(part_skeleton):
 
 
 def head_part_field(part):
-    return HEAD_PART_FIELD_BY_LAYOUT_TABLE.get(part.get('layoutBinding', {}).get('table'), FACE_FIELD_NAME)
+    return HAIR_FIELD_NAME if HAIR_SELECTION_FIELD in part else FACE_FIELD_NAME
 
 
 def head_part_route(part, part_skeleton, body_skeleton):

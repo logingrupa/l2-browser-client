@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 14,
+  "listVersion": 15,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -28,6 +28,8 @@
     "skill-dispatch-candidate-runtime-unresolved",
     "skinned-part-bone-missing:<bones>",
     "character-clip-missing:<field>",
-    "character-pivot-unapplied"
+    "character-pivot-unapplied",
+    "hair-export-unresolved:<half>",
+    "hair-submesh-unlisted:<half>"
   ]
 }

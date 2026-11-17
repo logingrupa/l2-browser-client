@@ -24,7 +24,8 @@ from native_store.catalog_index_keys import character_model_record_id
 from native_store.catalog_writer import read_store_catalog
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
-from test_character_requests import ANIMATION_FAMILIES_RECIPE_PATH, ANIMATION_FAMILIES_RECIPE_SHA256, character_sources, synthetic_chargrp_row
+from test_character_requests import (ANIMATION_FAMILIES_RECIPE_PATH, ANIMATION_FAMILIES_RECIPE_SHA256, HAIR_PARTS_RECIPE_PATH, HAIR_PARTS_RECIPE_SHA256,
+                                     character_sources, synthetic_chargrp_row)
 
 FIRST_CONVERTER_SHA256 = 'e' * 64
 CHANGED_CONVERTER_SHA256 = 'f' * 64
@@ -139,11 +140,11 @@ class CharacterConversionRunTests(unittest.TestCase):
         run.converter.package = refusing_package
         head_part = {'package': 'magic', 'object': 'MMagic_m000_f', 'materials': [], 'rigidAttachment': {'bone': 'Bip01_head'}}
         generated = {'request': {'parts': [{'package': 'Magic', 'object': 'MMagic_m005_u', 'materials': []}, head_part], 'limitations': []},
-                     'gaps': [{'field': 'hair', 'reason': 'hair-layout-undecoded'}]}
+                     'gaps': [{'field': 'hair', 'reason': 'hair-submesh-unlisted:front'}]}
         routed = run.routed_head_parts(generated)
         self.assertIsNone(routed['request'])
         self.assertEqual(routed['gaps'], [{'field': 'parts', 'reason': CONVERTER_REFUSED_REASON_PREFIX + 'Magic skeletal export has trailing bytes'},
-                                          {'field': 'hair', 'reason': 'hair-layout-undecoded'}])
+                                          {'field': 'hair', 'reason': 'hair-submesh-unlisted:front'}])
 
     def test_the_census_check_passes_on_the_written_census_and_fails_once_a_unit_reseals(self):
         self.converted_outcomes(FIRST_CONVERTER_SHA256, [1])
@@ -151,8 +152,13 @@ class CharacterConversionRunTests(unittest.TestCase):
         with mock.patch.object(character_conversion, 'implementation_hash', return_value=FIRST_CONVERTER_SHA256):
             written = write_character_census(run)
             self.assertEqual(check_character_census(run), written)
-            self.assertEqual(json.loads(written.read_bytes())['animationFamilies'],
-                             {'path': ANIMATION_FAMILIES_RECIPE_PATH, 'sha256': ANIMATION_FAMILIES_RECIPE_SHA256})
+            written_census = json.loads(written.read_bytes())
+            self.assertEqual(written_census['animationFamilies'], {'path': ANIMATION_FAMILIES_RECIPE_PATH, 'sha256': ANIMATION_FAMILIES_RECIPE_SHA256})
+            self.assertEqual(written_census['hairParts'], {'path': HAIR_PARTS_RECIPE_PATH, 'sha256': HAIR_PARTS_RECIPE_SHA256})
+            self.assertEqual(written_census['rows'][1]['helmet'], {'status': 'decoded', 'reason': None, 'appliedBy': 'equipment-03-30'})
+            self.assertNotIn('layoutRecordFields', written_census)
+            self.assertEqual(run.ledger.sealed_receipt('character:1')['config']['hairParts'],
+                             {'path': HAIR_PARTS_RECIPE_PATH, 'sha256': HAIR_PARTS_RECIPE_SHA256})
             run.convert(2)
             with self.assertRaisesRegex(CharacterCensusError, 'differs from the census of the sealed character units'):
                 check_character_census(run)

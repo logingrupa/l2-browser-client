@@ -26,11 +26,17 @@ def generated_request(head_parts):
     parts = [{'package': 'Magic', 'object': BODY_OBJECT, 'materials': ['0=MMagic.Body_t00']}] + head_parts
     return {'request': {'kind': 'model', 'name': 'character-8', 'animation': None, 'withEventAudio': True, 'parts': parts,
                         'limitations': ['synthetic request']},
-            'profileFields': {'reason': None}, 'parts': [], 'hair': {}, 'helmet': {}, 'gaps': [{'field': 'hair', 'reason': 'hair-layout-undecoded'}]}
+            'profileFields': {'reason': None}, 'parts': [], 'hair': {}, 'helmet': {}, 'gaps': [{'field': 'hair', 'reason': 'hair-submesh-unlisted:front'}]}
 
 
 def face_part(object_name=FACE_OBJECT):
     return {'package': 'magic', 'object': object_name, 'materials': [], 'rigidAttachment': RIGID_ATTACHMENT}
+
+
+def hair_part():
+    return {'package': 'magic', 'object': HAIR_OBJECT, 'materials': ['0=MMagic.Hair.Hair_t00'], 'rigidAttachment': RIGID_ATTACHMENT,
+            'hairSelection': {'recipe': 'recipes/actors/character-hair-parts.json', 'recipeSha256': 'a' * 64, 'meshType': 8, 'half': 'front',
+                              'pawnSlot': 5, 'mappedStyle': 0, 'hairColor': 0}}
 
 
 def skeleton_reader(skeletons_by_object):
@@ -54,7 +60,7 @@ class SkinnedHeadPartRouteTests(unittest.TestCase):
                                                    'bodyObject': BODY_OBJECT, 'missingBones': []}])
         self.assertIn(f'The face mesh {FACE_OBJECT} is skinned to 4 bones that all exist in the {BODY_OBJECT} skeleton; it converts as a body part.',
                       generated['request']['limitations'])
-        self.assertEqual(generated['gaps'], [{'field': 'hair', 'reason': 'hair-layout-undecoded'}])
+        self.assertEqual(generated['gaps'], [{'field': 'hair', 'reason': 'hair-submesh-unlisted:front'}])
 
     def test_a_root_only_rigid_face_keeps_the_rigid_path(self):
         read_skeleton, _ = skeleton_reader({BODY_OBJECT: skeleton(BODY_OBJECT, chained_bones(BODY_BONE_NAMES), [0, 1]),
@@ -87,12 +93,18 @@ class SkinnedHeadPartRouteTests(unittest.TestCase):
         generated = generated_with_head_part_routes(generated_request([face_part()]), read_skeleton)
         self.assertEqual(generated['headParts'][0]['missingBones'], [])
 
-    def test_a_skinned_layout_part_is_named_by_its_table_field(self):
-        hair = {'package': 'magic', 'object': HAIR_OBJECT, 'materials': ['0=MMagic.Hair_t00'], 'rigidAttachment': RIGID_ATTACHMENT,
-                'layoutBinding': {'table': 'hairgrp', 'sourceSha256': 'a' * 64, 'recordOrdinal': 0, 'fieldPath': ['hair_texture', 0, 'param_hair_texture']}}
+    def test_a_part_with_a_hair_selection_routes_as_hair_and_a_root_only_hair_part_stays_rigid(self):
+        read_skeleton, _ = skeleton_reader({BODY_OBJECT: skeleton(BODY_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
+                                            FACE_OBJECT: skeleton(FACE_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
+                                            HAIR_OBJECT: skeleton(HAIR_OBJECT, chained_bones(BODY_BONE_NAMES), [0])})
+        generated = generated_with_head_part_routes(generated_request([face_part(), hair_part()]), read_skeleton)
+        self.assertEqual([(route['field'], route['route']) for route in generated['headParts']], [('face', 'rigid'), ('hair', 'rigid')])
+        self.assertEqual(generated['request']['parts'][2]['rigidAttachment'], RIGID_ATTACHMENT)
+
+    def test_a_skinned_hair_part_with_a_bone_outside_the_body_skeleton_is_a_hair_gap(self):
         read_skeleton, _ = skeleton_reader({BODY_OBJECT: skeleton(BODY_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
                                             HAIR_OBJECT: skeleton(HAIR_OBJECT, chained_bones(BODY_BONE_NAMES + ('Bip01_hair',)), [4])})
-        generated = generated_with_head_part_routes(generated_request([hair]), read_skeleton)
+        generated = generated_with_head_part_routes(generated_request([hair_part()]), read_skeleton)
         self.assertEqual(generated['gaps'][0], {'field': 'hair', 'reason': SKINNED_PART_BONE_MISSING_REASON_PREFIX + 'Bip01_hair'})
 
     def test_a_request_without_head_parts_reads_no_skeleton(self):

@@ -13,7 +13,9 @@ from actors.actor_sound_batch import npc_profile_rows
 from actors.actor_sound_conversion import ActorSoundConversionError, ActorSoundConversionRun
 from actors.character_conversion import read_character_sources
 from actors.character_animation_family_recipe import CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH
-from actors.character_requests import CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASSINFO_TABLE_NAME, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME
+from actors.character_hair_recipe import (CHARACTER_HAIR_PARTS_RELATIVE_PATH, HAIRACCESSARYGRP_TABLE_NAME, HAIRGRP_TABLE_NAME,
+                                          HELMETGRP_TABLE_NAME, character_hair_table_manifests)
+from actors.character_requests import CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASSINFO_TABLE_NAME
 from catalog_store_fixture import write_store_catalog
 from native_store.catalog_writer import CatalogWriteError
 from native_store.data_ui_table_manifest import (DATA_UI_LANE_NAME, ELBERA_ADAPTER_ROUTE, LOCAL_DESCRIPTOR_ROUTE, DataUiTableManifestError,
@@ -27,6 +29,7 @@ OUTSIDE_STORE_RESOURCE = '/l2/../outside-store.json'
 UNLOCKED_SOURCE_SHA256 = '1' * 64
 ELBERA_HAIRGRP_RECORDS = [[[0, 0], [1, 1], [-1, -1]], [[0, 0], [-1, 2], [-1, -1]]]
 ELBERA_HELMETGRP_RECORDS = [{'key': 1, 'pairs': [[[0, 0], [1, 1]]]}]
+ELBERA_HAIRACCESSARYGRP_RECORDS = [{'key': 0, 'pairs': [[[0, 0], [-1, 1]]]}]
 DECODED_CHARGRP_TABLE = {'source': 'system/chargrp.dat', 'sourceSha256': 'a' * 64, 'data': {'Char': []}}
 
 
@@ -152,28 +155,28 @@ class DataUiTableManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(DataUiTableManifestError, 'on the local-descriptor route'):
             data_ui_table_manifest(self.project_root, NPCGRP_TABLE_NAME)
 
-    def test_the_character_route_reads_elbera_adapter_hair_and_helmet_manifests_beside_a_local_descriptor_classinfo(self):
-        payloads_by_table = {
+    def test_the_hair_recipe_reads_the_three_elbera_adapter_hair_tables(self):
+        records_by_table = {HAIRGRP_TABLE_NAME: ELBERA_HAIRGRP_RECORDS, HELMETGRP_TABLE_NAME: ELBERA_HELMETGRP_RECORDS,
+                            HAIRACCESSARYGRP_TABLE_NAME: ELBERA_HAIRACCESSARYGRP_RECORDS}
+        write_pinned_tables_records(self.store_root, {
+            table: decoded_table_manifest_payload(table, f'system/{table}.dat', locked_source_sha256(f'system/{table}.dat'), ELBERA_ADAPTER_ROUTE, records)
+            for table, records in records_by_table.items()})
+        manifests = character_hair_table_manifests(self.project_root)
+        self.assertEqual({table: manifest['records'] for table, manifest in manifests.items()}, records_by_table)
+
+    def test_the_character_route_reads_a_local_descriptor_classinfo_and_the_hair_parts_recipe(self):
+        write_pinned_tables_records(self.store_root, {
             CLASSINFO_TABLE_NAME: decoded_table_manifest_payload(CLASSINFO_TABLE_NAME, f'system/{CLASSINFO_TABLE_NAME}.dat',
                                                                  locked_source_sha256(f'system/{CLASSINFO_TABLE_NAME}.dat'),
-                                                                 LOCAL_DESCRIPTOR_ROUTE, {'class': []}),
-            HAIRGRP_TABLE_NAME: decoded_table_manifest_payload(HAIRGRP_TABLE_NAME, f'system/{HAIRGRP_TABLE_NAME}.dat',
-                                                               locked_source_sha256(f'system/{HAIRGRP_TABLE_NAME}.dat'),
-                                                               ELBERA_ADAPTER_ROUTE, ELBERA_HAIRGRP_RECORDS),
-            HELMETGRP_TABLE_NAME: decoded_table_manifest_payload(HELMETGRP_TABLE_NAME, f'system/{HELMETGRP_TABLE_NAME}.dat',
-                                                                 locked_source_sha256(f'system/{HELMETGRP_TABLE_NAME}.dat'),
-                                                                 ELBERA_ADAPTER_ROUTE, ELBERA_HELMETGRP_RECORDS)}
-        write_pinned_tables_records(self.store_root, payloads_by_table)
-        class_sources_path = self.project_root / CHARACTER_CLASS_SOURCES_RELATIVE_PATH
-        class_sources_path.parent.mkdir(parents=True)
-        class_sources_path.write_bytes((ROOT / CHARACTER_CLASS_SOURCES_RELATIVE_PATH).read_bytes())
-        animation_families_path = self.project_root / CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH
-        animation_families_path.parent.mkdir(parents=True)
-        animation_families_path.write_bytes((ROOT / CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH).read_bytes())
+                                                                 LOCAL_DESCRIPTOR_ROUTE, {'class': []})})
+        for relative_path in (CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CHARACTER_ANIMATION_FAMILIES_RELATIVE_PATH, CHARACTER_HAIR_PARTS_RELATIVE_PATH):
+            copied_path = self.project_root / relative_path
+            copied_path.parent.mkdir(parents=True, exist_ok=True)
+            copied_path.write_bytes((ROOT / relative_path).read_bytes())
         sources = read_character_sources(self.project_root, self.project_root, lambda client_root, table_name: DECODED_CHARGRP_TABLE,
                                          self.project_root / 'class-work')
-        self.assertEqual((sources.classinfo['records'], sources.hairgrp['records'], sources.helmetgrp['records']),
-                         ({'class': []}, ELBERA_HAIRGRP_RECORDS, ELBERA_HELMETGRP_RECORDS))
+        self.assertEqual(sources.classinfo['records'], {'class': []})
+        self.assertEqual((sources.hair_parts['path'], sorted(sources.hair_parts['byChargrpRow'])), (CHARACTER_HAIR_PARTS_RELATIVE_PATH, list(range(14))))
 
     def test_a_manifest_not_decoded_from_the_locked_client_file_is_refused_by_the_character_route(self):
         self.payload = npcgrp_manifest_payload(UNLOCKED_SOURCE_SHA256)
