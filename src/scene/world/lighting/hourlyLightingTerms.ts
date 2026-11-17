@@ -31,7 +31,7 @@ export interface HourlyLightingTerms {
     readonly colour0: { readonly bound: false; readonly reason: "ma-final-static-vertex"; readonly declaration: typeof staticMeshColourStreams.instanceLighting };
     readonly colour1: { readonly bound: false; readonly reasons: readonly ["static-mesh-colour-selector-unresolved", "d3d-device-live-state"];
       readonly declaration: typeof staticMeshColourStreams.authoredColour };
-    readonly serializedInstanceColour: "SMIC cache data, not the runtime result";
+    readonly serializedInstanceColour: "serialized instance colours are cache data, not the runtime result";
   };
   readonly actor: { readonly drawState: NativeDrawLightingState; readonly ambient: HourlyAmbientInspection };
   readonly bsp: { readonly drawState: NativeDrawLightingState; readonly rebuildAmbient: EnvironmentResult<RgbBytes>; readonly rebuildAmbientBound: false };
@@ -82,7 +82,7 @@ export function hourlyLightingTerms(environment: HourlyEnvironmentLighting): Hou
       levelOfDetailSelection: { status: "unresolved", reason: "static-mesh-level-of-detail-unresolved" },
       colour0: { bound: false, reason: "ma-final-static-vertex", declaration: staticMeshColourStreams.instanceLighting },
       colour1: { bound: false, reasons: ["static-mesh-colour-selector-unresolved", "d3d-device-live-state"], declaration: staticMeshColourStreams.authoredColour },
-      serializedInstanceColour: "SMIC cache data, not the runtime result",
+      serializedInstanceColour: "serialized instance colours are cache data, not the runtime result",
     },
     actor: { drawState: nativeDrawLightingStates.actor,
       ambient: ambientInspection(environment.actorAmbient, sunAffectedActorCondition, hourlyAmbient => actorAmbientLight(hourlyAmbient, true)) },

@@ -132,7 +132,7 @@ const hourlyVariableSources: Readonly<Record<string, string>> = {
   "lighting.staticMesh.visibility": "SMEN hourly masks, key 24 (i + 0.5) / n, (1 - w) bit(prev) + w bit(next) (claim ma-hour-keys)",
   "lighting.staticMesh.colour0": "instance FRawColorStream COLOR0, the emissive source (claim ma-stream-colours)",
   "lighting.staticMesh.colour1": "authored FStaticMeshColorStream COLOR1; the mesh+0x188 selector and device+0x4244 bit 0x02 are unresolved",
-  "lighting.staticMesh.instanceColour": "SMIC serialized instance colours (20_21 vertex 0 is 27, 27, 27)",
+  "lighting.staticMesh.instanceColour": "StaticMeshInstance serialized colours, read and not staged (20_21 vertex 0 is 27, 27, 27)",
   "lighting.actor.ambient": "ActorAmbient >> 1, alpha 255, light ambient only, COLORVERTEX off (claim ma-actor-ambient)",
   "lighting.dynamicLights": "no Babylon light or scene ambient reaches native materials",
   "lighting.device.modulationOperation": "D3DDrv.dll 0x1011c578 image default 5 (D3DTOP_MODULATE2X); vendor 0x121a writes 4",

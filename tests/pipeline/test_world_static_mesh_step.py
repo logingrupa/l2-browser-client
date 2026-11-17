@@ -20,7 +20,7 @@ from world import static_mesh_step
 from world.static_mesh_colour_streams import ColourStreamOutcome
 from world.static_mesh_step import (STATIC_MESH_STEP_ALGORITHM_VERSION, ConvertedStaticMesh, StaticMeshAssignment, StaticMeshUnit,
                                     assign_static_placements, placeable_requests, placement_accounting_difference, run_static_mesh_step,
-                                    static_mesh_ledger, static_mesh_outcomes, static_meshes_product, with_colour_streams)
+                                    static_mesh_ledger, static_mesh_outcomes, static_meshes_product, with_colour_streams, colour_stream_gap_rows)
 from world.freeze_world_oracle import matrix_canonical_sha256
 from world.light_actors import ClassChains, reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
@@ -222,16 +222,31 @@ class StaticMeshOutcomeTests(unittest.TestCase):
         self.assertEqual(outcomes['Rock_S.Broken'], ('failed', 'decode-failed:ValueError:UModel cannot safely select this duplicate leaf name'))
         self.assertEqual(outcomes['Bad_S.Rock'], ('failed', 'decode-failed:header too short'))
 
-    def test_a_joined_colour_stream_sidecar_sits_next_to_its_model_and_names_its_hash(self):
+    def test_a_joined_colour_stream_sidecar_is_stored_under_its_own_payload_hash(self):
         converted = converted_mesh('Rock_S', 'Rock')
         bare = ConvertedStaticMesh({key: value for key, value in converted.model_record.items() if key != 'colourStreams'},
                                    {key: value for key, value in converted.store_files.items() if not key.endswith('/colour-streams.json')})
         joined = with_colour_streams(bare, ColourStreamOutcome(b'{"kind":"sidecar"}', None))
-        archive_sha256 = converted.model_record['archive']['sha256']
-        self.assertEqual(joined.model_record['colourStreams'], {'file': f'{archive_sha256}/colour-streams.json',
-                                                                'sha256': hashlib.sha256(b'{"kind":"sidecar"}').hexdigest(), 'bytes': 18})
-        self.assertEqual(joined.store_files[f'{archive_sha256}/colour-streams.json'], (f'{archive_sha256}/colour-streams.json', b'{"kind":"sidecar"}'))
-        self.assertNotIn(f'{archive_sha256}/colour-streams.json', bare.store_files)
+        payload_sha256 = hashlib.sha256(b'{"kind":"sidecar"}').hexdigest()
+        relative = f'static-mesh-colour-streams/{payload_sha256}/colour-streams.json'
+        self.assertEqual(joined.model_record['colourStreams'], {'file': relative, 'sha256': payload_sha256, 'bytes': 18})
+        self.assertEqual(joined.store_files[relative], (relative, b'{"kind":"sidecar"}'))
+        self.assertNotIn(relative, bare.store_files)
+
+    def test_a_colour_stream_gap_becomes_a_gap_row_of_the_step_that_converted_the_model(self):
+        gapped = {'sourceObject': 'Rock_S.Rock', 'colourStreams': {'gapReason': 'static-mesh-colour-stream-unread:truncated'}}
+        joined = {'sourceObject': 'Rock_S.Other', 'colourStreams': {'file': 'x', 'sha256': 'a' * 64, 'bytes': 1}}
+        rows = colour_stream_gap_rows('20_21', 'movers', {'path': 'maps/20_21.unr', 'sha256': 'b' * 64}, 'receipt.json', [gapped, joined])
+        self.assertEqual([(row['step'], row['reason'], row['sourceIdentity']['object']) for row in rows],
+                         [('movers', 'static-mesh-colour-stream-unread:truncated', 'Rock_S.Rock')])
+
+    def test_two_models_sharing_an_archive_keep_their_own_colour_stream_sidecars(self):
+        converted = converted_mesh('Rock_S', 'Rock')
+        bare = ConvertedStaticMesh({key: value for key, value in converted.model_record.items() if key != 'colourStreams'},
+                                   {key: value for key, value in converted.store_files.items() if not key.endswith('/colour-streams.json')})
+        first = with_colour_streams(bare, ColourStreamOutcome(b'{"kind":"first"}', None))
+        second = with_colour_streams(bare, ColourStreamOutcome(b'{"kind":"second"}', None))
+        self.assertNotEqual(first.model_record['colourStreams']['file'], second.model_record['colourStreams']['file'])
 
     def test_a_failure_reason_keeps_the_sentence_and_drops_machine_paths(self):
         requests = [mesh_request('Rock_S', 'Payload'), mesh_request('Rock_S', 'Hung')]
