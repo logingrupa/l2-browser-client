@@ -1,13 +1,12 @@
-"""Run conversion regressions; local-source checks skip on a clean checkout."""
 from pathlib import Path
 import argparse
 import os
 import sys
 import unittest
 
-
+PIPELINE_TEST_RUNNER_DESCRIPTION = 'Run conversion regressions; local-source checks skip on a clean checkout.'
 root = Path(__file__).resolve().parent.parent
-parser = argparse.ArgumentParser(description=__doc__)
+parser = argparse.ArgumentParser(description=PIPELINE_TEST_RUNNER_DESCRIPTION)
 parser.add_argument('--migration-output', type=Path,
                     help='Validated migration output used by local archive regressions')
 parser.add_argument('--pattern', default='test_*.py',
