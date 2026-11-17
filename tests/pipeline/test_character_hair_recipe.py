@@ -4,24 +4,30 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
+from actors.character_hair_answer_checks import HairAnswerFixtureError
 from actors.character_hair_recipe import (CHARACTER_HAIR_PARTS_RELATIVE_PATH, CHARGRP_SHA256, ENGINE_SHA256, TABLE_SOURCE_SHA256_BY_NAME,
-                                          CharacterHairRecipeError, character_hair_parts_document, hair_mesh_name, read_character_hair_parts,
-                                          write_character_hair_parts)
+                                          CharacterHairRecipeError, HairExports, PinnedAnswerPayloads, character_hair_parts_document, half_route,
+                                          hair_mesh_name, read_character_hair_parts, write_character_hair_parts)
+from actors.hair_export_lookup import HairExportLookupError, cached_class_chain_reader, unique_export_of_class
 from actors.pinned_answer_files import PinnedAnswerFileError, pinned_bytes
 from native_store.canonical_json import canonical_json_bytes
 
 STYLES = range(15)
 MESH_FORMATS = {'front': '%s.%s_m00%d_m00_ah', 'back': '%s.%s_m00%d_m00_bh'}
 MATERIAL_FORMATS = {'front': '%s.%s_m00%d_t0%d_m00_ah', 'back': '%s.%s_m00%d_t0%d_m00_bh'}
-VERIFIED_FACTS = ('# Verified: player hair and face parts (RM-11)\n\nHelmetgrp is a key map at FL2GameData+0x182c. Accessory slots read '
-                  'FL2GameData+0x1830. Loader 0x104675f0 reads HairAccessarygrp.dat with key HairAccessary_index.\n').encode('utf-8')
+VERIFIED_FACTS = {
+    'RM-11': ('# Verified: player hair and face parts (RM-11)\n\nHelmetgrp is a key map at FL2GameData+0x182c. Accessory slots read '
+              'FL2GameData+0x1830. Loader 0x104675f0 reads HairAccessarygrp.dat with key HairAccessary_index.\n').encode('utf-8'),
+    'RM-13': b'# Verified: hair name resolution (RM-13)\n\nFamily rows at EBP-0x690. The dispatcher at 0x106def1a routes dynamic hair.\n',
+    'RM-14': b'# Verified: rigid hair (RM-14)\n\nMatchRefBone first applies the mesh alias table.\n'}
 MANIFEST = json.dumps({'files': [{'file': 'a'}, {'file': 'b'}, {'file': 'c'}]}).encode('utf-8')
-LITERALS = ['Fighter', 'DarkElf', 'MFighter', 'MDarkElf', *MESH_FORMATS.values(), *MATERIAL_FORMATS.values()]
+LITERALS = ['MFighter', 'MDarkElf', *MESH_FORMATS.values(), *MATERIAL_FORMATS.values()]
 MFIGHTER_FIXTURE_PARTS = [
     {'partIndex': 4, 'meshNameRequested': 'Fighter.MFighter_m000_m00_bh', 'materialNameRequested': 'MFighter.MFighter_m000_t00_m00_bh',
      'meshExportIndex': 661, 'materialExportIndex': 309, 'materialExportPath': 'MFighter.Hair.MFighter_m000_t00_m00_bh', 'materialClass': 'Engine.Texture'},
@@ -36,6 +42,9 @@ SYNTHETIC_EXPORTS = {
     'MFighter.MFighter_m000_t00_m00_ah': {'object': 'MFighter.Hair.MFighter_m000_t00_m00_ah', 'exportIndex': 310, 'class': 'Engine.FinalBlend'},
     'DarkElf.MDarkElf_m000_m00_bh': {'object': 'DarkElf.MDarkElf_m000_m00_bh', 'exportIndex': 546, 'class': 'Engine.SkeletalMesh'},
     'MDarkElf.MDarkElf_m000_t00_m00_bh': {'object': 'mdarkelf.Hair.MDarkElf_m000_t00_m00_bh', 'exportIndex': 40, 'class': 'Engine.FinalBlend'}}
+SYNTHETIC_MESH_MODES = {661: 4, 662: 4, 546: 7}
+FAMILY_ROWS = [{'meshType': 0, 'family': 'Fighter', 'meshTypeName': 'MFighter'}, {'meshType': 1, 'family': 'DarkElf', 'meshTypeName': 'MDarkElf'}]
+FAMILY_ADDRESSES = {'Fighter': '0x1089d0f4', 'DarkElf': '0x108915bc'}
 
 
 def hairgrp_rows():
@@ -87,6 +96,35 @@ def synthetic_answer(chargrp, tables):
         'assets': [{'object': export['object'], 'exportIndex': export['exportIndex'], 'class': export['class']} for export in SYNTHETIC_EXPORTS.values()]}
 
 
+def mapping_fixture(table, key, front, back):
+    return {'id': f'{table}-key{key}-mfighter-style0', 'kind': 'authored-row', 'meshType': 0, 'style': 0, 'colour': 0, 'key': key, 'table': table,
+            'front': front, 'back': back, 'frontMesh': None if front == -1 else f'Fighter.MFighter_m00{front}_m00_ah',
+            'backMesh': None if back == -1 else f'Fighter.MFighter_m00{back}_m00_bh'}
+
+
+def linker_query_fixture(leaf, export_index):
+    return {'kind': 'native-linker-query', 'input': {'requestedClass': 'Engine.Material', 'leaf': leaf, 'outerIndex': -1, 'package': 'MFighter.utx'},
+            'resultExportIndex': export_index, 'expectedExportIndex': export_index, 'passed': True}
+
+
+def synthetic_name_resolution_answer(family_rows=FAMILY_ROWS):
+    return {'verification': {'status': 'passed'},
+            'packageFamilies': {'base': 'EBP-0x690 in10482c90',
+                                'values': [{**row, 'literalVa': FAMILY_ADDRESSES[row['family']]} for row in family_rows]},
+            'fixtures': [{'id': 'native-family-prefix', 'passed': True, 'rows': FAMILY_ROWS},
+                         mapping_fixture('hairaccessary', 2, 9, 9), mapping_fixture('helmet', 1, 0, 0),
+                         linker_query_fixture('MFighter_m000_t00_m00_bh', 309), linker_query_fixture('MFighter_m000_t00_m00_ah', 310)]}
+
+
+def synthetic_rigid_answer(mode_fixtures=({'mesh': 'DarkElf.MDarkElf_m000_m00_bh', 'exportIndex': 546, 'mode': 7},)):
+    return {'verification': {'status': 'passed'}, 'fixtures': [{'kind': 'assetDecode', **fixture} for fixture in mode_fixtures]}
+
+
+def answer_payloads(answer, name_resolution, rigid):
+    return {name: PinnedAnswerPayloads(VERIFIED_FACTS[name], json.dumps(document).encode('utf-8'), MANIFEST)
+            for name, document in (('RM-11', answer), ('RM-13', name_resolution), ('RM-14', rigid))}
+
+
 class SyntheticLock:
     def __init__(self, records):
         self.records = records
@@ -96,12 +134,15 @@ class SyntheticLock:
         return {'class': 'equal', 'eSha256': sha256, 'importaSha256': sha256} if sha256 else None
 
 
-def export_resolver(exports):
+def synthetic_hair_exports(exports, mesh_modes=None):
+    requests = []
+
     def resolve_export(requested, class_name):
+        requests.append((requested, class_name))
         if requested not in exports:
-            raise CharacterHairRecipeError(f'Object missing or ambiguous: {requested.split(".", 1)[1]} ({class_name})')
+            raise CharacterHairRecipeError(f'{requested} has no {class_name} export')
         return exports[requested]
-    return resolve_export
+    return HairExports(resolve_export, lambda mesh: (mesh_modes or SYNTHETIC_MESH_MODES)[mesh['exportIndex']]), requests
 
 
 def lock(engine_sha256=ENGINE_SHA256):
@@ -109,11 +150,12 @@ def lock(engine_sha256=ENGINE_SHA256):
 
 
 class CharacterHairRecipeTests(unittest.TestCase):
-    def document(self, tables=None, chargrp=None, answer=None, exports=None, reference_lock=None):
+    def document(self, tables=None, chargrp=None, answer=None, exports=None, reference_lock=None, name_resolution=None, rigid=None, mesh_modes=None):
         tables, chargrp = tables or synthetic_tables(), chargrp or synthetic_chargrp()
         answer = answer or synthetic_answer(chargrp, tables)
-        return character_hair_parts_document(VERIFIED_FACTS, json.dumps(answer).encode('utf-8'), MANIFEST, tables, chargrp,
-                                             reference_lock or lock(), export_resolver(SYNTHETIC_EXPORTS if exports is None else exports))
+        hair_exports, self.requests = synthetic_hair_exports(SYNTHETIC_EXPORTS if exports is None else exports, mesh_modes)
+        return character_hair_parts_document(answer_payloads(answer, name_resolution or synthetic_name_resolution_answer(), rigid or synthetic_rigid_answer()),
+                                             tables, chargrp, reference_lock or lock(), hair_exports)
 
     def halves(self, document, mesh_type):
         return {half['half']: half for half in document['meshTypes'][mesh_type]['defaultHalves']}
@@ -127,7 +169,46 @@ class CharacterHairRecipeTests(unittest.TestCase):
         self.assertEqual((front['requestedMaterial'], front['material']), ('MFighter.MFighter_m000_t00_m00_ah', {
             'object': 'MFighter.Hair.MFighter_m000_t00_m00_ah', 'exportIndex': 310, 'class': 'Engine.FinalBlend'}))
         self.assertEqual((back['material']['exportIndex'], back['material']['class']), (309, 'Engine.Texture'))
-        self.assertEqual((document['meshTypes'][0]['family'], document['meshTypes'][0]['familySource']), ('Fighter', 'chargrp face_mesh[0] package'))
+
+    def test_the_family_comes_from_the_rm13_package_families_and_its_native_prefix_fixture(self):
+        mesh_types = self.document()['meshTypes']
+        self.assertEqual([(mesh_type['family'], mesh_type['familyAddress'], mesh_type['familySource']) for mesh_type in mesh_types],
+                         [('Fighter', '0x1089d0f4', 'RM-13 packageFamilies EBP-0x690 in10482c90'),
+                          ('DarkElf', '0x108915bc', 'RM-13 packageFamilies EBP-0x690 in10482c90')])
+        swapped = [{**FAMILY_ROWS[0], 'family': 'DarkElf'}, {**FAMILY_ROWS[1], 'family': 'Fighter'}]
+        with self.assertRaisesRegex(HairAnswerFixtureError, 'differ from its native family prefix fixture'):
+            self.document(name_resolution=synthetic_name_resolution_answer(swapped))
+
+    def test_each_resolved_half_records_its_mesh_mode_and_the_route_the_dispatcher_takes(self):
+        document = self.document()
+        self.assertEqual([(half['half'], half.get('meshMode'), half.get('route')) for mesh_type in document['meshTypes'] for half in mesh_type['defaultHalves']],
+                         [('back', 4, 'ordinary'), ('front', 4, 'ordinary'), ('back', 7, 'dynamic'), ('front', None, None)])
+        self.assertEqual([half_route(mode) for mode in (-1, 0, 1, 2, 4, 6, 7)],
+                         ['ordinary', 'ordinary', 'dynamic', 'dynamic', 'ordinary', 'dynamic', 'dynamic'])
+        self.assertEqual((document['halfRouteRule']['dispatch'], document['rigidHeadBoneRule']['source']), ('0x106def1a', 'RM-14'))
+
+    def test_meshes_resolve_as_skeletal_meshes_and_materials_through_the_material_class_chain(self):
+        self.document()
+        self.assertIn(('Fighter.MFighter_m000_m00_bh', 'SkeletalMesh'), self.requests)
+        self.assertIn(('MFighter.MFighter_m000_t00_m00_bh', 'Material'), self.requests)
+
+    def test_a_mesh_mode_that_differs_from_the_rm14_asset_decode_is_refused(self):
+        with self.assertRaisesRegex(HairAnswerFixtureError, 'DarkElf.MDarkElf_m000_m00_bh mesh mode 4 differs'):
+            self.document(mesh_modes={661: 4, 662: 4, 546: 4})
+
+    def test_mapping_fixtures_rebuild_the_rm13_hair_mesh_names(self):
+        self.document()
+        answer = synthetic_name_resolution_answer()
+        answer['fixtures'][1]['backMesh'] = 'Fighter.MFighter_m008_m00_bh'
+        with self.assertRaisesRegex(HairAnswerFixtureError, 'hairaccessary-key2-mfighter-style0 back differs'):
+            self.document(name_resolution=answer)
+
+    def test_a_linker_query_fixture_whose_export_differs_is_refused(self):
+        exports = copy.deepcopy(SYNTHETIC_EXPORTS)
+        answer = synthetic_name_resolution_answer()
+        answer['fixtures'][3] = linker_query_fixture('MFighter_m000_t00_m00_bh', 308)
+        with self.assertRaisesRegex(HairAnswerFixtureError, 'resolves to export 309, not the linker query fixture result'):
+            self.document(exports=exports, name_resolution=answer)
 
     def test_a_front_mapped_to_none_has_no_export_and_the_back_still_resolves(self):
         halves = self.halves(self.document(), 1)
@@ -143,11 +224,6 @@ class CharacterHairRecipeTests(unittest.TestCase):
         mappings = self.document()['meshTypes'][1]['mappings']
         self.assertEqual(mappings[4], {'style': 4, 'front': 4, 'back': 4, 'frontIndex': 19, 'backIndex': 244})
         self.assertEqual(len(mappings), 15)
-
-    def test_a_face_package_outside_the_engine_family_literals_is_refused(self):
-        for face in ('Elsewhere.MDarkElf_m000_f', 'MFighter.MDarkElf_m000_f'):
-            with self.subTest(face=face), self.assertRaisesRegex(CharacterHairRecipeError, 'is not an Engine.dll family literal'):
-                self.document(chargrp=synthetic_chargrp(('Fighter.MFighter_m000_f', face)))
 
     def test_helmet_cells_keep_or_hide_and_a_replacing_helmet_cell_is_refused(self):
         helmet = self.document()['equipmentHairMappings']['helmetgrp']
@@ -178,8 +254,8 @@ class CharacterHairRecipeTests(unittest.TestCase):
 
     def test_an_unresolved_export_stays_a_visible_unresolved_half(self):
         exports = {name: export for name, export in SYNTHETIC_EXPORTS.items() if not name.startswith('DarkElf.')}
-        back = self.halves(self.document(exports=exports), 1)['back']
-        self.assertEqual((back['status'], back['reason']), ('unresolved', 'Object missing or ambiguous: MDarkElf_m000_m00_bh (SkeletalMesh)'))
+        back = self.halves(self.document(exports=exports, rigid=synthetic_rigid_answer(())), 1)['back']
+        self.assertEqual((back['status'], back['reason']), ('unresolved', 'DarkElf.MDarkElf_m000_m00_bh has no SkeletalMesh export'))
         self.assertEqual(back['requestedMaterial'], 'MDarkElf.MDarkElf_m000_t00_m00_bh')
 
     def test_a_fixture_export_that_differs_from_the_answer_is_refused(self):
@@ -188,10 +264,10 @@ class CharacterHairRecipeTests(unittest.TestCase):
         with self.assertRaisesRegex(CharacterHairRecipeError, 'pawn slot 5 differs from the RM-11 fixture'):
             self.document(exports=exports)
 
-    def test_pins_sources_and_the_lock_are_refused_when_they_differ(self):
+    def test_pins_sources_answers_and_the_lock_are_refused_when_they_differ(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'verified-player-hair-face.md'
-            path.write_bytes(VERIFIED_FACTS)
+            path.write_bytes(VERIFIED_FACTS['RM-11'])
             with self.assertRaisesRegex(PinnedAnswerFileError, 'is not the pinned'):
                 pinned_bytes(path, '0' * 64, 'verified facts')
         tables = synthetic_tables()
@@ -200,12 +276,17 @@ class CharacterHairRecipeTests(unittest.TestCase):
             self.document(tables=tables)
         with self.assertRaisesRegex(PinnedAnswerFileError, 'system/engine.dll pin .* differs from the reference client lock'):
             self.document(reference_lock=lock('f' * 64))
+        with self.assertRaisesRegex(CharacterHairRecipeError, 'the RM-14 answer verification did not pass'):
+            self.document(rigid={**synthetic_rigid_answer(), 'verification': {'status': 'failed'}})
 
-    def test_the_default_appearance_names_the_user_record_offsets_and_the_limitations_name_rm13(self):
+    def test_the_source_names_every_pinned_answer_and_the_limitations_name_rm13_and_rm14(self):
         document = self.document()
+        self.assertEqual(sorted(document['source']['answers']), ['RM-11', 'RM-13', 'RM-14'])
+        self.assertEqual(document['source']['answers']['RM-13']['answer']['file'], 'hair-name-resolution.json')
         self.assertEqual({key: document['defaultAppearance'][key] for key in ('hairStyle', 'hairColor', 'face', 'userRecordOffsets')},
                          {'hairStyle': 0, 'hairColor': 0, 'face': 0, 'userRecordOffsets': {'hairStyle': '0x240', 'hairColor': '0x244', 'face': '0x248'}})
         self.assertTrue(any('RM-13' in limitation for limitation in document['limitations']))
+        self.assertTrue(any('RM-14' in limitation for limitation in document['limitations']))
         self.assertEqual(document['formats']['pawnSlots'], {'back': 4, 'front': 5})
 
     def test_check_passes_on_equal_bytes_fails_on_one_changed_byte_and_the_reader_indexes_by_chargrp_row(self):
@@ -222,21 +303,103 @@ class CharacterHairRecipeTests(unittest.TestCase):
                 write_character_hair_parts(directory, payload, True)
 
 
+def synthetic_package(exports, classes):
+    package_exports = [{'exportIndex': index + 1, 'name': name.rsplit('.', 1)[-1], 'object': name, 'className': class_object.rsplit('.', 1)[-1],
+                        'classObject': class_object, 'superIndex': 0} for index, (name, class_object) in enumerate(exports)]
+    class_names = [name for name, _ in classes]
+    class_exports = [{'exportIndex': len(package_exports) + index + 1, 'name': name.rsplit('.', 1)[-1], 'object': name, 'className': 'Class',
+                      'classObject': 'Core.Class', 'superIndex': len(package_exports) + class_names.index(parent) + 1 if parent else 0}
+                     for index, (name, parent) in enumerate(classes)]
+    names = {item['exportIndex']: item['object'] for item in package_exports + class_exports}
+    return SimpleNamespace(exports=package_exports + class_exports, object_name=lambda index: names.get(index))
+
+
+class HairExportLookupTests(unittest.TestCase):
+    def setUp(self):
+        self.package = synthetic_package(
+            [('MFighter.Hair.MFighter_m000_t00_m00_bh', 'MFighter.Texture'), ('MFighter.Hair.MFighter_m000_t00_m00_ah', 'MFighter.FinalBlend'),
+             ('MFighter.Face.Duplicate_t00', 'MFighter.Texture'), ('MFighter.Hair.Duplicate_t00', 'MFighter.FinalBlend'),
+             ('MFighter.Mesh.MFighter_m000_m00_bh', 'Engine.SkeletalMesh')],
+            [('MFighter.Material', None), ('MFighter.RenderedMaterial', 'MFighter.Material'), ('MFighter.BitmapMaterial', 'MFighter.RenderedMaterial'),
+             ('MFighter.Texture', 'MFighter.BitmapMaterial'), ('MFighter.Modifier', 'MFighter.Material'), ('MFighter.FinalBlend', 'MFighter.Modifier')])
+        self.class_names_of = cached_class_chain_reader(lambda name: self.package)
+
+    def test_a_group_less_leaf_resolves_through_any_group_by_its_class_chain(self):
+        export = unique_export_of_class(self.package, 'MFighter.MFighter_m000_t00_m00_ah', 'Material', self.class_names_of)
+        self.assertEqual((export['object'], export['classObject']), ('MFighter.Hair.MFighter_m000_t00_m00_ah', 'MFighter.FinalBlend'))
+        self.assertEqual(self.class_names_of('MFighter.Texture'), ['texture', 'bitmapmaterial', 'renderedmaterial', 'material'])
+
+    def test_a_native_class_absent_from_its_package_matches_only_its_own_name(self):
+        export = unique_export_of_class(self.package, 'Fighter.MFighter_m000_m00_bh', 'SkeletalMesh', self.class_names_of)
+        self.assertEqual(export['exportIndex'], 5)
+        with self.assertRaisesRegex(HairExportLookupError, 'has no Material export'):
+            unique_export_of_class(self.package, 'Fighter.MFighter_m000_m00_bh', 'Material', self.class_names_of)
+
+    def test_a_leaf_with_two_compatible_exports_is_refused_and_the_class_filter_narrows_it(self):
+        with self.assertRaisesRegex(HairExportLookupError, 'has 2 Material exports with that leaf'):
+            unique_export_of_class(self.package, 'MFighter.Duplicate_t00', 'Material', self.class_names_of)
+        self.assertEqual(unique_export_of_class(self.package, 'MFighter.Duplicate_t00', 'FinalBlend', self.class_names_of)['object'],
+                         'MFighter.Hair.Duplicate_t00')
+
+
 class CommittedCharacterHairRecipeTests(unittest.TestCase):
     def setUp(self):
         self.document = json.loads((ROOT / CHARACTER_HAIR_PARTS_RELATIVE_PATH).read_bytes())
 
-    def test_fourteen_mesh_types_with_their_engine_family_and_the_mapped_none_fronts(self):
+    def halves_by_mesh(self):
+        return {half['mesh']['object']: half for mesh_type in self.document['meshTypes'] for half in mesh_type['defaultHalves'] if 'mesh' in half}
+
+    def test_fourteen_mesh_types_with_the_rm13_family_table_and_the_mapped_none_fronts(self):
         mesh_types = self.document['meshTypes']
         self.assertEqual([mesh_type['chargrpRow'] for mesh_type in mesh_types], list(range(14)))
         fronts = [mesh_type['meshType'] for mesh_type in mesh_types if mesh_type['defaultHalves'][1]['status'] == 'none']
         self.assertEqual(fronts, [2, 4, 10, 11, 12, 13])
-        self.assertEqual({mesh_type['family'] for mesh_type in mesh_types}, {'Fighter', 'DarkElf', 'Dwarf', 'Elf', 'Magic', 'Orc', 'Shaman'})
+        self.assertEqual([mesh_type['family'] for mesh_type in mesh_types],
+                         [family for family in ('Fighter', 'DarkElf', 'Dwarf', 'Elf', 'Magic', 'Orc', 'Shaman') for _ in range(2)])
+
+    def test_the_rm13_mapping_fixtures_rebuild_the_replacement_back_halves(self):
+        mesh_type = self.document['meshTypes'][0]
+        accessories = self.document['equipmentHairMappings']['hairaccessarygrp']['keys']
+        back_styles = [accessories[key]['meshTypes'][0]['cells'][0]['backStyle'] for key in range(4)]
+        self.assertEqual(back_styles, [0, 0, 9, 8])
+        self.assertEqual([hair_mesh_name(self.document['formats']['mesh']['back']['format'], mesh_type['family'], mesh_type['typeName'], style)
+                          for style in back_styles[2:]], ['Fighter.MFighter_m009_m00_bh', 'Fighter.MFighter_m008_m00_bh'])
+
+    def test_the_male_fighter_exports_and_the_rm14_mesh_modes(self):
+        halves = self.halves_by_mesh()
+        self.assertEqual([(halves[mesh]['mesh']['exportIndex'], halves[mesh]['material']['exportIndex'], halves[mesh]['material']['class'],
+                           halves[mesh]['meshMode'], halves[mesh]['route']) for mesh in ('Fighter.MFighter_m000_m00_bh', 'Fighter.MFighter_m000_m00_ah')],
+                         [(661, 309, 'Engine.Texture', 4, 'ordinary'), (662, 310, 'Engine.FinalBlend', 4, 'ordinary')])
+        self.assertEqual([(halves[mesh]['mesh']['exportIndex'], halves[mesh]['meshMode'], halves[mesh]['route'])
+                          for mesh in ('DarkElf.FDarkElf_m000_m00_bh', 'Elf.FElf_m000_m00_bh')], [(668, 7, 'dynamic'), (465, 2, 'dynamic')])
+        self.assertEqual(sorted(mesh for mesh, half in halves.items() if half['route'] == 'dynamic'),
+                         ['DarkElf.FDarkElf_m000_m00_bh', 'Elf.FElf_m000_m00_bh'])
 
     def test_the_helmet_and_accessory_counts_equal_the_verified_note(self):
         mappings = self.document['equipmentHairMappings']
         self.assertEqual([key['counts'] for key in mappings['helmetgrp']['keys']], [{'keep': 134, 'hide': 286, 'replace': 0}] * 3)
         self.assertEqual([key['counts']['replace'] for key in mappings['hairaccessarygrp']['keys']], [0, 0, 196, 196])
+
+
+CONVERSION_CLIENT_ANIMATIONS = Path('E:/Lineage2-client/animations')
+
+
+@unittest.skipUnless(CONVERSION_CLIENT_ANIMATIONS.is_dir(), 'needs the conversion client E:/Lineage2-client')
+class NativeMeshModeDecodeTests(unittest.TestCase):
+    def decoded(self, package_name, export_index):
+        from native_catalog.skeletal import decode_skeletal_source
+        from native_catalog.ue2 import Package
+        package = Package((CONVERSION_CLIENT_ANIMATIONS / f'{package_name}.ukx').read_bytes(), f'{package_name}.ukx')
+        return decode_skeletal_source(package, next(item for item in package.exports if item['exportIndex'] == export_index))
+
+    def test_the_decoder_returns_the_mesh_mode_its_parameters_and_the_alias_pairs(self):
+        face, back, front = (self.decoded('Fighter', index) for index in (660, 661, 662))
+        self.assertEqual([(source['meshMode'], len(source['bones'])) for source in (face, back, front)], [(0, 70), (4, 70), (4, 70)])
+        self.assertEqual(face['attachmentAliases'], [{'alias': 'e_bone', 'bone': face['attachmentAliases'][0]['bone']}])
+        dark_elf, elf = self.decoded('DarkElf', 668), self.decoded('Elf', 465)
+        self.assertEqual((dark_elf['meshMode'], len(dark_elf['bones'])), (7, 13))
+        self.assertEqual([round(value, 2) for value in dark_elf['meshModeParameters']], [15.25, 5.71])
+        self.assertEqual((elf['meshMode'], len(elf['bones']), elf['meshModeParameters']), (2, 13, []))
 
 
 if __name__ == '__main__':

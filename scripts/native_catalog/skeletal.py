@@ -1,8 +1,3 @@
-"""Bounded native Lineage UE2 123/28 and 123/30 skeletal serialization.
-
-Layout source: pinned UEViewer UnMesh2.{h,cpp}, UPrimitive, ULodMesh,
-USkeletalMesh and FStaticLODModel. No native offsets or asset names are used.
-"""
 import base64
 import hashlib
 import math
@@ -70,7 +65,6 @@ class SkeletalReader:
         return result
 
     def attachments(self, bones):
-        """Retain native socket data without assigning runtime attachment rules."""
         first_record = len(self.records)
         aliases = self.references('AttachAliases', names=True)
         names = self.references('AttachBoneNames', names=True)
@@ -139,7 +133,6 @@ class SkeletalReader:
 
     def decode(self):
         reader = self.reader
-        # UPrimitive: FBox(min,max,valid), FSphere(center,radius).
         bounds = struct.unpack('<6fB4f', reader.take(41))
         require(all(math.isfinite(value) for value in bounds), 'Non-finite native mesh bounds')
         version, vertex_count = reader.number('i'), reader.number('i')
@@ -156,13 +149,13 @@ class SkeletalReader:
         materials = self.array('ULodMesh.Materials', 'Ii', retain=True)
         lod_settings = struct.unpack('<3fiff', reader.take(24))
         if version >= 3:
-            reader.number('i')  # HasImpostor
-            self.package.object_name(reader.compact())  # SpriteMaterial
-            reader.take(52)  # location/rotation/scale/color/space/draw/light
+            reader.number('i')
+            self.package.object_name(reader.compact())
+            reader.take(52)
         if version >= 4:
-            reader.number('f')  # SkinTesselationFactor
+            reader.number('f')
         if version >= 5:
-            reader.number('i')  # Lineage-specific field
+            reader.number('i')
         if version >= 6:
             reader.number('B')
         self.array('Points2', '3f')
@@ -186,16 +179,16 @@ class SkeletalReader:
         self.array('BoneInfluences', '2H')
         attachments = self.attachments(bones)
         lods = [self.lod(index) for index in range(reader.count(16))]
-        self.package.object_name(reader.compact())  # f224
+        self.package.object_name(reader.compact())
         base_points = self.array('Points', '3f', lazy=True, retain=True)
         base_wedges = self.array('Wedges', 'Hff', lazy=True, retain=True)
         base_faces = self.array('Triangles', '3H2BI', lazy=True, retain=True)
         base_influences = self.array('VertInfluences', 'fHH', lazy=True, retain=True)
         self.array('CollapseWedge', 'H', lazy=True)
         self.array('f1C8', 'H', lazy=True)
-        reader.number('i')  # Lineage >=118/licensee>=3
-        self.array('LineageUnknownFloats', 'f')  # >=123/licensee>=18
-        reader.number('i')  # Lineage >=120 AuthKey
+        mesh_mode = reader.number('i')
+        mesh_mode_parameters = self.array('MeshModeParameters', 'f', retain=True)['values']
+        reader.number('i')
         require(reader.position == reader.end, 'Native skeletal export has trailing or unconsumed bytes')
         return {'object': self.item['object'], 'packageSha256': self.package.source_hash,
                 'packageVersion': self.package.summary['version'], 'licenseeVersion': self.package.summary['licenseeVersion'],
@@ -203,6 +196,8 @@ class SkeletalReader:
                 'meshScale': scale, 'meshOrigin': origin, 'rotOrigin': rotation, 'lodSettings': lod_settings,
                 'materials': materials, 'textures': textures, 'bones': bones, 'boneRecord': bone_record,
                 'animation': animation, 'skeletalDepth': depth, 'attachments': attachments, 'lods': lods,
+                'attachmentAliases': [{'alias': entry['alias'], 'bone': entry['bone']} for entry in attachments['entries']],
+                'meshMode': mesh_mode, 'meshModeParameters': [row[0] for row in mesh_mode_parameters],
                 'base': {'points': base_points, 'wedges': base_wedges, 'faces': base_faces, 'influences': base_influences},
                 'records': self.records, 'bytesConsumed': self.item['size'], 'layoutEvidence': LAYOUT_EVIDENCE}
 
@@ -212,7 +207,6 @@ def decode_skeletal_source(package, item):
 
 
 def raw_record(package, record):
-    """Exact source data bytes, in addition to lossless JSON float values."""
     data = package.data[record['dataOffset']:record['end']]
     require(hashlib.sha256(data).hexdigest() == record['sha256'], 'Source array changed while retaining weight evidence')
     return {**record, 'base64': base64.b64encode(data).decode('ascii')}

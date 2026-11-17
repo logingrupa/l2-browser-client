@@ -10938,11 +10938,17 @@
       "front": 5
     }
   },
+  "halfRouteRule": {
+    "dispatch": "0x106def1a",
+    "dynamic": "any other mesh mode",
+    "ordinary": "mesh mode below 1 or equal to 4",
+    "source": "RM-13"
+  },
   "kind": "character-hair-parts",
   "limitations": [
     "HairStyle 0, HairColor 0 and Face 0 are the default appearance; the client reads them from the user record (+0x240, +0x244, +0x248, RM-11), and a server packet selects another one in Phase 4.",
-    "Requested names are group-less (MFighter.X) while the exports sit in groups (MFighter.Hair.X); they resolve through the converter rule (exact object, else one unique leaf name in the package) until RM-13 answers the StaticLoadObject rule and the mesh family selector.",
-    "Hair halves attach rigidly with the head bone inverse bind matrix; the native client copies the head bone to part+0xdc, and that attachment math is not replayed."
+    "Group-less names resolve by leaf and class chain with no group constraint (RM-13). The native lookup returns the first compatible match in live hash order; a leaf with more than one compatible export is refused because that order is not reproduced.",
+    "Dynamic hair halves (RM-14 NCBoneSimul modes 2 and 7) are not simulated; they stay a named gap and nothing static is drawn for them."
   ],
   "meshTypes": [
     {
@@ -10961,9 +10967,11 @@
             "exportIndex": 661,
             "object": "Fighter.MFighter_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "MFighter.MFighter_m000_t00_m00_bh",
           "requestedMesh": "Fighter.MFighter_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -10979,15 +10987,17 @@
             "exportIndex": 662,
             "object": "Fighter.MFighter_m000_m00_ah"
           },
+          "meshMode": 4,
           "pawnSlot": 5,
           "requestedMaterial": "MFighter.MFighter_m000_t00_m00_ah",
           "requestedMesh": "Fighter.MFighter_m000_m00_ah",
+          "route": "ordinary",
           "status": "resolved"
         }
       ],
       "family": "Fighter",
       "familyAddress": "0x1089d0f4",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -11115,9 +11125,11 @@
             "exportIndex": 797,
             "object": "Fighter.FFighter_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "FFighter.FFighter_m000_t00_m00_bh",
           "requestedMesh": "Fighter.FFighter_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -11133,15 +11145,17 @@
             "exportIndex": 655,
             "object": "Fighter.FFighter_m000_m00_ah"
           },
+          "meshMode": 4,
           "pawnSlot": 5,
           "requestedMaterial": "FFighter.FFighter_m000_t00_m00_ah",
           "requestedMesh": "Fighter.FFighter_m000_m00_ah",
+          "route": "ordinary",
           "status": "resolved"
         }
       ],
       "family": "Fighter",
       "familyAddress": "0x1089d0f4",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -11269,9 +11283,11 @@
             "exportIndex": 546,
             "object": "DarkElf.MDarkElf_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "MDarkElf.MDarkElf_m000_t00_m00_bh",
           "requestedMesh": "DarkElf.MDarkElf_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -11283,7 +11299,7 @@
       ],
       "family": "DarkElf",
       "familyAddress": "0x108915bc",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -11411,9 +11427,11 @@
             "exportIndex": 668,
             "object": "DarkElf.FDarkElf_m000_m00_bh"
           },
+          "meshMode": 7,
           "pawnSlot": 4,
           "requestedMaterial": "FDarkElf.FDarkElf_m000_t00_m00_bh",
           "requestedMesh": "DarkElf.FDarkElf_m000_m00_bh",
+          "route": "dynamic",
           "status": "resolved"
         },
         {
@@ -11429,15 +11447,17 @@
             "exportIndex": 540,
             "object": "DarkElf.FDarkElf_m000_m00_ah"
           },
+          "meshMode": 4,
           "pawnSlot": 5,
           "requestedMaterial": "FDarkElf.FDarkElf_m000_t00_m00_ah",
           "requestedMesh": "DarkElf.FDarkElf_m000_m00_ah",
+          "route": "ordinary",
           "status": "resolved"
         }
       ],
       "family": "DarkElf",
       "familyAddress": "0x108915bc",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -11565,9 +11585,11 @@
             "exportIndex": 520,
             "object": "Dwarf.MDwarf_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "MDwarf.MDwarf_m000_t00_m00_bh",
           "requestedMesh": "Dwarf.MDwarf_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -11579,7 +11601,7 @@
       ],
       "family": "Dwarf",
       "familyAddress": "0x108915a0",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -11707,9 +11729,11 @@
             "exportIndex": 527,
             "object": "Dwarf.FDwarf_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "FDwarf.FDwarf_m000_t00_m00_bh",
           "requestedMesh": "Dwarf.FDwarf_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -11725,15 +11749,17 @@
             "exportIndex": 526,
             "object": "Dwarf.FDwarf_m000_m00_ah"
           },
+          "meshMode": 4,
           "pawnSlot": 5,
           "requestedMaterial": "FDwarf.FDwarf_m000_t00_m00_ah",
           "requestedMesh": "Dwarf.FDwarf_m000_m00_ah",
+          "route": "ordinary",
           "status": "resolved"
         }
       ],
       "family": "Dwarf",
       "familyAddress": "0x108915a0",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -11861,9 +11887,11 @@
             "exportIndex": 472,
             "object": "Elf.MElf_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "MElf.MElf_m000_t00_m00_bh",
           "requestedMesh": "Elf.MElf_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -11879,15 +11907,17 @@
             "exportIndex": 473,
             "object": "Elf.MElf_m000_m00_ah"
           },
+          "meshMode": 4,
           "pawnSlot": 5,
           "requestedMaterial": "MElf.MElf_m000_t00_m00_ah",
           "requestedMesh": "Elf.MElf_m000_m00_ah",
+          "route": "ordinary",
           "status": "resolved"
         }
       ],
       "family": "Elf",
       "familyAddress": "0x108915d0",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -12015,9 +12045,11 @@
             "exportIndex": 465,
             "object": "Elf.FElf_m000_m00_bh"
           },
+          "meshMode": 2,
           "pawnSlot": 4,
           "requestedMaterial": "FElf.FElf_m000_t00_m00_bh",
           "requestedMesh": "Elf.FElf_m000_m00_bh",
+          "route": "dynamic",
           "status": "resolved"
         },
         {
@@ -12033,15 +12065,17 @@
             "exportIndex": 466,
             "object": "Elf.FElf_m000_m00_ah"
           },
+          "meshMode": 4,
           "pawnSlot": 5,
           "requestedMaterial": "FElf.FElf_m000_t00_m00_ah",
           "requestedMesh": "Elf.FElf_m000_m00_ah",
+          "route": "ordinary",
           "status": "resolved"
         }
       ],
       "family": "Elf",
       "familyAddress": "0x108915d0",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -12169,9 +12203,11 @@
             "exportIndex": 440,
             "object": "Magic.MMagic_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "MMagic.MMagic_m000_t00_m00_bh",
           "requestedMesh": "Magic.MMagic_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -12187,15 +12223,17 @@
             "exportIndex": 441,
             "object": "Magic.MMagic_m000_m00_ah"
           },
+          "meshMode": 4,
           "pawnSlot": 5,
           "requestedMaterial": "MMagic.MMagic_m000_t00_m00_ah",
           "requestedMesh": "Magic.MMagic_m000_m00_ah",
+          "route": "ordinary",
           "status": "resolved"
         }
       ],
       "family": "Magic",
       "familyAddress": "0x1089d0e4",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -12323,9 +12361,11 @@
             "exportIndex": 583,
             "object": "Magic.FMagic_M000_M00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "FMagic.FMagic_m000_t00_m00_bh",
           "requestedMesh": "Magic.FMagic_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -12341,15 +12381,17 @@
             "exportIndex": 434,
             "object": "Magic.FMagic_m000_m00_ah"
           },
+          "meshMode": 4,
           "pawnSlot": 5,
           "requestedMaterial": "FMagic.FMagic_m000_t00_m00_ah",
           "requestedMesh": "Magic.FMagic_m000_m00_ah",
+          "route": "ordinary",
           "status": "resolved"
         }
       ],
       "family": "Magic",
       "familyAddress": "0x1089d0e4",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -12477,9 +12519,11 @@
             "exportIndex": 697,
             "object": "Orc.MOrc_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "MOrc.MOrc_m000_t00_m00_bh",
           "requestedMesh": "Orc.MOrc_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -12491,7 +12535,7 @@
       ],
       "family": "Orc",
       "familyAddress": "0x108915b0",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -12619,9 +12663,11 @@
             "exportIndex": 784,
             "object": "Orc.FOrc_m000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "FOrc.FOrc_m000_t00_m00_bh",
           "requestedMesh": "Orc.FOrc_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -12633,7 +12679,7 @@
       ],
       "family": "Orc",
       "familyAddress": "0x108915b0",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -12761,9 +12807,11 @@
             "exportIndex": 471,
             "object": "Shaman.MShaman_M000_m00_bh"
           },
+          "meshMode": 4,
           "pawnSlot": 4,
           "requestedMaterial": "MShaman.MShaman_m000_t00_m00_bh",
           "requestedMesh": "Shaman.MShaman_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -12775,7 +12823,7 @@
       ],
       "family": "Shaman",
       "familyAddress": "0x1089d0d4",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -12903,9 +12951,11 @@
             "exportIndex": 566,
             "object": "Shaman.FShaman_M000_m00_bh"
           },
+          "meshMode": 0,
           "pawnSlot": 4,
           "requestedMaterial": "FShaman.FShaman_m000_t00_m00_bh",
           "requestedMesh": "Shaman.FShaman_m000_m00_bh",
+          "route": "ordinary",
           "status": "resolved"
         },
         {
@@ -12917,7 +12967,7 @@
       ],
       "family": "Shaman",
       "familyAddress": "0x1089d0d4",
-      "familySource": "chargrp face_mesh[0] package",
+      "familySource": "RM-13 packageFamilies EBP-0x690 in10482c90",
       "mappings": [
         {
           "back": 0,
@@ -13030,16 +13080,60 @@
       "typeNameAddress": "0x10895c08"
     }
   ],
-  "schemaVersion": 1,
+  "rigidHeadBoneRule": {
+    "bone": "root Mesh MatchRefBone(HeadBone): the mesh alias table first, then a case-insensitive name search",
+    "inverseBind": "the root mesh inverse reference at that index",
+    "source": "RM-14",
+    "unresolved": "index -1 or at or above the root bone count"
+  },
+  "schemaVersion": 2,
   "source": {
-    "answer": {
-      "file": "player-hair-face.json",
-      "sha256": "fcd0b944176c38535ac70632f70688bd1a49a47ea05ea718f7a07e6d5d0c3ed8"
-    },
-    "answerManifest": {
-      "files": 40,
-      "path": "player-hair-face-rm11/manifest.json",
-      "sha256": "535d4f6b7bb03fc1a6c578f55623dc52cba7e5b05a2ef54004aa66c74718aef3"
+    "answers": {
+      "RM-11": {
+        "answer": {
+          "file": "player-hair-face.json",
+          "sha256": "fcd0b944176c38535ac70632f70688bd1a49a47ea05ea718f7a07e6d5d0c3ed8"
+        },
+        "answerManifest": {
+          "files": 40,
+          "path": "player-hair-face-rm11/manifest.json",
+          "sha256": "535d4f6b7bb03fc1a6c578f55623dc52cba7e5b05a2ef54004aa66c74718aef3"
+        },
+        "verification": {
+          "file": "verified-player-hair-face.md",
+          "sha256": "3ffd8acaa8026662d12d3a696cee1a7e5183de537b72ecbfc7d449a59bffe89e"
+        }
+      },
+      "RM-13": {
+        "answer": {
+          "file": "hair-name-resolution.json",
+          "sha256": "36216cb7a709de71daf2de13cec7e1fecf40e610b9a66210f16ee6c24891c176"
+        },
+        "answerManifest": {
+          "files": 79,
+          "path": "hair-resolution-rm13/manifest.json",
+          "sha256": "4ab202b2830a200806d52b8c9e49fbecd14cace037eeb4a08838444081d6a7e3"
+        },
+        "verification": {
+          "file": "verified-hair-name-resolution.md",
+          "sha256": "b437af038c29d1c9458f47494c7eeb4e5aa2ad141551fbfd401c0c04bb565032"
+        }
+      },
+      "RM-14": {
+        "answer": {
+          "file": "rigid-hair-and-physics.json",
+          "sha256": "2ad59fbb1a383f6a8ed251c1cabc0a81e0520c0ba14478d9f71e1d6b4022abf7"
+        },
+        "answerManifest": {
+          "files": 136,
+          "path": "rigid-hair-rm14/manifest.json",
+          "sha256": "81b46c37bba4b90baba9589b92ccdb5c9ffa093c23a36fd76021d80315b1ad45"
+        },
+        "verification": {
+          "file": "verified-rigid-hair-and-physics.md",
+          "sha256": "0e17c737addcb0b6aa1319406fb6803127f025c78550c73e358109feeb08ea5c"
+        }
+      }
     },
     "chargrp": {
       "path": "system/chargrp.dat",
@@ -13071,10 +13165,6 @@
         "sourcePath": "system/helmetgrp.dat",
         "sourceSha256": "ace5b171bf7bd6203de614257a4a523fe07e6fb14abc19af351f7b51c1809237"
       }
-    },
-    "verification": {
-      "file": "verified-player-hair-face.md",
-      "sha256": "3ffd8acaa8026662d12d3a696cee1a7e5183de537b72ecbfc7d449a59bffe89e"
     }
   }
 }

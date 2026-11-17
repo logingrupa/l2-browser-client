@@ -7,7 +7,10 @@ if str(SCRIPTS_ROOT) not in sys.path:
 
 import argparse
 import json
+from collections import namedtuple
 
+from actors.character_hair_answer_checks import package_families, require_linker_query_fixtures, require_mapping_fixtures, require_mode_fixtures
+from actors.hair_export_lookup import cached_class_chain_reader, unique_export_of_class
 from actors.path_free_messages import path_free_reason
 from actors.pinned_answer_files import pinned_bytes, require_lock_equal, sha256_hex
 from native_store.canonical_json import canonical_json_bytes
@@ -18,13 +21,26 @@ from reference_client_guard import ReferenceClientLockError, require_reference_c
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent
 CHARACTER_HAIR_PARTS_RELATIVE_PATH = 'recipes/actors/character-hair-parts.json'
 CHARACTER_HAIR_PARTS_KIND = 'character-hair-parts'
-CHARACTER_HAIR_PARTS_SCHEMA_VERSION = 1
-VERIFIED_PLAYER_HAIR_FACE_FILE_NAME = 'verified-player-hair-face.md'
-VERIFIED_PLAYER_HAIR_FACE_SHA256 = '3ffd8acaa8026662d12d3a696cee1a7e5183de537b72ecbfc7d449a59bffe89e'
-PLAYER_HAIR_FACE_ANSWER_FILE_NAME = 'player-hair-face.json'
-PLAYER_HAIR_FACE_ANSWER_SHA256 = 'fcd0b944176c38535ac70632f70688bd1a49a47ea05ea718f7a07e6d5d0c3ed8'
-PLAYER_HAIR_FACE_MANIFEST_RELATIVE_PATH = 'player-hair-face-rm11/manifest.json'
-PLAYER_HAIR_FACE_MANIFEST_SHA256 = '535d4f6b7bb03fc1a6c578f55623dc52cba7e5b05a2ef54004aa66c74718aef3'
+CHARACTER_HAIR_PARTS_SCHEMA_VERSION = 2
+PinnedAnswerSource = namedtuple('PinnedAnswerSource', 'name verified_file verified_sha256 answer_file answer_sha256 manifest_path manifest_sha256 mentions')
+PinnedAnswerPayloads = namedtuple('PinnedAnswerPayloads', 'verified answer manifest')
+HairExports = namedtuple('HairExports', 'resolve_export read_mesh_mode')
+PLAYER_HAIR_FACE_SOURCE = PinnedAnswerSource(
+    'RM-11', 'verified-player-hair-face.md', '3ffd8acaa8026662d12d3a696cee1a7e5183de537b72ecbfc7d449a59bffe89e',
+    'player-hair-face.json', 'fcd0b944176c38535ac70632f70688bd1a49a47ea05ea718f7a07e6d5d0c3ed8',
+    'player-hair-face-rm11/manifest.json', '535d4f6b7bb03fc1a6c578f55623dc52cba7e5b05a2ef54004aa66c74718aef3',
+    ('FL2GameData+0x182c', 'FL2GameData+0x1830', '0x104675f0', 'HairAccessary_index'))
+HAIR_NAME_RESOLUTION_SOURCE = PinnedAnswerSource(
+    'RM-13', 'verified-hair-name-resolution.md', 'b437af038c29d1c9458f47494c7eeb4e5aa2ad141551fbfd401c0c04bb565032',
+    'hair-name-resolution.json', '36216cb7a709de71daf2de13cec7e1fecf40e610b9a66210f16ee6c24891c176',
+    'hair-resolution-rm13/manifest.json', '4ab202b2830a200806d52b8c9e49fbecd14cace037eeb4a08838444081d6a7e3',
+    ('EBP-0x690', '0x106def1a'))
+RIGID_HAIR_AND_PHYSICS_SOURCE = PinnedAnswerSource(
+    'RM-14', 'verified-rigid-hair-and-physics.md', '0e17c737addcb0b6aa1319406fb6803127f025c78550c73e358109feeb08ea5c',
+    'rigid-hair-and-physics.json', '2ad59fbb1a383f6a8ed251c1cabc0a81e0520c0ba14478d9f71e1d6b4022abf7',
+    'rigid-hair-rm14/manifest.json', '81b46c37bba4b90baba9589b92ccdb5c9ffa093c23a36fd76021d80315b1ad45',
+    ('MatchRefBone', 'alias table'))
+PINNED_ANSWER_SOURCES = (PLAYER_HAIR_FACE_SOURCE, HAIR_NAME_RESOLUTION_SOURCE, RIGID_HAIR_AND_PHYSICS_SOURCE)
 ENGINE_RELATIVE_PATH, ENGINE_SHA256 = 'system/engine.dll', '4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08'
 CHARGRP_RELATIVE_PATH, CHARGRP_SHA256 = 'system/chargrp.dat', '2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f'
 HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME, HAIRACCESSARYGRP_TABLE_NAME = 'hairgrp', 'helmetgrp', 'hairaccessarygrp'
@@ -35,27 +51,34 @@ CHARGRP_ROW_COLLECTION, FACE_MESH_GROUP, FACE_MESH_FIELD = 'Char', 'face_mesh', 
 DEFAULT_APPEARANCE = {'hairStyle': 0, 'hairColor': 0, 'face': 0}
 USER_RECORD_FIELD_BY_APPEARANCE = {'hairStyle': 'HairStyle', 'hairColor': 'HairColor', 'face': 'Face'}
 HALF_SUFFIXES = (('back', '_bh'), ('front', '_ah'))
+ORDINARY_ROUTE, DYNAMIC_ROUTE = 'ordinary', 'dynamic'
+ORDINARY_MESH_MODE = 4
+HALF_ROUTE_RULE = {'dispatch': '0x106def1a', 'ordinary': 'mesh mode below 1 or equal to 4', 'dynamic': 'any other mesh mode',
+                   'source': HAIR_NAME_RESOLUTION_SOURCE.name}
+RIGID_HEAD_BONE_RULE = {'bone': 'root Mesh MatchRefBone(HeadBone): the mesh alias table first, then a case-insensitive name search',
+                        'inverseBind': 'the root mesh inverse reference at that index', 'unresolved': 'index -1 or at or above the root bone count',
+                        'source': RIGID_HAIR_AND_PHYSICS_SOURCE.name}
 STYLE_COUNT = 15
 NONE_STYLE = -1
 NONE_STATUS, RESOLVED_STATUS, UNRESOLVED_STATUS = 'none', 'resolved', 'unresolved'
 KEEP_CELL, HIDE_CELL, REPLACE_CELL = 'keep', 'hide', 'replace'
 HELMETGRP_MAP_SITE, HAIRACCESSARYGRP_MAP_SITE = 'FL2GameData+0x182c', 'FL2GameData+0x1830'
 HAIRACCESSARYGRP_LOADER, HAIRACCESSARYGRP_KEY_FIELD = '0x104675f0', 'HairAccessary_index'
+FIXTURE_TABLE_NAMES = {'helmet': HELMETGRP_TABLE_NAME, 'hairaccessary': HAIRACCESSARYGRP_TABLE_NAME}
 EQUIPMENT_MAPPINGS_APPLIED_BY = 'equipment-03-30'
 EXCLUDED_ROW_REASON = 'no chargrp mesh type {}'
-MESH_CLASS_NAME = 'SkeletalMesh'
+MESH_CLASS_NAME, MATERIAL_CLASS_NAME = 'SkeletalMesh', 'Material'
 CONVERTER_WORK_FOLDER = 'converter'
 CHARACTER_LANE_NAME = 'actors'
 CHARACTER_HAIR_PARTS_LIMITATIONS = (
     'HairStyle 0, HairColor 0 and Face 0 are the default appearance; the client reads them from the user record (+0x240, +0x244, +0x248, '
     'RM-11), and a server packet selects another one in Phase 4.',
-    'Requested names are group-less (MFighter.X) while the exports sit in groups (MFighter.Hair.X); they resolve through the converter rule '
-    '(exact object, else one unique leaf name in the package) until RM-13 answers the StaticLoadObject rule and the mesh family selector.',
-    'Hair halves attach rigidly with the head bone inverse bind matrix; the native client copies the head bone to part+0xdc, and that '
-    'attachment math is not replayed.',
+    'Group-less names resolve by leaf and class chain with no group constraint (RM-13). The native lookup returns the first compatible '
+    'match in live hash order; a leaf with more than one compatible export is refused because that order is not reproduced.',
+    'Dynamic hair halves (RM-14 NCBoneSimul modes 2 and 7) are not simulated; they stay a named gap and nothing static is drawn for them.',
 )
 CHARACTER_HAIR_RECIPE_DESCRIPTION = (
-    'Generate recipes/actors/character-hair-parts.json from the verified RM-11 player hair and face answer, the sealed data-ui manifests '
+    'Generate recipes/actors/character-hair-parts.json from the verified RM-11, RM-13 and RM-14 answers, the sealed data-ui manifests '
     'of hairgrp, helmetgrp and hairaccessarygrp, and the lock-equal Engine.dll and chargrp. --check compares and writes nothing.')
 
 
@@ -134,11 +157,14 @@ def chargrp_rows_by_mesh_type(chargrp, answer):
     return rows
 
 
-def mesh_type_family(row, literals, type_names):
-    family = row['faceMesh'].split('.', 1)[0]
-    require(family in literals and family not in type_names,
-            f'mesh type {row["typeName"]} face package {family} is not an Engine.dll family literal of the answer')
-    return {'family': family, 'familyAddress': engine_literal_address(literals, family), 'familySource': 'chargrp face_mesh[0] package'}
+def mesh_type_family(families, mesh_type, type_name):
+    family = families.get(mesh_type)
+    require(family is not None and family['meshTypeName'] == type_name, f'mesh type {mesh_type} {type_name} has no RM-13 package family')
+    return {field: family[field] for field in ('family', 'familyAddress', 'familySource')}
+
+
+def half_route(mesh_mode):
+    return ORDINARY_ROUTE if mesh_mode < 1 or mesh_mode == ORDINARY_MESH_MODE else DYNAMIC_ROUTE
 
 
 def style_mappings(hairgrp, mesh_type):
@@ -155,28 +181,31 @@ def hair_material_name(name_format, type_name, mapped_style, hair_color):
     return name_format % (type_name, type_name, mapped_style, hair_color)
 
 
-def resolved_half(half, slot, mapped_style, requested_mesh, requested_material, resolve_export):
+def resolved_half(half, slot, mapped_style, requested_mesh, requested_material, hair_exports):
     base = {'half': half, 'pawnSlot': slot, 'mappedStyle': mapped_style}
     if mapped_style == NONE_STYLE:
         return {**base, 'status': NONE_STATUS}
     requested = {'requestedMesh': requested_mesh, 'requestedMaterial': requested_material}
     try:
-        mesh, material = resolve_export(requested_mesh, MESH_CLASS_NAME), resolve_export(requested_material, None)
+        mesh = hair_exports.resolve_export(requested_mesh, MESH_CLASS_NAME)
+        material = hair_exports.resolve_export(requested_material, MATERIAL_CLASS_NAME)
+        mesh_mode = hair_exports.read_mesh_mode(mesh)
     except ReferenceClientLockError:
         raise
     except (ValueError, OSError) as error:
         return {**base, **requested, 'status': UNRESOLVED_STATUS, 'reason': str(error)}
-    return {**base, **requested, 'status': RESOLVED_STATUS, 'mesh': mesh, 'material': material}
+    return {**base, **requested, 'status': RESOLVED_STATUS, 'mesh': mesh, 'material': material, 'meshMode': mesh_mode,
+            'route': half_route(mesh_mode)}
 
 
-def default_halves(row, family, mappings, formats, slots, resolve_export):
+def default_halves(row, family, mappings, formats, slots, hair_exports):
     mapping = mappings[DEFAULT_APPEARANCE['hairStyle']]
     halves = []
     for half, _ in HALF_SUFFIXES:
         mapped = mapping[half]
         halves.append(resolved_half(half, slots[half], mapped, hair_mesh_name(formats['mesh'][half]['format'], family, row['typeName'], mapped),
                                     hair_material_name(formats['material'][half]['format'], row['typeName'], mapped, DEFAULT_APPEARANCE['hairColor']),
-                                    resolve_export))
+                                    hair_exports))
     return halves
 
 
@@ -232,11 +261,6 @@ def equipment_table_mappings(manifest, mesh_type_count, allowed_cells, site, exc
             'keys': keys, 'excludedRows': excluded}
 
 
-def require_verified_mentions(verified_text, mentions):
-    missing = [mention for mention in mentions if mention not in verified_text]
-    require(not missing, f'{VERIFIED_PLAYER_HAIR_FACE_FILE_NAME} does not state {", ".join(missing)}')
-
-
 def table_identity(manifest):
     require(manifest is not None, 'a hair table manifest is missing from the data-ui lane')
     require(manifest['sourceSha256'] == TABLE_SOURCE_SHA256_BY_NAME[manifest['table']], f'{manifest["table"]} is not decoded from its pinned source')
@@ -244,11 +268,36 @@ def table_identity(manifest):
             'route': manifest['route'], 'recordCount': len(manifest['records'])}
 
 
-def character_hair_parts_document(verified_payload, answer_payload, manifest_payload, tables, chargrp, lock, resolve_export):
-    answer, verified_text = json.loads(answer_payload), verified_payload.decode('utf-8')
-    require(answer['verification']['status'] == 'passed', 'the RM-11 answer verification did not pass')
+def verified_answers(answer_payloads):
+    answers = {}
+    for source in PINNED_ANSWER_SOURCES:
+        payloads = answer_payloads[source.name]
+        answer = json.loads(payloads.answer)
+        require(answer['verification']['status'] == 'passed', f'the {source.name} answer verification did not pass')
+        missing = [mention for mention in source.mentions if mention not in payloads.verified.decode('utf-8')]
+        require(not missing, f'{source.verified_file} does not state {", ".join(missing)}')
+        answers[source.name] = answer
+    return answers
+
+
+def answer_source_record(source, payloads):
+    return {'verification': {'file': source.verified_file, 'sha256': sha256_hex(payloads.verified)},
+            'answer': {'file': source.answer_file, 'sha256': sha256_hex(payloads.answer)},
+            'answerManifest': {'path': source.manifest_path, 'sha256': sha256_hex(payloads.manifest),
+                               'files': len(json.loads(payloads.manifest)['files'])}}
+
+
+def equipment_hair_mappings(helmetgrp, accessories, mesh_type_count):
+    return {HELMETGRP_TABLE_NAME: equipment_table_mappings(helmetgrp, mesh_type_count, (KEEP_CELL, HIDE_CELL), HELMETGRP_MAP_SITE, EXCLUDED_ROW_REASON),
+            HAIRACCESSARYGRP_TABLE_NAME: {**equipment_table_mappings(accessories, mesh_type_count, (KEEP_CELL, HIDE_CELL, REPLACE_CELL),
+                                                                     HAIRACCESSARYGRP_MAP_SITE, EXCLUDED_ROW_REASON),
+                                          'loader': HAIRACCESSARYGRP_LOADER, 'keyField': HAIRACCESSARYGRP_KEY_FIELD}}
+
+
+def character_hair_parts_document(answer_payloads, tables, chargrp, lock, hair_exports):
+    answers = verified_answers(answer_payloads)
+    answer, name_resolution = answers[PLAYER_HAIR_FACE_SOURCE.name], answers[HAIR_NAME_RESOLUTION_SOURCE.name]
     require(chargrp['sourceSha256'] == CHARGRP_SHA256, 'the decoded chargrp is not the pinned source')
-    require_verified_mentions(verified_text, (HELMETGRP_MAP_SITE, HAIRACCESSARYGRP_MAP_SITE, HAIRACCESSARYGRP_LOADER, HAIRACCESSARYGRP_KEY_FIELD))
     hairgrp, helmetgrp, accessories = tables[HAIRGRP_TABLE_NAME], tables[HELMETGRP_TABLE_NAME], tables[HAIRACCESSARYGRP_TABLE_NAME]
     source_tables = {name: table_identity(manifest) for name, manifest in sorted(tables.items())}
     require_hairgrp_equals_answer(hairgrp, answer)
@@ -257,35 +306,38 @@ def character_hair_parts_document(verified_payload, answer_payload, manifest_pay
     rows, formats, slots = chargrp_rows_by_mesh_type(chargrp, answer), name_formats(answer, literals), pawn_slots(answer)
     require(sorted(rows) == sorted(classes) == list(range(len(classes))) and all(rows[t]['typeName'] == classes[t] for t in classes),
             'the RM-11 mesh type classes differ from its chargrp rows')
+    families = package_families(name_resolution, HAIR_NAME_RESOLUTION_SOURCE.name)
     mesh_types = []
     for mesh_type in sorted(rows):
         row = rows[mesh_type]
-        family = mesh_type_family(row, literals, set(classes.values()))
+        family = mesh_type_family(families, mesh_type, row['typeName'])
         mappings = style_mappings(hairgrp, mesh_type)
         mesh_types.append({'meshType': mesh_type, 'chargrpRow': row['chargrpRow'], 'typeName': row['typeName'],
                            'typeNameAddress': engine_literal_address(literals, row['typeName']), **family, 'mappings': mappings,
-                           'defaultHalves': default_halves(row, family['family'], mappings, formats, slots, resolve_export)})
+                           'defaultHalves': default_halves(row, family['family'], mappings, formats, slots, hair_exports)})
     require_fixture_halves(answer, mesh_types)
     require_assets_agree(answer, mesh_types)
+    equipment_mappings = equipment_hair_mappings(helmetgrp, accessories, len(mesh_types))
+    require_mapping_fixtures(name_resolution, mesh_types, {table: equipment_mappings[name] for table, name in FIXTURE_TABLE_NAMES.items()},
+                             lambda half, mesh_type, mapped: hair_mesh_name(formats['mesh'][half]['format'], mesh_type['family'],
+                                                                            mesh_type['typeName'], mapped))
+    require_linker_query_fixtures(name_resolution, hair_exports.resolve_export)
+    require_mode_fixtures(answers[RIGID_HAIR_AND_PHYSICS_SOURCE.name], mesh_types)
     return {'schemaVersion': CHARACTER_HAIR_PARTS_SCHEMA_VERSION, 'kind': CHARACTER_HAIR_PARTS_KIND,
-            'source': {'verification': {'file': VERIFIED_PLAYER_HAIR_FACE_FILE_NAME, 'sha256': sha256_hex(verified_payload)},
-                       'answer': {'file': PLAYER_HAIR_FACE_ANSWER_FILE_NAME, 'sha256': sha256_hex(answer_payload)},
-                       'answerManifest': {'path': PLAYER_HAIR_FACE_MANIFEST_RELATIVE_PATH, 'sha256': sha256_hex(manifest_payload),
-                                          'files': len(json.loads(manifest_payload)['files'])},
+            'source': {'answers': {source.name: answer_source_record(source, answer_payloads[source.name]) for source in PINNED_ANSWER_SOURCES},
                        'engine': require_lock_equal(lock, ENGINE_RELATIVE_PATH, ENGINE_SHA256, CHARACTER_HAIR_PARTS_RELATIVE_PATH),
                        'chargrp': require_lock_equal(lock, CHARGRP_RELATIVE_PATH, CHARGRP_SHA256, CHARACTER_HAIR_PARTS_RELATIVE_PATH),
                        'tables': source_tables},
             'defaultAppearance': {**DEFAULT_APPEARANCE, 'userRecordOffsets': user_record_offsets(answer),
                                   'limitation': CHARACTER_HAIR_PARTS_LIMITATIONS[0]},
             'formats': {**formats, 'pawnSlots': slots},
+            'halfRouteRule': HALF_ROUTE_RULE,
+            'rigidHeadBoneRule': RIGID_HEAD_BONE_RULE,
             'meshTypes': mesh_types,
             'equipmentHairMappings': {
                 'appliedBy': EQUIPMENT_MAPPINGS_APPLIED_BY,
                 'cellRule': 'keep when the mapped style equals the style, hide at -1, replace with any other mapped style',
-                HELMETGRP_TABLE_NAME: equipment_table_mappings(helmetgrp, len(mesh_types), (KEEP_CELL, HIDE_CELL), HELMETGRP_MAP_SITE, EXCLUDED_ROW_REASON),
-                HAIRACCESSARYGRP_TABLE_NAME: {**equipment_table_mappings(accessories, len(mesh_types), (KEEP_CELL, HIDE_CELL, REPLACE_CELL),
-                                                                         HAIRACCESSARYGRP_MAP_SITE, EXCLUDED_ROW_REASON),
-                                              'loader': HAIRACCESSARYGRP_LOADER, 'keyField': HAIRACCESSARYGRP_KEY_FIELD}},
+                **equipment_mappings},
             'limitations': list(CHARACTER_HAIR_PARTS_LIMITATIONS)}
 
 
@@ -299,30 +351,52 @@ def character_lane_converter(project_root, client_root):
     return Converter(client_root, lane_store_root(project_root, CHARACTER_LANE_NAME).parent / CONVERTER_WORK_FOLDER, UMODEL)
 
 
-def converter_export_resolver(converter, client_root):
-    def resolve_export(requested, class_name):
-        package_name, object_name = requested.split('.', 1)
+def converter_hair_exports(converter, client_root):
+    from native_catalog.skeletal import decode_skeletal_source
+
+    def read_package(package_name):
+        return converter.package(package_name)[1]
+    class_names_of = cached_class_chain_reader(read_package)
+
+    def path_free(read):
         try:
-            _, package = converter.package(package_name)
-            export = converter.select(package, object_name, class_name)
+            return read()
         except ReferenceClientLockError:
             raise
         except (ValueError, OSError) as error:
             raise CharacterHairRecipeError(path_free_reason(str(error), client_root, converter.output)) from error
-        return {'object': export['object'], 'exportIndex': export['exportIndex'], 'class': export['classObject']}
-    return resolve_export
+
+    def resolve_export(requested, class_name):
+        def resolved():
+            export = unique_export_of_class(read_package(requested.split('.', 1)[0]), requested, class_name, class_names_of)
+            return {'object': export['object'], 'exportIndex': export['exportIndex'], 'class': export['classObject']}
+        return path_free(resolved)
+
+    def read_mesh_mode(mesh):
+        def decoded_mode():
+            package = read_package(mesh['object'].split('.', 1)[0])
+            items = [item for item in package.exports if item['exportIndex'] == mesh['exportIndex']]
+            require(len(items) == 1, f'{mesh["object"]} export {mesh["exportIndex"]} is missing')
+            return decode_skeletal_source(package, items[0])['meshMode']
+        return path_free(decoded_mode)
+    return HairExports(resolve_export, read_mesh_mode)
+
+
+def pinned_answer_payloads(verification_folder, answer_folder):
+    verification, answers = Path(verification_folder), Path(answer_folder)
+    return {source.name: PinnedAnswerPayloads(
+        pinned_bytes(verification / source.verified_file, source.verified_sha256, f'{source.name} verified facts'),
+        pinned_bytes(answers / source.answer_file, source.answer_sha256, f'{source.name} answer'),
+        pinned_bytes(answers / source.manifest_path, source.manifest_sha256, f'{source.name} answer manifest'))
+        for source in PINNED_ANSWER_SOURCES}
 
 
 def character_hair_parts_payload(project_root, verification_folder, answer_folder, client_access):
     from native_catalog.tables import decode_table
-    verification, answers = Path(verification_folder), Path(answer_folder)
     converter = character_lane_converter(project_root, client_access.root)
     return canonical_json_bytes(character_hair_parts_document(
-        pinned_bytes(verification / VERIFIED_PLAYER_HAIR_FACE_FILE_NAME, VERIFIED_PLAYER_HAIR_FACE_SHA256, 'verified facts'),
-        pinned_bytes(answers / PLAYER_HAIR_FACE_ANSWER_FILE_NAME, PLAYER_HAIR_FACE_ANSWER_SHA256, 'answer'),
-        pinned_bytes(answers / PLAYER_HAIR_FACE_MANIFEST_RELATIVE_PATH, PLAYER_HAIR_FACE_MANIFEST_SHA256, 'answer manifest'),
-        character_hair_table_manifests(project_root), decode_table(client_access.root, 'chargrp'), client_access.lock,
-        converter_export_resolver(converter, client_access.root)))
+        pinned_answer_payloads(verification_folder, answer_folder), character_hair_table_manifests(project_root),
+        decode_table(client_access.root, 'chargrp'), client_access.lock, converter_hair_exports(converter, client_access.root)))
 
 
 def write_character_hair_parts(project_root, payload, check):
@@ -340,7 +414,7 @@ def read_character_hair_parts(project_root):
     payload = path.read_bytes()
     document = json.loads(payload)
     require(document.get('schemaVersion') == CHARACTER_HAIR_PARTS_SCHEMA_VERSION and document.get('kind') == CHARACTER_HAIR_PARTS_KIND,
-            'is not a character-hair-parts v1 recipe')
+            f'is not a character-hair-parts v{CHARACTER_HAIR_PARTS_SCHEMA_VERSION} recipe')
     return {'path': CHARACTER_HAIR_PARTS_RELATIVE_PATH, 'sha256': sha256_hex(payload), 'defaultAppearance': document['defaultAppearance'],
             'byChargrpRow': {mesh_type['chargrpRow']: mesh_type for mesh_type in document['meshTypes']}, 'limitations': document['limitations']}
 
@@ -362,7 +436,8 @@ def main(argv=None):
     document = json.loads(payload)
     halves = [half for mesh_type in document['meshTypes'] for half in mesh_type['defaultHalves']]
     print(json.dumps({'bytes': len(payload), 'sha256': sha256_hex(payload), 'meshTypes': len(document['meshTypes']),
-                      'halves': {status: sum(half['status'] == status for half in halves) for status in (NONE_STATUS, RESOLVED_STATUS, UNRESOLVED_STATUS)}},
+                      'halves': {status: sum(half['status'] == status for half in halves) for status in (NONE_STATUS, RESOLVED_STATUS, UNRESOLVED_STATUS)},
+                      'routes': {route: sum(half.get('route') == route for half in halves) for route in (ORDINARY_ROUTE, DYNAMIC_ROUTE)}},
                      sort_keys=True))
     return 0
 
