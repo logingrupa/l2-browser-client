@@ -11,8 +11,20 @@ interface CharacterCensusRow {
   readonly padding: boolean;
   readonly model: string | null;
   readonly profile: string | null;
-  readonly hair: { readonly status: string } | null;
+  readonly hair: CensusHair | null;
   readonly gaps: readonly { readonly field: string; readonly reason: string }[];
+}
+
+interface CensusHairHalf {
+  readonly half: "back" | "front";
+  readonly status: string;
+  readonly mesh?: string;
+  readonly material?: string;
+}
+
+interface CensusHair {
+  readonly status: string;
+  readonly halves: readonly CensusHairHalf[];
 }
 
 interface SpawnedCharacter {
@@ -24,7 +36,7 @@ interface SpawnedCharacter {
   readonly position: { readonly x: number; readonly y: number; readonly z: number };
   readonly forwardDirection: readonly number[] | null;
   readonly bounds: { readonly minimum: readonly number[]; readonly maximum: readonly number[] };
-  readonly parts: readonly { readonly name: string; readonly material?: string }[];
+  readonly parts: readonly { readonly name: string; readonly enabled: boolean; readonly material?: string }[];
 }
 
 interface ServedPlayerProfile {
@@ -40,11 +52,11 @@ const evidenceDirectory = resolve("artifacts/ui-evidence");
 const worldReadyTimeout = 240_000;
 const modelLoadTimeout = 120_000;
 const portraitPhone = { viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
-const unboundSourceSlotPattern = /^UNBOUND_SOURCE_SLOT_\d+$/;
-const humanRecipeNames = ["mfighter", "mmagic", "fmagic", "ffighter"];
+const hairPartsRecipePath = resolve("recipes/actors/character-hair-parts.json");
 const framingRadiusPerBoundsHeight = 2.5;
 const sliceMonsterEntityId = "native-musveren";
 const obliqueViewRadians = Math.PI / 4;
+const sideViewRadians = Math.PI / 2;
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=integration");
 test.skip(!existsSync(resolve(storeRoot, "catalog.json")), "the integration union has no catalog; rebuild the union first");
@@ -55,10 +67,24 @@ const characterRows = () => censusRows().filter(row => !row.padding && row.key !
 const writtenRows = () => characterRows().filter(row => row.profile === "written");
 const expectedGapReason = (row: CharacterCensusRow) =>
   (row.gaps.find(gap => gap.field === (row.model === "gap" ? "model" : "profile")) ?? row.gaps[0])?.reason ?? null;
-const oldHairOverrideTextures = (): ReadonlySet<string> => new Set(humanRecipeNames.flatMap(name => {
-  const parts = (JSON.parse(readFileSync(resolve(`recipes/native-${name}.json`), "utf8")) as { parts: { unresolved?: { materials?: { previousValue: string[] } } }[] }[])[0]!.parts;
-  return parts.flatMap(part => (part.unresolved?.materials?.previousValue ?? []).map(entry => entry.split("=", 2)[1]!));
-}));
+const hairHalfMeshSuffixes = (): Readonly<Record<string, string>> => {
+  const formats = (JSON.parse(readFileSync(hairPartsRecipePath, "utf8")) as { formats: { mesh: Record<"back" | "front", { format: string }> } }).formats.mesh;
+  return { back: formats.back.format.slice(formats.back.format.lastIndexOf("_")), front: formats.front.format.slice(formats.front.format.lastIndexOf("_")) };
+};
+const meshLeafName = (objectPath: string) => objectPath.slice(objectPath.lastIndexOf(".") + 1).toLowerCase();
+
+function expectCensusHairParts(row: CharacterCensusRow, character: SpawnedCharacter, meshSuffixes: Readonly<Record<string, string>>): void {
+  for (const half of row.hair!.halves) {
+    const partsOfHalf = character.parts.filter(part => half.mesh === undefined
+      ? part.name.toLowerCase().includes(meshSuffixes[half.half]!.toLowerCase()) : part.name.toLowerCase().includes(meshLeafName(half.mesh)));
+    if (half.status === "resolved") {
+      expect(partsOfHalf.length, `${row.key} ${half.half} ${half.mesh}`).toBeGreaterThan(0);
+      expect(partsOfHalf.every(part => part.enabled), `${row.key} ${half.half} enabled`).toBe(true);
+    } else {
+      expect(partsOfHalf, `${row.key} ${half.half} ${half.status}`).toEqual([]);
+    }
+  }
+}
 
 function servedCharacterProfiles(): ReadonlyMap<number, ServedPlayerProfile> {
   const catalog = JSON.parse(readFileSync(resolve(storeRoot, "catalog.json"), "utf8")) as { playerProfiles?: { manifest: string }[] };
@@ -142,8 +168,7 @@ test.describe("chargrp characters on the integration store", () => {
     test.setTimeout(worldReadyTimeout + modelLoadTimeout * characterRows().length + 60_000);
     if (baseURL === undefined) throw new Error("the Playwright project has no baseURL");
     const profiles = servedCharacterProfiles();
-    const forbiddenHairTextures = oldHairOverrideTextures();
-    expect(forbiddenHairTextures.size).toBe(8);
+    const meshSuffixes = hairHalfMeshSuffixes();
     await withPage(browser, { viewport: desktopViewport }, async page => {
       const catalogSha256 = await servedLaneCatalogSha256(baseURL);
       for (const row of characterRows()) {
@@ -152,12 +177,7 @@ test.describe("chargrp characters on the integration store", () => {
         if (row.profile === "written") {
           expect(loaded, `${row.key} ${character.missingAssetDiagnostic}`).toBe(true);
           await expectActiveClip(page, character.id, profiles.get(row.chargrpIndex)!.clips.idle!);
-          if (row.hair?.status === "gap") {
-            for (const part of character.parts) {
-              const material = part.material ?? "";
-              expect(unboundSourceSlotPattern.test(material) || !forbiddenHairTextures.has(material), `${row.key} ${part.name} ${material}`).toBe(true);
-            }
-          }
+          if (row.hair?.status === "bound") expectCensusHairParts(row, await spawnedCharacter(page, character.id), meshSuffixes);
         } else {
           expect(character.missingAssetDiagnostic).toBe(`${row.key} gap: ${expectedGapReason(row)}`);
         }
@@ -197,6 +217,29 @@ test.describe("chargrp characters on the integration store", () => {
       await frameCharacter(page, await spawnedCharacter(page, character.id), obliqueViewRadians);
       await page.screenshot({ path: resolve(evidenceDirectory, `03-37-character-${first.chargrpIndex}-idle-phone.png`) });
     });
+  });
+
+  test("character 0 draws its front and back hair halves with library materials, from the front and the side on desktop and the landscape phone", async ({ browser }) => {
+    test.setTimeout((worldReadyTimeout + modelLoadTimeout * 2) * 2);
+    const row = characterRows().find(candidate => candidate.chargrpIndex === 0);
+    if (row?.hair?.status !== "bound") throw new Error(`character:0 hair is ${row?.hair?.status ?? "missing"} in the census`);
+    const hairMaterials = row.hair.halves.flatMap(half => half.material === undefined ? [] : [half.material]);
+    expect(row.hair.halves.map(half => half.status)).toEqual(["resolved", "resolved"]);
+    mkdirSync(evidenceDirectory, { recursive: true });
+    for (const [device, options] of [["desktop", { viewport: desktopViewport }], ["phone", landscapePhone]] as const) {
+      await withPage(browser, options, async page => {
+        await despawnSliceMonsterAtTheSpawnPoint(page);
+        const character = await spawnCharacter(page, 0);
+        await expectActiveClip(page, character.id, servedCharacterProfiles().get(0)!.clips.idle!);
+        expectCensusHairParts(row, await spawnedCharacter(page, character.id), hairHalfMeshSuffixes());
+        const diagnosticRoots = await page.evaluate(() => (window.__nativeSlice!.snapshot().diagnosticMaterials ?? []).map(record => record.root));
+        expect(diagnosticRoots.filter(root => hairMaterials.some(material => material.toLowerCase() === root.toLowerCase()))).toEqual([]);
+        for (const [view, alphaFromFront] of [["front", 0], ["side", sideViewRadians]] as const) {
+          await frameCharacter(page, await spawnedCharacter(page, character.id), alphaFromFront);
+          await page.screenshot({ path: resolve(evidenceDirectory, `03-39-character-0-hair-${view}-${device}.png`) });
+        }
+      });
+    }
   });
 
   test("the portrait phone has no horizontal scroll with a character spawned", async ({ browser }) => {

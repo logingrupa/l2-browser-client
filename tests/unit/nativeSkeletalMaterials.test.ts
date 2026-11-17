@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AssetContainer } from "@babylonjs/core/assetContainer";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
+import { Material } from "@babylonjs/core/Materials/material";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
 import { Bone } from "@babylonjs/core/Bones/bone";
@@ -12,11 +13,13 @@ import { Scene } from "@babylonjs/core/scene";
 import type { LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
+import { BLEND_CONSTANTS } from "../../src/materials/ue2/model/constants/blendConstants";
 import { bindSkeletalSlotMaterials } from "../../src/assets/native/nativeSkeletalMaterials";
 import type { ActorMaterialPrograms, ActorModelSlotSourceObjects, ActorSlotProgramJoin } from "../../src/assets/native/actorMaterialPrograms";
-import { swatchTexturePng, syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor, type FixtureProgram } from "../support/materialProgramFixture";
+import { alphaTestedHairFinalBlendProgram, alphaTestedHairFinalBlendRoot, swatchTexturePng, syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor,
+  type FixtureProgram } from "../support/materialProgramFixture";
 
-const compiledProgramId = "ab".repeat(32), unportedProgramId = "cd".repeat(32);
+const compiledProgramId = "ab".repeat(32), unportedProgramId = "cd".repeat(32), hairProgramId = "ef".repeat(32);
 const compiledObject = "Npc.Body.Compiled", unportedObject = "Npc.Body.Unported", gapObject = "Npc.Body.Gap";
 const swatchImage = textureImageFor(swatchTexturePng());
 const releases: (() => void)[] = [];
@@ -31,6 +34,7 @@ const joins: Readonly<Record<string, ActorSlotProgramJoin>> = {
   [compiledObject]: { kind: "program", sourceObject: compiledObject, programMaterialId: compiledProgramId },
   [unportedObject]: { kind: "program", sourceObject: unportedObject, programMaterialId: unportedProgramId },
   [gapObject]: { kind: "gap", sourceObject: gapObject, reasons: ["material-class-unported:Engine.GlowModifier"] },
+  [alphaTestedHairFinalBlendRoot]: { kind: "program", sourceObject: alphaTestedHairFinalBlendRoot, programMaterialId: hairProgramId },
 };
 
 const materialPrograms: ActorMaterialPrograms = {
@@ -62,7 +66,9 @@ function slotContainer(slots: readonly { name: string; skinned?: boolean; pointe
     container.materials.push(material); container.meshes.push(mesh);
     return mesh;
   });
-  const loadProgram = vi.fn(async (materialId: string) => loadedProgram(materialId, materialId === compiledProgramId ? syntheticSwatchProgram(swatchImage) : syntheticUnportedProgram()));
+  const programsById: Readonly<Record<string, FixtureProgram>> = { [compiledProgramId]: syntheticSwatchProgram(swatchImage),
+    [unportedProgramId]: syntheticUnportedProgram(), [hairProgramId]: alphaTestedHairFinalBlendProgram(swatchImage) };
+  const loadProgram = vi.fn(async (materialId: string) => loadedProgram(materialId, programsById[materialId]!));
   const bind = (slotSourceObjects: ActorModelSlotSourceObjects) =>
     bindSkeletalSlotMaterials(scene, container, { sessionSeed: 5, loadProgram, slotSourceObjects, materialPrograms }, new AbortController().signal);
   return { scene, meshes, loadProgram, bind };
@@ -91,6 +97,25 @@ describe("skeletal slot materials through the UE2 material library", () => {
     expect((libraryMaterial.shaderPath as { vertexSource: string }).vertexSource).toMatch(/#include<bonesDeclaration>[\s\S]*mat4 finalWorld = world;\n#include<bonesVertex>/);
     binding.dispose(); binding.dispose();
     expect(f.scene.materials.filter(material => material.getClassName() === "ShaderMaterial")).toEqual([]);
+  });
+
+  it("binds an alpha-tested two-sided FinalBlend hair slot through the library with the current FB_AlphaBlend pair and an AlphaRef 5 discard", async () => {
+    const f = slotContainer([{ name: "Hair.Front", skinned: true }]);
+    const binding = await f.bind({ kind: "slots", sourceObjects: [alphaTestedHairFinalBlendRoot] });
+    expect(binding.slots[0]).toEqual({ slot: "Hair.Front", sourceObject: alphaTestedHairFinalBlendRoot, status: "library-compiled", programMaterialId: hairProgramId,
+      reasons: [], meshes: 1 });
+    const material = f.meshes[0]!.material as ShaderMaterial;
+    expect(material.name).toBe(`UE2 material: ${alphaTestedHairFinalBlendRoot}`);
+    expect(material.transparencyMode).toBe(Material.MATERIAL_ALPHATESTANDBLEND);
+    expect(material.backFaceCulling).toBe(false);
+    expect((material.shaderPath as { fragmentSource: string }).fragmentSource).toContain(`.a < ${5 / 255}) { discard; }`);
+    const plan = compileMaterialStagePlan(parseMaterialProgram(JSON.parse(JSON.stringify(alphaTestedHairFinalBlendProgram(swatchImage)))));
+    if (plan.status !== "compiled") throw new Error(`the hair program did not compile: ${plan.reasons.join(", ")}`);
+    expect(plan.blend).toMatchObject({ status: "resolved", source: "final-blend", modeName: "FB_AlphaBlend", alphaTest: true, alphaReference: 5, twoSided: true,
+      pair: BLEND_CONSTANTS.finalBlendPairs.runtimeDefault[2]!.pair });
+    expect(plan.blend.constantIds).toEqual(expect.arrayContaining([BLEND_CONSTANTS.finalBlendPairs.id, BLEND_CONSTANTS.depthWriteRule.id]));
+    expect([BLEND_CONSTANTS.finalBlendPairs.status, BLEND_CONSTANTS.depthWriteRule.status]).toEqual(["unconfirmed", "unconfirmed"]);
+    binding.dispose();
   });
 
   it("keeps the converted texture material of a slot whose program is a gap, of a slot without an object and of a model without slot provenance, and names the reasons", async () => {

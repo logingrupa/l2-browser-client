@@ -164,6 +164,19 @@ function overwritingFinalBlendNode(id: string, material: string): FixtureProgram
   ]);
 }
 
+export const alphaTestedHairFinalBlendRoot = "SyntheticHair.Hair.SyntheticHair_m000_t00_m00_ah";
+
+export function alphaTestedHairFinalBlendProgram(image: FixtureTextureImage): FixtureProgram {
+  const texture = "SyntheticHair.Hair.SyntheticHair_m000_t00_m00_ah_ori";
+  return programOf(alphaTestedHairFinalBlendRoot, [
+    reviewedNode(alphaTestedHairFinalBlendRoot, "Engine.FinalBlend", [
+      field("Material", nodeReference(texture)), field("FrameBufferBlending", enumValue(2, "FB_AlphaBlend")), field("AlphaTest", true),
+      field("TwoSided", true), field("AlphaRef", 5), field("ZWrite", true, "class-default"), field("ZTest", true, "class-default"),
+    ]),
+    swatchTextureNode(texture, image),
+  ]);
+}
+
 export function syntheticSwatchProgram(image: FixtureTextureImage): FixtureProgram {
   return programOf("SyntheticSwatch.SwatchFinalBlend", [
     overwritingFinalBlendNode("SyntheticSwatch.SwatchFinalBlend", "SyntheticSwatch.SwatchShader"),
