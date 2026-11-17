@@ -8,11 +8,11 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_catalog.ue2 import Package
-from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, BatchPreflightRefusedError, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 from support.actor_class_defaults import SyntheticActorClassDefaults
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
+from synthetic_class_scripts import scratch_work_root_with_world_class_default_cache
 from ue2_package_fixture import compact, package_bytes, tag
 from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE
 from world.bsp_step import sealed_bsp_chunks
@@ -22,7 +22,7 @@ from world.raw_map_step import read_tile_map_lock_record
 from world.sky_step import sealed_sky
 from world.static_placement import ClassDefaults
 from world.world_lane_names import WORLD_LANE_NAME
-from world.tile_chunk_plan import read_locked_map_package
+from world.tile_chunk_plan import ChunkPlanStepError, read_locked_map_package
 
 BOOL_PROPERTY_TYPE = 3
 FLOAT_PROPERTY_TYPE = 4
@@ -132,12 +132,16 @@ class RealMapZoneInputTests(unittest.TestCase):
 
     def test_the_outdoor_and_sky_zone_sets_of_20_21_equal_the_sealed_bsp_and_sky_products(self):
         lock_record = read_tile_map_lock_record(REAL_TILE_ID)
-        _, bsp = sealed_bsp_chunks(ROOT, REAL_TILE_ID, lock_record)
-        _, sky = sealed_sky(ROOT, REAL_TILE_ID, lock_record)
+        try:
+            _, bsp = sealed_bsp_chunks(ROOT, REAL_TILE_ID, lock_record)
+            _, sky = sealed_sky(ROOT, REAL_TILE_ID, lock_record)
+        except ChunkPlanStepError as error:
+            self.skipTest(f'the raw and chunk plan units of {REAL_TILE_ID} are not sealed in this lane: {error}')
         if bsp is None or sky is None:
             self.skipTest(f'the bsp and sky units of {REAL_TILE_ID} are not sealed in this lane')
         package = read_locked_map_package(REAL_CLIENT_ROOT, REAL_TILE_ID, lock_record)
-        class_defaults = ClassDefaults(lane_work_root(ROOT, WORLD_LANE_NAME), ReferenceClientClassScripts(REAL_CLIENT_ROOT))
+        class_defaults = ClassDefaults(scratch_work_root_with_world_class_default_cache(self.addCleanup, 'level-zones-class-defaults-'),
+                                       ReferenceClientClassScripts(REAL_CLIENT_ROOT))
         zones = read_level_zones(package, read_level_model(package).model, class_defaults)
         self.assertEqual(sorted(outdoor_zone_indices(zones)), bsp['outdoorZones'])
         self.assertEqual(sorted(sky_zone_indices(zones)), bsp['skyZones'])

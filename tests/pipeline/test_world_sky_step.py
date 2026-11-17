@@ -13,6 +13,7 @@ from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
 from support.mapping_size_class_defaults import SYNTHETIC_DEFAULT_MATERIAL, use_synthetic_mapping_class_defaults
+from synthetic_class_scripts import link_world_class_default_cache, scratch_work_root
 from world.bsp_material_mapping_size import MaterialMappingSize, surface_material_identities
 from world.terrain_coordinates import f32
 from world.sky_geometry import SKY_GLB_GENERATOR, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
@@ -196,10 +197,9 @@ class SkyStepRecordTests(unittest.TestCase):
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir() and (SERVED_SKY_FOLDER / 'sky.glb').is_file(),
                      'the conversion client E:/Lineage2-client or the served 20_20 sky in public/l2 is absent')
 class RealClientSkyTests(unittest.TestCase):
-    @staticmethod
-    def converted_sky_files(tile_id):
+    def converted_sky_files(self, tile_id):
         from native_assets_lib.class_defaults import ReferenceClientClassScripts
-        from native_store.store_paths import REPOSITORY_ROOT, lane_work_root
+        from native_store.store_paths import lane_work_root
         from world.level_model import read_level_model
         from world.level_zones import read_level_zones, sky_zone_indices
         from world.raw_map_step import read_tile_map_lock_record
@@ -209,10 +209,12 @@ class RealClientSkyTests(unittest.TestCase):
         lock_record = read_tile_map_lock_record(tile_id)
         package = read_locked_map_package(REFERENCE_CLIENT, tile_id, lock_record)
         level = read_level_model(package)
-        zones = read_level_zones(package, level.model, ClassDefaults(lane_work_root(REPOSITORY_ROOT, 'world'), ReferenceClientClassScripts(REFERENCE_CLIENT)))
+        scratch_project_root = scratch_work_root(self, 'sky-project-')
+        class_work_root = link_world_class_default_cache(lane_work_root(scratch_project_root, 'world'))
+        zones = read_level_zones(package, level.model, ClassDefaults(class_work_root, ReferenceClientClassScripts(REFERENCE_CLIENT)))
         [zone_index] = sorted(sky_zone_indices(zones))
         gaps = TileStepGapRows(tile_id, SKY_STEP_NAME, {'path': f'maps/{tile_id}.unr', 'sha256': lock_record['eSha256']}, EVIDENCE)
-        converted = convert_tile_sky(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, zone_index, gaps)
+        converted = convert_tile_sky(scratch_project_root, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, zone_index, gaps)
         return converted, gaps.rows()
 
     def test_the_generic_20_20_sky_glb_matches_the_served_sky_except_its_generator_colour_order_and_uv_values(self):

@@ -1,9 +1,11 @@
+import contextlib
 import copy
 import hashlib
 import json
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -20,12 +22,12 @@ from world.collision_step import mover_slot_records
 from world.mover_class_defaults import MoverDefaults, qualified_classes
 from world.mover_records import (MOVER_UNSUPPORTED_TOKENS, MoverUnsupportedError, endpoint_matrix, endpoint_source_rows, indexed_properties,
                                  is_rigid_rows, mover_mesh, non_rigid_key_token, qualified_motion, resolved_field)
+from world import mover_step
 from world.mover_step import (MOVER_STEP_NAME, MoverConversion, MoverStepError, ReadMover, converted_movers, mover_models, read_tile_movers,
                               require_every_mover_classified, run_mover_step)
 from world.static_mesh_step import ConvertedStaticMesh, package_gate_reason
 from world.static_placement_plan import ChunkRectangle
 from world.tile_manifest_step import PENDING_TILE_STEPS, pending_steps_after_sealed, tile_resources
-from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, unit_step_seal
 
 TILE_ID = '00_00'
 LANE_FOLDER = ROOT / 'artifacts' / 'lane-store' / 'world'
@@ -325,6 +327,29 @@ def served_oracle_movers():
     return oracle, json.loads(payload)
 
 
+class SealedMoverUnitTests(unittest.TestCase):
+    def test_a_sealed_movers_unit_returns_the_row_of_its_product_without_reading_the_map_or_beginning_the_unit(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        lane_folder = Path(temporary.name)
+        step_directory = lane_folder / 'work' / 'tile__20_20' / MOVER_STEP_NAME
+        (step_directory / 'products').mkdir(parents=True)
+        (step_directory / 'products' / 'movers.json').write_text(json.dumps({'gapRows': [{'reason': ORACLE_COLOUR_STREAM_GAP_REASON}]}),
+                                                                 encoding='utf-8')
+        ledger = SimpleNamespace(lane_folder=lane_folder, is_sealed=lambda unit_key, fingerprint: True,
+                                 unit_step_directory=lambda unit_key: step_directory, begin=mock.Mock(side_effect=AssertionError('sealed unit begun')))
+        unit = SimpleNamespace(ledger=ledger, unit_key='tile:20_20', fingerprint='f' * 64)
+        with mock.patch.multiple(mover_step, read_tile_map_lock_record=mock.Mock(return_value={'eSha256': 'e' * 64}), MapSources=mock.DEFAULT,
+                                 mover_class_unit_lock=mock.Mock(return_value=contextlib.nullcontext()),
+                                 mover_class_evidence=mock.Mock(return_value=SimpleNamespace(receipt_sha256='c' * 64)),
+                                 mover_unit=mock.Mock(return_value=unit), read_locked_map_package=mock.Mock(side_effect=AssertionError('map read'))):
+            row = run_mover_step(lane_folder, lane_folder / 'client', '20_20')
+        self.assertEqual((row['key'], row['step'], row['status'], row['reason'], row['evidence']),
+                         ('tile:20_20', MOVER_STEP_NAME, 'gap', ORACLE_COLOUR_STREAM_GAP_REASON, 'work/tile__20_20/movers/receipt.json'))
+        self.assertEqual(row['sourceIdentity'], {'path': 'maps/20_20.unr', 'sha256': 'e' * 64})
+        ledger.begin.assert_not_called()
+
+
 def sealed_tile_movers(tile_id):
     product = json.loads((LANE_FOLDER / 'work' / f'tile__{tile_id}' / MOVER_STEP_NAME / 'products' / 'movers.json').read_text(encoding='utf-8'))
     return product, json.loads((LANE_FOLDER / 'l2' / product['manifest']['resource'].removeprefix('/l2/')).read_text(encoding='utf-8'))
@@ -353,18 +378,6 @@ class OracleMoverSubsetTests(unittest.TestCase):
         served_models = {model['id']: model['model']['sha256'] for model in served['models']}
         self.assertEqual({model['id']: model['model']['sha256'] for model in manifest['models']}, served_models)
         self.assertEqual(set(manifest['classEvidence']), {'unit', 'evidenceSha256', 'classes'})
-
-    def test_a_second_run_is_a_ledger_skip_that_keeps_the_sealed_manifest(self):
-        if unit_step_seal(ROOT, 'tile:20_20', MOVER_STEP_NAME, TILE_STEP_SEAL_CHECKS).state != CURRENT_SEAL_STATE:
-            self.skipTest('the real 20_20 movers unit is not current; a world batch reseals it, a test never begins it')
-        first_row = run_mover_step(ROOT, REFERENCE_CLIENT, '20_20')
-        product, _ = sealed_tile_movers('20_20')
-        receipt = (LANE_FOLDER / 'work/tile__20_20/movers/receipt.json').read_bytes()
-        second_row = run_mover_step(ROOT, REFERENCE_CLIENT, '20_20')
-        self.assertEqual((second_row['step'], second_row['status'], second_row['reason']), (MOVER_STEP_NAME, 'gap', ORACLE_COLOUR_STREAM_GAP_REASON))
-        self.assertEqual(second_row, first_row)
-        self.assertEqual((LANE_FOLDER / 'work/tile__20_20/movers/receipt.json').read_bytes(), receipt)
-        self.assertEqual(sealed_tile_movers('20_20')[0]['manifest'], product['manifest'])
 
 
 if __name__ == '__main__':

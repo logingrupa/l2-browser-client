@@ -17,7 +17,6 @@ from reference_client_lock_fixture import lock_client_as_reference_root
 from world.static_collision_sources import ENABLE_COLLISION_FIELD, model_slot_properties, static_mesh_collision_triangles
 
 CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
-DIAGNOSTIC_SLOT_OUTPUT = ROOT / 'artifacts' / 'lane-store' / 'integration' / 'work' / 'diagnostic-slots'
 FIXTURE_TEXTURE = 'FixtureTex.Stone'
 FIXTURE_COMBINER = 'FixtureFx.GlowCombiner'
 ONE_PIXEL_PNG = b'\x89PNG\r\n\x1a\n' + b'fixture one-pixel payload'
@@ -139,7 +138,10 @@ def converted_model_glb_and_manifest(result):
                      'needs the conversion client E:/Lineage2-client, the committed recipes/reference-client-tree.lock.json and the pinned UModel')
 class ConversionClientDiagnosticSlotTests(unittest.TestCase):
     def converted_static_mesh(self, request):
-        converter = Converter(CONVERSION_CLIENT_ROOT, DIAGNOSTIC_SLOT_OUTPUT, UMODEL, project_root=ROOT)
+        scratch_project = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch_project.cleanup)
+        project_root = Path(scratch_project.name)
+        converter = Converter(CONVERSION_CLIENT_ROOT, project_root / 'artifacts' / 'diagnostic-slots', UMODEL, project_root=project_root)
         return converted_model_glb_and_manifest(converter.convert(dict(request)))
 
     def assert_collision_reads_every_slot(self, glb):

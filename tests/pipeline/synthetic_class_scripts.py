@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import shutil
 import tempfile
 from types import SimpleNamespace
 
+from native_assets_lib.class_defaults import CLASS_DEFAULT_CACHE_FOLDER_NAME
 from native_catalog.ue2 import FormatError
 
 TEST_SCRATCH_ROOT = Path(__file__).resolve().parents[2] / 'artifacts' / 'test-scratch'
+WORLD_CLASS_DEFAULT_CACHE = Path(__file__).resolve().parents[2] / 'artifacts' / 'lane-store' / 'world' / 'work' / CLASS_DEFAULT_CACHE_FOLDER_NAME
 
 
 def synthetic_import_table(qualified_imports):
@@ -56,8 +59,24 @@ class SyntheticClassScripts:
         return self.scripts_by_class[class_object][1]
 
 
-def scratch_work_root(test_case, prefix):
+def scratch_folder(add_cleanup, prefix):
     TEST_SCRATCH_ROOT.mkdir(parents=True, exist_ok=True)
-    work_root = Path(tempfile.mkdtemp(prefix=prefix, dir=TEST_SCRATCH_ROOT))
-    test_case.addCleanup(shutil.rmtree, work_root, True)
-    return work_root
+    folder = Path(tempfile.mkdtemp(prefix=prefix, dir=TEST_SCRATCH_ROOT))
+    add_cleanup(shutil.rmtree, folder, True)
+    return folder
+
+
+def scratch_work_root(test_case, prefix):
+    return scratch_folder(test_case.addCleanup, prefix)
+
+
+def link_world_class_default_cache(work_root):
+    cache_folder = Path(work_root) / CLASS_DEFAULT_CACHE_FOLDER_NAME
+    cache_folder.mkdir(parents=True)
+    for cached_class_definition in WORLD_CLASS_DEFAULT_CACHE.glob('*.json'):
+        os.link(cached_class_definition, cache_folder / cached_class_definition.name)
+    return Path(work_root)
+
+
+def scratch_work_root_with_world_class_default_cache(add_cleanup, prefix):
+    return link_world_class_default_cache(scratch_folder(add_cleanup, prefix))

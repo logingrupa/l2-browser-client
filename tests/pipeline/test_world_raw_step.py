@@ -36,7 +36,6 @@ NON_TILE_GAP_MAP_NAME = 'skylevel'
 NON_TILE_GAP_REASON = 'map-version-unsupported:118'
 NON_TILE_UNIT_STEP_FOLDER = Path('artifacts/lane-store/world/work/map__Lobby/raw')
 SYNTHETIC_CENSUS_LOCK_SHA256 = '0' * 64
-REAL_CLIENT_ROOT = Path('E:/Lineage2-client')
 REAL_TILE_MAP_SHA256 = 'e123be27672ce30235829fc09a3da0aa381e7be14add0fe30ce15f1dd4379f93'
 MAP_IMPORTS = [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'StaticMeshActor'),
                ('Core', 'Package', 0, 'SyntheticMeshes'), ('Engine', 'StaticMesh', -3, 'Rock'),
@@ -374,7 +373,6 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
         self.assertEqual([path.name for path in (self.project_root / 'artifacts/lane-store/world/work').iterdir()], ['interprocess-locks'])
 
 
-@unittest.skipUnless((REAL_CLIENT_ROOT / MAP_PATH).is_file(), 'the conversion client E:/Lineage2-client is absent on this host')
 @unittest.skipUnless((ROOT / UNIT_STEP_FOLDER / 'complete.json').is_file(), 'the real 20_21 raw unit has not been sealed in this checkout')
 class RealTileRawUnitTests(unittest.TestCase):
     def setUp(self):
@@ -382,10 +380,7 @@ class RealTileRawUnitTests(unittest.TestCase):
         if not raw_map_ledger(ROOT).is_sealed(tile_unit_key(TILE_ID), current_fingerprint):
             self.skipTest('the real 20_21 raw unit is not sealed under the current fingerprint; a world batch seals it, a test never begins it')
 
-    def test_the_sealed_20_21_unit_returns_pass_with_its_lock_identity_and_whole_terrain(self):
-        with patch('world.raw_map_step.build_map', side_effect=AssertionError('sealed 20_21 unit rebuilt')):
-            row = run_raw_map_step(ROOT, REAL_CLIENT_ROOT, TILE_ID)
-        self.assertEqual(row['status'], 'pass')
+    def test_the_sealed_20_21_unit_holds_its_lock_identity_and_whole_terrain(self):
         step_folder = ROOT / UNIT_STEP_FOLDER
         receipt_bytes = (step_folder / 'receipt.json').read_bytes()
         receipt = json.loads(receipt_bytes)

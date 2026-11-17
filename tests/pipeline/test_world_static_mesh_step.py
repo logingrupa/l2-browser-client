@@ -30,6 +30,7 @@ from world.static_placement_plan import chunk_for_origin, chunk_rectangles, plan
 from world.tile_chunk_plan import ChunkPlanStepError, native_sector_axes, read_locked_map_package, tile_chunk_records
 from world.tile_manifest_step import build_tile_chunk_manifest, tile_store_files
 from support.actor_class_defaults import SyntheticActorClassDefaults
+from synthetic_class_scripts import scratch_work_root_with_world_class_default_cache
 from synthetic_terrain_fixture import synthetic_native_terrain
 
 TILE_ID = '00_00'
@@ -500,8 +501,8 @@ class OracleSectionSubsetTests(unittest.TestCase):
             self.skipTest(f'the {ORACLE_TILE_ID} raw and chunk plan units are not sealed: {error}')
         actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))
         rectangles = chunk_rectangles(unit.chunk_plan, native_terrain(read_locked_map_package(REFERENCE_CLIENT, ORACLE_TILE_ID, lock_record)))
-        return unit, plan_static_placements(actors, rectangles,
-                                            reference_client_class_chains(read_class_evidence(REFERENCE_CLIENT, lane_work_root(ROOT, 'world'))))
+        class_work_root = scratch_work_root_with_world_class_default_cache(self.addCleanup, 'static-mesh-oracle-class-defaults-')
+        return unit, plan_static_placements(actors, rectangles, reference_client_class_chains(read_class_evidence(REFERENCE_CLIENT, class_work_root)))
 
     def test_the_generic_20_20_plan_holds_every_oracle_placement_with_its_mesh_and_rotation_scale(self):
         oracle_section = json.loads(ORACLE_PATH.read_text(encoding='utf-8'))['section']

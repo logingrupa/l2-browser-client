@@ -11,6 +11,7 @@ from material_graph_fixture import build_synthetic_material_package
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
 from support.mapping_size_class_defaults import SYNTHETIC_DEFAULT_MATERIAL, synthetic_class_default_values, use_synthetic_mapping_class_defaults
 from support.synthetic_map_sources import SyntheticMapSources
+from synthetic_class_scripts import scratch_work_root_with_world_class_default_cache
 from world import bsp_material_mapping_size
 from world.bsp_material_mapping_size import (MAPPING_SIZE_ZERO_REASON, MaterialMappingSize, default_material_identity, mapping_size_outcome,
                                              reference_client_class_default_value, surface_material_identities)
@@ -119,11 +120,11 @@ class NullSurfaceMaterialTests(unittest.TestCase):
 class ReferenceClientMappingSizeTests(unittest.TestCase):
     def test_the_locked_fx_e_t_water_chain_and_engine_default_texture_decode_to_their_db3_sizes(self):
         from native_assets_lib.class_defaults import ReferenceClientClassScripts
-        from native_store.store_paths import REPOSITORY_ROOT, lane_work_root
         from world.map_sources import MapSources
         client = REFERENCE_CLIENT.resolve()
         map_sources = MapSources(client)
-        class_default_value = reference_client_class_default_value(lane_work_root(REPOSITORY_ROOT, 'world'), ReferenceClientClassScripts(client))
+        class_work_root = scratch_work_root_with_world_class_default_cache(self.addCleanup, 'mapping-size-class-defaults-')
+        class_default_value = reference_client_class_default_value(class_work_root, ReferenceClientClassScripts(client))
         identities = [f'{REFERENCE_WATER_SHADER_SET}.{name}' for name in ('WaterShader01', 'reflection', 'com', 'ocn_s', 'ocean-s', 'ocn_rot',
                                                                           'TexOscillator0')]
         identities += [f'{REFERENCE_WATER_TEXTURE_SET}.ocean011', f'{REFERENCE_WATER_TEXTURE_SET}.base1', 'Engine.DefaultTexture']
