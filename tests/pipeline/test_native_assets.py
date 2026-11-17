@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import archive_bytes, verify_archive, sha, apply_native_mesh_transform, Converter
 from native_assets_lib.gltf import Document
 from native_assets_lib.animation import read_track, decode_tracks, add_animations
-from native_assets_lib.rigid import is_root_rigid, attach_rigid_part
+from native_assets_lib.rigid import is_root_rigid
 from native_catalog.ue2 import Package, Reader, FormatError
 from reference_client_lock_fixture import lock_client_as_reference_root
 
@@ -265,30 +265,12 @@ class RigidAttachmentTests(unittest.TestCase):
         (root / 'rigid.gltf').write_text(json.dumps(data))
         return Document(root / 'rigid.gltf'), payload
 
-    def test_face_follows_head_palette_with_exact_original_bind_matrix(self):
-        with tempfile.TemporaryDirectory() as directory:
-            document, original = self.document(Path(directory))
-            self.assertTrue(is_root_rigid(document))
-            result = attach_rigid_part(document, 'head')
-            self.assertEqual(document.data['skins'][0]['joints'], [2])
-            self.assertEqual(bytes(document.binary[:len(original)]), original)
-            self.assertEqual(bytes(document.binary[-64:]), original[-64:])
-            self.assertEqual(result['originalBoneIndex'], 1)
-            inverse = struct.unpack('<16f', document.binary[-64:])
-            point_one_unit_above_head_pivot = (0, 2 + inverse[13], 0)
-            point_after_head_z_quarter_turn = (-point_one_unit_above_head_pivot[1], point_one_unit_above_head_pivot[0] + 1,
-                point_one_unit_above_head_pivot[2])
-            self.assertEqual(point_after_head_z_quarter_turn, (-1, 1, 0))
-
-    def test_rigid_attachment_rejects_missing_bone_and_weighted_geometry(self):
+    def test_a_root_only_rigid_skin_is_detected_and_weighted_geometry_is_not(self):
         with tempfile.TemporaryDirectory() as directory:
             document, _ = self.document(Path(directory))
-            with self.assertRaisesRegex(ValueError, 'missing or ambiguous'):
-                attach_rigid_part(document, 'missing')
+            self.assertTrue(is_root_rigid(document))
             document.binary[16:20] = bytes([128, 127, 0, 0])
             self.assertFalse(is_root_rigid(document))
-            with self.assertRaisesRegex(ValueError, 'root-only rigid'):
-                attach_rigid_part(document, 'head')
 
 
 NATIVE = Path('E:/lineage2-client/animations/Fighter.ukx')

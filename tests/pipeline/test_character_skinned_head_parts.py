@@ -18,8 +18,12 @@ def chained_bones(names):
     return [{'name': name, 'parentName': names[index - 1] if index else None} for index, name in enumerate(names)]
 
 
-def skeleton(object_name, bones, influenced_bone_indexes, aliases=()):
-    return {'object': object_name, 'bones': bones, 'aliases': list(aliases), 'influencedBoneIndexes': influenced_bone_indexes}
+MESH_TRANSFORM = {'meshScale': [1.03, 1.03, 1.03], 'meshOrigin': [0.0, 0.0, 25.2], 'rotOrigin': [0, 49152, 0]}
+
+
+def skeleton(object_name, bones, influenced_bone_indexes, aliases=(), mesh_transform=MESH_TRANSFORM):
+    return {'object': object_name, 'bones': bones, 'aliases': list(aliases), 'meshTransform': mesh_transform,
+            'influencedBoneIndexes': influenced_bone_indexes}
 
 
 def generated_request(head_parts, root_object=FACE_OBJECT):
@@ -71,8 +75,7 @@ class SkinnedHeadPartRouteTests(unittest.TestCase):
         self.assertEqual(generated['request']['parts'][1]['rigidAttachment'], {**RIGID_ATTACHMENT, 'rootHeadBoneIndex': 1, 'rootPart': 1})
         self.assertEqual(generated['headParts'][0]['route'], RIGID_HEAD_PART_ROUTE)
         self.assertEqual(generated['request']['limitations'][1:], [
-            f'The face mesh {FACE_OBJECT} is rigid; it follows bone 1 of the root mesh {FACE_OBJECT} with the root inverse bind at that index '
-            '(RM-14) and carries no skeleton or animation of its own.'])
+            f'The face mesh {FACE_OBJECT} is the rigid root mesh; it follows its own bone 1 with its own inverse bind at that index (RM-14).'])
 
     def test_a_skinned_face_with_bones_outside_the_body_skeleton_is_a_gap_that_names_the_missing_bones(self):
         face_bones = chained_bones(BODY_BONE_NAMES + ('Bip01_jaw', 'Bip01_eye'))
@@ -125,6 +128,16 @@ class SkinnedHeadPartRouteTests(unittest.TestCase):
         self.assertEqual(generated['request']['parts'][2]['rigidAttachment'], {**RIGID_ATTACHMENT, 'rootHeadBoneIndex': 3, 'rootPart': 1})
         self.assertEqual(generated['headParts'][1], {'field': 'hair', 'label': 'front', 'object': HAIR_OBJECT, 'boneCount': 2, 'route': 'rigid',
                                                      'rootObject': FACE_OBJECT, 'rootHeadBoneIndex': 3})
+
+    def test_a_rigid_hair_part_whose_native_mesh_transform_differs_from_the_root_records_both_values(self):
+        hair_transform = {**MESH_TRANSFORM, 'meshOrigin': [0.0, 0.0, 25.200000762939453]}
+        read_skeleton, _ = skeleton_reader({BODY_OBJECT: skeleton(BODY_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
+                                            FACE_OBJECT: skeleton(FACE_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),
+                                            HAIR_OBJECT: skeleton(HAIR_OBJECT, chained_bones(BODY_BONE_NAMES), [0], mesh_transform=hair_transform)})
+        generated = generated_with_head_part_routes(generated_request([face_part(), hair_part()]), read_skeleton)
+        self.assertEqual(generated['headParts'][1]['nativeMeshTransformDifference'], {'part': hair_transform, 'root': MESH_TRANSFORM})
+        self.assertIn('25.200000762939453', generated['request']['limitations'][-1])
+        self.assertNotIn('nativeMeshTransformDifference', generated['headParts'][0])
 
     def test_a_rigid_hair_part_whose_root_has_no_head_bone_is_an_unresolved_head_bone_gap(self):
         read_skeleton, _ = skeleton_reader({BODY_OBJECT: skeleton(BODY_OBJECT, chained_bones(BODY_BONE_NAMES), [0]),

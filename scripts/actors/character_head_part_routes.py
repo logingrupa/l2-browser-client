@@ -16,6 +16,7 @@ def skeleton_summary(skeletal_source):
     return {'object': skeletal_source['object'],
             'bones': [{'name': bone['name'], 'parentName': bones[bone['parent']]['name'] if index else None} for index, bone in enumerate(bones)],
             'aliases': skeletal_source['attachmentAliases'],
+            'meshTransform': {field: list(skeletal_source[field]) for field in ('meshScale', 'meshOrigin', 'rotOrigin')},
             'influencedBoneIndexes': sorted({bone for vertex in vertices for bone, weight in vertex['influences'] if weight > 0})}
 
 
@@ -65,7 +66,10 @@ def head_part_route(part, part_skeleton, body_skeleton, root_skeleton):
         return {**route, 'route': SKINNED_HEAD_PART_ROUTE, 'bodyObject': body_skeleton['object'],
                 'missingBones': missing_body_bones(part_skeleton, body_skeleton)}
     index = match_reference_bone(root_skeleton, part[RIGID_ATTACHMENT_FIELD]['bone']) if root_skeleton else UNRESOLVED_BONE_INDEX
-    return {**route, 'route': RIGID_HEAD_PART_ROUTE, 'rootObject': root_skeleton and root_skeleton['object'], ROOT_HEAD_BONE_INDEX_FIELD: index}
+    differing_transform = (root_skeleton is not None and part_skeleton['meshTransform'] != root_skeleton['meshTransform']
+                           and {'part': part_skeleton['meshTransform'], 'root': root_skeleton['meshTransform']})
+    return {**route, 'route': RIGID_HEAD_PART_ROUTE, 'rootObject': root_skeleton and root_skeleton['object'], ROOT_HEAD_BONE_INDEX_FIELD: index,
+            **({'nativeMeshTransformDifference': differing_transform} if differing_transform else {})}
 
 
 def head_part_gap_reason(route, root_skeleton):
@@ -80,8 +84,16 @@ def skinned_head_part_limitation(route):
 
 
 def rigid_head_part_limitation(route):
-    return (f'The {route["field"]} mesh {route["object"]} is rigid; it follows bone {route[ROOT_HEAD_BONE_INDEX_FIELD]} of the root mesh '
-            f'{route["rootObject"]} with the root inverse bind at that index (RM-14) and carries no skeleton or animation of its own.')
+    if route['object'] == route['rootObject']:
+        return (f'The {route["field"]} mesh {route["object"]} is the rigid root mesh; it follows its own bone {route[ROOT_HEAD_BONE_INDEX_FIELD]} '
+                'with its own inverse bind at that index (RM-14).')
+    limitation = (f'The {route["field"]} mesh {route["object"]} is rigid; it follows bone {route[ROOT_HEAD_BONE_INDEX_FIELD]} of the root mesh '
+                  f'{route["rootObject"]} with the root inverse bind at that index (RM-14) and carries no skeleton or animation of its own.')
+    difference = route.get('nativeMeshTransformDifference')
+    if difference:
+        limitation += (f' Its native float32 mesh transform {difference["part"]} differs from the root {difference["root"]}; the converter applies '
+                       'the transform both derive from the UEViewer dump, which is the same for both.')
+    return limitation
 
 
 def routed_part(part, route):

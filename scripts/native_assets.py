@@ -17,7 +17,7 @@ from native_assets_lib.gltf import Document, json_bytes, safe_name
 from native_assets_lib.asset_manifest import asset_coordinates_record, build_asset_manifest, reference_client_build, require_supported_asset_manifest, source_path_record
 from native_assets_lib.umodel_import_closure import index_package_files_by_casefolded_stem, require_lock_equal_import_closure, resolve_package_path
 from native_assets_lib.animation import add_animations
-from native_assets_lib.rigid import is_root_rigid, attach_rigid_part
+from native_assets_lib.rigid import RIGID_ATTACHMENT_FIELD, ROOT_PART_FIELD, attach_rigid_head_parts, is_root_rigid
 from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.source_table_binding import material_overrides_by_slot, verify_source_table_binding
@@ -444,11 +444,11 @@ class Converter:
             else:
                 limitations.append('No native animation set requested; model contains the bind pose only.')
             limitations.append('Native mesh origin/scale/rotation are applied in a dedicated parent. Runtime actor/class DrawScale and equipment composition are not inferred.')
-            if request.get('rigidAttachment'):
-                attachment_evidence = self.verify_actor_attachment(work, request) if request['rigidAttachment'].get('source') else {'binding': 'explicit-recipe-attachment'}
-                metadata['rigidAttachment'] = attach_rigid_part(document, request['rigidAttachment']['bone'])
-                metadata['rigidAttachment']['sourceEvidence'] = attachment_evidence
-                limitations.extend(metadata['rigidAttachment']['limitations'])
+            if request.get(RIGID_ATTACHMENT_FIELD):
+                if not request.get('parts') or not is_root_rigid(document):
+                    raise ValueError(f'{item["object"]} rigid attachment requires an assembly part with one verified root-only rigid skin')
+                metadata['rigidAttachment'] = {'sourceEvidence': self.verify_actor_attachment(work, request)
+                                               if request[RIGID_ATTACHMENT_FIELD].get('source') else {'binding': 'explicit-recipe-attachment'}}
             elif is_root_rigid(document):
                 if request.get('parts'):
                     raise ValueError(f'{item["object"]} is a rigid root-bound part; assembly requires an explicit actor-bone rigidAttachment')
@@ -586,7 +586,7 @@ class Converter:
                 if item['className'] not in allowed:
                     raise ValueError(f'{item["className"]} has no {kind} adapter; native effects and scripts are not static meshes')
                 if kind == 'model':
-                    part_request = {**request, **initial_request}
+                    part_request = assembly_part_request(request, initial_request, 0)
                     document, metadata, limitations, animation_report, events, weight_source = self.model_part(work, part_request, package, item, source_path, files, mime)
                     weight_sources = [weight_source] if weight_source else []
                     reports = []
@@ -596,8 +596,9 @@ class Converter:
                         if len(request['parts']) > 16:
                             raise ValueError('Assembly exceeds 16 parts')
                         part_metadata = [metadata]
+                        layouts = [assembly_part_layout(initial_request, item, metadata, weight_source, 0, 0, len(document.data['nodes']))]
                         for part_index, part in enumerate(request['parts'][1:], 1):
-                            part_request = {**request, **part}
+                            part_request = assembly_part_request(request, part, part_index)
                             part_path, part_package = self.package(part['package'])
                             part_item = self.select(part_package, part['object'], 'SkeletalMesh')
                             part_work = work / f'part-{part_index:02d}'
@@ -605,6 +606,8 @@ class Converter:
                             part_doc, info, part_limits, report, part_events, part_weights = self.model_part(part_work, part_request, part_package, part_item, part_path)
                             if part_weights:
                                 weight_sources.append(part_weights)
+                            layouts.append(assembly_part_layout(part, part_item, info, part_weights, len(document.data.get('skins', [])),
+                                                                len(document.data['nodes']), len(part_doc.data['nodes'])))
                             document.merge(part_doc)
                             part_metadata.append(info)
                             limitations.extend(part_limits)
@@ -612,6 +615,9 @@ class Converter:
                                 reports.append(report)
                             if part_events and part_events != events:
                                 raise ValueError('Assembly parts use different event/animation sets')
+                        for part_index, attachment in attach_rigid_head_parts(document, layouts).items():
+                            part_metadata[part_index]['rigidAttachment'].update(attachment)
+                            limitations.extend(attachment['limitations'])
                         identity = 'assembly:' + request.get('name', item['object'])
                         source['assembly'] = [info['sourceObject'] for info in part_metadata]
                         metadata = {'parts': part_metadata, 'assemblyName': request.get('name', item['object']), 'animationClips': len(document.data.get('animations', []))}
@@ -734,6 +740,18 @@ class Converter:
         except Exception as error:
             (work / 'failure.txt').write_text(str(error), encoding='utf-8')
             raise
+
+
+def assembly_part_request(request, part, part_index):
+    part_request = {**request, **part}
+    if RIGID_ATTACHMENT_FIELD in part and part[RIGID_ATTACHMENT_FIELD].get(ROOT_PART_FIELD) != part_index:
+        part_request.pop('animation', None)
+    return part_request
+
+
+def assembly_part_layout(part, item, metadata, weight_source, skin_index, node_start, node_count):
+    return {'request': part, 'object': item['object'], 'skin': skin_index, 'nodeStart': node_start, 'nodeCount': node_count,
+            'weights': weight_source, 'meshTransform': metadata.get('nativeMeshTransform')}
 
 
 def apply_native_mesh_transform(document, dump):

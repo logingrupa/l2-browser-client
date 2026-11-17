@@ -1,4 +1,3 @@
-"""Pack UModel glTF without rewriting geometry, skins, or animation accessor bytes."""
 import copy
 import hashlib
 import json
@@ -94,8 +93,6 @@ class Document:
         return len(textures) - 1
 
     def repair_bounds(self):
-        # UModel writes bounds with %g, losing precision. Recompute metadata only;
-        # original buffer bytes stay identical, including inverse bind matrices.
         formats = {5120: ('b', 1), 5121: ('B', 1), 5122: ('h', 2), 5123: ('H', 2), 5125: ('I', 4), 5126: ('f', 4)}
         dimensions = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}
         for accessor in self.data.get('accessors', []):
@@ -132,9 +129,6 @@ class Document:
                 stride = view.get('byteStride', 16)
                 vectors = [struct.unpack_from('<4f', self.binary, offset + index * stride) for index in range(accessor['count'])]
                 if all(x == y == z == 0 for x, y, z, _ in vectors):
-                    # Build1590 emits zero vectors as tangents. glTF disallows
-                    # them. Preserve their accessor and bytes as evidence but
-                    # omit the unusable optional attribute from primitives.
                     removed = attributes.pop('TANGENT')
                     self.repairs.append({'kind': 'omit-zero-tangent-attribute', 'accessor': removed, 'bytesPreserved': True})
 
@@ -147,7 +141,6 @@ class Document:
         return struct.pack('<III', 0x46546c67, 2, length) + struct.pack('<I4s', len(encoded), b'JSON') + encoded + struct.pack('<I4s', len(binary), b'BIN\0') + binary
 
     def merge(self, other):
-        """Join native parts, retaining each skin and all original buffer bytes."""
         source = copy.deepcopy(other.data)
         collections = ('bufferViews', 'accessors', 'images', 'samplers', 'textures', 'materials', 'meshes', 'skins', 'nodes')
         base = {name: len(self.data.setdefault(name, [])) for name in collections}
@@ -215,3 +208,30 @@ class Document:
         self.original_buffers.extend(other.original_buffers)
         self.repairs.extend(other.repairs)
         self._accessor_cache.clear()
+
+    def remove_nodes(self, removed_nodes):
+        removed = set(removed_nodes)
+        nodes = self.data['nodes']
+        skins, clips = self.data.get('skins', []), self.data.get('animations', [])
+        referenced = ({joint for skin in skins for joint in skin['joints']} | {skin['skeleton'] for skin in skins if 'skeleton' in skin}
+                      | {channel['target']['node'] for clip in clips for channel in clip['channels']})
+        if removed & referenced:
+            raise ValueError('Removed glTF nodes are still skin joints, skeleton roots or animation targets')
+        if any(child not in removed for node in removed for child in nodes[node].get('children', [])):
+            raise ValueError('A removed glTF node has a kept child')
+        kept = {old: new for new, old in enumerate(index for index in range(len(nodes)) if index not in removed)}
+        self.data['nodes'] = [node for index, node in enumerate(nodes) if index not in removed]
+        for node in self.data['nodes']:
+            if 'children' in node:
+                node['children'] = [kept[child] for child in node['children'] if child not in removed]
+                if not node['children']:
+                    del node['children']
+        for scene in self.data['scenes']:
+            scene['nodes'] = [kept[node] for node in scene['nodes'] if node not in removed]
+        for skin in skins:
+            skin['joints'] = [kept[joint] for joint in skin['joints']]
+            if 'skeleton' in skin:
+                skin['skeleton'] = kept[skin['skeleton']]
+        for clip in clips:
+            for channel in clip['channels']:
+                channel['target']['node'] = kept[channel['target']['node']]

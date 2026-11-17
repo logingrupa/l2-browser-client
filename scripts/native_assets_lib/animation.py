@@ -1,11 +1,19 @@
-"""Exact reviewed UE2 123/28 and 123/30 AnalogTrack keys from UEViewer UnMesh2.h.
-
-No frame resampling, root-motion removal, pose grounding, or height fitting.
-"""
 import math
 import struct
 from collections import Counter
 from native_catalog.ue2 import Reader, FormatError, animation_layout
+
+GLTF_METRES_PER_NATIVE_UNIT = .01
+
+
+def gltf_translation_from_native(translation):
+    x, y, z = translation
+    return (x * GLTF_METRES_PER_NATIVE_UNIT, z * GLTF_METRES_PER_NATIVE_UNIT, y * GLTF_METRES_PER_NATIVE_UNIT)
+
+
+def gltf_rotation_from_native(quaternion, is_root_bone):
+    x, y, z, w = quaternion
+    return (-x, -z, -y, w) if is_root_bone else (x, z, y, w)
 
 
 def read_track(reader):
@@ -48,10 +56,6 @@ def add_animations(document, package, item):
     for index, bone in enumerate(animation['bones']):
         key = bone['name'].casefold()
         bone_map.setdefault(key, []).append(index)
-    # Fighter.MFighter_anim misspells its right Finger01 as left Finger01.
-    # Match names and already-mapped parents, resolving this duplicate only at
-    # the same bone index with the same parent. Weapon/shield siblings have
-    # different array order, so using indices for every bone would be wrong.
     joint_indices = {node: index for index, node in enumerate(joints)}
     parents = {child: parent for parent, node in enumerate(document.data['nodes']) for child in node.get('children', [])}
     source_counts = Counter(bone['name'].casefold() for bone in animation['bones'])
@@ -82,21 +86,13 @@ def add_animations(document, package, item):
                 if not keys:
                     continue
                 time_scale = sequence['numFrames'] / metadata['trackTime'] if metadata['trackTime'] > 0 else 1
-                # UEViewer GetBonePosition evenly spans NumFrames when a
-                # native track has no explicit time array. Its glTF exporter
-                # incorrectly assumes one key per frame in that special case.
                 times = [index * sequence['numFrames'] / len(keys) / sequence['rate'] for index in range(len(keys))] if len(keys) == 1 or not track['times'] else [value * time_scale / sequence['rate'] for value in track['times']]
                 if times[0] < 0:
                     raise FormatError('Negative native animation key time')
                 if kind == 'translation':
-                    values = [(x * .01, z * .01, y * .01) for x, y, z in keys]
+                    values = [gltf_translation_from_native(key) for key in keys]
                 else:
-                    # ExportGLTF.cpp TransformRotation swaps Y/Z only. Its
-                    # q.W *= -1 line is commented out; applying it would make
-                    # animation rotations disagree with exported bind nodes.
-                    values = [(x, z, y, w) for x, y, z, w in keys]
-                    if mesh_bone == 0:
-                        values = [(-x, -y, -z, w) for x, y, z, w in values]
+                    values = [gltf_rotation_from_native(key, mesh_bone == 0) for key in keys]
                 sampler = len(clip['samplers'])
                 clip['samplers'].append({'input': document.accessor([(time,) for time in times], 1, True), 'output': document.accessor(values, width), 'interpolation': 'LINEAR'})
                 clip['channels'].append({'sampler': sampler, 'target': {'node': node, 'path': kind}})
