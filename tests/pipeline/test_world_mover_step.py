@@ -33,6 +33,8 @@ ORACLE_PATH = ROOT / 'recipes' / 'world' / 'oracle' / '20_20' / 'expected.json'
 SERVED_STORE = ROOT / 'public' / 'l2'
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
 MOVER_CLASS_EVIDENCE = LANE_FOLDER / 'work' / 'class__Engine.Mover' / 'class-defaults' / 'products'
+ORACLE_COLOUR_STREAM_GAP_REASON = 'static-mesh-colour-stream-layout-unreviewed:123/28'
+ORACLE_COLOUR_STREAM_GAP_OBJECTS = ('l2fortress_02_s.Fort02_indoor', 'l2fortress_02_s.fort02_wall_door')
 SLOT_ROWS = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 30.0, 1.0]]
 OPEN_ROWS = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 166.0, 1.0]]
 
@@ -338,7 +340,8 @@ class OracleMoverSubsetTests(unittest.TestCase):
         self.assertEqual(sorted(mover['id'] for mover in manifest['movers']), sorted(oracle['moverIds']))
         self.assertEqual([model['id'] for model in manifest['models']], oracle['modelIds'])
         self.assertEqual(product['exportCount'], 8)
-        self.assertEqual(product['gapRows'], [])
+        self.assertEqual([(row['step'], row['status'], row['reason'], row['sourceIdentity']['object']) for row in product['gapRows']],
+                         [(MOVER_STEP_NAME, 'gap', ORACLE_COLOUR_STREAM_GAP_REASON, model_object) for model_object in ORACLE_COLOUR_STREAM_GAP_OBJECTS])
         served_by_id = {mover['id']: mover for mover in served['movers']}
         for mover in manifest['movers']:
             reference = served_by_id[mover['id']]
@@ -358,7 +361,7 @@ class OracleMoverSubsetTests(unittest.TestCase):
         product, _ = sealed_tile_movers('20_20')
         receipt = (LANE_FOLDER / 'work/tile__20_20/movers/receipt.json').read_bytes()
         second_row = run_mover_step(ROOT, REFERENCE_CLIENT, '20_20')
-        self.assertEqual((second_row['step'], second_row['status']), (MOVER_STEP_NAME, 'pass'))
+        self.assertEqual((second_row['step'], second_row['status'], second_row['reason']), (MOVER_STEP_NAME, 'gap', ORACLE_COLOUR_STREAM_GAP_REASON))
         self.assertEqual(second_row, first_row)
         self.assertEqual((LANE_FOLDER / 'work/tile__20_20/movers/receipt.json').read_bytes(), receipt)
         self.assertEqual(sealed_tile_movers('20_20')[0]['manifest'], product['manifest'])
