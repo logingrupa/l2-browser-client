@@ -2,6 +2,7 @@ import math
 import struct
 from typing import NamedTuple
 
+from native_assets_lib.texture_source_reader import DXT1_FORMAT_ID
 from native_catalog.ue2 import FormatError, Reader
 from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 
@@ -49,9 +50,6 @@ class LightmapPage(NamedTuple):
     slot_count: int
     revision: int
     mips: tuple
-    texture_format: int
-    width: int
-    height: int
     compressed_revision: int
 
 
@@ -175,10 +173,12 @@ def read_lightmap_page(reader, texture_index, slot, slot_count, record_count):
         if reader.position != skip_position:
             raise FormatError(f'lightmap texture {texture_index} page {slot} mip {edge} ends at {reader.position}, not its skip position {skip_position}')
     texture_format, width, height, compressed_revision = reader.number('B'), reader.number('i'), reader.number('i'), reader.number('i')
+    if texture_format != DXT1_FORMAT_ID:
+        raise FormatError(f'lightmap texture {texture_index} page {slot} declares texture format {texture_format}, not DXT1 ({DXT1_FORMAT_ID})')
     edge = LIGHTMAP_PAGE_MIPS[0][0]
     if (width, height) != (edge, edge):
         raise FormatError(f'lightmap texture {texture_index} page {slot} declares {width}x{height}, not the {edge}x{edge} of its first mip')
-    return tag, members, LightmapPage(texture_index, slot, slot_count, revision, tuple(mips), texture_format, width, height, compressed_revision)
+    return tag, members, LightmapPage(texture_index, slot, slot_count, revision, tuple(mips), compressed_revision)
 
 
 def read_lightmap_texture(reader, texture_index, first_record, record_count):

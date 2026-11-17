@@ -1,6 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
+import struct
 import sys
 import unittest
 from unittest import mock
@@ -13,7 +14,7 @@ from native_catalog.ue2 import FormatError
 from native_store.gap_rows import load_gap_reason_patterns
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
-from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, INSTANCE_COLOUR_REVISION, INSTANCE_COLOURS, LIGHT_CLASS, LIGHTING_CLASS_DEFAULTS,
+from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, INSTANCE_COLOURS, LIGHT_CLASS, LIGHTING_CLASS_DEFAULTS,
                                             SCENE_LIGHTS, SECTOR_LIGHTS, SECTOR_SHADOW_MAPS, read_synthetic_chain, synthetic_actor_rows,
                                             synthetic_lighting_package)
 from support.lightmap_tail_fixture import (FIXTURE_COMPRESSED_REVISION, FIXTURE_PAGE_REVISION, FIXTURE_TEXTURE_FORMAT, build_lightmap_tail,
@@ -68,8 +69,7 @@ class BspLightmapPayloadTests(unittest.TestCase):
         self.assertEqual(reasons, [])
         self.assertEqual((named['LMPG.revision'].values, named['LMPG.compressedRevision'].values), ((FIXTURE_PAGE_REVISION,) * 2,
                                                                                                     (FIXTURE_COMPRESSED_REVISION,) * 2))
-        self.assertEqual((named['LMPG.format'].values, named['LMPG.width'].values, named['LMPG.height'].values),
-                         ((FIXTURE_TEXTURE_FORMAT,) * 2, (512, 512), (512, 512)))
+        self.assertFalse({'LMPG.format', 'LMPG.width', 'LMPG.height'} & set(named))
         self.assertEqual((named['LMSC.sunAffect'].values, counts['sunAffectedSections']), ((0,), 0))
         self.assertEqual(bytes(named['LMPG.texels'].values), b''.join(page_mip_bytes(11) + page_mip_bytes(97)))
         self.assertEqual(named['LMPG.texelStart'].values, (0, 131072, 163840, 294912, 327680))
@@ -128,6 +128,15 @@ class BspLightmapPayloadTests(unittest.TestCase):
         with self.assertRaisesRegex(FormatError, 'zone 9 outside the 2 level zones'):
             bsp_lightmap_arrays(package, read_bsp_lightmaps(package, model), model, [], SUN_ZONES)
 
+    def test_a_page_whose_texture_format_is_not_dxt1_is_refused(self):
+        package, model, _ = three_surface_lightmaps()
+        footer = struct.pack('<B3i', FIXTURE_TEXTURE_FORMAT, 512, 512, FIXTURE_COMPRESSED_REVISION)
+        damaged = bytearray(package.data)
+        damaged[damaged.index(footer)] = FIXTURE_TEXTURE_FORMAT + 5
+        package.data = bytes(damaged)
+        with self.assertRaisesRegex(FormatError, 'texture format 8, not DXT1'):
+            read_bsp_lightmaps(package, model)
+
     def test_a_mip_whose_skip_position_disagrees_is_refused(self):
         package, model, _ = three_surface_lightmaps()
         damaged = bytearray(package.data)
@@ -168,8 +177,8 @@ class LightingActorTests(unittest.TestCase):
                          list(ENVIRONMENT_LIGHTS))
         named = arrays_by_name(static_mesh_light_list_arrays(light_lists))
         self.assertEqual((named['SMLL.actorExportIndex'].values, named['SMLL.instanceExportIndex'].values), ((9,), (4,)))
-        self.assertEqual((bytes(named['SMIC.bytes'].values), named['SMIC.revision'].values, named['SMLL.colorCount'].values),
-                         (INSTANCE_COLOURS, (INSTANCE_COLOUR_REVISION,), (2,)))
+        self.assertEqual(named['SMLL.colorCount'].values, (len(INSTANCE_COLOURS) // 4,))
+        self.assertFalse({'SMIC.bytes', 'SMIC.revision'} & set(named))
         self.assertEqual((named['SMSC.light'].values, bytes(named['SMSC.bits'].values)), ((1, 2), b'\x05\x0a\x01'))
         self.assertEqual((named['SMSC.bitStart'].values, named['SMEN.hour'].values), ((0, 1, 3), (12.0,)))
 
@@ -226,7 +235,7 @@ class LightingActorTests(unittest.TestCase):
 class LightingRegistrationTests(unittest.TestCase):
     def test_the_step_kind_and_reasons_are_registered(self):
         self.assertIn(LIGHTING_STEP_NAME, TILE_STEP_NAMES)
-        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 4)
+        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 5)
         self.assertIn('lighting', load_tile_manifest_vocabulary().resource_kinds)
         patterns = load_gap_reason_patterns()
         for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large',
@@ -269,9 +278,10 @@ class RealClientLightmapTests(unittest.TestCase):
                           'zoneIndex': [record.zone_index for record in records], 'level': [record.tag for record in records],
                           'revision': [record.revision for record in records]}, expected['records'])
         self.assertEqual([len(texture.pages) for texture in lightmaps.textures], expected['groupCounts'])
-        self.assertEqual([{'group': page.texture, 'slot': page.slot, 'revision': page.revision, 'format': page.texture_format, 'width': page.width,
-                           'height': page.height, 'compressedRevision': page.compressed_revision} for page in lightmaps.pages],
-                         expected['atlasChildren'])
+        self.assertEqual({(child['format'], child['width'], child['height']) for child in expected['atlasChildren']}, {(FIXTURE_TEXTURE_FORMAT, 512, 512)})
+        self.assertEqual([{'group': page.texture, 'slot': page.slot, 'revision': page.revision, 'compressedRevision': page.compressed_revision}
+                          for page in lightmaps.pages],
+                         [{key: child[key] for key in ('group', 'slot', 'revision', 'compressedRevision')} for child in expected['atlasChildren']])
 
     def test_the_20_21_intensity_maps_carry_the_db7_times_and_samples(self):
         from world.native_terrain_sectors import native_terrain
@@ -284,12 +294,11 @@ class RealClientLightmapTests(unittest.TestCase):
         sample = expected['sample']
         self.assertEqual([values[sample['y'] * intensity_maps.width + sample['x']] for values in intensity_maps.intensities], sample['values'])
 
-    def test_static_mesh_actor_1905_keeps_the_db7_instance_colours_and_hourly_masks(self):
+    def test_static_mesh_actor_1905_keeps_the_db7_colour_count_and_hourly_masks(self):
         from world.light_actors import read_static_mesh_light_list
         expected = self.expected['staticMesh']['instance']
         light_list = read_static_mesh_light_list(self.package, expected['actorExportIndex'], expected['instanceExportIndex'])
-        self.assertEqual((light_list.color_count, list(light_list.instance_colours[:4]), light_list.instance_colour_revision),
-                         (expected['colourCount'], expected['vertex0Bgra'], expected['revision']))
+        self.assertEqual(light_list.color_count, expected['colourCount'])
         self.assertEqual(len(light_list.scene_lights), expected['sceneLightCount'])
         self.assertEqual([{'light': entry.light_reference, 'maskHex': entry.visibility_bits.hex(), 'flag': entry.applied}
                           for entry in light_list.environment_lights], expected['environmentLights'])
