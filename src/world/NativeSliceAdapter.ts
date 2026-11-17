@@ -11,7 +11,7 @@ type MoveLocalCommand = Extract<WorldCommand, { readonly type: "move-local" }>;
 type SpawnEvent = Extract<WorldEvent, { readonly type: "spawn" }>;
 export type SpawnCollisionOfEntity = (entity: WorldEntity) => SourceCollisionCylinder | null;
 
-export interface NativeSliceLocomotion {
+interface NativeSliceLocomotion {
   readonly walkSupported: boolean;
   readonly specialAttackPreviewSupported?: boolean;
   readonly speed?: NativeSliceSpeedProfile;

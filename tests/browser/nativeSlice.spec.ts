@@ -104,6 +104,13 @@ async function assertMaterialOverride(page: Page, sandbox: SandboxState) {
     }
   }
 }
+async function rm12SettledBottomGapByFloorKind(): Promise<ReadonlyMap<string, number>> {
+  const document = JSON.parse(await readFile(resolve("tests/fixtures/movement/pawn-floor-placement-rm12.json"), "utf8")) as {
+    floorFixtures: { primitive: string; branch: string; geometricBottomGapNominal: number }[] };
+  const settledGap = (primitive: string) => document.floorFixtures.find(row => row.primitive === primitive && row.branch === "downward-settle")!.geometricBottomGapNominal;
+  return new Map([["terrain", settledGap("Terrain")], ["bsp-tree", settledGap("BSP")]]);
+}
+
 function errorsFor(page: Page) {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -151,19 +158,21 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   assertRigs(initial, sandbox, sandbox.settings.leatherShirt);
   await expect.poll(() => page.evaluate(() => window.__nativeSlice!.snapshot().collisionCells!.status), { timeout: 120_000 }).toBe("resident");
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const settledBottomGapByFloorKind = await rm12SettledBottomGapByFloorKind();
+  const collisionHeightByEntityId = new Map([["local-player", defaultNativePlayerProfile.collisionHeight], ["native-musveren", initial.nativeNpcProfile!.collisionHeight]]);
+  const presentedPawns = await page.evaluate(() => window.__nativeSlice!.snapshot().movement!.presenter.pawns);
   for (const actor of (await read(page)).entities) {
     const [collisionSurfaceY] = await page.evaluate(({ x, z }) => window.__nativeSlice!.collisionSurfaceHeightsAt!(x, z), actor.position);
-    expect(actor.groundClearance).toBeGreaterThan(0);
-    expect(actor.position.y - actor.groundClearance).toBeCloseTo(collisionSurfaceY!, 4);
+    const pawn = presentedPawns.find(candidate => candidate.entityId === actor.id)!;
+    expect(pawn).toMatchObject({ mode: "walking", heldReason: null, isMoving: false });
+    const settledBottomGap = settledBottomGapByFloorKind.get(pawn.floor!.kind)!;
+    expect(settledBottomGap).toBeDefined();
+    expect(actor.position.y - collisionSurfaceY!).toBeCloseTo((collisionHeightByEntityId.get(actor.id)! + settledBottomGap) / 100, 4);
     if (actor.id === "native-musveren") {
-      const musverenCollisionHeightMetres = .36, musverenDrawScale = 1.2;
+      const musverenDrawScale = 1.2;
       const musverenIdleBoundsAtUnitActorScale = { minimumY: -.11751600205898288, maximumY: .2797630667686462 };
-      expect(actor.groundClearance).toBeCloseTo(musverenCollisionHeightMetres, 8);
       expect(actor.bounds.minimum[1]).toBeCloseTo(musverenIdleBoundsAtUnitActorScale.minimumY * musverenDrawScale, 5);
       expect(actor.bounds.maximum[1]).toBeCloseTo(musverenIdleBoundsAtUnitActorScale.maximumY * musverenDrawScale, 5);
-      expect(actor.position.y + actor.bounds.minimum[1]! - collisionSurfaceY!).toBeGreaterThan(.2);
-    } else {
-      expect(actor.position.y + actor.bounds.minimum[1]! - collisionSurfaceY!).toBeCloseTo(0, 4);
     }
   }
   await page.getByRole("button", { name: "Run", exact: true }).click();
@@ -203,7 +212,6 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await expect.poll(async () => (await entity(page, "native-musveren")).playback?.playing, { timeout: 35_000 }).toBe(false);
   const dead = await entity(page, "native-musveren");
   expect(dead.playback).toMatchObject({ activeClip: "death", looping: false, playing: false });
-  expect(dead.groundClearance).toBeCloseTo(.36, 8);
   expect(dead.position).toEqual(initial.entities.find(actor => actor.id === "native-musveren")!.position);
   await mkdir(evidence, { recursive: true });
   await page.getByTestId("dev-sheet-toggle").click();

@@ -21,8 +21,7 @@ export function hasUnappliedActorPivot(npcProfile: NativeNpcProfile): boolean {
 
 export function nativeNpcCharacterProfile(npcProfile: NativeNpcProfile, asset: NativeCharacterProfile["asset"]): NativeCharacterProfile {
   const [scaleX, scaleY, scaleZ] = npcProfile.drawScale3D;
-  return { asset, clips: nativeNpcStateClips, collisionHalfHeight: npcProfile.collisionHeight / npcProfile.sourceUnitsPerMetre,
-    actorScale: new Vector3(scaleX, scaleZ, scaleY).scale(npcProfile.drawScale) };
+  return { asset, clips: nativeNpcStateClips, actorScale: new Vector3(scaleX, scaleZ, scaleY).scale(npcProfile.drawScale) };
 }
 
 export function convertedNpcAppearanceId(record: NativeNpcCatalogRecord): string {

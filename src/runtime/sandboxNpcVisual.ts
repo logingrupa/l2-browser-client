@@ -36,7 +36,7 @@ export function createMissingAssetMarkerVisual(scene: Scene, entity: WorldEntity
   animation.setState(entity.animation);
   return {
     root, animation, hasNativeModel: false, bounds: missingAssetMarkerPresentationBounds, modelId: null, missingAssetDiagnostic,
-    ready: Promise.resolve(), groundClearance: 0, forwardDirection: null,
+    ready: Promise.resolve(), forwardDirection: null,
     attachmentSnapshot: () => [], attachmentAnchor: () => null, sourceClock: () => null, setEntity() {},
     dispose() { animation.dispose(); root.dispose(); },
   };

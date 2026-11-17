@@ -32,7 +32,6 @@ describe("sandbox NPC appearances", () => {
     expect(sandboxNpcAppearances(sources)(gremlinRecord)).toEqual({ appearanceId: "native-npc:20001" });
     const profile = sources.characterProfiles.get("native-npc:20001")!;
     expect(profile.clips).toEqual(nativeNpcStateClips);
-    expect(profile.collisionHalfHeight).toBe(.15);
     expect(profile.actorScale?.asArray()).toEqual([1, 3, 2]);
     if (typeof profile.asset !== "function") throw new Error("the converted NPC profile must load its model on spawn");
     const asset = await profile.asset(new AbortController().signal);

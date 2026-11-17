@@ -34,7 +34,8 @@ import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionC
 import { isSceneSuspended } from "../engine/renderSuspension";
 import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
 import { sandboxCharacterVisualFactory } from "./sandboxCharacterVisual";
-import { sandboxCharacterAppearances, servedPlayerAppearanceId } from "./sandboxCharacterAppearances";
+import { sandboxCharacterAppearances, servedPlayerAppearanceId, servedPlayerCharacterProfile } from "./sandboxCharacterAppearances";
+import { collisionCylinderOf, sandboxSpawnCollision } from "./sandboxSpawnCollision";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
 import { actorClipListingEvents, wireSpawnedActorSounds } from "./spawnedActorSoundWiring";
 import { createSandboxRuntimeActions } from "./sandboxRuntimeActions";
@@ -112,10 +113,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   }
   const fighter = assets.get(playerProfile.catalogId)!, monster = assets.get("musveren:0")!;
   const profiles = new Map<string, NativeCharacterProfile>([
-    [appearanceId, { asset: fighter,
-      clips: playerProfile.clips,
-      upperItems: new Map(playerProfile.upperItems.map(item => [item.itemId, assets.get(item.catalogId)!])),
-      forwardAxis: Vector3.FromArray(playerProfile.forwardAxis), actorScale: Vector3.FromArray(playerProfile.actorScale) }],
+    [appearanceId, { ...servedPlayerCharacterProfile(playerProfile, fighter),
+      upperItems: new Map(playerProfile.upperItems.map(item => [item.itemId, assets.get(item.catalogId)!])) }],
     ["native-musveren", nativeNpcCharacterProfile(musveren, monster)],
   ]);
   const sandboxAppearanceOfNpc = sandboxNpcAppearances({ catalog: servedCatalog, npcProfiles: catalog.npcProfiles,
@@ -164,13 +163,15 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       { displayName: playerProfile.name, appearanceId }, { walkSupported: locomotionClips.walkClip !== null,
         specialAttackPreviewSupported: specialAttackPreview.clip !== null,
         speed: nativeSliceSpeedProfile(playerProfile.id, playerProfile.sourceUnitsPerMetre),
-        collision: { radius: playerProfile.collisionRadius, height: playerProfile.collisionHeight },
-        moveTypes: { walk: committedMovementRules.pawn.walkMoveType, run: committedMovementRules.pawn.runMoveType } });
+        collision: collisionCylinderOf(playerProfile),
+        moveTypes: { walk: committedMovementRules.pawn.walkMoveType, run: committedMovementRules.pawn.runMoveType },
+        spawnCollision: sandboxSpawnCollision({ catalogIndex, npcProfiles: catalog.npcProfiles, playerProfiles: playerChoices,
+          cylinderByAppearanceId: new Map([["native-musveren", collisionCylinderOf(musveren)]]) }) });
     boundaryReleases.push(() => adapter.dispose());
     const movementLifetime = new AbortController();
     boundaryReleases.push(() => movementLifetime.abort());
     const sectionStreamsTileCollision = selectedNativeTileIdentity(window.location) !== null;
-    const movement = wireWorldMovement({ adapter, camera, rules: committedMovementRules, localPlayerId, collisionWorld,
+    const movement = wireWorldMovement({ adapter, initialSpawns: adapter.initialSpawnEvents(), camera, rules: committedMovementRules, localPlayerId, collisionWorld,
       loadCollisionCells: !section ? () => Promise.reject(new Error("No native world section is loaded, so no tile collision is resident."))
         : sectionStreamsTileCollision ? () => Promise.resolve(null) : (world, lifetime) => loadTileCollisionCells(world, defaultRouteCollisionTileId, lifetime),
       loadedBounds: section ? { get minimum() { return section.minimum; }, get maximum() { return section.maximum; } } : null,
@@ -207,7 +208,6 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
           actionCues, footsteps, clipPreview), sandboxAppearanceOfNpc),
         sandboxAppearanceOfCharacter),
       actorClipPlayer: entityId => clipPreview.actorClipPlayer(entityId),
-      ...(section ? { ground: (position: WorldPosition) => movement.groundBelow(position) } : {}),
       movementPose: entityId => movement.pose(entityId),
     });
     boundaryReleases.push(() => registry.dispose());
@@ -238,7 +238,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const doors = movers ? createNativeDoorInteractions(scene, movers.targets, {
       player: presentedLocalPlayer, dispatch: command => adapter.dispatch(command),
       onCommand: listener => adapter.subscribeCommands(listener), paused: () => adapter.isPaused || isSceneSuspended(scene),
-    }, createCollisionWorldNavigation(movement, { radius: playerProfile.collisionRadius, height: playerProfile.collisionHeight }),
+    }, createCollisionWorldNavigation(movement, collisionCylinderOf(playerProfile)),
     playerCapsuleFromSourceCollision(), message => ui.showStatus(message)) : undefined;
     if (doors) boundaryReleases.push(() => doors.dispose());
     const releaseOnSceneDisposeObserver = scene.onDisposeObservable.add(stop);

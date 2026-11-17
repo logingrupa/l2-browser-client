@@ -21,6 +21,7 @@ export interface WorldBounds {
 
 export interface WorldMovementOptions {
   readonly adapter: Pick<GameWorldAdapter, "subscribe" | "dispatch">;
+  readonly initialSpawns: readonly Extract<WorldEvent, { readonly type: "spawn" }>[];
   readonly camera: ArcRotateCamera;
   readonly rules: MovementNativeRules;
   readonly collisionWorld: CollisionWorld;
@@ -32,6 +33,7 @@ export interface WorldMovementOptions {
 }
 
 export interface MovementPose {
+  readonly location: WorldPosition;
   readonly feetPosition: WorldPosition;
   readonly orientationRadians: number;
   readonly isMoving: boolean;
@@ -69,7 +71,7 @@ export interface WorldMovement {
   release(): void;
 }
 
-const presentedRecordTypes: ReadonlySet<WorldEvent["type"]> = new Set(["move", "stop", "correct", "teleport", "despawn"]);
+const presentedRecordTypes: ReadonlySet<WorldEvent["type"]> = new Set(["spawn", "move", "stop", "correct", "teleport", "despawn"]);
 const rotatorUnitsPerHalfTurn = 32768;
 const zeroExtent = { x: 0, y: 0, z: 0 };
 const groundQueryLimit = 64;
@@ -104,7 +106,7 @@ export function wireWorldMovement(options: WorldMovementOptions): WorldMovement 
   options.loadCollisionCells(collisionWorld, options.signal).then(
     result => { if (!released) { load = result; status = "resident"; } },
     (error: unknown) => { if (!released) { status = "failed"; failure = error instanceof Error ? error.message : String(error); } });
-  const unsubscribe = adapter.subscribe(event => {
+  const presentRecord = (event: WorldEvent) => {
     if (!presentedRecordTypes.has(event.type)) return;
     try {
       presenter.applyEvent(event);
@@ -114,7 +116,9 @@ export function wireWorldMovement(options: WorldMovementOptions): WorldMovement 
       if (!(error instanceof MovementPresenterError)) throw error;
       rejectedRecordCount += 1; lastRejectedRecord = error.message;
     }
-  });
+  };
+  options.initialSpawns.forEach(presentRecord);
+  const unsubscribe = adapter.subscribe(presentRecord);
   const pawnOf = (entityId: string) => presenter.inspection().pawns.find(pawn => pawn.entityId === entityId) ?? null;
   const localSwimsOrFlies = () => {
     const mode = pawnOf(localPlayerId)?.mode;
@@ -140,7 +144,7 @@ export function wireWorldMovement(options: WorldMovementOptions): WorldMovement 
     pose(entityId) {
       const pawn = pawnOf(entityId);
       if (pawn === null) return null;
-      return { feetPosition: sourcePositionToWorld(pawn.feetPosition), orientationRadians: sourceHeadingToWorldYaw(pawn.heading), isMoving: pawn.isMoving };
+      return { location: sourcePositionToWorld(pawn.location), feetPosition: sourcePositionToWorld(pawn.feetPosition), orientationRadians: sourceHeadingToWorldYaw(pawn.heading), isMoving: pawn.isMoving };
     },
     destinationAlongRay(origin, direction) {
       if (status !== "resident" || options.loadedBounds === null) return null;

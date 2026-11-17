@@ -21,7 +21,6 @@ export interface NativeCharacterProfile {
   readonly asset: AssetPackage | NativeCharacterAssetLoader;
   readonly clips: Readonly<Record<AnimationState | "death", string> & { walk?: string; specialAttack?: string }>;
   readonly upperItems?: ReadonlyMap<number, AssetPackage>;
-  readonly collisionHalfHeight?: number;
   readonly actorScale?: Vector3;
   readonly forwardAxis?: Vector3;
   readonly boneAnchors?: readonly { id: string; sourceObject: string; boneName: string }[];
@@ -200,9 +199,6 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
         anchorIds.add(binding.id);
         anchors.push({ id: binding.id, handle: loaded.createBoneAnchor(binding.sourceObject, binding.boneName) });
       }
-      if (profile.collisionHalfHeight !== undefined && (!Number.isFinite(profile.collisionHalfHeight) || profile.collisionHalfHeight <= 0)) {
-        throw new Error("Native profile collision half-height must be finite and positive.");
-      }
       if (profile.actorScale && !profile.actorScale.asArray().every(value => Number.isFinite(value) && value > 0)) {
         throw new Error("Native profile actor scale must be finite and positive.");
       }
@@ -269,7 +265,6 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
         actor?.root.computeWorldMatrix(true);
         return actor.root.getDirection(profile!.forwardAxis).normalize();
       },
-      get groundClearance() { return initialized ? profile!.collisionHalfHeight ?? -bounds.minimum.y : 0; },
       setEntity(entity) {
         current = entity;
         driver?.selectActionPreviewWithoutRestartingClip(entity.actionPreview);

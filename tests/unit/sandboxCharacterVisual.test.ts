@@ -58,7 +58,7 @@ describe("spawn-character presentation through the catalog index", () => {
       const animation = new CharacterAnimator({ setState() {}, update() {}, dispose() {} });
       const visual: CharacterVisual = { root, animation, hasNativeModel: true, modelId: entity.appearanceId ?? null,
         bounds: { minimum: Vector3.Zero(), maximum: Vector3.One(), labelHeight: 1, selectionRadius: .5 },
-        ready: Promise.resolve(), groundClearance: 0, forwardDirection: null, missingAssetDiagnostic: null,
+        ready: Promise.resolve(), forwardDirection: null, missingAssetDiagnostic: null,
         attachmentSnapshot: () => [], attachmentAnchor: () => null, sourceClock: () => null, setEntity() {},
         dispose() { animation.dispose(); root.dispose(); } };
       return visual;
@@ -101,7 +101,6 @@ describe("spawn-character presentation through the catalog index", () => {
     expect(registered.clips).toEqual(generatedProfile.clips);
     expect(registered.forwardAxis?.asArray()).toEqual([1, 0, 0]);
     expect(registered.actorScale?.asArray()).toEqual([1, 2, 3]);
-    expect(registered.collisionHalfHeight).toBe(.235);
     expect(typeof registered.asset).toBe("function");
   });
 

@@ -10,6 +10,7 @@ import { nativeCharacterFactory, type NativeCharacterProfile } from "../../src/a
 import { createNativeClipPreviewHub } from "../../src/assets/native/nativeClipPreview";
 import type { CharacterVisual } from "../../src/assets/CharacterVisual";
 import type { WorldEntity } from "../../src/world/worldTypes";
+import { sourceHeadingToWorldYaw, sourcePositionToWorld } from "../../src/world/sourceFrame";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
 import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
@@ -133,7 +134,7 @@ describe("native character presentation boundary", () => {
     expect(visual.root.scaling.asArray()).toEqual([1, 1, 1]);
   });
 
-  it("fixes clearance at the skinned idle datum while preserving attack/death motion, geometry, rig and keys", async () => {
+  it("keeps the root where its owner places it while preserving attack/death motion, geometry, rig and keys", async () => {
     const asset = await nativeVisualFixture({ minimumY: -.75, skinned: true,
       verticalMotion: { idle: [.25, .25], attack: [0, 1], death: [0, -1] } });
     const { visual } = await create({ asset }, { ...initial, animation: "attack" });
@@ -144,9 +145,7 @@ describe("native character presentation boundary", () => {
     const keys = () => scene.animationGroups.map(group => ({ name: group.name, channels: group.targetedAnimations.map(({ animation }) =>
       animation.getKeys().map(key => ({ frame: key.frame, value: key.value instanceof Vector3 ? key.value.asArray() : null }))) }));
     const originalKeys = keys();
-    const idleSupportDatumY = -.75 + .25;
     const check = (boneY: number) => {
-      expect(visual.groundClearance).toBeCloseTo(-idleSupportDatumY);
       expect(visual.bounds.minimum.y).toBeCloseTo(-.5); expect(visual.bounds.maximum.y).toBeCloseTo(1.5);
       expect(visual.root.position.asArray()).toEqual([13, 3, -8]); expect(visual.root.rotation.y).toBe(.6);
       expect(visual.root.scaling.asArray()).toEqual([1, 1, 1]);
@@ -177,41 +176,24 @@ describe("native character presentation boundary", () => {
     expect(scene.meshes).toHaveLength(0);
   });
 
-  it("supports a hovering native profile by its collision half-height through death and revival", async () => {
-    const asset = await nativeVisualFixture({ minimumY: -.12, skinned: true,
-      verticalMotion: { idle: [0, 0], death: [0, -.28] } });
-    const { visual } = await create({ asset, collisionHalfHeight: .36 });
-    await vi.waitFor(() => expect(visual.hasNativeModel).toBe(true));
-    const positions = visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices())
-      .map(mesh => Array.from(mesh.getVerticesData(VertexBuffer.PositionKind)!));
-    expect(visual.groundClearance).toBe(.36);
-    expect(visual.bounds.minimum.y + visual.groundClearance).toBeCloseTo(.24);
-    update(visual, { ...initial, health: 0 }); visual.animation.update(10);
-    expect(visual.animation.playback).toMatchObject({ activeClip: nativeVisualClips.death, playing: false });
-    expect(visual.groundClearance).toBe(.36);
-    expect(visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices())
-      .map(mesh => Array.from(mesh.getVerticesData(VertexBuffer.PositionKind)!))).toEqual(positions);
-    expect(visual.root.scaling.asArray()).toEqual([1, 1, 1]);
-    update(visual, { ...initial, health: 100 });
-    expect(visual.animation.playback?.activeClip).toBe(nativeVisualClips.idle);
-    expect(visual.groundClearance).toBe(.36);
+  it("faces source heading 0 along world +X and heading 16384 along world +Z for a +X native forward axis (CR-14)", async () => {
+    scene.useRightHandedSystem = true;
+    const { visual } = await create({ forwardAxis: Vector3.Right() });
+    await visual.ready;
+    for (const [sourceHeading, sourceForward] of [[0, { x: 1, y: 0, z: 0 }], [16384, { x: 0, y: 1, z: 0 }]] as const) {
+      visual.root.rotation.y = sourceHeadingToWorldYaw(sourceHeading);
+      const { x, y, z } = sourcePositionToWorld(sourceForward);
+      const worldForward = new Vector3(x, y, z).normalize();
+      expect(Vector3.Dot(visual.forwardDirection!, worldForward)).toBeCloseTo(1, 7);
+    }
   });
 
-  it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])("rejects invalid collision half-height %s", async collisionHalfHeight => {
-    const { visual, status } = await create({ collisionHalfHeight });
-    await expect(visual.ready).rejects.toThrow("collision half-height must be finite and positive");
-    expect(status).toHaveBeenCalledWith(expect.stringContaining("collision half-height must be finite and positive"));
-    expect(visual.hasNativeModel).toBe(false); expect(visual.groundClearance).toBe(0);
-    expect(scene.animationGroups).toHaveLength(0);
-  });
-
-  it("scales the whole native assembly outside its rig while keeping collision height independent", async () => {
+  it("scales the whole native assembly outside its rig", async () => {
     const asset = await nativeVisualFixture({ minimumY: -.12, skinned: true, nativeParentTranslation: [1, 2, 3],
       verticalMotion: { idle: [0, 0], death: [0, -.28] } });
-    const { visual } = await create({ asset, collisionHalfHeight: .36, actorScale: new Vector3(1.2, 1.2, 1.2) });
+    const { visual } = await create({ asset, actorScale: new Vector3(1.2, 1.2, 1.2) });
     await vi.waitFor(() => expect(visual.hasNativeModel).toBe(true));
     expect(visual.root.scaling.asArray()).toEqual([1, 1, 1]);
-    expect(visual.groundClearance).toBe(.36);
     expect(visual.bounds.minimum.y).toBeCloseTo((2 - .12) * 1.2);
     expect(visual.bounds.maximum.y).toBeCloseTo((2 + 1.88) * 1.2);
     expect(scene.getTransformNodeByName("NativeMeshTransform")!.position.asArray()).toEqual([1, 2, 3]);
@@ -220,7 +202,6 @@ describe("native character presentation boundary", () => {
     const meshes = visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices());
     const positions = meshes.map(mesh => Array.from(mesh.getVerticesData(VertexBuffer.PositionKind)!));
     update(visual, { ...initial, health: 0 }); visual.animation.update(10);
-    expect(visual.groundClearance).toBe(.36);
     for (const mesh of meshes) {
       expect(mesh.scaling.asArray()).toEqual([1, 1, 1]);
       expect(mesh.skeleton!.bones[1]!.getTransformNode()!.position.y).toBeCloseTo(-.28);

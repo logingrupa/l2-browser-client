@@ -19,7 +19,6 @@ export interface CharacterVisual {
   readonly bounds: CharacterBounds;
   readonly modelId: string | null;
   readonly ready: Promise<void>;
-  readonly groundClearance: number;
   readonly forwardDirection: Vector3 | null;
   readonly missingAssetDiagnostic: string | null;
   attachmentSnapshot(): readonly (NativeBoneAnchorInspection & { id: string })[];

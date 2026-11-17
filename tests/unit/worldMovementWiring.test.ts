@@ -43,7 +43,7 @@ async function wiredWorld(boxes: readonly BoxVolumeDeclaration[] = [floorSlab(0)
   const commands: WorldCommand[] = [];
   adapter.subscribeCommands(command => commands.push(command));
   const loader = boxCellLoader(boxes);
-  const movement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: loader.load,
+  const movement = wireWorldMovement({ adapter, initialSpawns: adapter.initialSpawnEvents(), camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: loader.load,
     loadedBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
   releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
   const advanceFrames = (count: number) => { for (let frame = 0; frame < count; frame += 1) movement.advance(frameSeconds); };
@@ -65,6 +65,20 @@ describe("world movement wiring", () => {
     expect(movement.inspection().collisionCells).toMatchObject({ status: "resident", failure: null, requiredCellCount: 1, residentCellCount: 1, missingCellIds: [],
       load: { tileId: fixtureTileId, residentCellIds: [fixtureCellId], chunkGaps: [] } });
     expect(movement.inspection().collisionCells.revision).toBeGreaterThan(0);
+  });
+
+  it("poses the initial local pawn and a spawned NPC at their simulated cylinder centre without any move record", async () => {
+    const { adapter, movement, advanceFrames, settle } = await wiredWorld();
+    expect(movement.pose(localPlayerId)).toMatchObject({ location: { x: 0, y: 0, z: 0 }, isMoving: false });
+    expect(movement.pose("native-musveren")).toBeNull();
+    await settle();
+    advanceFrames(2);
+    const settled = movement.pose(localPlayerId)!;
+    const centreHeightAboveFloor = settled.location.y * 100;
+    expect(centreHeightAboveFloor).toBeGreaterThan(23 + pawnRules.pawn.floorBand.minimum);
+    expect(settled.feetPosition.y).toBeCloseTo(settled.location.y - .23, 6);
+    adapter.dispatch({ type: "spawn-npc", npcId: 20001 });
+    expect(movement.pose("npc-20001-1")).toBeNull();
   });
 
   it("walks the local pawn on an adapter move record through the port and sends its positions back as intents", async () => {
@@ -102,7 +116,7 @@ describe("world movement wiring", () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
     const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
-    const movement: WorldMovement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(),
+    const movement: WorldMovement = wireWorldMovement({ adapter, initialSpawns: adapter.initialSpawnEvents(), camera, rules: pawnRules, collisionWorld: createCollisionWorld(),
       loadCollisionCells: () => Promise.reject(new Error("tile 90_90 collision is not staged")), loadedBounds, localPlayerId,
       localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
     releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
@@ -117,7 +131,7 @@ describe("world movement wiring", () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
     const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
-    const movement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: () => Promise.resolve(null),
+    const movement = wireWorldMovement({ adapter, initialSpawns: adapter.initialSpawnEvents(), camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: () => Promise.resolve(null),
       loadedBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
     releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
     await new Promise(resolve => setTimeout(resolve, 0));
@@ -144,7 +158,7 @@ describe("world movement wiring", () => {
     const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
     const loader = boxCellLoader([floorSlab(0)]);
     const flatBounds = { minimum: { x: -20, y: 0, z: -20 }, maximum: { x: 20, y: 0, z: 20 } };
-    const movement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: loader.load,
+    const movement = wireWorldMovement({ adapter, initialSpawns: adapter.initialSpawnEvents(), camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: loader.load,
       loadedBounds: flatBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
     releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
     loader.resolveLoad();
@@ -157,7 +171,7 @@ describe("world movement wiring", () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
     let emit!: (event: WorldEvent) => void;
-    const movement = wireWorldMovement({ camera, rules: pawnRules, collisionWorld: createCollisionWorld(),
+    const movement = wireWorldMovement({ initialSpawns: [], camera, rules: pawnRules, collisionWorld: createCollisionWorld(),
       adapter: { subscribe(listener) { emit = listener; return () => {}; }, dispatch() {} },
       loadCollisionCells: boxCellLoader([floorSlab(0)]).load, loadedBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
     releases.push(() => { movement.release(); scene.dispose(); engine.dispose(); });

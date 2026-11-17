@@ -22,13 +22,12 @@ interface EntityPresentation {
 }
 
 export interface EntityMovementPose {
-  readonly feetPosition: WorldPosition;
+  readonly location: WorldPosition;
   readonly orientationRadians: number;
   readonly isMoving: boolean;
 }
 
 interface EntityPresentationOptions {
-  readonly ground?: (position: WorldPosition) => WorldPosition | null;
   readonly movementPose?: (entityId: string) => EntityMovementPose | null;
   readonly createVisual: CharacterVisualFactory;
   readonly actorClipPlayer?: (entityId: string) => ActorClipPlayer | undefined;
@@ -178,22 +177,16 @@ export class EntityRegistry {
     this.entities.delete(entityId);
   }
 
-  private presentedGroundClearance(visual: CharacterVisual): number {
-    return this.options.ground ? visual.groundClearance : 0;
-  }
-
   update(deltaTimeSeconds: number): void {
     this.entities.forEach((presentation) => {
       const interpolatedPosition = presentation.interpolation.update(deltaTimeSeconds);
       const pose = this.options.movementPose?.(presentation.entity.id) ?? null;
       if (pose) {
-        presentation.visual.root.position.set(pose.feetPosition.x, pose.feetPosition.y + presentation.visual.groundClearance, pose.feetPosition.z);
+        presentation.visual.root.position.set(pose.location.x, pose.location.y, pose.location.z);
         presentation.visual.root.rotation.y = pose.orientationRadians;
         presentation.visual.animation.setState(animationWithMovement(presentation.entity.animation, pose));
       } else {
-        const supportedPosition = this.options.ground?.(interpolatedPosition) ?? interpolatedPosition;
-        const pivotClearanceAboveSupport = this.presentedGroundClearance(presentation.visual);
-        presentation.visual.root.position.set(supportedPosition.x, supportedPosition.y + pivotClearanceAboveSupport, supportedPosition.z);
+        presentation.visual.root.position.set(interpolatedPosition.x, interpolatedPosition.y, interpolatedPosition.z);
         const difference = Math.atan2(Math.sin(presentation.entity.orientationRadians - presentation.visual.root.rotation.y), Math.cos(presentation.entity.orientationRadians - presentation.visual.root.rotation.y));
         presentation.visual.root.rotation.y += difference * (1 - Math.exp(-12 * deltaTimeSeconds));
       }
@@ -213,7 +206,6 @@ export class EntityRegistry {
   snapshot() {
     return [...this.entities.values()].map(({ entity, visual, clipDiagnostic }) => ({
       id: entity.id, position: { x: visual.root.position.x, y: visual.root.position.y, z: visual.root.position.z },
-      groundClearance: this.presentedGroundClearance(visual),
       authoritativePosition: { ...entity.position }, animation: visual.animation.state,
       locomotion: entity.locomotion ?? "run",
       actionPreview: entity.actionPreview ?? null,
