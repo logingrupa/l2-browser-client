@@ -2,6 +2,7 @@ import type { NativePlane } from "../environment/model/nativePlane";
 import type { EnvironmentResult } from "../environment/model/nativeEnvironmentColours";
 import type { RgbBytes } from "../environment/model/sampleNativeTimeTables";
 import type { TileLightingRuntimeInspection } from "../scene/world/lighting/attachTileLighting";
+import { terrainProbeSample } from "../scene/world/lighting/bindTerrainVertexLighting";
 import type { HourlyAmbientInspection } from "../scene/world/lighting/hourlyLightingTerms";
 import type { VariableInfo } from "../ui/devSheet/types";
 
@@ -115,7 +116,7 @@ const hourlyVariableSources: Readonly<Record<string, string>> = {
   "lighting.terrain.mapBlend": "TIntMap Time keys, last key <= hour else n-1, +24 unwrap (claim terrain-intensity-interpolation)",
   "lighting.terrain.ambientHalved": "TerrainAmbient >> 1 with alpha 255, added inside the vertex colour (claim terrain-vertex-colour)",
   "lighting.terrain.light": "HSVTerrainLight plane, scaled by 0.5 and intensity / 255 (claim terrain-vertex-colour)",
-  "lighting.terrain.probe": "TIntMap sample (134, 129) of 20_21 TerrainSector136, the DB-7 recomputed vertex",
+  "lighting.terrain.probe": terrainProbeSample.source,
   "lighting.terrain.vertices": "COLOR vertex buffer written per terrain vertex from nativeSampleGrid and seamSampleKeys",
   "lighting.terrain.staticBase": "TLIT serialized light masks; a covered vertex needs SampleIntensity (terrain-general-staticlight-sampleintensity)",
   "lighting.terrain.drawn": "layer texture x vertex colour with the global op waits for terrain lighting in the library terrain layer material",

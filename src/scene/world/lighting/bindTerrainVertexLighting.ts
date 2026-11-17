@@ -74,7 +74,7 @@ interface LatchedTerrainLighting {
 
 export const terrainProbeSample = { column: 134, row: 129, source: "DB-7 claim audit terrain sample 20_21 TerrainSector136 vertex global (134,129)" } as const;
 export const terrainLightMaskSectorOriginUnstagedReason = "terrain-light-mask-sector-origin-unstaged";
-export const terrainIntensityMapsEmptyReason = "terrain-intensity-maps-empty";
+const terrainIntensityMapsEmptyReason = "terrain-intensity-maps-empty";
 const terrainVertexColourUndrawn = { value: false, reason: terrainLightingUnportedReason } as const;
 const terrainIntensityMapWidthUnportedPrefix = "terrain-intensity-map-size-unported:";
 const intensityLevels = 256;
