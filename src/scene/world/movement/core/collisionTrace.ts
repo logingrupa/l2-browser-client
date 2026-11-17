@@ -4,10 +4,10 @@ import { CollisionWorldError } from "./collisionWorld";
 
 export type CollisionPrimitive =
   | { readonly kind: "bsp-tree"; readonly tileId: string }
-  | { readonly kind: "volume"; readonly cellId: string; readonly volumeIndex: number; readonly exportIndex: number }
-  | { readonly kind: "static-mesh"; readonly cellId: string; readonly placementIndex: number; readonly exportIndex: number }
-  | { readonly kind: "mover"; readonly cellId: string; readonly moverIndex: number; readonly exportIndex: number }
-  | { readonly kind: "terrain"; readonly cellId: string; readonly quadIndex: number }
+  | { readonly kind: "volume"; readonly tileId: string; readonly cellId: string; readonly volumeIndex: number; readonly exportIndex: number }
+  | { readonly kind: "static-mesh"; readonly tileId: string; readonly cellId: string; readonly placementIndex: number; readonly exportIndex: number }
+  | { readonly kind: "mover"; readonly tileId: string; readonly cellId: string; readonly moverIndex: number; readonly exportIndex: number }
+  | { readonly kind: "terrain"; readonly tileId: string; readonly cellId: string; readonly quadIndex: number }
   | { readonly kind: "pawn"; readonly pawnIndex: number };
 
 export type CollisionHitSource =

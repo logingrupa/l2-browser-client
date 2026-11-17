@@ -39,7 +39,7 @@ describe("pointCheck over the BSP tree", () => {
 describe("pointCheck over volumes, static meshes, movers, terrain and pawns", () => {
   it("finds the blocking volume around a point and ignores the non-blocking physics volume", () => {
     expect(pointCheck(mixedWorld(), { point: { x: 1600, y: -2400, z: 300 }, extent: zeroExtent }, rules))
-      .toEqual({ primitive: { kind: "volume", cellId: fixtureCellId, volumeIndex: 0, exportIndex: 900 }, source: "blocking-volume" });
+      .toEqual({ primitive: { kind: "volume", tileId: fixtureTileId, cellId: fixtureCellId, volumeIndex: 0, exportIndex: 900 }, source: "blocking-volume" });
     expect(pointCheck(mixedWorld(), { point: { x: -1000, y: 0, z: 0 }, extent: zeroExtent }, rules)).toBeNull();
   });
 
@@ -55,7 +55,7 @@ describe("pointCheck over volumes, static meshes, movers, terrain and pawns", ()
   it("checks terrain with a vertical segment through the box and a pawn with the widened cylinder", () => {
     const point = terrainWorldPoint(0.5, 0.5);
     expect(pointCheck(mixedWorld(), { point: { ...point, z: flatTerrainZ + 20 }, extent: pawnExtent }, rules))
-      .toEqual({ primitive: { kind: "terrain", cellId: fixtureCellId, quadIndex: 0 }, source: "terrain-heightmap" });
+      .toEqual({ primitive: { kind: "terrain", tileId: fixtureTileId, cellId: fixtureCellId, quadIndex: 0 }, source: "terrain-heightmap" });
     expect(pointCheck(mixedWorld(), { point: { ...point, z: flatTerrainZ + 30 }, extent: pawnExtent }, rules)).toBeNull();
     const pawns = [{ location: { x: 0, y: 0, z: 0 }, collisionRadius: 9, collisionHeight: 23 }];
     expect(pointCheck(mixedWorld(), { point: { x: 17, y: 0, z: 0 }, extent: pawnExtent, pawns }, rules))

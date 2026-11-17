@@ -41,8 +41,8 @@ describe("singleLineCheck over every converted primitive kind", () => {
     const probe = terrainWorldPoint(2.75, 1.5);
     const straightSplit = singleLineCheck(mixedWorld(false), downRay(probe.x, probe.y), rules)!;
     const turnedSplit = singleLineCheck(mixedWorld(true), downRay(probe.x, probe.y), rules)!;
-    expect(straightSplit.primitive).toEqual({ kind: "terrain", cellId: fixtureCellId, quadIndex: turnedQuadIndex });
-    expect(turnedSplit.primitive).toEqual({ kind: "terrain", cellId: fixtureCellId, quadIndex: turnedQuadIndex });
+    expect(straightSplit.primitive).toEqual({ kind: "terrain", tileId: fixtureTileId, cellId: fixtureCellId, quadIndex: turnedQuadIndex });
+    expect(turnedSplit.primitive).toEqual({ kind: "terrain", tileId: fixtureTileId, cellId: fixtureCellId, quadIndex: turnedQuadIndex });
     const rise = raisedTerrainZ - flatTerrainZ;
     expect(straightSplit.location.z).toBeCloseTo(flatTerrainZ + 0.75 * rise - 0.5 * rise + rayBackoffUnits, 2);
     expect(turnedSplit.location.z).toBeCloseTo(flatTerrainZ + 0.5 * rise + rayBackoffUnits, 2);

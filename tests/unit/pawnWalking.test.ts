@@ -9,7 +9,7 @@ import { walkPawn } from "../../src/scene/world/movement/core/pawnWalking";
 import type { GoldenTrace } from "../support/goldenTrace";
 import type { CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
 import type { CollisionPrimitive } from "../../src/scene/world/movement/core/collisionTrace";
-import { expectMovementGoldenTrace } from "../fixtures/movement/movementCollisionFixtures";
+import { expectMovementGoldenTrace, terrainWorldPoint } from "../fixtures/movement/movementCollisionFixtures";
 import { rm12FloorFixture, type Rm12FloorFixture } from "../fixtures/movement/pawnFloorPlacementRm12";
 import {
   boxVolumeWorld, bspFloorWorld, centreAboveFloor, flatTerrainWorld, floorSlab, pawnContext, pawnRules, standingPawn, syntheticPawnHalfHeight,
@@ -199,6 +199,26 @@ describe("APawn::physWalking floor settle against the RM-12 flat fixtures (Engin
     expect(floorGap(start.location, floors.Terrain.world)).toBe(0);
     const raised = stepStill("Terrain", start);
     expect(raised.location.z).toBeCloseTo(start.location.z + pawnRules.pawn.floorBand.target, 4);
+  });
+
+  it("keeps a walking pawn on its settled height across terrain quad boundaries because Base stays the one TerrainInfo", () => {
+    const point = terrainWorldPoint(0.6, 1.5);
+    const context = pawnContext(floors.Terrain.world);
+    const close = standingPawn({ x: point.x, y: point.y, z: Math.fround(floorZ + syntheticPawnHalfHeight + 1) });
+    const closeOnItsFloor = { ...close, floor: floorProbeHit(close.location, floors.Terrain.world)!.primitive };
+    const settled = walkPawn(context, closeOnItsFloor, standingStill, frameSeconds, false).body;
+    expect(settled.location.z).toBeCloseTo(rm12FloorFixture("Terrain", "close-floor-upward").locationZNominal, 4);
+    const walkVelocity = { x: 300, y: 0, z: 0 };
+    let current = settled;
+    const heights: number[] = [];
+    const quadIndices = new Set<number>();
+    for (let tick = 0; tick < 120; tick += 1) {
+      current = walkPawn(context, current, walkVelocity, frameSeconds, false).body;
+      heights.push(current.location.z);
+      if (current.floor?.kind === "terrain") quadIndices.add(current.floor.quadIndex);
+    }
+    expect(quadIndices.size).toBeGreaterThan(1);
+    expect([...new Set(heights)]).toEqual([settled.location.z]);
   });
 
   it("rests a pawn on the same floor inside the band with zero velocity and does not move it", () => {

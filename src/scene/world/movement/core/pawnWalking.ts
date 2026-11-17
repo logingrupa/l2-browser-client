@@ -13,7 +13,22 @@ interface FloorSettlement {
   readonly restsInFloorBand: boolean;
 }
 
-const sameFloor = (previous: CollisionPrimitive | null, next: CollisionPrimitive) => previous !== null && JSON.stringify(previous) === JSON.stringify(next);
+function floorBaseActorKey(floor: CollisionPrimitive): string {
+  switch (floor.kind) {
+    case "bsp-tree":
+    case "terrain":
+      return `${floor.kind} ${floor.tileId}`;
+    case "volume":
+    case "static-mesh":
+    case "mover":
+      return `${floor.tileId} export ${floor.exportIndex}`;
+    case "pawn":
+      return `pawn ${floor.pawnIndex}`;
+  }
+}
+
+const sameFloorBaseActor = (previous: CollisionPrimitive | null, next: CollisionPrimitive) =>
+  previous !== null && floorBaseActorKey(previous) === floorBaseActorKey(next);
 
 function probeFloor(context: PawnPhysicsContext, body: PawnBody, location: Vector3): LineCheckHit | null {
   const probeLength = context.rules.pawn.floorProbe;
@@ -29,7 +44,7 @@ function moveVertically(context: PawnPhysicsContext, body: PawnBody, location: V
 function settleIntoFloorBand(context: PawnPhysicsContext, body: PawnBody, location: Vector3, floorHit: LineCheckHit): FloorSettlement {
   const { floorProbe, floorBand } = context.rules.pawn;
   const gap = Math.fround(floorProbe * floorHit.time);
-  if (!sameFloor(body.floor, floorHit.primitive) || gap > floorBand.maximum) {
+  if (!sameFloorBaseActor(body.floor, floorHit.primitive) || gap > floorBand.maximum) {
     return { location: moveVertically(context, body, location, -floorProbe), restsInFloorBand: false };
   }
   if (gap < floorBand.minimum) return { location: moveVertically(context, body, location, Math.fround(floorBand.target - gap)), restsInFloorBand: false };

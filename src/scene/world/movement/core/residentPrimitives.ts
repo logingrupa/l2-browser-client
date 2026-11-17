@@ -31,11 +31,11 @@ interface CellFixedPrimitives {
 const cellFixedPrimitivesByRules = new WeakMap<MovementNativeRules, WeakMap<CollisionCell, CellFixedPrimitives>>();
 
 function buildCellFixedPrimitives(cell: CollisionCell, rules: MovementNativeRules): CellFixedPrimitives {
-  const { cellId } = cell, bspBackoff = { rayBackoff: rules.backoff.bspRay, boxBackoff: rules.backoff.bspBox };
+  const { cellId, tileId } = cell, bspBackoff = { rayBackoff: rules.backoff.bspRay, boxBackoff: rules.backoff.bspBox };
   const meshBackoff = { rayBackoff: rules.backoff.staticMesh, boxBackoff: rules.backoff.staticMesh };
   const volumes = cell.volumes.flatMap((volume, volumeIndex): ResidentPrimitive[] => {
     if (volume.decision !== "blocking" || volume.nodes.length === 0) return [];
-    const primitive: CollisionPrimitive = { kind: "volume", cellId, volumeIndex, exportIndex: volume.exportIndex }, owner = `cell ${cellId} volume ${volumeIndex}`;
+    const primitive: CollisionPrimitive = { kind: "volume", tileId, cellId, volumeIndex, exportIndex: volume.exportIndex }, owner = `cell ${cellId} volume ${volumeIndex}`;
     return [{
       source: "blocking-volume", ...bspBackoff,
       trace: sweep => locate(traceVolume(volume, owner, sweep, rules), primitive),
@@ -45,7 +45,7 @@ function buildCellFixedPrimitives(cell: CollisionCell, rules: MovementNativeRule
   const placements = cell.placements.flatMap((placement, placementIndex): ResidentPrimitive[] => {
     if (placement.decision !== "slots" || placement.staticMeshIndex === null) return [];
     const mesh = cell.staticMeshes[placement.staticMeshIndex]!;
-    const primitive: CollisionPrimitive = { kind: "static-mesh", cellId, placementIndex, exportIndex: placement.exportIndex };
+    const primitive: CollisionPrimitive = { kind: "static-mesh", tileId, cellId, placementIndex, exportIndex: placement.exportIndex };
     return [{
       source: "static-mesh-slots", ...meshBackoff,
       trace: sweep => locate(traceStaticMesh(mesh, placement.matrix, sweep, rules), primitive),
@@ -57,11 +57,11 @@ function buildCellFixedPrimitives(cell: CollisionCell, rules: MovementNativeRule
     source: "terrain-heightmap", rayBackoff: rules.backoff.terrain, boxBackoff: rules.backoff.terrain,
     trace: sweep => {
       const hit = traceTerrain(terrain, sweep, rules);
-      return hit === null ? null : { time: hit.time, normal: hit.normal, primitive: { kind: "terrain", cellId, quadIndex: hit.quadIndex } };
+      return hit === null ? null : { time: hit.time, normal: hit.normal, primitive: { kind: "terrain", tileId, cellId, quadIndex: hit.quadIndex } };
     },
     overlappedBy: (centre, extent) => {
       const contact = terrainContactUnderBox(terrain, centre, extent, rules);
-      return contact === null ? null : { kind: "terrain", cellId, quadIndex: contact.quadIndex };
+      return contact === null ? null : { kind: "terrain", tileId, cellId, quadIndex: contact.quadIndex };
     },
   }];
   return { volumesAndPlacements: [...volumes, ...placements], terrain: terrains };
@@ -78,11 +78,11 @@ function cellFixedPrimitives(cell: CollisionCell, rules: MovementNativeRules): C
 }
 
 function moverPrimitives(cell: CollisionCell, surroundings: CollisionSurroundings, rules: MovementNativeRules): ResidentPrimitive[] {
-  const { cellId } = cell;
+  const { cellId, tileId } = cell;
   return cell.movers.map((mover, moverIndex): ResidentPrimitive => {
     const mesh = cell.staticMeshes[mover.staticMeshIndex]!;
     const matrix = surroundings.moverStates?.get(mover.exportIndex) === "open" ? mover.openMatrix : mover.closedMatrix;
-    const primitive: CollisionPrimitive = { kind: "mover", cellId, moverIndex, exportIndex: mover.exportIndex };
+    const primitive: CollisionPrimitive = { kind: "mover", tileId, cellId, moverIndex, exportIndex: mover.exportIndex };
     return {
       source: mover.collisionSource, rayBackoff: rules.backoff.staticMesh, boxBackoff: rules.backoff.staticMesh,
       trace: sweep => locate(traceStaticMesh(mesh, matrix, sweep, rules), primitive),
