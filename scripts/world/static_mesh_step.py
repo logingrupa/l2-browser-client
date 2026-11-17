@@ -258,9 +258,8 @@ def chunk_model_records(placements, models_by_id):
              'placements': placements_by_model[model['id']]} for model in models]
 
 
-def colour_stream_gap_rows(assignment, models):
-    return [tile_step_row(assignment.tile_id, STATIC_MESH_STEP_NAME, GAP_STATUS, model['colourStreams']['gapReason'],
-                          {**assignment.source_identity, 'object': model['sourceObject']}, assignment.evidence)
+def colour_stream_gap_rows(tile_id, step_name, source_identity, evidence, models):
+    return [tile_step_row(tile_id, step_name, GAP_STATUS, model['colourStreams']['gapReason'], {**source_identity, 'object': model['sourceObject']}, evidence)
             for model in models if 'gapReason' in model['colourStreams']]
 
 
@@ -273,7 +272,8 @@ def static_meshes_product(tile_id, chunk_plan, assignment, mesh_outcomes):
               for chunk in chunk_plan['chunks']}
     models = sorted(models_by_id.values(), key=model_sort_key)
     return {'tileId': tile_id, 'models': models, 'chunks': chunks, 'unplacedGapRows': assignment.chunk_gap_rows(None),
-            'gapRows': assignment.gap_rows() + colour_stream_gap_rows(assignment, models)}
+            'gapRows': assignment.gap_rows() + colour_stream_gap_rows(assignment.tile_id, STATIC_MESH_STEP_NAME, assignment.source_identity,
+                                                                       assignment.evidence, models)}
 
 
 def placement_accounting_difference(actors, class_chains, assignment):

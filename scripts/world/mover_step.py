@@ -16,7 +16,8 @@ from world.mover_class_defaults import MOVER_CLASS, MOVER_CLASS_UNIT_KEY, mover_
 from world.mover_records import MoverUnsupportedError, read_mover_actor
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_collision_sources import COLLISION_RULES_PATH, decide_placement_collision, load_collision_rules, model_slot_properties, static_mesh_selectors
-from world.static_mesh_step import ConvertedStaticMesh, conversion_failure_reason, model_sort_key, static_mesh_outcomes, write_static_mesh_store_files
+from world.static_mesh_step import (ConvertedStaticMesh, colour_stream_gap_rows, conversion_failure_reason, model_sort_key, static_mesh_outcomes,
+                                    write_static_mesh_store_files)
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS
 from world.tile_census import WORLD_LANE_NAME
@@ -24,7 +25,7 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_json_resource import write_tile_json_resource
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-MOVER_STEP_ALGORITHM_VERSION = 2
+MOVER_STEP_ALGORITHM_VERSION = 3
 MOVER_STEP_NAME = 'movers'
 MOVERS_PRODUCT_NAME = 'movers.json'
 TILE_MOVERS_KIND = 'native-tile-movers'
@@ -246,7 +247,7 @@ def run_mover_step(project_root, client_root, tile_id):
     rules, class_evidence = load_collision_rules(), read_class_evidence(client, lane_work_root(project_root, WORLD_LANE_NAME))
     collisions = [mover_collision(mover, actors_by_export[mover.item['exportIndex']], class_evidence, outcome, sources, rules) for mover, outcome in converted]
     models = mover_models(converted)
-    gap_rows = conversion.gap_rows()
+    gap_rows = conversion.gap_rows() + colour_stream_gap_rows(tile_id, MOVER_STEP_NAME, source_identity, receipt_evidence, models)
     products_directory = unit.ledger.begin(unit.unit_key, unit.fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
     outputs, manifest_record = write_static_mesh_store_files(project_root, {'models': models}, outcomes), None
