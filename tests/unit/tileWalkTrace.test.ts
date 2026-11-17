@@ -9,6 +9,7 @@ import {
   anchorOnChunkFloor, collisionFloorBelow, tileAnchorHasNoFloor, tileAnchorOutsideChunkFootprints, type TileAnchorCandidate,
 } from "../../src/scene/world/nativeTileChunkContents";
 import { replaceFixtureArray } from "../support/nativeTileCollisionFixture";
+import { rm12FloorFixture } from "../fixtures/movement/pawnFloorPlacementRm12";
 import {
   collisionWorldFromFixtures, emptyChunkArrays, fixtureCellId, volumeArrays, wallTreeArrays,
 } from "../fixtures/movement/movementCollisionFixtures";
@@ -138,7 +139,7 @@ describe("tile walk failure classes at their root cause", () => {
     };
     const anchored = walkFrom(floorFeet);
     expect(anchored).toMatchObject({ physicsMode: "walking", floorHit: { primitiveKind: "terrain" }, fallStartPosition: null });
-    expect(anchored.endPosition.z).toBeCloseTo(floorFeet.z, 0);
+    expect(anchored.endPosition.z).toBeCloseTo(rm12FloorFixture("Terrain", "close-floor-upward").geometricBottomGapNominal, 4);
     const belowSurface = walkFrom({ ...floorFeet, z: -0.5 });
     expect(belowSurface.fallStartPosition).toMatchObject({ x: floorFeet.x, z: -0.5 });
     expect(belowSurface.endPosition.z).toBeLessThan(-100);

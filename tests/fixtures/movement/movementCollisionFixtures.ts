@@ -47,8 +47,46 @@ export function wallTreeArrays(): TypedPayloadFixtureArray[] {
   ];
 }
 
+const floorSlabThickness = 64, floorHalfSpan = 1024;
+
+function floorFacePoints(z: number): number[] {
+  return [[-1, -1], [1, -1], [1, 1], [-1, 1]].flatMap(([x, y]) => [x! * floorHalfSpan, y! * floorHalfSpan, z]);
+}
+
+export function floorTreeArrays(topZ: number): TypedPayloadFixtureArray[] {
+  const bottomZ = topZ - floorSlabThickness;
+  return [
+    { name: "BSPT.planes", type: "float32", values: [0, 0, 1, topZ, 0, 0, -1, -bottomZ] },
+    { name: "BSPT.front", type: "int32", values: [-1, -1] },
+    { name: "BSPT.back", type: "int32", values: [1, -1] },
+    { name: "BSPT.coplanar", type: "int32", values: [-1, -1] },
+    { name: "BSPT.nodeFlags", type: "uint8", values: [0, 0] },
+    { name: "BSPT.numVertices", type: "uint8", values: [4, 4] },
+    { name: "BSPT.collisionBound", type: "int32", values: [-1, 0] },
+    { name: "BSPT.vertexPool", type: "int32", values: [0, 4] },
+    { name: "BSPT.vertexPoints", type: "int32", values: [0, 1, 2, 3, 4, 5, 6, 7] },
+    { name: "BSPT.points", type: "float32", values: [...floorFacePoints(topZ), ...floorFacePoints(bottomZ)] },
+    { name: "BSPT.leafHulls", type: "int32", values: [0, 1, -1, ...float32Words([-floorHalfSpan, -floorHalfSpan, bottomZ, floorHalfSpan, floorHalfSpan, topZ])] },
+    { name: "BSPT.rootOutside", type: "uint8", values: [1] },
+    { name: "BSPT.surfaceFlags", type: "uint32", values: [0, 0] },
+  ];
+}
+
 export function emptyChunkArrays(): TypedPayloadFixtureArray[] {
   return collisionChunkFixtureArrays().map(array => ({ ...array, values: [] }));
+}
+
+export function flatTerrainChunkArrays(floorZ: number): TypedPayloadFixtureArray[] {
+  const terrainArrays: TypedPayloadFixtureArray[] = [
+    { name: "TERR.location", type: "float32", values: [2048, -2048, 0] },
+    { name: "TERR.terrainScale", type: "float32", values: [512, 512, 256] },
+    { name: "TERR.heightmapSize", type: "uint32", values: [4, 4] },
+    { name: "TERR.vertexRectangle", type: "uint32", values: [0, 0, 4, 4] },
+    { name: "TERR.heights", type: "uint32", values: Array.from({ length: 16 }, () => terrainHeightOrigin + floorZ) },
+    { name: "TERR.quadVisibility", type: "uint8", values: Array.from({ length: 9 }, () => 1) },
+    { name: "TERR.edgeTurn", type: "uint8", values: Array.from({ length: 9 }, () => 0) },
+  ];
+  return [...emptyChunkArrays().filter(array => !array.name.startsWith("TERR.")), ...terrainArrays];
 }
 
 export interface BoxVolumeDeclaration {

@@ -5,7 +5,8 @@ import type { MovementNativeRules } from "../../../src/scene/world/movement/core
 import { nativeSliceSpeedProfile } from "../../../src/world/NativeSliceAdapter";
 import { boxHalfExtent } from "../../support/nativeTileCollisionFixture";
 import {
-  collisionWorldFromFixtures, committedMovementRules, emptyChunkArrays, volumeArrays, type BoxVolumeDeclaration,
+  collisionWorldFromFixtures, committedMovementRules, emptyChunkArrays, flatTerrainChunkArrays, floorTreeArrays, terrainWorldPoint, volumeArrays,
+  type BoxVolumeDeclaration,
 } from "./movementCollisionFixtures";
 
 type SourceTriple = readonly [number, number, number];
@@ -45,6 +46,12 @@ export function boxVolumeWorld(boxes: readonly BoxVolumeDeclaration[]): Collisio
   const otherArrays = emptyChunkArrays().filter(array => !array.name.startsWith("VOLS."));
   return collisionWorldFromFixtures([...volumeArrays(boxes), ...otherArrays], null);
 }
+
+export const flatTerrainWorld = (floorZ: number) => collisionWorldFromFixtures(flatTerrainChunkArrays(floorZ), null);
+
+export const bspFloorWorld = (floorZ: number) => collisionWorldFromFixtures(emptyChunkArrays(), floorTreeArrays(floorZ));
+
+export const terrainQuadCentre = terrainWorldPoint(1.5, 1.5);
 
 export function pawnContext(world: CollisionWorld): PawnPhysicsContext {
   return { world, rules: pawnRules, surroundings: {} };

@@ -1,0 +1,366 @@
+{
+  "schemaVersion": 1,
+  "kind": "pawn-floor-placement-rm12",
+  "sourceRoot": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap",
+  "sources": [
+    {
+      "file": "pawn-floor-placement.json",
+      "sha256": "07201edaf1cd099933f712ffb155eaee222291070c1eb53f6d3805ba3d80c88c"
+    },
+    {
+      "file": "pawn-floor-placement-rm12/manifest.json",
+      "sha256": "f12803c062ce231215c21e0f2e9bf70becf19dfbc88bc2eb0ddbc064934eabf7"
+    },
+    {
+      "file": "pawn-floor-placement-rm12/floor/floor-part.json",
+      "sha256": "eb45e081fd4feed8d149d2d1db9406bd60fc9e446366c6c24ba059a35a0b3507"
+    },
+    {
+      "file": "pawn-floor-placement-rm12/server/server-part.json",
+      "sha256": "810400f646bd96430c50352e8023245435713def7c494ff4483b11cfccab6e63"
+    },
+    {
+      "file": "pawn-floor-placement-rm12/server/constants.json",
+      "sha256": "cd7a7af741c7941e538f7aaef294e51b80a43fcd8b1dcc6f4d2f24b8fe20ab10"
+    },
+    {
+      "file": "pawn-floor-placement-rm12/transform/matrix-fixtures.json",
+      "sha256": "1b8091c5cc75c74086763b717da1f5d28cb1c30a4976896d62437eedbaf47499"
+    }
+  ],
+  "verification": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap-verify/verified-pawn-floor-placement.md",
+  "floorPolicy": {
+    "probeLength": 12,
+    "minimumReportedGap": 1.899999976158142,
+    "maximumReportedGap": 2.4000000953674316,
+    "upwardTargetReportedGap": 2.150000035762787,
+    "restSkipField": "Pawn.bPhysicInit +0x678 mask1",
+    "locationRule": "No unique constant. CollisionHeight plus geometric bottom gap; primitive trace bias and prior state determine that gap."
+  },
+  "floorFixtures": [
+    {
+      "primitive": "Terrain",
+      "branch": "downward-settle",
+      "floorZ": 0,
+      "CollisionHeight": 23,
+      "geometricBottomGapNominal": 2.5,
+      "reportedProbeGapNominal": 2.0,
+      "locationZNominal": 25.5,
+      "status": "inferred",
+      "rounding": "nominal real arithmetic; native intermediate float32 may differ by a few ulps"
+    },
+    {
+      "primitive": "Terrain",
+      "branch": "close-floor-upward",
+      "floorZ": 0,
+      "CollisionHeight": 23,
+      "geometricBottomGapNominal": 2.650000035762787,
+      "reportedProbeGapNominal": 2.150000035762787,
+      "locationZNominal": 25.650000035762787,
+      "status": "inferred",
+      "rounding": "nominal real arithmetic; native intermediate float32 may differ by a few ulps"
+    },
+    {
+      "primitive": "BSP",
+      "branch": "downward-settle",
+      "floorZ": 0,
+      "CollisionHeight": 23,
+      "geometricBottomGapNominal": 3.4,
+      "reportedProbeGapNominal": 2.2,
+      "locationZNominal": 26.4,
+      "status": "inferred",
+      "rounding": "nominal real arithmetic; native intermediate float32 may differ by a few ulps"
+    },
+    {
+      "primitive": "BSP",
+      "branch": "close-floor-upward",
+      "floorZ": 0,
+      "CollisionHeight": 23,
+      "geometricBottomGapNominal": 3.350000035762787,
+      "reportedProbeGapNominal": 2.150000035762787,
+      "locationZNominal": 26.350000035762786,
+      "status": "inferred",
+      "rounding": "nominal real arithmetic; native intermediate float32 may differ by a few ulps"
+    }
+  ],
+  "groundSpawn": {
+    "start": "(incomingX,incomingY,incomingZ+User.CollisionHeight+20)",
+    "end": "(incomingX,incomingY,incomingZ-10)",
+    "extent": "(User.CollisionRadius,User.CollisionRadius,User.CollisionHeight)",
+    "chosen": "Hit.Location if its Z is nonzero, then conditional near-floor adjustment",
+    "adjustment": "if float32(12*Hit.Time)<1.899999976158142: selected.Z +=2.150000035762787-float32(12*Hit.Time)",
+    "fallback": "Some mode gates and exhausted retries pass incoming XYZ directly to SpawnActor."
+  },
+  "groundSpawnConstants": [
+    {
+      "va": "0x1089f9a8",
+      "bytesHex": "0000000000003440",
+      "double": 20.0
+    },
+    {
+      "va": "0x1089de78",
+      "bytesHex": "0000000000002440",
+      "double": 10.0
+    }
+  ],
+  "transformFixtures": [
+    {
+      "name": "identity-root",
+      "function": "0x106bc000",
+      "input": {
+        "actor": true,
+        "location": [
+          100.0,
+          200.0,
+          300.0
+        ],
+        "prePivot": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "drawScale": 1.0,
+        "drawScale3D": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "meshScale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "meshOrigin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotOrigin": [
+          0,
+          0,
+          0
+        ],
+        "flag80": 0,
+        "flag84": 0,
+        "collisionHeight": 23,
+        "extraScale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "extraOffset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "vertex": [
+          0.0,
+          0.0,
+          0.12200000137090683
+        ],
+        "name": "identity-root"
+      },
+      "nativeMatrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        100.0,
+        200.0,
+        300.0,
+        1.0
+      ],
+      "nativeFloat32Hex": "0000803f000000000000000000000000000000000000803f000000000000000000000000000000000000803f000000000000c84200004843000096430000803f",
+      "transformedVertex": [
+        100.0,
+        200.0,
+        300.12200927734375
+      ]
+    },
+    {
+      "name": "full-transform",
+      "function": "0x106bc000",
+      "input": {
+        "actor": true,
+        "location": [
+          100.0,
+          200.0,
+          300.0
+        ],
+        "prePivot": [
+          7.0,
+          -11.0,
+          13.0
+        ],
+        "rotation": [
+          4000,
+          8000,
+          2000
+        ],
+        "drawScale": 1.7000000476837158,
+        "drawScale3D": [
+          2.0,
+          3.0,
+          4.0
+        ],
+        "meshScale": [
+          0.800000011920929,
+          1.100000023841858,
+          1.2999999523162842
+        ],
+        "meshOrigin": [
+          3.0,
+          5.0,
+          7.0
+        ],
+        "rotOrigin": [
+          -1200,
+          7000,
+          500
+        ],
+        "flag80": 0,
+        "flag84": 0,
+        "collisionHeight": 23,
+        "extraScale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "extraOffset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "vertex": [
+          0.0,
+          0.0,
+          0.12200000137090683
+        ],
+        "name": "full-transform"
+      },
+      "nativeMatrix": [
+        0.47832024097442627,
+        2.669323444366455,
+        0.21052707731723785,
+        0.0,
+        -4.98905086517334,
+        1.077614426612854,
+        -2.328137159347534,
+        0.0,
+        -3.731659412384033,
+        0.036650754511356354,
+        8.01367473602295,
+        0.0,
+        156.6319122314453,
+        175.34739685058594,
+        267.91339111328125,
+        1.0
+      ],
+      "nativeFloat32Hex": "64e6f43e32d62a406994573e000000004ea69fc045ef893f330015c00000000082d36ec01a1f163d0338004100000000c5a11c43ef582f43eaf485430000803f",
+      "transformedVertex": [
+        156.17665100097656,
+        175.35186767578125,
+        268.89105224609375
+      ]
+    },
+    {
+      "name": "MFighter-zero-PrePivot",
+      "function": "0x106bc000",
+      "input": {
+        "actor": true,
+        "location": [
+          0.0,
+          0.0,
+          23.0
+        ],
+        "prePivot": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "drawScale": 1.0,
+        "drawScale3D": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "meshScale": [
+          1.0299999713897705,
+          1.0299999713897705,
+          1.0299999713897705
+        ],
+        "meshOrigin": [
+          0.0,
+          0.0,
+          25.200002670288086
+        ],
+        "rotOrigin": [
+          0,
+          49152,
+          0
+        ],
+        "flag80": 0,
+        "flag84": 0,
+        "collisionHeight": 23,
+        "extraScale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "extraOffset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "vertex": [
+          0.0,
+          0.0,
+          0.12200000137090683
+        ],
+        "name": "MFighter-zero-PrePivot"
+      },
+      "nativeMatrix": [
+        0.0,
+        -1.0299999713897705,
+        0.0,
+        0.0,
+        1.0299999713897705,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0299999713897705,
+        0.0,
+        0.0,
+        0.0,
+        -2.9560012817382812,
+        1.0
+      ],
+      "nativeFloat32Hex": "000000000ad783bf00000000000000000ad7833f00000000000000000000000000000000000000000ad7833f000000000000000000000000202f3dc00000803f",
+      "transformedVertex": [
+        0.0,
+        0.0,
+        -2.830341339111328
+      ]
+    }
+  ]
+}

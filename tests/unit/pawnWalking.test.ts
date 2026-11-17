@@ -7,9 +7,13 @@ import { headingOfDirection, turnYawTowards, yawStepForTick } from "../../src/sc
 import { calculatePawnVelocity, currentPawnSpeed, hasPawnArrived, type PawnSpeeds } from "../../src/scene/world/movement/core/pawnVelocity";
 import { walkPawn } from "../../src/scene/world/movement/core/pawnWalking";
 import type { GoldenTrace } from "../support/goldenTrace";
+import type { CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
+import type { CollisionPrimitive } from "../../src/scene/world/movement/core/collisionTrace";
 import { expectMovementGoldenTrace } from "../fixtures/movement/movementCollisionFixtures";
+import { rm12FloorFixture, type Rm12FloorFixture } from "../fixtures/movement/pawnFloorPlacementRm12";
 import {
-  boxVolumeWorld, centreAboveFloor, floorSlab, pawnContext, pawnRules, standingPawn, syntheticPawnHalfHeight, syntheticPawnRadius,
+  boxVolumeWorld, bspFloorWorld, centreAboveFloor, flatTerrainWorld, floorSlab, pawnContext, pawnRules, standingPawn, syntheticPawnHalfHeight,
+  syntheticPawnRadius, terrainQuadCentre,
 } from "../fixtures/movement/pawnWorldFixtures";
 
 const frameSeconds = 1 / 60;
@@ -32,12 +36,15 @@ function advanceFrames(simulation: PawnSimulation, traits: PawnTraits, frameCoun
   return frames;
 }
 
-function floorGap(location: Vector3, world = boxVolumeWorld([floorSlab(0)])): number {
+function floorProbeHit(location: Vector3, world: CollisionWorld) {
   const probe = pawnRules.pawn.floorProbe;
-  const hit = singleLineCheck(world, {
+  return singleLineCheck(world, {
     start: location, end: { ...location, z: location.z - probe }, extent: { x: syntheticPawnRadius, y: syntheticPawnRadius, z: syntheticPawnHalfHeight },
   }, pawnRules);
-  return probe * (hit?.time ?? 1);
+}
+
+function floorGap(location: Vector3, world = boxVolumeWorld([floorSlab(0)])): number {
+  return pawnRules.pawn.floorProbe * (floorProbeHit(location, world)?.time ?? 1);
 }
 
 describe("calcVelocity, GetCurSpeed and arrival", () => {
@@ -137,5 +144,67 @@ describe("walking with the floor probe and the floor gap band", () => {
     expect(frames.at(-1)!.goal).toBeNull();
     expect(frames.at(-1)!.yaw).toBe(headingOfDirection({ x: -120, y: 160, z: 0 }));
     expectMovementGoldenTrace("pawn-walking-turn.golden.json", trace);
+  });
+});
+
+describe("APawn::physWalking floor settle against the RM-12 flat fixtures (Engine.dll 4dd2f63c 0x1063F750)", () => {
+  const floorZ = 0;
+  const floors: Readonly<Record<Rm12FloorFixture["primitive"], { readonly world: CollisionWorld; readonly point: { readonly x: number; readonly y: number } }>> = {
+    Terrain: { world: flatTerrainWorld(floorZ), point: terrainQuadCentre },
+    BSP: { world: bspFloorWorld(floorZ), point: { x: 0, y: 0 } },
+  };
+  const standingStill = { x: 0, y: 0, z: 0 };
+  const pawnWithBottomGap = (primitive: Rm12FloorFixture["primitive"], bottomGap: number, floor: CollisionPrimitive | null): PawnBody => {
+    const { point } = floors[primitive];
+    return { ...standingPawn({ x: point.x, y: point.y, z: Math.fround(floorZ + syntheticPawnHalfHeight + bottomGap) }), floor };
+  };
+  const floorPrimitiveOf = (primitive: Rm12FloorFixture["primitive"]) =>
+    floorProbeHit(pawnWithBottomGap(primitive, 2.5, null).location, floors[primitive].world)!.primitive;
+  const stepStill = (primitive: Rm12FloorFixture["primitive"], body: PawnBody) =>
+    walkPawn(pawnContext(floors[primitive].world), body, standingStill, frameSeconds, false).body;
+
+  it.each(["Terrain", "BSP"] as const)("sweeps the full 12 units down when the %s gap is over 2.4 and then rests in the band", primitive => {
+    const fixture = rm12FloorFixture(primitive, "downward-settle");
+    const settled = stepStill(primitive, pawnWithBottomGap(primitive, 8, floorPrimitiveOf(primitive)));
+    expect(settled.location.z).toBeCloseTo(fixture.locationZNominal, 4);
+    expect(floorGap(settled.location, floors[primitive].world)).toBeCloseTo(fixture.reportedProbeGapNominal, 4);
+    expect(settled.restsInFloorBand).toBe(false);
+    const rested = stepStill(primitive, settled);
+    expect(rested).toMatchObject({ location: settled.location, restsInFloorBand: true, velocity: standingStill });
+  });
+
+  it.each([["Terrain", 1], ["BSP", 2]] as const)("moves a pawn on the same %s floor with a reported gap under 1.9 up to the close-floor fixture", (primitive, bottomGap) => {
+    const fixture = rm12FloorFixture(primitive, "close-floor-upward");
+    const raised = stepStill(primitive, pawnWithBottomGap(primitive, bottomGap, floorPrimitiveOf(primitive)));
+    expect(raised.location.z).toBeCloseTo(fixture.locationZNominal, 4);
+    expect(floorGap(raised.location, floors[primitive].world)).toBeCloseTo(fixture.reportedProbeGapNominal, 4);
+  });
+
+  it("sweeps down when the floor changed although the reported gap sits in the band", () => {
+    const settled = stepStill("Terrain", pawnWithBottomGap("Terrain", 2.65, null));
+    expect(settled.location.z).toBeCloseTo(rm12FloorFixture("Terrain", "downward-settle").locationZNominal, 4);
+    expect(settled.floor).toEqual(floorPrimitiveOf("Terrain"));
+  });
+
+  it("sweeps down rather than up when the floor changed and the reported gap is under 1.9", () => {
+    const start = pawnWithBottomGap("Terrain", 1, null);
+    const swept = stepStill("Terrain", start);
+    expect(swept.location.z).toBe(start.location.z);
+    expect(swept.restsInFloorBand).toBe(false);
+  });
+
+  it("moves a pawn whose reported gap is exactly 0 up by the 2.15 target", () => {
+    const terrainTraceBias = pawnRules.backoff.terrain.kind === "fixed-distance" ? pawnRules.backoff.terrain.distance : Number.NaN;
+    const start = pawnWithBottomGap("Terrain", terrainTraceBias, floorPrimitiveOf("Terrain"));
+    expect(floorGap(start.location, floors.Terrain.world)).toBe(0);
+    const raised = stepStill("Terrain", start);
+    expect(raised.location.z).toBeCloseTo(start.location.z + pawnRules.pawn.floorBand.target, 4);
+  });
+
+  it("rests a pawn on the same floor inside the band with zero velocity and does not move it", () => {
+    const start = pawnWithBottomGap("BSP", 3.4, floorPrimitiveOf("BSP"));
+    const rested = stepStill("BSP", start);
+    expect(rested).toMatchObject({ location: start.location, restsInFloorBand: true, velocity: standingStill });
+    expect(stepStill("BSP", rested)).toEqual(rested);
   });
 });

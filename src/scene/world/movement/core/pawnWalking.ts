@@ -10,7 +10,7 @@ import { stepUpPawn } from "./pawnStepUp";
 
 interface FloorSettlement {
   readonly location: Vector3;
-  readonly isInFloorBand: boolean;
+  readonly restsInFloorBand: boolean;
 }
 
 const sameFloor = (previous: CollisionPrimitive | null, next: CollisionPrimitive) => previous !== null && JSON.stringify(previous) === JSON.stringify(next);
@@ -28,10 +28,12 @@ function moveVertically(context: PawnPhysicsContext, body: PawnBody, location: V
 
 function settleIntoFloorBand(context: PawnPhysicsContext, body: PawnBody, location: Vector3, floorHit: LineCheckHit): FloorSettlement {
   const { floorProbe, floorBand } = context.rules.pawn;
-  const gap = floorProbe * floorHit.time;
-  const isOutsideBand = gap > floorBand.maximum || (gap > 0 && gap < floorBand.minimum);
-  if (isOutsideBand) return { location: moveVertically(context, body, location, floorBand.target - gap), isInFloorBand: false };
-  return { location, isInFloorBand: gap >= floorBand.minimum };
+  const gap = Math.fround(floorProbe * floorHit.time);
+  if (!sameFloor(body.floor, floorHit.primitive) || gap > floorBand.maximum) {
+    return { location: moveVertically(context, body, location, -floorProbe), restsInFloorBand: false };
+  }
+  if (gap < floorBand.minimum) return { location: moveVertically(context, body, location, Math.fround(floorBand.target - gap)), restsInFloorBand: false };
+  return { location, restsInFloorBand: true };
 }
 
 function steepSlideDelta(normal: Vector3, slideDistance: number): Vector3 {
@@ -56,7 +58,7 @@ function walkSubstep(context: PawnPhysicsContext, body: PawnBody, velocity: Vect
   const floorHit = probeFloor(context, body, location);
   if (floorHit !== null && isWalkableFloorNormal(floorHit.normal, rules)) {
     const settlement = settleIntoFloorBand(context, body, location, floorHit);
-    return { body: walkingBody(body, settlement.location, floorHit.primitive, settlement.isInFloorBand && sameFloor(body.floor, floorHit.primitive)), unusedSeconds: 0 };
+    return { body: walkingBody(body, settlement.location, floorHit.primitive, settlement.restsInFloorBand), unusedSeconds: 0 };
   }
   if (floorHit !== null && desiredDelta.x * floorHit.normal.x + desiredDelta.y * floorHit.normal.y < 0) {
     const slide = moveActor(world, pawnCylinderAt(body, location), steepSlideDelta(floorHit.normal, rules.pawn.steepSlide), rules, surroundings);
