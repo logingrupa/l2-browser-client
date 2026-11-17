@@ -104,11 +104,14 @@ async function assertMaterialOverride(page: Page, sandbox: SandboxState) {
     }
   }
 }
-async function rm12SettledBottomGapByFloorKind(): Promise<ReadonlyMap<string, number>> {
-  const document = JSON.parse(await readFile(resolve("tests/fixtures/movement/pawn-floor-placement-rm12.json"), "utf8")) as {
+async function spawnedRootAboveRayHitBeyondCollisionHeightByFloorKind(): Promise<ReadonlyMap<string, number>> {
+  const placement = JSON.parse(await readFile(resolve("tests/fixtures/movement/pawn-floor-placement-rm12.json"), "utf8")) as {
     floorFixtures: { primitive: string; branch: string; geometricBottomGapNominal: number }[] };
-  const settledGap = (primitive: string) => document.floorFixtures.find(row => row.primitive === primitive && row.branch === "downward-settle")!.geometricBottomGapNominal;
-  return new Map([["terrain", settledGap("Terrain")], ["bsp-tree", settledGap("BSP")]]);
+  const rules = JSON.parse(await readFile(resolve("recipes/world/movement-native-rules.json"), "utf8")) as { rows: { id: string; runtimeDefault: number }[] };
+  const closeFloorGap = (primitive: string) => placement.floorFixtures.find(row => row.primitive === primitive && row.branch === "close-floor-upward")!.geometricBottomGapNominal;
+  const rayBackoff = (id: string) => rules.rows.find(row => row.id === id)!.runtimeDefault;
+  return new Map([["terrain", closeFloorGap("Terrain") - rayBackoff("collision.backoff.terrain")],
+    ["bsp-tree", closeFloorGap("BSP") - rayBackoff("collision.backoff.bspRay")]]);
 }
 
 function errorsFor(page: Page) {
@@ -158,16 +161,17 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   assertRigs(initial, sandbox, sandbox.settings.leatherShirt);
   await expect.poll(() => page.evaluate(() => window.__nativeSlice!.snapshot().collisionCells!.status), { timeout: 120_000 }).toBe("resident");
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const settledBottomGapByFloorKind = await rm12SettledBottomGapByFloorKind();
+  const rootAboveRayHitBeyondCollisionHeight = await spawnedRootAboveRayHitBeyondCollisionHeightByFloorKind();
   const collisionHeightByEntityId = new Map([["local-player", defaultNativePlayerProfile.collisionHeight], ["native-musveren", initial.nativeNpcProfile!.collisionHeight]]);
   const presentedPawns = await page.evaluate(() => window.__nativeSlice!.snapshot().movement!.presenter.pawns);
-  for (const actor of (await read(page)).entities) {
+  const settledEntities = (await read(page)).entities;
+  for (const actor of settledEntities) {
     const [collisionSurfaceY] = await page.evaluate(({ x, z }) => window.__nativeSlice!.collisionSurfaceHeightsAt!(x, z), actor.position);
     const pawn = presentedPawns.find(candidate => candidate.entityId === actor.id)!;
     expect(pawn).toMatchObject({ mode: "walking", heldReason: null, isMoving: false });
-    const settledBottomGap = settledBottomGapByFloorKind.get(pawn.floor!.kind)!;
-    expect(settledBottomGap).toBeDefined();
-    expect(actor.position.y - collisionSurfaceY!).toBeCloseTo((collisionHeightByEntityId.get(actor.id)! + settledBottomGap) / 100, 4);
+    const rootAboveRayHit = rootAboveRayHitBeyondCollisionHeight.get(pawn.floor!.kind)!;
+    expect(rootAboveRayHit).toBeDefined();
+    expect(actor.position.y - collisionSurfaceY!).toBeCloseTo((collisionHeightByEntityId.get(actor.id)! + rootAboveRayHit) / 100, 4);
     if (actor.id === "native-musveren") {
       const musverenDrawScale = 1.2;
       const musverenIdleBoundsAtUnitActorScale = { minimumY: -.11751600205898288, maximumY: .2797630667686462 };
@@ -212,7 +216,7 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await expect.poll(async () => (await entity(page, "native-musveren")).playback?.playing, { timeout: 35_000 }).toBe(false);
   const dead = await entity(page, "native-musveren");
   expect(dead.playback).toMatchObject({ activeClip: "death", looping: false, playing: false });
-  expect(dead.position).toEqual(initial.entities.find(actor => actor.id === "native-musveren")!.position);
+  expect(dead.position).toEqual(settledEntities.find(actor => actor.id === "native-musveren")!.position);
   await mkdir(evidence, { recursive: true });
   await page.getByTestId("dev-sheet-toggle").click();
   await page.screenshot({ path: resolve(evidence, "native-death.png") });
