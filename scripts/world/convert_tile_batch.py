@@ -8,6 +8,7 @@ if str(SCRIPTS_ROOT) not in sys.path:
 import argparse
 import itertools
 import json
+import os
 from typing import NamedTuple
 
 from native_store.build_coverage_report import write_coverage_report
@@ -17,7 +18,7 @@ from native_store.lane_roots import create_lane_work_and_store_roots
 from native_store.share_identical_lane_files import share_identical_files_of_batch_lane
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
-from native_store.worker_count_argument import worker_count_argument
+from native_store.worker_count_argument import MAXIMUM_WORKER_COUNT, worker_count_argument
 from native_store.write_lane_catalog import write_lane_catalog
 from reference_client_guard import require_reference_client
 from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, failed_step_row, locked_tile_source_identity,
@@ -32,6 +33,7 @@ from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES,
 from world.tile_step_workers import BATCH_EXIT_DONE, BATCH_EXIT_ERROR, TileBatchStop, TileStepRun, TileStepsTask, TileStepWorkers
 
 EXTRA_FREE_BYTES_PER_ADDED_WORKER = 1024 ** 3
+DEFAULT_TILE_BATCH_WORKER_COUNT = min(os.cpu_count() or 1, MAXIMUM_WORKER_COUNT)
 SETTLING_UNSEALED_STATUSES = (FAILED_STATUS, GAP_STATUS)
 SEAL_INSPECTION_ERRORS = (OSError, ValueError)
 NOTHING_TO_DO_MESSAGE = 'nothing to do: every eligible tile of the census has every registered step sealed'
@@ -197,7 +199,7 @@ def run_tile_batch(limit, worker_count, tile_step_run_factory, tile_step_run_arg
     expected_costs = {tile_id: tile_expected_cost(tile_id) for tile_id in seam_inputs}
     step_results_by_tile, preflights_by_tile = {}, {tile_id: [] for tile_id in tile_ids}
     create_lane_work_and_store_roots(project_root, WORLD_LANE_NAME)
-    workers = TileStepWorkers(worker_count, coordinator_run, tile_step_run_factory, tile_step_run_arguments)
+    workers = TileStepWorkers(max(1, min(worker_count, len(seam_inputs))), coordinator_run, tile_step_run_factory, tile_step_run_arguments)
     try:
         raw_results_by_tile, stop = seam_input_raw_results(workers, seam_inputs, selected, source_identities, expected_costs, preflights_by_tile)
         if stop is None:
@@ -265,7 +267,9 @@ def batch_argument_parser():
                         help='world lane store for the manifest step; a relative path is taken from the repository root')
     parser.add_argument('--eligible', action='store_true', required=True, help='select the tiles from the committed census status eligible')
     parser.add_argument('--limit', type=positive_limit_argument, required=True)
-    parser.add_argument('--workers', type=worker_count_argument, default=1, help='worker processes that run the steps of the selected tiles')
+    parser.add_argument('--workers', type=worker_count_argument, default=DEFAULT_TILE_BATCH_WORKER_COUNT,
+                        help='worker processes that run the steps of the selected tiles; default the logical processor count, '
+                             'never more than the tiles to convert')
     parser.add_argument('--retry-tiles', type=retry_tile_ids_argument, default=None,
                         help='comma-separated eligible tile ids; only these run, and their recorded gap or failed rows do not settle them')
     return parser

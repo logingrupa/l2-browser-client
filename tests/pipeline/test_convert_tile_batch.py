@@ -2,6 +2,7 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -14,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets_lib.gltf import json_bytes
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_work_root
+from native_store.worker_count_argument import MAXIMUM_WORKER_COUNT
 from native_store.unit_ledger import (RUNNING_MARKER_NAME, SEAL_RECORD_NAME, FreeDiskFloorRefusedError, MachineWindowRefusedError,
                                       UnitLedger)
 from tile_step_seal_fixture import LOCKED_TILE_ID, seal_raw_unit, seal_unit, tile_map_inputs, unpinned_music_encoder
@@ -26,7 +28,7 @@ from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATI
 from world.tile_music import pinned_music_encoder
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, TileStepSealCheck, unit_step_seal
 from world.tile_step_registry import TILE_STEP_NAMES
-from world.tile_step_workers import BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, BATCH_EXIT_MACHINE_WINDOW, TileStepRun
+from world.tile_step_workers import BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, BATCH_EXIT_MACHINE_WINDOW, TileStepRun, TileStepWorkers
 from world.world_audio_step import WORLD_AUDIO_STEP_NAME, world_audio_unit_config
 
 SYNTHETIC_STEP_NAMES = ('raw', 'chunks', 'meshes', 'manifest')
@@ -314,6 +316,19 @@ class TileBatchOrderTests(TileBatchTestCase):
         unsealed_row = tile_step_row('10_11', 'raw', 'gap', 'player-start-missing', synthetic_source_identity('10_11'), 'evidence.json')
         self.assertEqual(seal_derived_step_row(self.project_root, unsealed_row, synthetic_seal_checks()), unsealed_row)
 
+    def test_a_batch_starts_no_more_workers_than_it_has_tiles_to_convert(self):
+        started_worker_counts = []
+
+        def recorded_workers(worker_count, *worker_arguments):
+            started_worker_counts.append(worker_count)
+            return TileStepWorkers(1, *worker_arguments)
+        with patch.object(convert_tile_batch, 'TileStepWorkers', recorded_workers):
+            outcome = run_tile_batch(2, 16, TileStepRun, (self.project_root, LedgerBackedSteps(self.project_root), RecordingPreflight(),
+                                                          synthetic_seal_checks()),
+                                     step_names=SYNTHETIC_STEP_NAMES, tile_source_identity=synthetic_source_identity,
+                                     tile_expected_cost=synthetic_expected_cost)
+        self.assertEqual((outcome.exit_code, outcome.attempted_tile_ids, started_worker_counts), (BATCH_EXIT_DONE, ['10_11', '12_13'], [2]))
+
     def test_refuses_a_limit_below_one(self):
         with self.assertRaises(TileBatchUsageError):
             self.run_batch(LedgerBackedSteps(self.project_root), limit=0)
@@ -412,6 +427,10 @@ class TileBatchCommandLineTests(TileBatchTestCase):
               contextlib.redirect_stdout(printed), contextlib.redirect_stderr(errors)):
             exit_code = convert_tile_batch.main(arguments)
         return exit_code, printed.getvalue(), errors.getvalue()
+
+    def test_the_default_worker_count_is_the_logical_processor_count(self):
+        arguments = convert_tile_batch.batch_argument_parser().parse_args(['--eligible', '--limit', '1'])
+        self.assertEqual(arguments.workers, min(os.cpu_count(), MAXIMUM_WORKER_COUNT))
 
     def test_limit_zero_and_a_missing_eligible_flag_are_usage_errors(self):
         for arguments in (['--eligible', '--limit', '0'], ['--limit', '1']):

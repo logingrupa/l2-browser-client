@@ -253,7 +253,7 @@ class TileStepsPhaseTests(TileBatchPhaseTestCase):
     def test_a_preflight_refusal_in_phase_a_stops_the_batch_with_no_attempted_tile_and_no_nothing_to_do_line(self):
         steps = LedgerBackedSteps(self.project_root)
         refusing_preflight = RecordingPreflight({2: FreeDiskFloorRefusedError('free disk 1 bytes is below the batch floor')})
-        exit_code, printed, _, _ = self.run_main(['--eligible', '--limit', '1'], steps, refusing_preflight)
+        exit_code, printed, _, _ = self.run_main(['--eligible', '--limit', '1', '--workers', '1'], steps, refusing_preflight)
         self.assertEqual(exit_code, BATCH_EXIT_DISK_FLOOR)
         summary = json.loads(printed)
         self.assertEqual(summary['attemptedTiles'], [])
@@ -351,9 +351,9 @@ class TileBatchWorkerCountTests(TileBatchPhaseTestCase):
                 self.assertEqual((exit_code, printed), (bad_limit_exit_code, ''))
                 self.assertIn(f'error: argument --workers: --workers must be an integer from 1 to 61: {worker_count_text!r}', errors)
 
-    def test_without_workers_the_batch_runs_with_one_worker_and_builds_no_process_pool(self):
+    def test_one_worker_runs_the_batch_in_the_coordinator_and_builds_no_process_pool(self):
         steps = LedgerBackedSteps(self.project_root)
-        exit_code, printed, _, preflight_worker_counts = self.run_main(['--eligible', '--limit', '1'], steps, RecordingPreflight())
+        exit_code, printed, _, preflight_worker_counts = self.run_main(['--eligible', '--limit', '1', '--workers', '1'], steps, RecordingPreflight())
         self.assertEqual(exit_code, BATCH_EXIT_DONE)
         self.assertEqual(json.loads(printed)['attemptedTiles'], [OWNER_TILE_ID])
         self.assertEqual(preflight_worker_counts, [1])
