@@ -35,6 +35,7 @@ async function renderedSwatch(page: Page, object: string) {
   expect(state?.failure ?? null).toBeNull();
   expect(pageErrors).toEqual([]);
   expect(gpuWarnings).toEqual([]);
+  expect(state!.material!.reasons).not.toContain(TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON);
   return { swatch, material: state!.material!, centrePixel: state!.centrePixel! };
 }
 
@@ -46,9 +47,8 @@ test.describe("native texture mip chain upload on WebGPU", () => {
       test.setTimeout(120_000);
       const context = await browser.newContext({ viewport: desktopViewport });
       const page = await context.newPage();
-      const { material, centrePixel } = await renderedSwatch(page, object);
-      const usedTheChain = !material.reasons.includes(TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON);
-      expect(differsFromTheSwatchPng(centrePixel)).toBe(usedTheChain);
+      const { centrePixel } = await renderedSwatch(page, object);
+      expect(differsFromTheSwatchPng(centrePixel)).toBe(true);
       await page.screenshot({ path: resolve(evidenceDirectory, `${object}-desktop.png`) });
       await context.close();
     });
@@ -60,9 +60,8 @@ test.describe("native texture mip chain upload on WebGPU", () => {
       const context = await browser.newContext({ viewport: desktopViewport });
       const page = await context.newPage();
       const { material } = await renderedSwatch(page, object);
-      const usedTheChain = !material.reasons.includes(TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON);
       const live = liveBoundStage(object);
-      expect(material.samplers).toEqual([expect.objectContaining({ levelCount: usedTheChain ? live.levelCount : 1, samplingMode: Constants.TEXTURE_TRILINEAR_SAMPLINGMODE,
+      expect(material.samplers).toEqual([expect.objectContaining({ levelCount: live.levelCount, samplingMode: Constants.TEXTURE_TRILINEAR_SAMPLINGMODE,
         anisotropicFilteringLevel: live.maxAnisotropy, wrapU: Constants.TEXTURE_WRAP_ADDRESSMODE, wrapV: Constants.TEXTURE_WRAP_ADDRESSMODE })]);
       await page.screenshot({ path: resolve(evidenceDirectory, `${object}-desktop.png`) });
       await context.close();
