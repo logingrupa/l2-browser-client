@@ -21,7 +21,6 @@ MIN_LOD_CLASS_DEFAULT = 0
 KEEP_MIN_FRAME_RATE_TEXTURE_DETAIL = 2
 FIRST_MIP_MINIMUM_EDGE = 64
 POSTLOAD_WIDE_EDGE = 256
-WEBGPU_GUARANTEED_MAXIMUM_TEXTURE_DIMENSION_2D = 8192
 
 
 class MaterialTextureMipChainError(ValueError):
@@ -90,7 +89,7 @@ def native_mip_retention(width, height, stored_dimensions, min_lod, settings=NAT
     lod = native_default_lod(settings['textureDetail'], settings['keepMinFrameRate'], min_lod, postload_max_lod(stored_dimensions))
     retained_count = native_retained_mip_count(len(stored_dimensions), width, height)
     first_mip = native_size_capped_first_mip(native_first_mip_of_lod(width, height, lod, min_lod), retained_count, width, height,
-                                             WEBGPU_GUARANTEED_MAXIMUM_TEXTURE_DIMENSION_2D, WEBGPU_GUARANTEED_MAXIMUM_TEXTURE_DIMENSION_2D)
+                                             MAX_DIMENSION, MAX_DIMENSION)
     require_mip_chain(first_mip < retained_count, f'a {width}x{height} texture with MinLOD {min_lod} starts at mip {first_mip} but retains {retained_count} levels')
     return NativeMipRetention(first_mip, retained_count)
 
