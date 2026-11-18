@@ -1,0 +1,1683 @@
+{
+  "gapReasons": [],
+  "graphSha256": "4c1cbf502305e6205f6c9fa0e7f2b3e2ff8dc7f1456a9f06d7d2273f6d64e5d6",
+  "kind": "ue2-material-program",
+  "nodes": [
+    {
+      "class": "Engine.TexPanner",
+      "fields": [
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Material",
+          "field": "FallbackMaterial",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Material",
+          "field": "DefaultMaterial",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "class": "Texture",
+            "object": "Engine.DefaultTexture"
+          },
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const transient bool",
+          "declaringClass": "Engine.Material",
+          "field": "UseFallback",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const transient bool",
+          "declaringClass": "Engine.Material",
+          "field": "Validated",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "Reserved",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "TextureTranform",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_SAMPLER_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_TEXMAT_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_PASS_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "TwoPassRenderState",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "AlphaRef",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "SrcBlend",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "DestBlend",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "OverriddenFogColor",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "Matrix",
+          "declaringClass": "Engine.Material",
+          "field": "matTexMatrix",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_Color1",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_Color2",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_FadePeriod",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_FadePhase",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_ColorFadeType",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "BitmapMaterials",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "string",
+          "declaringClass": "Engine.Material",
+          "field": "strTex",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "string",
+          "declaringClass": "Engine.Material",
+          "field": "ShaderCode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Modifier",
+          "field": "Material",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "l2_skies.Textures.Cloud_Final02"
+          }
+        },
+        {
+          "declaredType": "TexModifier.ETexCoordSrc",
+          "declaringClass": "Engine.TexModifier",
+          "field": "TexCoordSource",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "name": "TCS_NoChange",
+            "ordinal": 15
+          },
+          "valueDeclaringClass": "Engine.TexModifier"
+        },
+        {
+          "declaredType": "TexModifier.ETexCoordCount",
+          "declaringClass": "Engine.TexModifier",
+          "field": "TexCoordCount",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TCN_2DCoords",
+            "ordinal": 0
+          },
+          "valueDeclaringClass": "Engine.TexModifier"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.TexModifier",
+          "field": "TexCoordProjected",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.TexModifier"
+        },
+        {
+          "declaredType": "Rotator",
+          "declaringClass": "Engine.TexPanner",
+          "field": "PanDirection",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.TexPanner"
+        },
+        {
+          "declaredType": "float",
+          "declaringClass": "Engine.TexPanner",
+          "field": "PanRate",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 0.0044999998062849045
+        },
+        {
+          "declaredType": "Matrix",
+          "declaringClass": "Engine.TexPanner",
+          "field": "M",
+          "provenance": "authored",
+          "status": "raw",
+          "value": {
+            "propertyType": 10,
+            "rawHex": "195a0a190e24000000000c240000803f0b24000000000d240000000000185a0a190e24000000000c24000000000b240000803f0d240000000000175a0a190e24000000000c24c9c7a1400b24000000000d240000803f00165a0a190e240000803f0c24000000000b24000000000d24000000000000",
+            "structName": "Matrix"
+          }
+        }
+      ],
+      "gapReasons": [],
+      "id": "l2_skies.Shaders.Cloud_Final02_TP",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Material",
+          "field": "FallbackMaterial",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Material",
+          "field": "DefaultMaterial",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "class": "Texture",
+            "object": "Engine.DefaultTexture"
+          },
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const transient bool",
+          "declaringClass": "Engine.Material",
+          "field": "UseFallback",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const transient bool",
+          "declaringClass": "Engine.Material",
+          "field": "Validated",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "Reserved",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "TextureTranform",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_SAMPLER_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_TEXMAT_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_PASS_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "TwoPassRenderState",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "AlphaRef",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "SrcBlend",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "DestBlend",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "OverriddenFogColor",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "Matrix",
+          "declaringClass": "Engine.Material",
+          "field": "matTexMatrix",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_Color1",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_Color2",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_FadePeriod",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_FadePhase",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_ColorFadeType",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "BitmapMaterials",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "string",
+          "declaringClass": "Engine.Material",
+          "field": "strTex",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "string",
+          "declaringClass": "Engine.Material",
+          "field": "ShaderCode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const editconst BitmapMaterial.ETextureFormat",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "Format",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "name": "TEXF_DXT5",
+            "ordinal": 8
+          }
+        },
+        {
+          "declaredType": "BitmapMaterial.ETexClampMode",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "UClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          },
+          "valueDeclaringClass": "Engine.BitmapMaterial"
+        },
+        {
+          "declaredType": "BitmapMaterial.ETexClampMode",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "VClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          },
+          "valueDeclaringClass": "Engine.BitmapMaterial"
+        },
+        {
+          "declaredType": "const byte",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "UBits",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 10
+        },
+        {
+          "declaredType": "const byte",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "VBits",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 10
+        },
+        {
+          "declaredType": "const int",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1024
+        },
+        {
+          "declaredType": "const int",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "VSize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1024
+        },
+        {
+          "declaredType": "const int",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "UClamp",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1024
+        },
+        {
+          "declaredType": "const int",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "VClamp",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 1024
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.BitmapMaterial",
+          "field": "LossDetail",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.BitmapMaterial"
+        },
+        {
+          "declaredType": "Palette",
+          "declaringClass": "Engine.Texture",
+          "field": "Palette",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Texture",
+          "field": "Detail",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "float",
+          "declaringClass": "Engine.Texture",
+          "field": "DetailScale",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": 8.0,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "const Color",
+          "declaringClass": "Engine.Texture",
+          "field": "MipZero",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "A": 0,
+            "B": 64,
+            "G": 128,
+            "R": 64
+          },
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "const Color",
+          "declaringClass": "Engine.Texture",
+          "field": "MaxColor",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "A": 255,
+            "B": 255,
+            "G": 255,
+            "R": 255
+          },
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "const int",
+          "declaringClass": "Engine.Texture",
+          "field": "InternalTime",
+          "provenance": "authored",
+          "status": "typed",
+          "value": [
+            513797283,
+            1086498466
+          ]
+        },
+        {
+          "declaredType": "deprecated Texture",
+          "declaringClass": "Engine.Texture",
+          "field": "DetailTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "deprecated Texture",
+          "declaringClass": "Engine.Texture",
+          "field": "EnvironmentMap",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "deprecated Texture.EEnvMapTransformType",
+          "declaringClass": "Engine.Texture",
+          "field": "EnvMapTransformType",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "EMTT_ViewSpace",
+            "ordinal": 0
+          },
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "deprecated float",
+          "declaringClass": "Engine.Texture",
+          "field": "Specular",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bMasked",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bAlphaTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bTwoSided",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "private bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bHighColorQuality",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "private bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bHighTextureQuality",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "private bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bRealtime",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "private bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bParametric",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "private transient bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bRealtimeChanged",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "private const editconst bool",
+          "declaringClass": "Engine.Texture",
+          "field": "bHasComp",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "Texture.ELODSet",
+          "declaringClass": "Engine.Texture",
+          "field": "LODSet",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "name": "LODSET_World",
+            "ordinal": 1
+          },
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Texture",
+          "field": "NormalLOD",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Texture",
+          "field": "MinLOD",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "transient int",
+          "declaringClass": "Engine.Texture",
+          "field": "MaxLOD",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "Texture",
+          "declaringClass": "Engine.Texture",
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "transient Texture",
+          "declaringClass": "Engine.Texture",
+          "field": "AnimCurrent",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Texture",
+          "field": "PrimeCount",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "transient byte",
+          "declaringClass": "Engine.Texture",
+          "field": "PrimeCurrent",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "float",
+          "declaringClass": "Engine.Texture",
+          "field": "MinFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "float",
+          "declaringClass": "Engine.Texture",
+          "field": "MaxFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Texture",
+          "field": "TotalFrameNum",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "transient float",
+          "declaringClass": "Engine.Texture",
+          "field": "Accumulator",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "native const array<int>",
+          "declaringClass": "Engine.Texture",
+          "field": "Mips",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "const editconst BitmapMaterial.ETextureFormat",
+          "declaringClass": "Engine.Texture",
+          "field": "CompFormat",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TEXF_P8",
+            "ordinal": 0
+          },
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "const transient int",
+          "declaringClass": "Engine.Texture",
+          "field": "RenderInterface",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        },
+        {
+          "declaredType": "const transient int",
+          "declaringClass": "Engine.Texture",
+          "field": "__LastUpdateTime",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Texture"
+        }
+      ],
+      "gapReasons": [],
+      "id": "l2_skies.Textures.Cloud_Final02",
+      "image": {
+        "bytes": 299597,
+        "mips": {
+          "firstMip": 0,
+          "format": "DXT5",
+          "levels": [
+            {
+              "bytes": 1048576,
+              "height": 1024,
+              "path": "/l2/native-materials/texture-mips/01214ebe45fe846ce939cd103872a4fc8b3e797dd406d6862d7a7120d1e4d8e7/level.bin",
+              "sha256": "01214ebe45fe846ce939cd103872a4fc8b3e797dd406d6862d7a7120d1e4d8e7",
+              "width": 1024
+            },
+            {
+              "bytes": 262144,
+              "height": 512,
+              "path": "/l2/native-materials/texture-mips/b60d64fecf0a5aac91c81e0d69e80562e2d8554709d56bc337b892845ad35883/level.bin",
+              "sha256": "b60d64fecf0a5aac91c81e0d69e80562e2d8554709d56bc337b892845ad35883",
+              "width": 512
+            },
+            {
+              "bytes": 65536,
+              "height": 256,
+              "path": "/l2/native-materials/texture-mips/337348cf8c12dd794ad9f33428e16aa3b2b2fa627eb11c65cb055c5f2f3457f1/level.bin",
+              "sha256": "337348cf8c12dd794ad9f33428e16aa3b2b2fa627eb11c65cb055c5f2f3457f1",
+              "width": 256
+            },
+            {
+              "bytes": 16384,
+              "height": 128,
+              "path": "/l2/native-materials/texture-mips/56fe79db64b40529b4587b7b3c98c90fcef255b734b7ac414b1f19ab5eb95b87/level.bin",
+              "sha256": "56fe79db64b40529b4587b7b3c98c90fcef255b734b7ac414b1f19ab5eb95b87",
+              "width": 128
+            },
+            {
+              "bytes": 4096,
+              "height": 64,
+              "path": "/l2/native-materials/texture-mips/e3f501e4efc039595ec2f8e61dcffcd9c29590d2b5da9b1419dc9ff68188baff/level.bin",
+              "sha256": "e3f501e4efc039595ec2f8e61dcffcd9c29590d2b5da9b1419dc9ff68188baff",
+              "width": 64
+            },
+            {
+              "bytes": 1024,
+              "height": 32,
+              "path": "/l2/native-materials/texture-mips/72bfd36f7cd5f47d232f7a93c6473abbb32040d71fe0f01a830ddb592d2ab5f3/level.bin",
+              "sha256": "72bfd36f7cd5f47d232f7a93c6473abbb32040d71fe0f01a830ddb592d2ab5f3",
+              "width": 32
+            },
+            {
+              "bytes": 256,
+              "height": 16,
+              "path": "/l2/native-materials/texture-mips/4829c0eaf834724c105ba2752962d768f390a830cb0a74b8e8fcbb5aa3b7fe84/level.bin",
+              "sha256": "4829c0eaf834724c105ba2752962d768f390a830cb0a74b8e8fcbb5aa3b7fe84",
+              "width": 16
+            },
+            {
+              "bytes": 64,
+              "height": 8,
+              "path": "/l2/native-materials/texture-mips/c0227b107a47aa568fa55bc945223fcc6fbb9022b19b701062c155ec6d9afd50/level.bin",
+              "sha256": "c0227b107a47aa568fa55bc945223fcc6fbb9022b19b701062c155ec6d9afd50",
+              "width": 8
+            },
+            {
+              "bytes": 16,
+              "height": 4,
+              "path": "/l2/native-materials/texture-mips/a766f130d3edfc0eea758b1e5ecc41fdc67b8d1cf0489ea9395dced07f615e97/level.bin",
+              "sha256": "a766f130d3edfc0eea758b1e5ecc41fdc67b8d1cf0489ea9395dced07f615e97",
+              "width": 4
+            },
+            {
+              "bytes": 16,
+              "height": 2,
+              "path": "/l2/native-materials/texture-mips/9a50914dcbf9ce47e1c6da87a106931db576e3127641d876c934e3c9bc5fc6f5/level.bin",
+              "sha256": "9a50914dcbf9ce47e1c6da87a106931db576e3127641d876c934e3c9bc5fc6f5",
+              "width": 2
+            },
+            {
+              "bytes": 16,
+              "height": 1,
+              "path": "/l2/native-materials/texture-mips/a24ee2a23289129cef842f572592a1bd973687585dca2846b706ce9698e9bfe2/level.bin",
+              "sha256": "a24ee2a23289129cef842f572592a1bd973687585dca2846b706ce9698e9bfe2",
+              "width": 1
+            }
+          ]
+        },
+        "path": "/l2/native-materials/textures/c44837ee300bce1a5fa33bc791f8dc7a555193309416d8cd8db1e540dcdae98d/texture.png",
+        "sha256": "c44837ee300bce1a5fa33bc791f8dc7a555193309416d8cd8db1e540dcdae98d"
+      },
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Shader",
+      "fields": [
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Material",
+          "field": "FallbackMaterial",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Material",
+          "field": "DefaultMaterial",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "class": "Texture",
+            "object": "Engine.DefaultTexture"
+          },
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const transient bool",
+          "declaringClass": "Engine.Material",
+          "field": "UseFallback",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const transient bool",
+          "declaringClass": "Engine.Material",
+          "field": "Validated",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "Reserved",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "TextureTranform",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_SAMPLER_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_TEXMAT_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_PASS_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "TwoPassRenderState",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "SrcBlend",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "DestBlend",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "OverriddenFogColor",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "Matrix",
+          "declaringClass": "Engine.Material",
+          "field": "matTexMatrix",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_Color1",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_Color2",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_FadePeriod",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_FadePhase",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_ColorFadeType",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "BitmapMaterials",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "string",
+          "declaringClass": "Engine.Material",
+          "field": "strTex",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "string",
+          "declaringClass": "Engine.Material",
+          "field": "ShaderCode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Shader",
+          "field": "Diffuse",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "l2_skies.Shaders.Cloud_Final02_TP"
+          }
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Shader",
+          "field": "Opacity",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "l2_skies.Shaders.Cloud_Final02_TP"
+          }
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Shader",
+          "field": "Specular",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Shader",
+          "field": "SpecularityMask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Shader",
+          "field": "SelfIllumination",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Shader",
+          "field": "SelfIlluminationMask",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Shader",
+          "field": "Detail",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "float",
+          "declaringClass": "Engine.Shader",
+          "field": "DetailScale",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": 8.0,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "Shader.EOutputBlending",
+          "declaringClass": "Engine.Shader",
+          "field": "OutputBlending",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "OB_Normal",
+            "ordinal": 0
+          },
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Shader",
+          "field": "TwoSided",
+          "provenance": "authored",
+          "status": "typed",
+          "value": true
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Shader",
+          "field": "Wireframe",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Shader",
+          "field": "ModulateStaticLighting2X",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Shader",
+          "field": "PerformLightingOnSpecularPass",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Shader",
+          "field": "TreatAsTwoSided",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Shader",
+          "field": "ZWrite",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.Shader",
+          "field": "AlphaTest",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Shader",
+          "field": "AlphaRef",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Shader",
+          "field": "NormalMap",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "float",
+          "declaringClass": "Engine.Shader",
+          "field": "BumpOffsetScaleFactor",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        },
+        {
+          "declaredType": "float",
+          "declaringClass": "Engine.Shader",
+          "field": "BumpOffsetBiasFactor",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Shader"
+        }
+      ],
+      "gapReasons": [],
+      "id": "l2_skies.Shaders.Cloud_Final02_s",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.ColorModifier",
+      "fields": [
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Material",
+          "field": "FallbackMaterial",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "Material",
+          "declaringClass": "Engine.Material",
+          "field": "DefaultMaterial",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": {
+            "class": "Texture",
+            "object": "Engine.DefaultTexture"
+          },
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const transient bool",
+          "declaringClass": "Engine.Material",
+          "field": "UseFallback",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "const transient bool",
+          "declaringClass": "Engine.Material",
+          "field": "Validated",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "Reserved",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "TextureTranform",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_SAMPLER_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_TEXMAT_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "MAX_PASS_NUM",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "TwoPassRenderState",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "byte",
+          "declaringClass": "Engine.Material",
+          "field": "AlphaRef",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "SrcBlend",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "DestBlend",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "OverriddenFogColor",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "Matrix",
+          "declaringClass": "Engine.Material",
+          "field": "matTexMatrix",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_Color1",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_Color2",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_FadePeriod",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_FadePhase",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "FC_ColorFadeType",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "int",
+          "declaringClass": "Engine.Material",
+          "field": "BitmapMaterials",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "string",
+          "declaringClass": "Engine.Material",
+          "field": "strTex",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "string",
+          "declaringClass": "Engine.Material",
+          "field": "ShaderCode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null,
+          "valueDeclaringClass": "Engine.Material"
+        },
+        {
+          "declaredType": "editinlineuse Material",
+          "declaringClass": "Engine.Modifier",
+          "field": "Material",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "l2_skies.Shaders.Cloud_Final02_s"
+          }
+        },
+        {
+          "declaredType": "Color",
+          "declaringClass": "Engine.ColorModifier",
+          "field": "Color",
+          "provenance": "authored",
+          "status": "raw",
+          "value": {
+            "propertyType": 10,
+            "rawHex": "97c0ffff",
+            "structName": "Color"
+          }
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.ColorModifier",
+          "field": "RenderTwoSided",
+          "provenance": "authored",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": "bool",
+          "declaringClass": "Engine.ColorModifier",
+          "field": "AlphaBlend",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": true,
+          "valueDeclaringClass": "Engine.ColorModifier"
+        }
+      ],
+      "gapReasons": [],
+      "id": "l2_skies.Shaders.Cloud_Final02_sh",
+      "status": "reviewed"
+    }
+  ],
+  "root": "l2_skies.Shaders.Cloud_Final02_sh",
+  "schemaVersion": 1
+}

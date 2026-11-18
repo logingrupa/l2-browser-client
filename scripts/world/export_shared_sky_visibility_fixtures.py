@@ -13,15 +13,30 @@ import struct
 
 from native_store.store_paths import REPOSITORY_ROOT
 from world.export_day_night_fixtures import DEFAULT_OUTPUT_DIRECTORY, read_pinned_json, require, require_output_directory_inside_fixtures
+from world.shared_sky_visibility_rules import SHARED_SKY_VISIBILITY_RULES_SCHEMA_VERSION
 
 SHARED_SKY_NODES_SHA256 = '5275acf9d8027d4556f3419f33db4006fc07bf39b0da9b5541dd32d660460fd4'
 VIEW_FRUSTUM_SHA256 = '1ea27d25e8cd8660e416a86d6978aef7d151057bdf789632882224b6ae62e10f'
 VIEW_FRUSTUM_MANIFEST_SHA256 = 'e6699aa3218ac1fe986fbef5b7c918a4c337afdd3a2bce53d9385e7f819927ce'
 SKY_DRAW_ORDER_SHA256 = 'ad73cee09e34a1d9ad560026b90c6e4643b1225c8b905d4377b0b19cb3fa20c1'
 SKY_DRAW_ORDER_MANIFEST_SHA256 = '1d02a8374e80d46f2099f1e05ad04ec4a9268aca056cfe385750798ab64f2303'
+VERIFIED_SKY_DRAW_ORDER_FILE = 'verified-sky-draw-order.md'
+VERIFIED_SKY_DRAW_ORDER_SHA256 = 'ff5d8490305f462f636a79309ac1aa9b1cdc42d8b26c1252e8712496318a1d78'
+ENGINE_CLASS_PACKAGE = 'Engine'
+FORWARDING_RULE_PATTERN = re.compile(r'Each surface material is an L2_Skies \w+\. U(\w+)::RequiresSorting \((0x[0-9a-f]+)\) forwards to (\w+) at '
+                                     r'\+0x[0-9a-f]+, or returns 0 when \3 is null')
+SHADER_OPACITY_RULE_PATTERN = re.compile(r'U(\w+) (0x[0-9a-f]+): OB (\d+) with (\w+)')
+SHADER_SORTING_SET_PATTERN = re.compile(r'OB in \{([0-9,]+)\}')
+SHADER_OUTPUT_BLENDING_FIELD_PATTERN = re.compile(r'the byte at \+0x598 holds (\w+)')
+TEXTURE_RULE_PATTERN = re.compile(r'U(\w+) (0x[0-9a-f]+): \(\+0x5c0>>1\)&1')
+TEXTURE_FLAG_FIELD_PATTERN = re.compile(r'Treating bit 1 of \+0x5c0 as (\w+) is the UE2 layout')
 FIXTURES_OUTPUT_NAME = 'shared-sky-visibility-fixtures.json'
 STAGED_SKY_VISIBILITY_FOLDER = 'skylevel-visibility'
 STAGED_SKY_VISIBILITY_FILES = ('visibility.json', 'payload.bin')
+STAGED_SKY_SNAPSHOT_NAME = 'sky.json'
+STAGED_MATERIAL_PROGRAMS_LISTING_NAME = 'material-programs.json'
+STAGED_MATERIAL_PROGRAMS_FOLDER = 'material-programs'
+PROGRAM_FILE_NAME = 'program.json'
 RULES_RELATIVE_PATH = 'recipes/world/shared-sky-visibility.json'
 LEVEL_SERIALIZE_ADDRESS = '0x105d07f0'
 VIEW_FRUSTUM_ADDRESS = '0x10654530'
@@ -147,13 +162,40 @@ def depth_clear_rules(order_answer):
             'stencilCleared': clear['stencilCleared']}
 
 
-def shared_sky_visibility_rules(nodes_answer, frustum_answer, order_answer):
-    return {'schemaVersion': 1, 'kind': 'shared-sky-visibility-rules',
+def verified_groups(pattern, text, label):
+    match = pattern.search(text)
+    require(match is not None, f'{VERIFIED_SKY_DRAW_ORDER_FILE} states no {label}')
+    return match.groups()
+
+
+def engine_class(name):
+    return f'{ENGINE_CLASS_PACKAGE}.{name}'
+
+
+def requires_sorting_rules(verified_text):
+    forwarding_owner, forwarding_address, forwarding_field = verified_groups(FORWARDING_RULE_PATTERN, verified_text, 'modifier forwarding rule')
+    shader_class, shader_address, opacity_output_blending, opacity_field = verified_groups(SHADER_OPACITY_RULE_PATTERN, verified_text, 'shader opacity rule')
+    [sorting_set] = verified_groups(SHADER_SORTING_SET_PATTERN, verified_text, 'shader output blending set')
+    [output_blending_field] = verified_groups(SHADER_OUTPUT_BLENDING_FIELD_PATTERN, verified_text, 'shader output blending field')
+    texture_class, texture_address = verified_groups(TEXTURE_RULE_PATTERN, verified_text, 'texture rule')
+    [texture_flag_field] = verified_groups(TEXTURE_FLAG_FIELD_PATTERN, verified_text, 'texture flag field')
+    return {'source': {'file': VERIFIED_SKY_DRAW_ORDER_FILE, 'sha256': VERIFIED_SKY_DRAW_ORDER_SHA256},
+            'forwarding': {'class': engine_class(forwarding_owner), 'function': f'U{forwarding_owner}::RequiresSorting', 'address': forwarding_address,
+                           'field': forwarding_field},
+            'shader': {'class': engine_class(shader_class), 'address': shader_address, 'outputBlendingField': output_blending_field,
+                       'sortingOutputBlending': [int(value) for value in sorting_set.split(',')],
+                       'opacityOutputBlending': int(opacity_output_blending), 'opacityField': opacity_field},
+            'texture': {'class': engine_class(texture_class), 'address': texture_address, 'flagField': texture_flag_field}}
+
+
+def shared_sky_visibility_rules(nodes_answer, frustum_answer, order_answer, verified_order_text):
+    return {'schemaVersion': SHARED_SKY_VISIBILITY_RULES_SCHEMA_VERSION, 'kind': 'shared-sky-visibility-rules',
             'sources': {'sharedSkyNodes': {'file': 'shared-sky-nodes.json', 'sha256': SHARED_SKY_NODES_SHA256},
                         'viewFrustum': {'file': 'view-frustum.json', 'sha256': VIEW_FRUSTUM_SHA256, 'manifestSha256': VIEW_FRUSTUM_MANIFEST_SHA256},
                         'skyDrawOrder': {'file': 'sky-draw-order.json', 'sha256': SKY_DRAW_ORDER_SHA256, 'manifestSha256': SKY_DRAW_ORDER_MANIFEST_SHA256}},
             'levelTail': level_tail_rules(nodes_answer), 'nodeSelector': node_selector_rules(nodes_answer), 'viewFrustum': view_frustum_rules(frustum_answer),
-            'materialSorting': material_sorting_rules(order_answer), 'depthClear': depth_clear_rules(order_answer)}
+            'requiresSortingRules': requires_sorting_rules(verified_order_text), 'materialSorting': material_sorting_rules(order_answer),
+            'depthClear': depth_clear_rules(order_answer)}
 
 
 def scene_field_hex(scene_bytes, offset_text, size):
@@ -219,7 +261,7 @@ def json_document_bytes(document):
     return (json.dumps(document, indent=1, ensure_ascii=True) + '\n').encode('utf-8')
 
 
-def export_shared_sky_visibility_fixtures(nodes_path, frustum_path, frustum_manifest_path, order_path, order_manifest_path,
+def export_shared_sky_visibility_fixtures(nodes_path, frustum_path, frustum_manifest_path, order_path, order_manifest_path, verified_order_path,
                                           output_directory=DEFAULT_OUTPUT_DIRECTORY, project_root=REPOSITORY_ROOT):
     output = require_output_directory_inside_fixtures(output_directory)
     nodes_answer = read_pinned_json(nodes_path, SHARED_SKY_NODES_SHA256, 'the RM-22 shared sky nodes answer')
@@ -227,8 +269,9 @@ def export_shared_sky_visibility_fixtures(nodes_path, frustum_path, frustum_mani
     read_pinned_bytes(frustum_manifest_path, VIEW_FRUSTUM_MANIFEST_SHA256, 'the RM-23 manifest')
     order_answer = read_pinned_json(order_path, SKY_DRAW_ORDER_SHA256, 'the RM-24 sky draw order answer')
     read_pinned_bytes(order_manifest_path, SKY_DRAW_ORDER_MANIFEST_SHA256, 'the RM-24 manifest')
+    verified_order_text = read_pinned_bytes(verified_order_path, VERIFIED_SKY_DRAW_ORDER_SHA256, 'the verified RM-24 draw order').decode('utf-8')
     fixtures = json_document_bytes(shared_sky_visibility_fixtures(nodes_answer, frustum_answer, order_answer))
-    rules = json_document_bytes(shared_sky_visibility_rules(nodes_answer, frustum_answer, order_answer))
+    rules = json_document_bytes(shared_sky_visibility_rules(nodes_answer, frustum_answer, order_answer, verified_order_text))
     output.mkdir(parents=True, exist_ok=True)
     (output / FIXTURES_OUTPUT_NAME).write_bytes(fixtures)
     (Path(project_root) / RULES_RELATIVE_PATH).write_bytes(rules)
@@ -241,22 +284,39 @@ def pinned_bundle_file(bundle_folder, manifest, name):
     return read_pinned_bytes(Path(bundle_folder) / name, pin['sha256'], f'the shared sky bundle {name}')
 
 
+def staged_material_programs(store_root, snapshot):
+    programs, listing = {}, []
+    for material in snapshot['materials']:
+        pin = material['program']
+        require(pin is not None, f'the shared sky material {material["root"]} has no staged program')
+        file_name = f'{pin["programSha256"]}.json'
+        programs[file_name] = read_pinned_bytes(Path(store_root) / pin['directory'] / PROGRAM_FILE_NAME, pin['programSha256'],
+                                                f'the shared sky program of {material["root"]}')
+        listing.append({'root': material['root'], 'program': file_name})
+    return programs, json_document_bytes({'kind': 'shared-sky-material-programs', 'materials': listing})
+
+
 def export_staged_sky_visibility(bundle_manifest_path, output_directory=DEFAULT_OUTPUT_DIRECTORY):
     output = require_output_directory_inside_fixtures(Path(output_directory) / STAGED_SKY_VISIBILITY_FOLDER)
     manifest_path = Path(bundle_manifest_path)
     manifest = json.loads(manifest_path.read_bytes())
     require(manifest.get('kind') == 'native-shared-sky-bundle', f'{manifest_path} is not a shared sky bundle manifest')
     files = {name: pinned_bundle_file(manifest_path.parent, manifest, name) for name in STAGED_SKY_VISIBILITY_FILES}
-    output.mkdir(parents=True, exist_ok=True)
+    snapshot = json.loads(pinned_bundle_file(manifest_path.parent, manifest, STAGED_SKY_SNAPSHOT_NAME))
+    programs, listing = staged_material_programs(manifest_path.parents[2], snapshot)
+    files[STAGED_MATERIAL_PROGRAMS_LISTING_NAME] = listing
+    files.update({f'{STAGED_MATERIAL_PROGRAMS_FOLDER}/{name}': payload for name, payload in programs.items()})
+    (output / STAGED_MATERIAL_PROGRAMS_FOLDER).mkdir(parents=True, exist_ok=True)
     for name, payload in files.items():
         (output / name).write_bytes(payload)
     return {f'{STAGED_SKY_VISIBILITY_FOLDER}/{name}': hashlib.sha256(payload).hexdigest() for name, payload in files.items()}
 
 
 def main(arguments):
-    parser = argparse.ArgumentParser(description='Write the RM-22, RM-23 and RM-24 shared sky visibility rules recipe and the frustum, node and draw '
-                                                 'order fixtures into tests/fixtures/environment, or copy the staged skylevel visibility payload '
-                                                 'of a converted shared sky bundle there.')
+    parser = argparse.ArgumentParser(description='Write the RM-22, RM-23 and RM-24 shared sky visibility rules recipe, with the RequiresSorting class '
+                                                 'rules of the verified RM-24 replay, and the frustum, node and draw order fixtures into '
+                                                 'tests/fixtures/environment, or copy the staged skylevel visibility payload of a converted shared sky '
+                                                 'bundle there.')
     parser.add_argument('--staged-sky-bundle-manifest')
     known, _ = parser.parse_known_args(arguments)
     if known.staged_sky_bundle_manifest is not None:
@@ -271,11 +331,13 @@ def main(arguments):
     parser.add_argument('--view-frustum-manifest', required=True)
     parser.add_argument('--sky-draw-order', required=True)
     parser.add_argument('--sky-draw-order-manifest', required=True)
+    parser.add_argument('--verified-sky-draw-order', required=True)
     parser.add_argument('--output-directory', default=str(DEFAULT_OUTPUT_DIRECTORY))
     options = parser.parse_args(arguments)
     try:
         written = export_shared_sky_visibility_fixtures(options.shared_sky_nodes, options.view_frustum, options.view_frustum_manifest,
-                                                        options.sky_draw_order, options.sky_draw_order_manifest, options.output_directory)
+                                                        options.sky_draw_order, options.sky_draw_order_manifest, options.verified_sky_draw_order,
+                                                        options.output_directory)
     except (OSError, ValueError, KeyError) as error:
         print(f'{type(error).__name__}: {error}', file=sys.stderr)
         return 1

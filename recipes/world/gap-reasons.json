@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 29,
+  "listVersion": 30,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -28,6 +28,7 @@
     "sky-material-external:<package>",
     "sky-texture-format-unsupported:<id>",
     "sky-material-texture-count:<count>",
+    "shared-sky-eye-zone-differs:<zone>",
     "ambient-emitter-unreadable",
     "map-emitter-struct-unparsed:<property>",
     "map-emitter-resource-unconverted:<object>",

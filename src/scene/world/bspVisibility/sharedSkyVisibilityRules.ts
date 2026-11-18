@@ -16,6 +16,7 @@ export interface SharedSkyVisibilityRules {
 }
 
 const rulesPath = "recipes/world/shared-sky-visibility.json";
+const rulesSchemaVersion = 2;
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 function positiveNumber(record: Record<string, unknown>, field: string): number {
@@ -46,9 +47,9 @@ function parseNodeSelector(selector: Record<string, unknown>): BspNodeSelectorRu
 }
 
 export function parseSharedSkyVisibilityRules(document: unknown): SharedSkyVisibilityRules {
-  if (!isRecord(document) || document.kind !== "shared-sky-visibility-rules" || document.schemaVersion !== 1
+  if (!isRecord(document) || document.kind !== "shared-sky-visibility-rules" || document.schemaVersion !== rulesSchemaVersion
     || !isRecord(document.viewFrustum) || !isRecord(document.depthClear) || !isRecord(document.nodeSelector)) {
-    throw new Error(`${rulesPath} must be a shared-sky-visibility-rules schema 1 document with viewFrustum, nodeSelector and depthClear.`);
+    throw new Error(`${rulesPath} must be a shared-sky-visibility-rules schema ${rulesSchemaVersion} document with viewFrustum, nodeSelector and depthClear.`);
   }
   const frustum = document.viewFrustum, clear = document.depthClear;
   const nearClip = positiveNumber(frustum, "nearClip"), farClip = positiveNumber(frustum, "farClip");

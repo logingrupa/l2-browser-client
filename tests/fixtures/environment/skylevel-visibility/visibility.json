@@ -2,7 +2,7 @@
   "units": "source",
   "axes": "ue2-z-up",
   "sourceSha256": "5ecfe78912a21f15783b78aee1b9d9542781ef11bb8a8c813868959f5157152f",
-  "converterVersion": "shared-sky-2",
+  "converterVersion": "shared-sky-3",
   "arrays": [
     {
       "name": "NODE.plane",
@@ -161,7 +161,7 @@
   ],
   "payload": {
     "file": "payload.bin",
-    "sha256": "15bde7a1b94896e7874e98895103b94b7afaac6a31fc4b54a2dcfce846788f47",
+    "sha256": "3ac183a19848e8209e4e72c26800f8f61e15265e6237fa1a46d314155fad8ba0",
     "bytes": 520840
   }
 }

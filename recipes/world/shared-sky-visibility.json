@@ -1,5 +1,5 @@
 {
- "schemaVersion": 1,
+ "schemaVersion": 2,
  "kind": "shared-sky-visibility-rules",
  "sources": {
   "sharedSkyNodes": {
@@ -61,6 +61,36 @@
   "nearClip": 10,
   "farClip": 65536,
   "safeNormalThreshold": 1e-08
+ },
+ "requiresSortingRules": {
+  "source": {
+   "file": "verified-sky-draw-order.md",
+   "sha256": "ff5d8490305f462f636a79309ac1aa9b1cdc42d8b26c1252e8712496318a1d78"
+  },
+  "forwarding": {
+   "class": "Engine.Modifier",
+   "function": "UModifier::RequiresSorting",
+   "address": "0x10349520",
+   "field": "Material"
+  },
+  "shader": {
+   "class": "Engine.Shader",
+   "address": "0x105de510",
+   "outputBlendingField": "OutputBlending",
+   "sortingOutputBlending": [
+    2,
+    3,
+    5,
+    6
+   ],
+   "opacityOutputBlending": 0,
+   "opacityField": "Opacity"
+  },
+  "texture": {
+   "class": "Engine.Texture",
+   "address": "0x10336040",
+   "flagField": "bAlphaTexture"
+  }
  },
  "materialSorting": [
   {

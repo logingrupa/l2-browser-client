@@ -1,0 +1,33 @@
+{
+ "kind": "shared-sky-material-programs",
+ "materials": [
+  {
+   "root": "l2_skies.Shaders.SkybackgroundColor",
+   "program": "9a1ad35719c87238d1e86ab775df65e079f436fb6ec99d589053a4ec7c1a0498.json"
+  },
+  {
+   "root": "l2_skies.Shaders.HazeRing_Final",
+   "program": "efb78626f7e7ff0f31bb4a273322456d8c60ed871e6f764a839c9e5da4f230a1.json"
+  },
+  {
+   "root": "l2_skies.Shaders.Cloud_Final03_sh",
+   "program": "9aabe00d9e69002c78f480d6874a9e924d63ad0270edd9b846d73d742a33410b.json"
+  },
+  {
+   "root": "l2_skies.Shaders.Cloud_Final02_sh",
+   "program": "22da8324961f66f6459c97c874eddcd31f69418d48fcee7fb56d3829e73b55d8.json"
+  },
+  {
+   "root": "l2_skies.Shaders.Cloud_Final10_sh",
+   "program": "299356dab225be8dbe9d686c4c2a914c8903b305d532c3d4fdb4f453772a843e.json"
+  },
+  {
+   "root": "l2_skies.Shaders.Cloud_Final01_sh",
+   "program": "36e803aa211210a6bb479fe90039841f7b18317944c1d2d9d982477960b8bf66.json"
+  },
+  {
+   "root": "l2_skies.Shaders.StarField_Final01",
+   "program": "3ac46d4e74740fe32ffe53f4336fcd4aca86a565ddf6e44cac010faede19ee07.json"
+  }
+ ]
+}

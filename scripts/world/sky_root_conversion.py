@@ -8,6 +8,7 @@ from world.error_detail import conversion_failure_reason
 from world.map_sources import MapSources, require_lock_equal_client_path
 from world.material_texture_images import write_material_texture_images
 from world.sky_geometry import SkyRootSurface
+from world.sky_material_sorting import program_requires_sorting
 from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, single_graph_texture_export, sky_material_program, \
     sky_texture_pngs_by_node, sky_texture_products_by_node
 from world.static_placement_plan import FAILED_STATUS
@@ -138,4 +139,4 @@ class SkyRootConversion:
         receipt, files = products[drawn_texture['object']]
         self.add_texture_files(files)
         return SkyRootSurface(root_export['object'], identity, root_colour_rgba(fields['Color']['value']), fields['AlphaBlend']['value'],
-                              alpha_source(fields['AlphaBlend']), fields['RenderTwoSided']['value'], receipt, mapping_size)
+                              alpha_source(fields['AlphaBlend']), fields['RenderTwoSided']['value'], receipt, mapping_size, program_requires_sorting(program))

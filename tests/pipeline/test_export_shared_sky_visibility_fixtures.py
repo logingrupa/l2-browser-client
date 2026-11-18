@@ -8,14 +8,14 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from world.export_day_night_fixtures import DayNightFixtureError
-from world.export_shared_sky_visibility_fixtures import (SHARED_SKY_NODES_SHA256, SKY_DRAW_ORDER_SHA256, VIEW_FRUSTUM_SHA256, level_tail_rules,
-                                                         material_routes)
-from world.shared_sky_visibility_rules import (SharedSkyVisibilityRulesError, material_requires_sorting, read_shared_sky_visibility_rules,
+from world.export_shared_sky_visibility_fixtures import (SHARED_SKY_NODES_SHA256, SKY_DRAW_ORDER_SHA256, VERIFIED_SKY_DRAW_ORDER_SHA256,
+                                                         VIEW_FRUSTUM_SHA256, level_tail_rules, material_routes, requires_sorting_rules)
+from world.shared_sky_visibility_rules import (SharedSkyVisibilityRulesError, read_shared_sky_visibility_rules,
                                                validate_shared_sky_visibility_rules)
 
 FIXTURES_FILE = ROOT / 'tests' / 'fixtures' / 'environment' / 'shared-sky-visibility-fixtures.json'
 FIXTURES_FILE_SHA256 = '7586d71fb14ad1eff5fb2e8f49bf7c189e2e1a84550f5924c93ae05630294ead'
-RULES_FILE_SHA256 = '5499ef3f520c917321c68e3a1f469c75c94b0b792f04f07311b24fc009beb3a6'
+RULES_FILE_SHA256 = '3960a8af7c54470ae60b3e40866b489c894fbae9e406aa825ac9d02e8f220b37'
 FIXTURES = json.loads(FIXTURES_FILE.read_bytes())
 
 
@@ -39,8 +39,12 @@ class CommittedSharedSkyVisibilityFixturesTests(unittest.TestCase):
         for row in rules['materialSorting']:
             with self.subTest(material=row['material']):
                 self.assertEqual(row['renderState']['ZWRITEENABLE'] == 1, not row['requiresSorting'])
-        self.assertIsNone(material_requires_sorting('L2_Skies.Shaders.Cloud_Final01_sh'))
+        self.assertNotIn('l2_skies.shaders.cloud_final01_sh', [row['material'].casefold() for row in rules['materialSorting']])
         self.assertEqual(rules['depthClear']['flags'], 2)
+
+    def test_the_requires_sorting_class_rules_cite_the_pinned_verified_rm24_replay(self):
+        rules = read_shared_sky_visibility_rules()['document']['requiresSortingRules']
+        self.assertEqual(rules['source'], {'file': 'verified-sky-draw-order.md', 'sha256': VERIFIED_SKY_DRAW_ORDER_SHA256})
 
 
 class SharedSkyVisibilityRuleGuardTests(unittest.TestCase):
@@ -48,6 +52,10 @@ class SharedSkyVisibilityRuleGuardTests(unittest.TestCase):
         draws = [{'drawIndex': 0, 'route': 'sorted-bsp', 'material': 'M'}, {'drawIndex': 1, 'route': 'unsorted-section', 'material': 'M'}]
         with self.assertRaisesRegex(DayNightFixtureError, 'both the sorted and the unsorted route'):
             material_routes({'orderedDraws': draws})
+
+    def test_a_verified_replay_without_the_requires_sorting_class_rules_is_refused(self):
+        with self.assertRaisesRegex(DayNightFixtureError, 'states no modifier forwarding rule'):
+            requires_sorting_rules('')
 
     def test_a_ulevel_serialize_pseudocode_without_its_gates_is_refused(self):
         answer = {'functions': [{'va': '0x105d07f0', 'name': 'ULevel::Serialize', 'pseudocode': ''}], 'unresolved': [], 'claims': []}
@@ -60,7 +68,9 @@ class SharedSkyVisibilityRuleGuardTests(unittest.TestCase):
         repeated['materialSorting'].append(dict(repeated['materialSorting'][0]))
         backwards = copy.deepcopy(document)
         backwards['levelTail']['stringArrayMigrationFromVersion'] = backwards['levelTail']['stringMapFromVersion'] + 1
-        for changed, message in ((repeated, 'repeats a material'), (backwards, 'run backwards')):
+        unsourced = copy.deepcopy(document)
+        del unsourced['requiresSortingRules']['shader']['opacityField']
+        for changed, message in ((repeated, 'repeats a material'), (backwards, 'run backwards'), (unsourced, 'requiresSortingRules shader needs')):
             with self.subTest(message=message), self.assertRaisesRegex(SharedSkyVisibilityRulesError, message):
                 validate_shared_sky_visibility_rules(changed)
 

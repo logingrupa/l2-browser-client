@@ -24,7 +24,7 @@ from world.shared_sky_step import (SHARED_SKY_STEP_ALGORITHM_VERSION, SHARED_SKY
 from world.sky_geometry import SKY_GLB_GENERATOR, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
 from world.sky_materials import SkyTextureUnsupported, external_reference_reasons, single_graph_texture_export
-from world.shared_sky_visibility_rules import material_requires_sorting
+from world.sky_material_sorting import observed_material_route
 from world.sky_root_conversion import alpha_source, presentation_field_gap, root_colour_rgba
 from world.terrain_coordinates import f32
 
@@ -64,8 +64,9 @@ def synthetic_sky_model(collinear_haze=False):
                                        zones=(synthetic_zone(), synthetic_zone(5)))
 
 
-def root_surface(identity, texture_name, mapping_size=TEXTURE_SIZED_MAPPING):
-    return SkyRootSurface(identity, identity, [206, 150, 0, 255], True, 'serialized', False, texture_receipt(texture_name), mapping_size)
+def root_surface(identity, texture_name, mapping_size=TEXTURE_SIZED_MAPPING, requires_sorting=True):
+    return SkyRootSurface(identity, identity, [206, 150, 0, 255], True, 'serialized', False, texture_receipt(texture_name), mapping_size,
+                          requires_sorting)
 
 
 def synthetic_material_of_surface(test_case, model):
@@ -92,6 +93,11 @@ class SkyZoneGeometryTests(unittest.TestCase):
         self.assertEqual(part['positions'][3:6], [struct.unpack('<f', struct.pack('<f', 0.64))[0], 0.0, 0.0])
         self.assertEqual(part['mappingSize'], [64, 32])
         self.assertEqual(part['uvs'][:8], [-1.0, -1.0, 0.0, -1.0, 0.0, 1.0, -1.0, 1.0])
+
+    def test_every_part_carries_the_requires_sorting_its_root_program_derives(self):
+        parts = sky_zone_parts(self, [root_surface('Sky_T.Shaders.Haze', 'Ring'), root_surface('Sky_T.Shaders.Back', 'Chip', requires_sorting=False),
+                                      root_surface(SYNTHETIC_DEFAULT_MATERIAL, 'Default', requires_sorting=None)])
+        self.assertEqual([part['requiresSorting'] for part in parts], [True, False, None])
 
     def test_a_fan_with_a_collinear_corner_keeps_every_fan_triangle_like_the_bsp_polygon_rule(self):
         [part] = sky_zone_parts(self, [root_surface('Sky_T.Shaders.Haze', 'Ring')], synthetic_sky_model(collinear_haze=True))
@@ -181,13 +187,14 @@ class SkyMaterialTests(unittest.TestCase):
 
 class SharedSkyStepRecordTests(unittest.TestCase):
     def test_the_step_is_one_world_unit_with_its_own_converter_closure(self):
-        self.assertEqual((SHARED_SKY_UNIT_KEY, SHARED_SKY_STEP_ALGORITHM_VERSION), ('shared-sky:skylevel', 2))
+        self.assertEqual((SHARED_SKY_UNIT_KEY, SHARED_SKY_STEP_ALGORITHM_VERSION), ('shared-sky:skylevel', 3))
         self.assertEqual(step_source_modules('world', 'shared-sky'), ('world.shared_sky_step',))
 
     def test_the_sky_reasons_it_can_write_are_listed_and_the_tile_detail_mode_reasons_are_gone(self):
         patterns = load_gap_reason_patterns(ROOT)
         for reason in ('sky-zone-class-unresolved:Engine.Foo', 'sky-zone-rotation-unported', 'sky-zone-rotation-unresolved',
-                       'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):
+                       'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2',
+                       'shared-sky-eye-zone-differs:2'):
             self.assertTrue(is_listed_reason(reason, patterns), reason)
         for reason in REMOVED_TILE_SKY_REASONS:
             self.assertFalse(is_listed_reason(reason, patterns), reason)
@@ -352,14 +359,24 @@ class RealClientSharedSkyTests(unittest.TestCase):
             payload = (bundle_folder / name).read_bytes()
             self.assertEqual(manifest['files'][name], {'bytes': len(payload), 'sha256': hashlib.sha256(payload).hexdigest()})
 
-    def test_the_bundle_visibility_payload_is_the_committed_staged_fixture_and_parts_carry_the_rm24_sorting(self):
+    def test_the_bundle_visibility_payload_is_the_committed_staged_fixture(self):
         bundle_folder = (self.store_root / self.product['manifest']['resource'].removeprefix('/l2/')).parent
         for name in ('visibility.json', 'payload.bin'):
             with self.subTest(name=name):
                 self.assertEqual((bundle_folder / name).read_bytes(), (STAGED_SKY_VISIBILITY_FIXTURE / name).read_bytes())
-        for part in self.snapshot['parts']:
-            with self.subTest(material=part['sourceMaterial']):
-                self.assertEqual(part['requiresSorting'], material_requires_sorting(part['sourceMaterial']))
+
+    def test_every_part_derives_requires_sorting_from_its_package_fields_and_agrees_with_every_rm24_route(self):
+        derived = {part['sourceMaterial'].casefold(): part['requiresSorting'] for part in self.snapshot['parts']}
+        self.assertNotIn(None, derived.values())
+        for material, requires_sorting in derived.items():
+            observed = observed_material_route(material)
+            if observed is not None:
+                with self.subTest(material=material):
+                    self.assertEqual(requires_sorting, observed)
+        self.assertEqual([material for material, requires_sorting in derived.items() if not requires_sorting], ['l2_skies.shaders.skybackgroundcolor'])
+
+    def test_the_sky_eye_lies_in_the_sky_zone_so_no_eye_zone_gap_is_written(self):
+        self.assertEqual([row['reason'] for row in self.product['gapRows'] if row['reason'].startswith('shared-sky-eye-zone-differs:')], [])
 
     def test_every_material_file_the_step_writes_is_pinned_from_the_catalog_and_sealed_in_its_receipt(self):
         from native_store.catalog_writer import read_store_catalog

@@ -25,6 +25,7 @@ class SkyRootSurface(NamedTuple):
     render_two_sided: bool
     texture: dict
     mapping_size: tuple
+    requires_sorting: bool | None
 
 
 def sky_zone_material_nodes(material_of_surface, model, zone_index, flags):
@@ -80,7 +81,8 @@ def build_sky_zone_parts(package, material_of_surface, model, zone_index, flags,
     for root in root_surfaces:
         part = {'sourceMaterial': root.source_material, 'mapReference': root.map_reference, 'positions': [], 'normals': [], 'uvs': [],
                 'indices': [], 'nodeRanges': [], 'texture': root.texture, 'mappingSize': list(root.mapping_size),
-                'authoredColorRGBA': root.authored_color_rgba, 'alphaBlend': root.alpha_blend, 'renderTwoSided': root.render_two_sided, 'alphaSource': root.alpha_source}
+                'authoredColorRGBA': root.authored_color_rgba, 'alphaBlend': root.alpha_blend, 'renderTwoSided': root.render_two_sided, 'alphaSource': root.alpha_source,
+                'requiresSorting': root.requires_sorting}
         for node_index in sky_zone_node_indices(material_of_surface, model, zone_index, flags, root.map_reference):
             append_node(part, package, model, node_index, root.mapping_size)
         parts.append(part)

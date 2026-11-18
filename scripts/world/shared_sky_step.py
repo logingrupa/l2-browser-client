@@ -46,11 +46,12 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package_by_path
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
 from world.tile_step_gap_rows import UnitStepGapRows
-from world.shared_sky_visibility_rules import material_requires_sorting, read_shared_sky_visibility_rules
+from world.shared_sky_visibility_rules import read_shared_sky_visibility_rules
+from world.sky_material_sorting import require_sorting_matches_observed_route, sky_eye_zone_gap
 from world.typed_payload import TYPED_PAYLOAD_PAYLOAD_NAME, typed_payload_asset
 from world.world_lane_names import WORLD_LANE_NAME
 
-SHARED_SKY_STEP_ALGORITHM_VERSION = 2
+SHARED_SKY_STEP_ALGORITHM_VERSION = 3
 SHARED_SKY_UNIT_KEY = f'{SHARED_SKY_STEP_NAME}:{SHARED_SKY_MAP_NAME}'
 SHARED_SKY_PRODUCT_NAME = 'shared-sky.json'
 SHARED_SKY_SNAPSHOT_NAME = 'sky.json'
@@ -75,7 +76,11 @@ SHARED_SKY_EYE_RULE = ('FSkySceneNode 0x10655a20: M = T(-sky.Location) * InvR(sk
 SHARED_SKY_NODE_SELECTION = ('geometry holds every drawn polygon node touching the sky zone; visibility.json carries the native node arrays so '
                               'the runtime RenderLevel walk 0x1068c560 and selector 0x10689fd0 pick the submitted nodes from the sky eye (RM-22, RM-23)')
 SHARED_SKY_LIMITATIONS = ['Frozen authored sky source state; no native visible-pixel parity is established.',
-                          'RequiresSorting per material comes from the RM-24 frame routes; a material absent from that frame stays unresolved.',
+                          'RequiresSorting per material follows the verified RM-24 class rules on the package fields (Modifier Material, Shader '
+                          'OutputBlending and Opacity, Texture bAlphaTexture); the field offsets are matched in live memory, not traced, and a '
+                          'material reaching another class stays unresolved.',
+                          'The sky draws on the main view FakeBackdrop trigger with viewport+0x160 taken as zero; that route and the non-backdrop '
+                          'selector route 0x1068a4c9 are open (RM-22 c) and the runtime names them.',
                           'Texture panner rates and stored matrices are retained in the material programs.',
                           'Source ColorModifier bytes are B, G, R, A (research Q6 binary-member-order).',
                           'Original mip blocks are preserved; PNG is an ordinary BC1/BC3 decode of mip 0, without alpha/channel repair, '
@@ -150,7 +155,7 @@ def shared_sky_snapshot(level, selection, location, actor_properties_record, par
     sky_actor = selection.actor
     return {'schemaVersion': 1, 'kind': SHARED_SKY_SNAPSHOT_KIND, 'id': f'interlude:{level.binding["model"]["qualified"]}.{sky_actor["name"]}',
             'map': SHARED_SKY_MAP_NAME, 'drawRule': SHARED_SKY_DRAW_RULE, 'zoneRule': SHARED_SKY_ZONE_RULE, 'eyeRule': SHARED_SKY_EYE_RULE,
-            'nodeSelection': SHARED_SKY_NODE_SELECTION,'sourceSkyZone': sky_actor['object'], 'skyZoneIndex': selection.zone_index,
+            'nodeSelection': SHARED_SKY_NODE_SELECTION, 'sourceSkyZone': sky_actor['object'], 'skyZoneIndex': selection.zone_index,
             'sourceSkyZonePosition': location, 'sourceSkyZoneRotation': selection.rotation,
             'rootTranslationMetres': sky_root_translation_metres(location), 'coordinateRule': SKY_COORDINATE_RULE, 'uvRule': SKY_UV_RULE,
             'parts': parts, 'materials': materials, 'skyActorProperties': actor_properties_record, 'levelModelBinding': level.binding,
@@ -223,8 +228,12 @@ def convert_shared_sky(project_root, client, package, level, selection, map_sha2
     package_paths = sorted(conversion.packages.packages)
     if not roots:
         return SharedSkyConversion(None, None, None, package_paths)
-    parts = [{**part, 'requiresSorting': material_requires_sorting(part['sourceMaterial'])}
-             for part in build_sky_zone_parts(package, material_of_surface, level.model, selection.zone_index, flags, roots)]
+    parts = build_sky_zone_parts(package, material_of_surface, level.model, selection.zone_index, flags, roots)
+    for part in parts:
+        require_sorting_matches_observed_route(part['sourceMaterial'], part['requiresSorting'])
+    eye_zone_gap = sky_eye_zone_gap(level.model, location, selection.zone_index)
+    if eye_zone_gap is not None:
+        gaps.add(GAP_STATUS, eye_zone_gap, selection.actor['object'])
     snapshot = shared_sky_snapshot(level, selection, location, actor_properties_record, parts, conversion.materials, map_sha256)
     material_listing = shared_sky_material_listing(conversion.material_files)
     files, counts = shared_sky_bundle_files(snapshot, conversion.texture_files, material_listing,

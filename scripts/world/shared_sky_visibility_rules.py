@@ -8,8 +8,11 @@ from native_store.store_paths import REPOSITORY_ROOT
 
 SHARED_SKY_VISIBILITY_RULES_RELATIVE_PATH = 'recipes/world/shared-sky-visibility.json'
 SHARED_SKY_VISIBILITY_RULES_KIND = 'shared-sky-visibility-rules'
-DOCUMENT_FIELDS = {'schemaVersion', 'kind', 'sources', 'levelTail', 'nodeSelector', 'viewFrustum', 'materialSorting', 'depthClear'}
+SHARED_SKY_VISIBILITY_RULES_SCHEMA_VERSION = 2
+DOCUMENT_FIELDS = {'schemaVersion', 'kind', 'sources', 'levelTail', 'nodeSelector', 'viewFrustum', 'requiresSortingRules', 'materialSorting', 'depthClear'}
 LEVEL_TAIL_COUNT_FIELDS = ('obsoleteArrayBelowVersion', 'objectReferenceCount', 'stringMapFromVersion', 'stringArrayMigrationFromVersion')
+REQUIRES_SORTING_RULE_FIELDS = {'forwarding': ('class', 'field'), 'shader': ('class', 'outputBlendingField', 'opacityField'),
+                                'texture': ('class', 'flagField')}
 SOURCE_NAMES = ('sharedSkyNodes', 'viewFrustum', 'skyDrawOrder')
 SHA256_HEX = re.compile(r'[0-9a-f]{64}')
 
@@ -33,6 +36,16 @@ def require_level_tail(tail):
     require(isinstance(tail.get('unprovenNames'), list) and isinstance(tail.get('olderVersionsUnresolved'), str), 'levelTail needs its open name rows')
 
 
+def require_requires_sorting_rules(rules):
+    require(isinstance(rules, dict) and SHA256_HEX.fullmatch(str(rules.get('source', {}).get('sha256'))), 'requiresSortingRules needs its verified source')
+    for rule, fields in REQUIRES_SORTING_RULE_FIELDS.items():
+        require(isinstance(rules.get(rule), dict) and all(isinstance(rules[rule].get(field), str) and rules[rule][field] for field in fields),
+                f'requiresSortingRules {rule} needs {fields}')
+    shader = rules['shader']
+    require(isinstance(shader.get('sortingOutputBlending'), list) and shader['sortingOutputBlending'] and all(is_count(value) for value in shader['sortingOutputBlending'])
+            and is_count(shader.get('opacityOutputBlending')), 'requiresSortingRules shader needs its output blending ordinals')
+
+
 def require_material_sorting(rows):
     require(isinstance(rows, list) and rows, 'materialSorting must list materials')
     for row in rows:
@@ -44,9 +57,11 @@ def require_material_sorting(rows):
 
 def validate_shared_sky_visibility_rules(document):
     require(isinstance(document, dict) and set(document) == DOCUMENT_FIELDS, f'fields must be {sorted(DOCUMENT_FIELDS)}')
-    require(document['schemaVersion'] == 1 and document['kind'] == SHARED_SKY_VISIBILITY_RULES_KIND, 'is not a shared-sky-visibility-rules v1 recipe')
+    require(document['schemaVersion'] == SHARED_SKY_VISIBILITY_RULES_SCHEMA_VERSION and document['kind'] == SHARED_SKY_VISIBILITY_RULES_KIND,
+            f'is not a shared-sky-visibility-rules v{SHARED_SKY_VISIBILITY_RULES_SCHEMA_VERSION} recipe')
     require(all(SHA256_HEX.fullmatch(str(document['sources'].get(name, {}).get('sha256'))) for name in SOURCE_NAMES), 'every source needs its sha256')
     require_level_tail(document['levelTail'])
+    require_requires_sorting_rules(document['requiresSortingRules'])
     require_material_sorting(document['materialSorting'])
     return document
 
@@ -64,8 +79,3 @@ def read_shared_sky_visibility_rules():
 
 def level_tail_rules():
     return read_shared_sky_visibility_rules()['document']['levelTail']
-
-
-def material_requires_sorting(material):
-    rows = [row for row in read_shared_sky_visibility_rules()['document']['materialSorting'] if row['material'].casefold() == material.casefold()]
-    return rows[0]['requiresSorting'] if rows else None
