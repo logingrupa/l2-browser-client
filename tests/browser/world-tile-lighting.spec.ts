@@ -30,8 +30,15 @@ interface LightingInspection {
   readonly sections?: readonly LightingSection[];
   readonly textureSlots?: readonly { readonly texture: number; readonly childCount: number; readonly sunAffectedSlot: number | null }[];
   readonly hourly?: HourlyLightingReading;
-  readonly cameraEnvironment?: { readonly cameraZone: number; readonly fog: { readonly enabled: boolean; readonly source: string; readonly fogEnd: number | null };
-    readonly gaps: readonly string[] };
+  readonly cameraEnvironment?: { readonly cameraZone: number; readonly fog: FogReading; readonly gaps: readonly string[];
+    readonly skyFog: { readonly route: string | null; readonly fog: FogReading; readonly gaps: readonly string[] } };
+}
+interface FogReading {
+  readonly enabled: boolean;
+  readonly source: string;
+  readonly startSourceUnits: number;
+  readonly endSourceUnits: number;
+  readonly fogEnd: number | null;
 }
 interface AmbientReading { readonly status: string; readonly value?: readonly number[] }
 interface HourlyLightingReading {
@@ -94,7 +101,12 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
   const world = await worldInspection(page) as WorldInspection, inspection = world.lighting!;
   if (inspection.gap !== null) throw new Error(`tile ${tileId} has no bound lighting: ${inspection.gap}`);
   expect(inspection.cameraEnvironment!.cameraZone).toBe(world.bspVisibility!.cameraZone);
-  expect(inspection.cameraEnvironment!.fog.fogEnd === null).toBe(!inspection.cameraEnvironment!.fog.enabled);
+  const levelFog = inspection.cameraEnvironment!.fog;
+  expect(levelFog.fogEnd === null).toBe(!levelFog.enabled);
+  expect(["local-fog-list", "terrain-zone-environment", "camera-zone", "zone-without-fog"]).toContain(levelFog.source);
+  if (levelFog.enabled) expect(levelFog.endSourceUnits).toBeGreaterThan(levelFog.startSourceUnits);
+  expect(inspection.cameraEnvironment!.gaps).not.toContain("fog-info-reference-pawn-absent");
+  expect(inspection.cameraEnvironment!.skyFog).toMatchObject({ route: null, fog: { enabled: false }, gaps: ["sky-fog-scene-route-unresolved"] });
   expect(world.mapEmitterPlacements!.gap).toBeNull();
   expect(world.mapEmitterPlacements!.placements.length).toBeGreaterThan(0);
   for (const placement of world.mapEmitterPlacements!.placements) {
