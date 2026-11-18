@@ -1,6 +1,7 @@
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { WebGPUCacheSampler } from "@babylonjs/core/Engines/WebGPU/webgpuCacheSampler";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
+import type { InternalTexture } from "@babylonjs/core/Materials/Textures/internalTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { Scene } from "@babylonjs/core/scene";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -16,6 +17,7 @@ import {
 } from "../support/textureSamplersFixture";
 
 const scenes: Scene[] = [];
+const webGpuSamplerDescriptors = WebGPUCacheSampler as unknown as { _GetSamplerDescriptor(sampler: InternalTexture): GPUSamplerDescriptor & { maxAnisotropy: number } };
 
 function blockCompressionScene(): Scene {
   const engine = new NullEngine();
@@ -44,7 +46,7 @@ function webGpuSamplerDescriptorOf(texture: BaseTexture) {
   internalTexture._cachedWrapU = texture.wrapU;
   internalTexture._cachedWrapV = texture.wrapV;
   internalTexture._cachedAnisotropicFilteringLevel = texture.anisotropicFilteringLevel;
-  return WebGPUCacheSampler._GetSamplerDescriptor(internalTexture);
+  return webGpuSamplerDescriptors._GetSamplerDescriptor(internalTexture);
 }
 
 afterEach(() => {
