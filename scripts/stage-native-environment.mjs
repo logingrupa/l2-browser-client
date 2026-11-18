@@ -128,11 +128,14 @@ function verifySetting(source, section, setting, label) {
 function verifySetup(sources, setup) {
   if (setup === null) return;
   const source = object(setup) ? [...sources.values()].find(entry => folded(entry.name) === folded(setup.file)) : undefined;
-  require(source && object(setup.values) && object(setup.bindings) && Array.isArray(setup.bindings.CLOUD) && Array.isArray(setup.timeEnvironmentFiles),
+  require(source && object(setup.values) && object(setup.bindings) && Array.isArray(setup.bindings.CLOUD) && Array.isArray(setup.timeEnvironmentFiles) &&
+    object(setup.fog) && typeof setup.fog.section === "string" && Array.isArray(setup.fog.startRanges) && Array.isArray(setup.fog.endRanges),
     "time tables setup does not join its source");
   const settings = [...Object.values(setup.values), setup.bindings.SKYBOX, setup.bindings.HAZERING, setup.bindings.NumCloudColor,
     ...setup.bindings.CLOUD, ...setup.timeEnvironmentFiles];
   settings.forEach((setting, index) => verifySetting(source, setup.section, setting, `setup setting ${index}`));
+  const fogSettings = [...setup.fog.startRanges, ...setup.fog.endRanges, setup.fog.FogSpeed];
+  fogSettings.forEach((setting, index) => verifySetting(source, setup.fog.section, setting, `fog setting ${index}`));
 }
 
 function verifyTimeTable(source, table, label) {
@@ -153,7 +156,7 @@ function verifyTimeTable(source, table, label) {
 }
 
 function verifyTimeTables(sources, tables) {
-  require(tables.schemaVersion === 1 && tables.kind === "native-environment-time-tables" && Array.isArray(tables.environmentTypes) &&
+  require(tables.schemaVersion === 2 && tables.kind === "native-environment-time-tables" && Array.isArray(tables.environmentTypes) &&
     Array.isArray(tables.unresolved) && tables.unresolved.every(reason => typeof reason === "string") &&
     tables.typedComplete === (tables.unresolved.length === 0), "unsupported time tables");
   verifySetup(sources, tables.setup);

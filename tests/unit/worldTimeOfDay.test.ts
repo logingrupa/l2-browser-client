@@ -3,7 +3,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { afterEach, describe, expect, it } from "vitest";
 import { inspectWorldTimeOfDay, provideWorldTimeOfDay, worldTimeOfDayFor } from "../../src/scene/world/worldTimeOfDay";
 import { readDayNightFixtureRows } from "../support/dayNightFixtures";
-import { provideDayNightTimeOfDay, shippedEnvironmentSetup } from "../support/worldTimeOfDayFixture";
+import { provideDayNightTimeOfDay, shippedEnvironmentFogRanges, shippedEnvironmentSetup } from "../support/worldTimeOfDayFixture";
 
 const scenes: Scene[] = [];
 afterEach(() => { for (const scene of scenes.splice(0)) { const engine = scene.getEngine(); scene.dispose(); engine.dispose(); } });
@@ -48,6 +48,8 @@ describe("world time of day", () => {
       ["StarField_Final01", { status: "resolved", value: fixtureColour("CloudColor2", hour) }],
       ["StarField_Final02", { status: "resolved", value: fixtureColour("CloudColor3", hour) }],
     ]);
+    expect(timeOfDay.hazeColour()).toEqual({ status: "resolved", value: fixtureColour("HazeringColor", hour) });
+    expect(timeOfDay.fogRanges).toEqual(shippedEnvironmentFogRanges);
   });
 
   it("shows a pending environment change as the unresolved transition branch, not a guessed colour", () => {

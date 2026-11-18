@@ -57,7 +57,7 @@ describe("loadNativeTimeTables", () => {
     expect(await load()).toEqual({ status: "gap", reason: "environment-time-tables-incomplete", detail: "environment-setup-value-missing:NumCloudColor" });
   });
 
-  it("reports changed bytes, a manifest without a tables pin, a malformed record or document and a server error as environment-time-tables-invalid", async () => {
+  it("reports changed bytes, a manifest without a tables pin, a malformed record or document, a schema 1 export and a server error as environment-time-tables-invalid", async () => {
     stagedEnvironment({ tables: tableBytes => ({ ...timeTablesPin(tableBytes), sha256: "0".repeat(64) }) });
     expect(await load()).toMatchObject({ status: "gap", reason: "environment-time-tables-invalid", detail: expect.stringContaining("hash/length mismatch") });
     stagedEnvironment({ tables: () => null });
@@ -66,6 +66,8 @@ describe("loadNativeTimeTables", () => {
     expect(await load()).toMatchObject({ status: "gap", reason: "environment-time-tables-invalid", detail: "Native catalog environments entry is invalid." });
     stagedEnvironment({ document: { ...timeTablesDocument(), kind: "native-environment-source-tables" } });
     expect(await load()).toMatchObject({ status: "gap", reason: "environment-time-tables-invalid", detail: expect.stringContaining("is not native-environment-time-tables") });
+    stagedEnvironment({ document: { ...timeTablesDocument(), schemaVersion: 1 } });
+    expect(await load()).toMatchObject({ status: "gap", reason: "environment-time-tables-invalid", detail: expect.stringContaining("schema 2") });
     const staged = stagedEnvironment();
     staged.fetcher.mockResolvedValue(new Response("broken", { status: 500 }));
     expect(await load()).toMatchObject({ status: "gap", reason: "environment-time-tables-invalid", detail: "Native asset catalog returned HTTP 500." });

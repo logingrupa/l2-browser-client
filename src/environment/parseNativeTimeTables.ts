@@ -1,3 +1,4 @@
+import { FOG_RANGE_SLOT_COUNT, type EnvironmentFogRanges } from "../materials/ue2/model/fog";
 import type { NativeEnvironmentSetup } from "./model/nativeEnvironmentManager";
 import {
   blackStartColourSections, hsvLightSections, scaleSections, skyLayerColourSections,
@@ -17,6 +18,7 @@ export interface NativeTimeTablesExport {
   readonly setup: NativeEnvironmentSetup;
   readonly tables: NativeEnvironmentTables;
   readonly skyBindings: readonly SkyEnvironmentBinding[];
+  readonly fogRanges: EnvironmentFogRanges;
 }
 
 export type NativeTimeTablesParse =
@@ -30,7 +32,7 @@ export class NativeTimeTablesFormatError extends Error {
 type JsonRecord = Readonly<Record<string, unknown>>;
 
 const timeTablesKind = "native-environment-time-tables";
-const timeTablesSchemaVersion = 1;
+const timeTablesSchemaVersion = 2;
 const colourSections: readonly NativeTimeColourSection[] = [...blackStartColourSections, ...skyLayerColourSections];
 const sectionKinds: ReadonlyMap<string, "rgb" | "hsv" | "scale"> = new Map([
   ...colourSections.map(section => [section, "rgb"] as const),
@@ -108,6 +110,17 @@ function readSkyBindings(setup: JsonRecord): SkyEnvironmentBinding[] {
   ];
 }
 
+function readFogRangeValues(settings: unknown, label: string): number[] {
+  const list = requireList(settings, label);
+  requireTimeTables(list.length === FOG_RANGE_SLOT_COUNT, `${label} lists ${list.length} ranges instead of ${FOG_RANGE_SLOT_COUNT}.`);
+  return list.map((setting, position) => requireFiniteNumber(settingValue(setting, `${label} ${position + 1}`), `${label} ${position + 1}`));
+}
+
+function readFogRanges(setup: JsonRecord): EnvironmentFogRanges {
+  const fog = requireRecord(setup.fog, "setup fog");
+  return { startRanges: readFogRangeValues(fog.startRanges, "setup fog StartRange"), endRanges: readFogRangeValues(fog.endRanges, "setup fog EndRange") };
+}
+
 function rowValues(row: unknown, label: string): JsonRecord {
   return requireRecord(requireRecord(row, label).values, `${label} values`);
 }
@@ -171,5 +184,5 @@ export function parseNativeTimeTables(document: unknown): NativeTimeTablesParse 
   if (unresolved.length > 0) return { status: "incomplete", unresolved: unresolved as string[] };
   const setup = requireRecord(root.setup, "setup");
   return { status: "complete", timeTables: { setup: readSetup(setup), tables: readEnvironmentTables(requireList(root.environmentTypes, "environmentTypes")),
-    skyBindings: readSkyBindings(setup) } };
+    skyBindings: readSkyBindings(setup), fogRanges: readFogRanges(setup) } };
 }

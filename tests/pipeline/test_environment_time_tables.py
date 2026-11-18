@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_environment import DEFAULT_FILES, build_products
 from reference_client_guard import require_reference_client
-from support.environment_source_files import SETUP_FILE_TEXT, time_table_of, time_tables_of
+from support.environment_source_files import (ENVIRONMENT_SETUP_SECTION_TEXT, SETUP_FILE_TEXT, environment_setup_file_text, time_table_of,
+                                             time_tables_of)
 from world.environment_config_cache import float32
 
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
@@ -84,13 +85,14 @@ class EffectiveTimeTableTests(unittest.TestCase):
 
 class EnvironmentTypeSelectionTests(unittest.TestCase):
     def test_each_listed_file_is_keyed_by_its_own_env_type_and_a_missing_one_is_zero(self):
-        setup = SETUP_FILE_TEXT.replace('TimeEnvFileNum=1', 'TimeEnvFileNum=2') + 'TimeEnvFileName1=Other.INT\r\n'
+        setup = environment_setup_file_text(ENVIRONMENT_SETUP_SECTION_TEXT.replace('TimeEnvFileNum=1', 'TimeEnvFileNum=2') + 'TimeEnvFileName1=Other.INT\r\n')
         document = time_tables_of({'Env.int': setup, 'timeenv0.int': '[EnvType]\r\nEnvType=3\r\n', 'other.int': '[SkyBoxColor]\r\nNUM=0\r\n'})
         self.assertEqual([(entry['file'], entry['environmentType'], entry['environmentTypeSource']) for entry in document['environmentTypes']],
                          [('timeenv0.int', 3, 'file'), ('other.int', 0, 'native-default')])
 
     def test_two_files_with_one_env_type_and_a_missing_listed_file_are_unresolved(self):
-        setup = SETUP_FILE_TEXT.replace('TimeEnvFileNum=1', 'TimeEnvFileNum=3') + 'TimeEnvFileName1=Other.INT\r\nTimeEnvFileName2=Absent.INT\r\n'
+        setup = environment_setup_file_text(ENVIRONMENT_SETUP_SECTION_TEXT.replace('TimeEnvFileNum=1', 'TimeEnvFileNum=3')
+                                            + 'TimeEnvFileName1=Other.INT\r\nTimeEnvFileName2=Absent.INT\r\n')
         document = time_tables_of({'Env.int': setup, 'timeenv0.int': '[EnvType]\r\nEnvType=0\r\n', 'other.int': '[X]\r\nY=1\r\n'})
         self.assertEqual(document['unresolved'], ['environment-time-file-missing:Absent.INT', 'environment-type-declared-twice:0'])
 
@@ -163,6 +165,16 @@ class RealClientTimeTableTests(unittest.TestCase):
                          {'IsClock': True, 'TimeRatio': 6, 'StartTime': 12.0, 'ShadowTick': float32(0.1), 'SlopeSunAngle': 30.0, 'TimeEnvFileNum': 4})
         self.assertEqual([setup['bindings'][key]['value'] for key in ('SKYBOX', 'HAZERING', 'NumCloudColor')], ['SkybackgroundColor', 'HazeRing_Final', 3])
         self.assertEqual([cloud['value'] for cloud in setup['bindings']['CLOUD']], ['Cloud_Final', 'StarField_Final01', 'StarField_Final02'])
+
+    def test_the_fog_setup_reads_the_env_int_fog_records_53_to_63(self):
+        fog = self.document['setup']['fog']
+        settings = [*fog['startRanges'], *fog['endRanges'], fog['FogSpeed']]
+        self.assertEqual(fog['section'], 'FOG')
+        self.assertEqual([setting['value'] for setting in fog['startRanges']], [1.0, 1.5, 2.0, 2.5, 4.0])
+        self.assertEqual([setting['value'] for setting in fog['endRanges']], [4.0, 5.0, 6.0, 7.0, 10.0])
+        self.assertEqual(fog['FogSpeed']['value'], 1.0)
+        self.assertEqual([setting['recordIndex'] for setting in settings], list(range(53, 64)))
+        self.assertEqual({setting['source'] for setting in settings}, {'file'})
 
 
 if __name__ == '__main__':

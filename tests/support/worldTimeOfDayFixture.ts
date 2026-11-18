@@ -2,6 +2,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { NativeEnvironmentSetup } from "../../src/environment/model/nativeEnvironmentManager";
 import type { NativeEnvironmentTables, NativeEnvironmentTypeTables } from "../../src/environment/model/nativeEnvironmentTypeTables";
 import type { ReadRealSeconds } from "../../src/environment/model/nativeTimeClock";
+import type { EnvironmentFogRanges } from "../../src/materials/ue2/model/fog";
 import type { NativeTimeTablesExport, SkyEnvironmentBinding } from "../../src/environment/parseNativeTimeTables";
 import { provideWorldTimeOfDay, startWorldTimeOfDay, type RunningWorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
 import { readDayNightLoadedTables } from "./dayNightFixtures";
@@ -16,8 +17,10 @@ export const shippedSkyBindings: readonly SkyEnvironmentBinding[] = [
   { setupKey: "CLOUD3", objectName: "StarField_Final02", section: "CloudColor3" },
 ];
 
+export const shippedEnvironmentFogRanges: EnvironmentFogRanges = { startRanges: [1, 1.5, 2, 2.5, 4], endRanges: [4, 5, 6, 7, 10] };
+
 export function dayNightTimeTables(setup: NativeEnvironmentSetup = shippedEnvironmentSetup): NativeTimeTablesExport {
-  return { setup, tables: readDayNightLoadedTables(), skyBindings: shippedSkyBindings };
+  return { setup, tables: readDayNightLoadedTables(), skyBindings: shippedSkyBindings, fogRanges: shippedEnvironmentFogRanges };
 }
 
 export function provideDayNightTimeOfDay(scene: Scene, readRealSeconds: ReadRealSeconds = () => 0,
@@ -54,13 +57,16 @@ export function timeTablesDocument(tables: NativeEnvironmentTables = readDayNigh
   const tableCount = environmentTypes.reduce((count, entry) => count + entry.tables.length, 0);
   const rowCount = environmentTypes.reduce((count, entry) => count + entry.tables.reduce((rows, table) => rows + table.rows.length, 0), 0);
   return {
-    schemaVersion: 1, kind: "native-environment-time-tables", rules: { path: "recipes/world/environment-native-rules.json", canonicalSha256: "c".repeat(64) },
+    schemaVersion: 2, kind: "native-environment-time-tables", rules: { path: "recipes/world/environment-native-rules.json", canonicalSha256: "c".repeat(64) },
     setup: { file: "Env.int", section: "EnvSetup",
       values: { IsClock: setting("IsClock", setup.isClock), TimeRatio: setting("TimeRatio", setup.timeRatio), StartTime: setting("StartTime", setup.startTimeHours),
         ShadowTick: setting("ShadowTick", setup.shadowTickHours), SlopeSunAngle: setting("SlopeSunAngle", 30), TimeEnvFileNum: setting("TimeEnvFileNum", tables.size) },
       bindings: { SKYBOX: setting("SKYBOX", "SkybackgroundColor"), HAZERING: setting("HAZERING", "HazeRing_Final"), NumCloudColor: setting("NumCloudColor", 3),
         CLOUD: ["Cloud_Final", "StarField_Final01", "StarField_Final02"].map((objectName, index) => ({ index: index + 1, ...setting(`CLOUD${index + 1}`, objectName) })) },
-      timeEnvironmentFiles: [...tables.keys()].map((environmentType, index) => ({ index, ...setting(`TimeEnvFileName${index}`, `timeenv${environmentType}.int`) })) },
+      timeEnvironmentFiles: [...tables.keys()].map((environmentType, index) => ({ index, ...setting(`TimeEnvFileName${index}`, `timeenv${environmentType}.int`) })),
+      fog: { section: "FOG", startRanges: shippedEnvironmentFogRanges.startRanges.map((value, index) => ({ index: index + 1, ...setting(`StartRange${index + 1}`, value) })),
+        endRanges: shippedEnvironmentFogRanges.endRanges.map((value, index) => ({ index: index + 1, ...setting(`EndRange${index + 1}`, value) })),
+        FogSpeed: setting("FogSpeed", 1) } },
     environmentTypes, tableCount, rowCount, unresolved: [] as string[], typedComplete: true,
   };
 }

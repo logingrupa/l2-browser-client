@@ -5,7 +5,7 @@ from world.environment_config_cache import (FIELD_MISSING, FIELD_OUT_OF_BYTE_RAN
 from world.environment_program import (ENVIRONMENT_NATIVE_RULES_RELATIVE_PATH, environment_setup, environment_setup_unresolved_reasons,
                                        load_environment_native_rules)
 
-TIME_TABLES_SCHEMA_VERSION = 1
+TIME_TABLES_SCHEMA_VERSION = 2
 TIME_TABLES_KIND = 'native-environment-time-tables'
 ENVIRONMENT_SETUP_FILE = 'Env.int'
 KEY_NUMBER_MINUS_ONE = 'key-number-minus-one'

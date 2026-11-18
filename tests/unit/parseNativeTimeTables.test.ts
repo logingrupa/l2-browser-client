@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NativeTimeTablesFormatError, parseNativeTimeTables } from "../../src/environment/parseNativeTimeTables";
 import { readDayNightLoadedTables } from "../support/dayNightFixtures";
-import { shippedEnvironmentSetup, shippedSkyBindings, timeTablesDocument } from "../support/worldTimeOfDayFixture";
+import { shippedEnvironmentFogRanges, shippedEnvironmentSetup, shippedSkyBindings, timeTablesDocument } from "../support/worldTimeOfDayFixture";
 
 type TimeTablesDocument = ReturnType<typeof timeTablesDocument>;
 
@@ -24,6 +24,16 @@ describe("parseNativeTimeTables", () => {
     expect([...parsed.timeTables.tables.keys()]).toEqual([0, 1, 2, 3]);
     expect(parsed.timeTables.setup).toEqual(shippedEnvironmentSetup);
     expect(parsed.timeTables.skyBindings).toEqual(shippedSkyBindings);
+    expect(parsed.timeTables.fogRanges).toEqual(shippedEnvironmentFogRanges);
+  });
+
+  it("returns a missing Env.int [FOG] key as an incomplete export, never a default range", () => {
+    const document = changedDocument(changed => {
+      changed.setup.fog.endRanges[4]!.value = null as unknown as number;
+      changed.unresolved = ["environment-setup-value-missing:EndRange5"];
+      changed.typedComplete = false;
+    });
+    expect(parseNativeTimeTables(document)).toEqual({ status: "incomplete", unresolved: ["environment-setup-value-missing:EndRange5"] });
   });
 
   it("returns the export's own unresolved reasons instead of tables when it is not typed complete", () => {
@@ -33,7 +43,11 @@ describe("parseNativeTimeTables", () => {
 
   it.each([
     ["the older source-tables export", (document: TimeTablesDocument) => { (document as { kind: string }).kind = "native-environment-source-tables"; },
-      /is not native-environment-time-tables schema 1/],
+      /is not native-environment-time-tables schema 2/],
+    ["a schema 1 export without the Env.int [FOG] ranges", (document: TimeTablesDocument) => { (document as { schemaVersion: number }).schemaVersion = 1; },
+      /is not native-environment-time-tables schema 2/],
+    ["a fog range list that is not five slots", (document: TimeTablesDocument) => { document.setup.fog.startRanges.pop(); },
+      /setup fog StartRange lists 4 ranges instead of 5/],
     ["a typedComplete flag that disagrees with the reasons", (document: TimeTablesDocument) => { document.typedComplete = false; }, /typedComplete disagrees/],
     ["a channel outside a byte", (document: TimeTablesDocument) => { skyBoxTableOf(document).rows[0]!.values.R = 256; }, /SkyBoxColor row 0 R is not a byte/],
     ["a time that is not a number", (document: TimeTablesDocument) => { (skyBoxTableOf(document).rows[1]!.values as Record<string, unknown>).T = null; },

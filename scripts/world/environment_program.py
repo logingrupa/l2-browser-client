@@ -11,7 +11,7 @@ ENVIRONMENT_NATIVE_RULES_RELATIVE_PATH = 'recipes/world/environment-native-rules
 REQUIRED_RULE_IDS = ('setup.section', 'setup.IsClock', 'setup.TimeRatio', 'setup.StartTime', 'setup.ShadowTick', 'setup.SlopeSunAngle',
                      'setup.TimeEnvFileNum', 'setup.TimeEnvFileName', 'binding.SKYBOX', 'binding.HAZERING', 'binding.NumCloudColor',
                      'binding.CLOUD', 'table.environmentType', 'table.countKey', 'table.kind.rgb', 'table.kind.hsv', 'table.kind.scale',
-                     'table.sections')
+                     'table.sections', 'fog.section', 'fog.StartRange', 'fog.EndRange', 'fog.FogSpeed')
 SETUP_VALUE_RULE_IDS = ('setup.IsClock', 'setup.TimeRatio', 'setup.StartTime', 'setup.ShadowTick', 'setup.SlopeSunAngle', 'setup.TimeEnvFileNum')
 SETTING_FROM_FILE = 'file'
 SETTING_FROM_NATIVE_DEFAULT = 'native-default'
@@ -55,6 +55,14 @@ def indexed_setting_records(config_file, section, rule, count):
             for index in range(rule['firstIndex'], rule['firstIndex'] + max(count, 0))]
 
 
+def environment_fog_setup(config_file, rules):
+    section = rules['fog.section']
+    return {'section': section,
+            'startRanges': indexed_setting_records(config_file, section, rules['fog.StartRange'], rules['fog.StartRange']['count']),
+            'endRanges': indexed_setting_records(config_file, section, rules['fog.EndRange'], rules['fog.EndRange']['count']),
+            'FogSpeed': setting_record(config_file, section, rules['fog.FogSpeed']['key'], rules['fog.FogSpeed'])}
+
+
 def environment_setup(file_name, config_file, rules):
     section = rules['setup.section']
     values = {rules[rule_id]['key']: setting_record(config_file, section, rules[rule_id]['key'], rules[rule_id]) for rule_id in SETUP_VALUE_RULE_IDS}
@@ -64,13 +72,14 @@ def environment_setup(file_name, config_file, rules):
                 'NumCloudColor': cloud_count,
                 'CLOUD': indexed_setting_records(config_file, section, rules['binding.CLOUD'], cloud_count['value'] or 0)}
     time_environment_files = indexed_setting_records(config_file, section, rules['setup.TimeEnvFileName'], values['TimeEnvFileNum']['value'] or 0)
-    return {'file': file_name, 'section': section, 'values': values, 'bindings': bindings, 'timeEnvironmentFiles': time_environment_files}
+    return {'file': file_name, 'section': section, 'values': values, 'bindings': bindings, 'timeEnvironmentFiles': time_environment_files,
+            'fog': environment_fog_setup(config_file, rules)}
 
 
 def environment_setup_settings(setup):
-    bindings = setup['bindings']
+    bindings, fog = setup['bindings'], setup['fog']
     return [*setup['values'].values(), bindings['SKYBOX'], bindings['HAZERING'], bindings['NumCloudColor'], *bindings['CLOUD'],
-            *setup['timeEnvironmentFiles']]
+            *setup['timeEnvironmentFiles'], *fog['startRanges'], *fog['endRanges'], fog['FogSpeed']]
 
 
 def environment_setup_unresolved_reasons(setup):

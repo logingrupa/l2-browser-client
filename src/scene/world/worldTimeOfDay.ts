@@ -8,6 +8,7 @@ import type { NativeHourSource, ReadRealSeconds } from "../../environment/model/
 import type { RgbBytes, TimeScaleSample } from "../../environment/model/sampleNativeTimeTables";
 import { moonAngles, sunAngles } from "../../environment/model/nativeSunMoonDirection";
 import type { NativeTimeTablesExport, SkyEnvironmentBinding } from "../../environment/parseNativeTimeTables";
+import type { EnvironmentFogRanges } from "../../materials/ue2/model/fog";
 import { createSceneScopedContext } from "../sceneScopedContext";
 import { loadNativeTimeTables } from "./nativeEnvironmentTables";
 
@@ -46,8 +47,10 @@ export interface RunningWorldTimeOfDay {
   readonly manager: NativeEnvironmentManager;
   readonly skyBindings: readonly SkyEnvironmentBinding[];
   readonly environmentTypes: readonly number[];
+  readonly fogRanges: EnvironmentFogRanges;
   sample(): WorldEnvironmentSample;
   skyEnvironmentColours(): readonly SkyEnvironmentColour[];
+  hazeColour(): SkyEnvironmentColourResult;
   celestial(): WorldCelestialSample;
   hourlyEnvironmentLighting(): HourlyEnvironmentLighting;
   dispose(): void;
@@ -72,12 +75,12 @@ const worldTimeOfDayUnprovidedGap: WorldTimeOfDayGap = { status: "gap", reason: 
   detail: "No world time of day was provided for this scene." };
 
 export function startWorldTimeOfDay(scene: Scene, timeTables: NativeTimeTablesExport, readRealSeconds: ReadRealSeconds): RunningWorldTimeOfDay {
-  const { setup, tables, skyBindings } = timeTables;
+  const { setup, tables, skyBindings, fogRanges } = timeTables;
   const manager = createNativeEnvironmentManager({ setup, loadedEnvironmentTypes: new Set(tables.keys()), readRealSeconds });
   const tick = scene.onBeforeRenderObservable.add(() => manager.tick(scene.getEngine().getDeltaTime() / millisecondsPerSecond));
   let disposed = false;
   return {
-    status: "running", manager, skyBindings, environmentTypes: [...tables.keys()].sort((first, second) => first - second),
+    status: "running", manager, skyBindings, fogRanges, environmentTypes: [...tables.keys()].sort((first, second) => first - second),
     sample() {
       const snapshot = manager.snapshot();
       return { hour: snapshot.clock.hour, hourSource: snapshot.clock.hourSource, oldType: snapshot.oldType, targetType: snapshot.targetType, weight: snapshot.weight };
@@ -87,6 +90,7 @@ export function startWorldTimeOfDay(scene: Scene, timeTables: NativeTimeTablesEx
       return skyBindings.map(binding => ({ ...binding, colour: binding.section === "SkyBoxColor"
         ? environmentColour(tables, blend, binding.section, hour) : skyLayerColour(tables, blend, binding.section, hour) }));
     },
+    hazeColour: () => skyLayerColour(tables, manager.blend(), "HazeringColor", manager.hour()),
     celestial() {
       const hour = manager.hour(), { celestialPhiDegrees } = manager.snapshot();
       return { sunTheta: sunAngles(hour, celestialPhiDegrees).theta, moonTheta: moonAngles(hour, celestialPhiDegrees).theta,

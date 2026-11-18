@@ -69,7 +69,7 @@ async function fixture() {
   const records = sourceRecords(lines) as unknown as FixtureRecord[];
   const timeRatio = records[1]!;
   const tables = {
-    schemaVersion: 1, kind: "native-environment-time-tables", rules: { path: "recipes/world/environment-native-rules.json", canonicalSha256: "d".repeat(64) },
+    schemaVersion: 2, kind: "native-environment-time-tables", rules: { path: "recipes/world/environment-native-rules.json", canonicalSha256: "d".repeat(64) },
     setup: { file: source.name, section: "EnvSetup",
       values: { TimeRatio: { key: "TimeRatio", value: 6 as unknown, source: "file", recordIndex: timeRatio.recordIndex as number | null,
         valueSourceOffset: timeRatio.valueSourceOffset! as number | null, raw: timeRatio.valueAscii! as string | null, unresolved: null as string | null },
@@ -77,14 +77,15 @@ async function fixture() {
       bindings: { SKYBOX: unlocatedSetting("SKYBOX", "SkybackgroundColor", "native-default", null),
         HAZERING: unlocatedSetting("HAZERING", null, "unresolved", "environment-setup-value-missing:HAZERING"),
         NumCloudColor: unlocatedSetting("NumCloudColor", null, "unresolved", "environment-setup-value-missing:NumCloudColor"), CLOUD: [] },
-      timeEnvironmentFiles: [] },
+      timeEnvironmentFiles: [],
+      fog: { section: "FOG", startRanges: [], endRanges: [], FogSpeed: unlocatedSetting("FogSpeed", null, "unresolved", "environment-setup-value-missing:FogSpeed") } },
     environmentTypes: [{ file: source.name, originalSha256: source.originalSha256, decodedSha256: hash(decoded), environmentType: 0,
       environmentTypeSource: "native-default", environmentTypeRecordIndex: null, mergedDuplicateSections: [],
       tables: [{ section: "SkyBoxColor", kind: "rgb", sectionPresent: true, num: 2, numRecordIndex: 3, numSourceOffset: records[3]!.valueSourceOffset!,
         rows: [timeTableRow(records[4]!, 1, { T: 0, R: 40, G: 49, B: 70 }), timeTableRow(records[5]!, 2, { T: 12, R: 66, G: 124, B: 176 })],
         unresolved: [] as string[] }],
       unresolved: [] as string[] }],
-    tableCount: 1, rowCount: 2, unresolved: ["environment-setup-value-missing:HAZERING", "environment-setup-value-missing:NumCloudColor"],
+    tableCount: 1, rowCount: 2, unresolved: ["environment-setup-value-missing:FogSpeed", "environment-setup-value-missing:HAZERING", "environment-setup-value-missing:NumCloudColor"],
     typedComplete: false,
   };
   const ordered = { schemaVersion: 1, kind: "native-environment-ordered-records", sourceFileCount: 1, propertyRecords: 4,
