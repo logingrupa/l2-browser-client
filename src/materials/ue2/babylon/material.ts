@@ -22,7 +22,7 @@ import {
   samplerUniformName, staticMeshAmbientUniformName, textureCoordinateRowUName, textureCoordinateRowVName,
 } from "./fragmentChain";
 import type { LoadedNativeMaterial } from "./loadNativeMaterial";
-import { createSamplerTextures } from "./samplerTextures";
+import { createSamplerTextures, inspectNativeSampler, type NativeSamplerInspection } from "./samplerTextures";
 
 export { particleFragmentChain, type ParticleFragmentChain } from "./particleFragmentChain";
 export { selectTextureFrame } from "../model/textureFrames";
@@ -57,6 +57,7 @@ export interface NativeMaterialInspection {
   readonly unportedClass: string | null;
   readonly blend: NativeMaterialBlendInspection | null;
   readonly samplerCount: number;
+  readonly samplers: readonly NativeSamplerInspection[];
   readonly colourSourceCount: number;
   readonly uniforms: NativeMaterialUniforms | null;
   readonly frame: MaterialFrameState | null;
@@ -147,7 +148,7 @@ function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, li
     setLightmap: () => {},
     setStaticMeshAmbient: () => {},
     inspect: () => ({ materialId: loaded.materialId, root: diagnostic.root, status: "diagnostic", lighting, lightmapBound: false, reasons: [...diagnostic.reasons],
-      unportedClass: diagnostic.unportedClass, blend: null, samplerCount: 0, colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
+      unportedClass: diagnostic.unportedClass, blend: null, samplerCount: 0, samplers: [], colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
     dispose: () => material.dispose(true, false),
   };
 }
@@ -221,8 +222,8 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
     },
     inspect: () => ({
       materialId: loaded.materialId, root: plan.root, status: "compiled", lighting, lightmapBound, reasons: [...textureGapReasons], unportedClass: null,
-      blend: { ...blendRecord, babylonAlphaMode: babylonBlend.alphaModeName }, samplerCount: plan.samplers.length, colourSourceCount: plan.colourSources.length,
-      uniforms: lastUniforms, frame: lastFrame,
+      blend: { ...blendRecord, babylonAlphaMode: babylonBlend.alphaModeName }, samplerCount: plan.samplers.length,
+      samplers: textures.flat().map(inspectNativeSampler), colourSourceCount: plan.colourSources.length, uniforms: lastUniforms, frame: lastFrame,
     }),
     dispose: () => {
       material.dispose(true, false);

@@ -4,16 +4,30 @@ import { InternalTexture, InternalTextureSource } from "@babylonjs/core/Material
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import type { Scene } from "@babylonjs/core/scene";
+import { TEXTURE_SAMPLING_CONSTANTS, type NativeTextureAddress, type NativeTextureFilter } from "../model/constants/textureSamplingConstants";
 import type { CompiledMaterialStagePlan } from "../model/stagePlan";
 import { TEXTURE_COMPRESSION_BC_UNALIGNED_SIZE_REASON, TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON, type TextureMipChainFormat } from "../model/textureMipChain";
 import type { LoadedNativeMaterial, LoadedTextureMipChain } from "./loadNativeMaterial";
+
+export interface NativeSamplerInspection {
+  readonly texture: string;
+  readonly levelCount: number;
+  readonly samplingMode: number;
+  readonly anisotropicFilteringLevel: number;
+  readonly wrapU: number;
+  readonly wrapV: number;
+}
 
 export interface SamplerTextures {
   readonly textures: readonly (readonly BaseTexture[])[];
   readonly gapReasons: readonly string[];
 }
 
-const nativeTextureSamplingMode = Texture.BILINEAR_SAMPLINGMODE;
+export type MipChainUpload = { readonly babylonFormat: number } | { readonly gapReason: string };
+
+const babylonSamplingModeByNativeFilter: Readonly<Record<NativeTextureFilter, number>> = { linear: Texture.TRILINEAR_SAMPLINGMODE };
+const babylonAddressModeByNativeAddress: Readonly<Record<NativeTextureAddress, number>> = { wrap: Texture.WRAP_ADDRESSMODE, clamp: Texture.CLAMP_ADDRESSMODE };
+const nativeSamplingMode = babylonSamplingModeByNativeFilter[TEXTURE_SAMPLING_CONSTANTS.filter.runtimeDefault];
 const blockCompressedBabylonFormats: Readonly<Record<Exclude<TextureMipChainFormat, "RGBA8">, number>> = {
   DXT1: Constants.TEXTUREFORMAT_COMPRESSED_RGBA_S3TC_DXT1,
   DXT3: Constants.TEXTUREFORMAT_COMPRESSED_RGBA_S3TC_DXT3,
@@ -21,9 +35,7 @@ const blockCompressedBabylonFormats: Readonly<Record<Exclude<TextureMipChainForm
 };
 const blockCompressionEdge = 4;
 
-type MipChainUpload = { readonly babylonFormat: number } | { readonly gapReason: string };
-
-function mipChainUpload(scene: Scene, chain: LoadedTextureMipChain): MipChainUpload {
+export function nativeMipChainUpload(scene: Scene, chain: LoadedTextureMipChain): MipChainUpload {
   if (chain.format === "RGBA8") return { babylonFormat: Constants.TEXTUREFORMAT_BGRA };
   if (!scene.getEngine().getCaps().s3tc) return { gapReason: TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON };
   const [firstLevel] = chain.levels;
@@ -33,7 +45,7 @@ function mipChainUpload(scene: Scene, chain: LoadedTextureMipChain): MipChainUpl
   return { babylonFormat: blockCompressedBabylonFormats[chain.format] };
 }
 
-function createNativeMipChainTexture(scene: Scene, chain: LoadedTextureMipChain, babylonFormat: number): BaseTexture {
+export function createNativeMipChainTexture(scene: Scene, chain: LoadedTextureMipChain, babylonFormat: number): BaseTexture {
   const engine = scene.getEngine();
   const [firstLevel] = chain.levels;
   const internalTexture = new InternalTexture(engine, InternalTextureSource.Raw);
@@ -41,7 +53,7 @@ function createNativeMipChainTexture(scene: Scene, chain: LoadedTextureMipChain,
   internalTexture.baseHeight = internalTexture.height = firstLevel!.height;
   internalTexture.format = babylonFormat;
   internalTexture.type = Constants.TEXTURETYPE_UNSIGNED_BYTE;
-  internalTexture.samplingMode = nativeTextureSamplingMode;
+  internalTexture.samplingMode = nativeSamplingMode;
   internalTexture.invertY = false;
   internalTexture.generateMipMaps = chain.levels.length > 1;
   internalTexture._maxLodLevel = chain.levels.length;
@@ -50,27 +62,47 @@ function createNativeMipChainTexture(scene: Scene, chain: LoadedTextureMipChain,
   return new BaseTexture(scene, internalTexture);
 }
 
+export function createNativeSingleLevelTexture(scene: Scene, rgba: Uint8Array, width: number, height: number): BaseTexture {
+  return RawTexture.CreateRGBATexture(rgba, width, height, scene, false, false, nativeSamplingMode);
+}
+
+export function applyNativeSampler(texture: BaseTexture, name: string, addressU: NativeTextureAddress, addressV: NativeTextureAddress): BaseTexture {
+  texture.name = name;
+  texture.gammaSpace = false;
+  texture.anisotropicFilteringLevel = TEXTURE_SAMPLING_CONSTANTS.anisotropy.runtimeDefault;
+  texture.wrapU = babylonAddressModeByNativeAddress[addressU];
+  texture.wrapV = babylonAddressModeByNativeAddress[addressV];
+  return texture;
+}
+
+export function inspectNativeSampler(texture: BaseTexture): NativeSamplerInspection {
+  const internalTexture = texture.getInternalTexture();
+  if (!internalTexture) throw new Error(`UE2 texture ${texture.name} has no GPU texture to inspect.`);
+  return { texture: texture.name, levelCount: internalTexture.useMipMaps ? internalTexture._maxLodLevel ?? 1 : 1, samplingMode: internalTexture.samplingMode,
+    anisotropicFilteringLevel: texture.anisotropicFilteringLevel, wrapU: texture.wrapU, wrapV: texture.wrapV };
+}
+
 function createMipZeroPngTexture(scene: Scene, loaded: LoadedNativeMaterial, sha256: string, path: string): BaseTexture {
   const pixels = loaded.texturePixels.get(sha256);
   if (!pixels) throw new Error(`UE2 material: texture ${path} was not loaded.`);
-  return RawTexture.CreateRGBATexture(pixels.rgba, pixels.width, pixels.height, scene, false, false, nativeTextureSamplingMode);
+  return createNativeSingleLevelTexture(scene, pixels.rgba, pixels.width, pixels.height);
+}
+
+function samplerAddress(clamped: boolean): NativeTextureAddress {
+  return clamped ? "clamp" : "wrap";
 }
 
 export function createSamplerTextures(scene: Scene, loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan): SamplerTextures {
   const gapReasons = new Set<string>();
   const textures = plan.samplers.map(sampler => sampler.frameImages.map((image, frameIndex) => {
     const chain = loaded.textureMipChains.get(image.sha256);
-    const upload = chain ? mipChainUpload(scene, chain) : null;
+    const upload = chain ? nativeMipChainUpload(scene, chain) : null;
     if (upload && "gapReason" in upload) gapReasons.add(upload.gapReason);
     const texture = chain && upload && "babylonFormat" in upload
       ? createNativeMipChainTexture(scene, chain, upload.babylonFormat)
       : createMipZeroPngTexture(scene, loaded, image.sha256, image.path);
-    texture.name = `UE2 texture: ${sampler.frameNodes[frameIndex]}`;
-    texture.gammaSpace = false;
     texture.hasAlpha = true;
-    texture.wrapU = sampler.clampU ? Texture.CLAMP_ADDRESSMODE : Texture.WRAP_ADDRESSMODE;
-    texture.wrapV = sampler.clampV ? Texture.CLAMP_ADDRESSMODE : Texture.WRAP_ADDRESSMODE;
-    return texture;
+    return applyNativeSampler(texture, `UE2 texture: ${sampler.frameNodes[frameIndex]}`, samplerAddress(sampler.clampU), samplerAddress(sampler.clampV));
   }));
   return { textures, gapReasons: [...gapReasons].sort() };
 }

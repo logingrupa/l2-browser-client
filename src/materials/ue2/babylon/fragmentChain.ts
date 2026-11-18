@@ -1,5 +1,6 @@
 import { COMBINER_CONSTANTS } from "../model/constants/combinerConstants";
 import { LIGHTING_CONSTANTS } from "../model/constants/lightingConstants";
+import { TEXTURE_SAMPLING_CONSTANTS } from "../model/constants/textureSamplingConstants";
 import { isLightmapLighting, isVertexLighting, type MaterialLighting } from "../model/lighting";
 import type { ColourExpression, CompiledMaterialStagePlan } from "../model/stagePlan";
 
@@ -31,6 +32,7 @@ export const litDiffuseVaryingName = "ue2LitDiffuse";
 
 const maskChannelSwizzle = { red: "r", green: "g", blue: "b", alpha: "a" } as const;
 const glslFloat = (value: number) => (Number.isInteger(value) ? `${value}.0` : `${value}`);
+const nativeTextureMipBias = glslFloat(TEXTURE_SAMPLING_CONSTANTS.mipBias.runtimeDefault);
 
 interface ChainBuilder {
   readonly statements: string[];
@@ -133,7 +135,7 @@ function emitExpression(builder: ChainBuilder, expression: ColourExpression, use
     case "texture": {
       const index = expression.samplerIndex;
       const coordinates = `vec2(dot(${textureCoordinateRowUName(index)}, vec3(ue2TextureCoordinates, 1.0)), dot(${textureCoordinateRowVName(index)}, vec3(ue2TextureCoordinates, 1.0)))`;
-      return declare(builder, `texture2D(${samplerUniformName(index)}, ${coordinates})`);
+      return declare(builder, `texture2D(${samplerUniformName(index)}, ${coordinates}, ${nativeTextureMipBias})`);
     }
     case "modulate": {
       const input = emitExpression(builder, expression.input, usesDiffuseAlpha);
@@ -153,7 +155,7 @@ const lightmapOperationScale = {
 function litColour(result: string, lighting: MaterialLighting): string {
   if (isVertexLighting(lighting)) return `${result}.rgb * ${glslFloat(LIGHTING_CONSTANTS.globalModulationModulate2xScale.runtimeDefault)} * ${litDiffuseVaryingName}`;
   if (!isLightmapLighting(lighting)) return `${result}.rgb`;
-  return `${result}.rgb * ${glslFloat(lightmapOperationScale[lighting])} * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`;
+  return `${result}.rgb * ${glslFloat(lightmapOperationScale[lighting])} * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}, ${nativeTextureMipBias}).rgb`;
 }
 
 export const terrainLayerSamplerName = (layerPosition: number) => `ue2TerrainLayer${layerPosition}`;

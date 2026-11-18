@@ -46,8 +46,8 @@ describe("lightmap colour operation", () => {
     const unlit = buildFragmentChain(plan, "unlit");
     expect(doubled.samplers).toContain(lightmapSamplerName);
     expect(doubled.fragmentSource).toContain(`varying vec2 ${lightmapCoordinatesVaryingName};`);
-    expect(doubled.fragmentSource).toContain(`* 2.0 * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`);
-    expect(modulated.fragmentSource).toContain(`* 1.0 * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`);
+    expect(doubled.fragmentSource).toContain(`* 2.0 * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}, -0.5).rgb`);
+    expect(modulated.fragmentSource).toContain(`* 1.0 * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}, -0.5).rgb`);
     expect(unlit.samplers).not.toContain(lightmapSamplerName);
     expect(unlit.fragmentSource).not.toContain(lightmapSamplerName);
   });

@@ -154,7 +154,8 @@ describe("native texture mip chain upload", () => {
     const texture = material.material.getActiveTextures()[0]!;
     expect(texture.getInternalTexture()?.generateMipMaps).toBe(fixture.mips.length > 1);
     expect(texture.getInternalTexture()?._maxLodLevel).toBe(fixture.mips.length);
-    expect(texture.samplingMode).toBe(Constants.TEXTURE_BILINEAR_SAMPLINGMODE);
+    expect(texture.getInternalTexture()?.samplingMode).toBe(Constants.TEXTURE_TRILINEAR_SAMPLINGMODE);
+    expect(texture.anisotropicFilteringLevel).toBe(1);
   });
 
   it("keeps the mip-0 PNG and names texture-compression-bc-unavailable when the device lacks BC", async () => {

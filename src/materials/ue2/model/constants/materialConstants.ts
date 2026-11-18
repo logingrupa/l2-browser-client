@@ -7,6 +7,7 @@ import { LIGHTING_CONSTANTS } from "./lightingConstants";
 import { SHADER_CONSTANTS } from "./shaderConstants";
 import { TEXTURE_COORDINATE_CONSTANTS } from "./textureCoordinateConstants";
 import { TEXTURE_FRAME_CONSTANTS } from "./textureFrameConstants";
+import { TEXTURE_SAMPLING_CONSTANTS } from "./textureSamplingConstants";
 
 export const MATERIAL_CONSTANT_TABLES = {
   blend: BLEND_CONSTANTS,
@@ -17,6 +18,7 @@ export const MATERIAL_CONSTANT_TABLES = {
   shader: SHADER_CONSTANTS,
   textureCoordinates: TEXTURE_COORDINATE_CONSTANTS,
   textureFrames: TEXTURE_FRAME_CONSTANTS,
+  textureSampling: TEXTURE_SAMPLING_CONSTANTS,
   displayGamma: DISPLAY_GAMMA_CONSTANTS,
   diagnostic: DIAGNOSTIC_CONSTANTS,
 } as const;
