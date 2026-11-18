@@ -45,7 +45,6 @@ export interface BspVisibilityModel extends BspNodeArrays {
 }
 
 export const bspVisibilityLabel = "BSP visibility";
-export const zoneClassSkyBit = 2;
 export const zoneClassVisibilityOutdoorBit = 8;
 export const memberKindStaticMesh = 0;
 export const memberKindMapEmitter = 1;

@@ -112,7 +112,7 @@ describe("tile visibility frame source", () => {
     const source = createTileVisibilityFrameSource(model, mostVisibleLimits, committedBspWalkRules);
     source.setTranslucentSections([threeRoomSections.translucentWalls]);
     const first = source.frame(poseAt(-500), false);
-    expect(first).toMatchObject({ culling: false, cameraZone: threeRoomZones.camera, visibleZoneCount: 4, skyZones: [threeRoomZones.behindWall] });
+    expect(first).toMatchObject({ culling: false, cameraZone: threeRoomZones.camera, visibleZoneCount: 4, sharedSkyTriggerNode: -1 });
     expect([...first.sectionVisible]).toEqual([1, 1]);
     expect(source.frame(poseAt(-500 + 1e-9), false)).toBe(first);
     expect(source.frame(poseAt(500), false).cameraZone).toBe(threeRoomZones.throughPortal);

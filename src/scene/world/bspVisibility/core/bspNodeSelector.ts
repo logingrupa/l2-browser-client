@@ -25,7 +25,7 @@ export interface BspSceneView {
 export interface BspWalkVisitor {
   accept(node: number): void;
   reachLeaf?(leaf: number): void;
-  fakeBackdrop?(node: number): void;
+  fakeBackdrop?(node: number, visibilityZone: number): void;
 }
 
 const rootNode = 0;
@@ -70,7 +70,7 @@ function selectNode(model: BspNodeArrays, node: number, view: BspSceneView, rule
   const visibilityZone = restricted ? model.nodeZone[node * sidesPerNode + side]! : unrestrictedSceneZone;
   if (!zoneSetHas(view.visibleZones, visibilityZone) || !nodeSphereVisible(model, node, view.frustum)) return;
   if ((flags & rules.fakeBackdropFlag) !== 0) {
-    visitor.fakeBackdrop?.(node);
+    visitor.fakeBackdrop?.(node, visibilityZone);
     return;
   }
   if (model.nodeDrawable[node] === 1 && ordinaryGeometry(flags, rules)) visitor.accept(node);

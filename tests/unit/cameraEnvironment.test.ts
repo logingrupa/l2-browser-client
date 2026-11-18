@@ -100,7 +100,7 @@ describe("computeCameraEnvironment", () => {
 
 describe("sky scene fog", () => {
   it("inherits the level fog under the shared-sky route of the shipped l2.ini and names the unstaged SkyLevel geometry", () => {
-    const environment = computeCameraEnvironment(sources({ frame: frameInZone(1, [3]) }));
+    const environment = computeCameraEnvironment(sources({ frame: frameInZone(1) }));
     expect(environment.fog.source).toBe("camera-zone");
     expect(environment.skyFog).toEqual({ route: "inherit-level", fog: environment.fog });
   });

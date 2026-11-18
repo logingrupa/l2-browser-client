@@ -1,13 +1,13 @@
 import { float32Vector, type Vector3 } from "../../../../shared/math/vector3";
 import { indexNone } from "./bspNodeArrays";
 import type { BspWalkRules } from "./bspNodeSelector";
-import { zoneClassSkyBit, zoneClassVisibilityOutdoorBit, type BspVisibilityModel } from "./decodeBspVisibility";
+import { zoneClassVisibilityOutdoorBit, type BspVisibilityModel } from "./decodeBspVisibility";
 import { locateZone, type ZoneLocation } from "./locateZone";
 import { gateMembers, type MemberRangeLimits } from "./memberVisibility";
-import { nativeFrustumOfScene, nativeSceneMatrices, type ViewPose } from "./nativeViewFrustum";
+import { nativeFrustumOfScene, nativeSceneMatrices, type NativeViewFrustum, type ViewPose } from "./nativeViewFrustum";
 import { expandThroughPortals, seedZoneSet, type PortalWalkLimits } from "./portalWalk";
 import { groupRangesBySection, orderTranslucentSections } from "./translucentOrder";
-import { outdoorViewSections, walkVisibleSections } from "./visibleSectionWalk";
+import { outdoorViewSections, walkVisibleSections, type SharedSkyTrigger } from "./visibleSectionWalk";
 import { emptyZoneSet, isEmptyZoneSet, zoneSetIntersection, zoneSetMembers, zoneSetOf, zoneSetOfAllZones, zoneSetUnion, type ZoneSet } from "./zoneSet";
 
 export interface TileVisibilityLimits extends PortalWalkLimits, MemberRangeLimits {}
@@ -20,7 +20,8 @@ export interface TileVisibilityFrame {
   readonly visibleZones: ZoneSet;
   readonly visibleZoneCount: number;
   readonly openedPortalCount: number;
-  readonly skyZones: readonly number[];
+  readonly sharedSkyTriggerNode: number;
+  readonly sharedSkyOtherZoneCandidates: number;
   readonly sectionVisible: Uint8Array;
   readonly rangeVisible: Uint8Array;
   readonly memberVisible: Uint8Array;
@@ -42,6 +43,7 @@ interface CullingResult {
   readonly sectionVisible: Uint8Array;
   readonly rangeVisible: Uint8Array;
   readonly memberVisible: Uint8Array;
+  readonly sharedSky: SharedSkyTrigger;
 }
 
 function float32PoseKey(pose: ViewPose, culling: boolean): readonly number[] {
@@ -63,36 +65,41 @@ export function translucentSectionRangesOf(model: BspVisibilityModel, translucen
   return new Map(translucentSections.map(section => [section, rangesBySection[section]!]));
 }
 
-function cullTile(model: BspVisibilityModel, camera: Vector3, location: ZoneLocation, pose: ViewPose, outdoorZones: ZoneSet, limits: TileVisibilityLimits,
-  walkRules: BspWalkRules): CullingResult {
+function cullTile(model: BspVisibilityModel, camera: Vector3, location: ZoneLocation, frustum: NativeViewFrustum, outdoorZones: ZoneSet,
+  limits: TileVisibilityLimits, walkRules: BspWalkRules): CullingResult {
   if (location.leaf === indexNone) {
     const outdoor = outdoorViewSections(model, outdoorZones);
     return { outdoorView: true, visibleZones: outdoorZones, openedPortalCount: 0, sectionVisible: outdoor.sectionVisible, rangeVisible: outdoor.rangeVisible,
-      memberVisible: gateMembers(model, camera, outdoorZones, outdoor.leafVisible, limits) };
+      memberVisible: gateMembers(model, camera, outdoorZones, outdoor.leafVisible, limits),
+      sharedSky: walkVisibleSections(model, camera, location.zone, zoneSetOf(location.zone), frustum, walkRules.selector) };
   }
-  const scene = nativeSceneMatrices({ ...pose, position: camera }, walkRules.frustum.nearClip, walkRules.frustum.farClip);
-  const frustum = nativeFrustumOfScene(scene, walkRules.frustum);
   const { visibleZones, openedPortalCount } = expandThroughPortals(model, camera, seedZoneSet(model, location), frustum, limits);
   const walked = walkVisibleSections(model, camera, location.zone, visibleZones, frustum, walkRules.selector);
   return { outdoorView: false, visibleZones, openedPortalCount, sectionVisible: walked.sectionVisible, rangeVisible: walked.rangeVisible,
-    memberVisible: gateMembers(model, camera, visibleZones, walked.leafVisible, limits) };
+    memberVisible: gateMembers(model, camera, visibleZones, walked.leafVisible, limits), sharedSky: walked };
 }
 
-function everythingVisible(model: BspVisibilityModel): CullingResult {
+function everythingVisible(model: BspVisibilityModel, camera: Vector3, location: ZoneLocation, frustum: NativeViewFrustum, walkRules: BspWalkRules):
+  CullingResult {
   return { outdoorView: false, visibleZones: zoneSetOfAllZones(model.zoneCount), openedPortalCount: 0,
     sectionVisible: new Uint8Array(model.sections.count).fill(1), rangeVisible: new Uint8Array(model.ranges.count).fill(1),
-    memberVisible: new Uint8Array(model.members.count).fill(1) };
+    memberVisible: new Uint8Array(model.members.count).fill(1),
+    sharedSky: walkVisibleSections(model, camera, location.zone, zoneSetOf(location.zone), frustum, walkRules.selector) };
 }
 
 export function computeTileVisibilityFrame(model: BspVisibilityModel, translucentSectionRanges: ReadonlyMap<number, Int32Array>, pose: ViewPose,
   culling: boolean, limits: TileVisibilityLimits, walkRules: BspWalkRules): TileVisibilityFrame {
   const camera = float32Vector(pose.position), location = locateZone(model, camera);
   const outdoorZones = zoneSetOfZones(zonesWithClassBit(model, zoneClassVisibilityOutdoorBit));
-  const result = culling ? cullTile(model, camera, location, pose, outdoorZones, limits, walkRules) : everythingVisible(model);
+  const scene = nativeSceneMatrices({ ...pose, position: camera }, walkRules.frustum.nearClip, walkRules.frustum.farClip);
+  const frustum = nativeFrustumOfScene(scene, walkRules.frustum);
+  const result = culling ? cullTile(model, camera, location, frustum, outdoorZones, limits, walkRules)
+    : everythingVisible(model, camera, location, frustum, walkRules);
   const visibleTranslucentRanges = new Map([...translucentSectionRanges].filter(([section]) => result.sectionVisible[section] === 1));
   return { culling, cameraLeaf: location.leaf, cameraZone: location.zone, outdoorView: result.outdoorView, visibleZones: result.visibleZones,
     visibleZoneCount: zoneSetMembers(result.visibleZones, model.zoneCount).length, openedPortalCount: result.openedPortalCount,
-    skyZones: zonesWithClassBit(model, zoneClassSkyBit), sectionVisible: result.sectionVisible, rangeVisible: result.rangeVisible,
+    sharedSkyTriggerNode: result.sharedSky.triggerNode, sharedSkyOtherZoneCandidates: result.sharedSky.otherZoneCandidates,
+    sectionVisible: result.sectionVisible, rangeVisible: result.rangeVisible,
     memberVisible: result.memberVisible,
     terrainVisible: !culling || !isEmptyZoneSet(zoneSetIntersection(result.visibleZones, outdoorZones)),
     translucentOrder: orderTranslucentSections(model, camera, visibleTranslucentRanges) };

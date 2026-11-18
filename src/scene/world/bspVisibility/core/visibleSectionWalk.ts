@@ -11,11 +11,19 @@ export interface VisibleSections {
   readonly leafVisible: Uint8Array;
 }
 
+export interface SharedSkyTrigger {
+  readonly triggerNode: number;
+  readonly otherZoneCandidates: number;
+}
+
+export interface WalkedSections extends VisibleSections, SharedSkyTrigger {}
+
 const frontSide = 1;
 
 export function walkVisibleSections(model: BspVisibilityModel, eye: Vector3, sceneZone: number, visibleZones: ZoneSet, frustum: NativeViewFrustum | null,
-  rules: BspNodeSelectorRules): VisibleSections {
+  rules: BspNodeSelectorRules): WalkedSections {
   const sectionVisible = new Uint8Array(model.sections.count), rangeVisible = new Uint8Array(model.ranges.count), leafReached = new Uint8Array(model.leafCount);
+  let triggerNode = indexNone, otherZoneCandidates = 0;
   walkSelectedBspNodes(model, { eye, sceneZone, visibleZones, frustum }, rules, {
     accept(node) {
       const range = model.nodeRange[node]!;
@@ -24,9 +32,13 @@ export function walkVisibleSections(model: BspVisibilityModel, eye: Vector3, sce
       rangeVisible[range] = 1;
     },
     reachLeaf(leaf) { leafReached[leaf] = 1; },
+    fakeBackdrop(node, visibilityZone) {
+      if (visibilityZone !== sceneZone) otherZoneCandidates++;
+      else if (triggerNode === indexNone) triggerNode = node;
+    },
   });
   const leafVisible = Uint8Array.from(leafReached, (reached, leaf) => reached === 1 && zoneSetHas(visibleZones, model.leafZone[leaf]!) ? 1 : 0);
-  return { sectionVisible, rangeVisible, leafVisible };
+  return { sectionVisible, rangeVisible, leafVisible, triggerNode, otherZoneCandidates };
 }
 
 export function outdoorViewSections(model: BspVisibilityModel, outdoorZones: ZoneSet): VisibleSections {

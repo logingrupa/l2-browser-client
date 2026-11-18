@@ -51,7 +51,7 @@ export function zoneIndexOfActor(tileRecords: FogWorkedCaseTileRecords, actor: s
   return zone.zoneIndex;
 }
 
-export function frameInZone(cameraZone: number, skyZones: readonly number[] = []): TileVisibilityFrame {
+export function frameInZone(cameraZone: number): TileVisibilityFrame {
   return { culling: false, cameraLeaf: 0, cameraZone, outdoorView: false, visibleZones: zoneSetOf(cameraZone < 0 ? 0 : cameraZone), visibleZoneCount: 1, openedPortalCount: 0,
-    skyZones, sectionVisible: new Uint8Array(0), rangeVisible: new Uint8Array(0), memberVisible: new Uint8Array(0), terrainVisible: true, translucentOrder: new Map() };
+    sharedSkyTriggerNode: -1, sharedSkyOtherZoneCandidates: 0, sectionVisible: new Uint8Array(0), rangeVisible: new Uint8Array(0), memberVisible: new Uint8Array(0), terrainVisible: true, translucentOrder: new Map() };
 }

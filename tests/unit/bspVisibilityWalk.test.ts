@@ -23,7 +23,7 @@ describe("portal walk", () => {
     const frame = culledFrame(pose(-500));
     expect(zoneSetMembers(frame.visibleZones, model.zoneCount)).toEqual([threeRoomZones.camera, threeRoomZones.throughPortal]);
     expect(frame).toMatchObject({ cameraZone: threeRoomZones.camera, outdoorView: false, openedPortalCount: 1, visibleZoneCount: 2,
-      skyZones: [threeRoomZones.behindWall], terrainVisible: false });
+      sharedSkyTriggerNode: -1, terrainVisible: false });
     expect([...frame.sectionVisible]).toEqual([1, 0]);
     expect([...frame.rangeVisible]).toEqual([1, 1, 0]);
   });
@@ -101,6 +101,18 @@ describe("member gating", () => {
     expect([...frame.rangeVisible]).toEqual([1, 1, 1]);
     expect([...frame.memberVisible]).toEqual([1, 1, 1, 1, 1]);
     expect(frame).toMatchObject({ culling: false, terrainVisible: true, visibleZoneCount: model.zoneCount, cameraZone: threeRoomZones.camera });
+  });
+
+  it("triggers the shared sky on the first FakeBackdrop node the selector passes in the camera zone and counts other-zone candidates", () => {
+    const { fakeBackdropFlag, backfaceKeepFlags } = committedBspWalkRules.selector;
+    const backdropFlags = [fakeBackdropFlag | backfaceKeepFlags[0]!, 0, 0, fakeBackdropFlag | backfaceKeepFlags[0]!, 0];
+    const payload = threeRoomVisibilityPayload(threeRoomVisibilityArrays().map(array => array.name === "NODE.surfaceFlags" ? { ...array, values: backdropFlags } : array));
+    const backdropModel = decodeBspVisibility(payload.assetRecord, payload.payloadBytes);
+    expect(computeTileVisibilityFrame(backdropModel, new Map(), pose(-500), true, mostVisible, committedBspWalkRules))
+      .toMatchObject({ sharedSkyTriggerNode: 0, sharedSkyOtherZoneCandidates: 1 });
+    expect(computeTileVisibilityFrame(backdropModel, new Map(), pose(-500), false, mostVisible, committedBspWalkRules))
+      .toMatchObject({ sharedSkyTriggerNode: 0, sharedSkyOtherZoneCandidates: 0 });
+    expect(computeTileVisibilityFrame(backdropModel, new Map(), pose(-500, facingNegativeX), true, mostVisible, committedBspWalkRules).sharedSkyTriggerNode).toBe(-1);
   });
 
   it("orders only the translucent sections that stay visible", () => {

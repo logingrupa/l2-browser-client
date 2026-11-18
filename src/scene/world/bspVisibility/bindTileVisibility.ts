@@ -51,7 +51,8 @@ export interface BoundTileVisibilityInspection {
   readonly outdoorView: boolean;
   readonly zoneCount: number;
   readonly visibleZoneCount: number;
-  readonly skyZones: readonly number[];
+  readonly sharedSkyTriggerNode: number;
+  readonly sharedSkyOtherZoneCandidates: number;
   readonly portalCount: number;
   readonly openedPortalCount: number;
   readonly sectionCount: number;
@@ -198,7 +199,8 @@ export function bindTileVisibility(input: TileVisibilityBindingInput): TileVisib
       status: "presentation" }],
     inspection: () => ({
       tileId, gap: null, culling: cullingEnabled, cameraZone: latest?.cameraZone ?? noCameraZone, cameraLeaf: latest?.cameraLeaf ?? noCameraZone,
-      outdoorView: latest?.outdoorView ?? false, zoneCount: model.zoneCount, visibleZoneCount: latest?.visibleZoneCount ?? 0, skyZones: latest?.skyZones ?? [],
+      outdoorView: latest?.outdoorView ?? false, zoneCount: model.zoneCount, visibleZoneCount: latest?.visibleZoneCount ?? 0,
+      sharedSkyTriggerNode: latest?.sharedSkyTriggerNode ?? indexNone, sharedSkyOtherZoneCandidates: latest?.sharedSkyOtherZoneCandidates ?? 0,
       portalCount: model.portalNodes.length, openedPortalCount: latest?.openedPortalCount ?? 0, sectionCount: model.sections.count,
       visibleSectionCount: countSet(latest?.sectionVisible), hiddenSectionCount: latest ? model.sections.count - countSet(latest.sectionVisible) : 0,
       targetChunkIds: [...targetsByChunkId.keys()].sort(), targetSectionCount: sectionTargets.size,

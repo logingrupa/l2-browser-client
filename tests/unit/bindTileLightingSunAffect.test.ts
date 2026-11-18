@@ -66,7 +66,7 @@ function environmentAtHour(hour: number): WorldEnvironmentSample {
 }
 
 function visibilityFrame(culling: boolean): TileVisibilityFrame {
-  return { culling, cameraLeaf: 0, cameraZone: 0, outdoorView: false, visibleZones: emptyZoneSet, visibleZoneCount: 0, openedPortalCount: 0, skyZones: [],
+  return { culling, cameraLeaf: 0, cameraZone: 0, outdoorView: false, visibleZones: emptyZoneSet, visibleZoneCount: 0, openedPortalCount: 0, sharedSkyTriggerNode: -1, sharedSkyOtherZoneCandidates: 0,
     sectionVisible: new Uint8Array(0), rangeVisible: new Uint8Array(0), memberVisible: new Uint8Array(0), terrainVisible: true, translucentOrder: new Map() };
 }
 
