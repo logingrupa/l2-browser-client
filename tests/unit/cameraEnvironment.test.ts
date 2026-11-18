@@ -104,4 +104,13 @@ describe("sky scene fog", () => {
     expect(environment.fog.source).toBe("camera-zone");
     expect(environment.skyFog).toEqual({ route: "inherit-level", fog: environment.fog, gaps: [cameraEnvironmentGaps.sharedSkyLevelGeometryUnstaged] });
   });
+
+  it("hands the sky colour writer the retained L2FogInfo list with its weights and hour, or the missing fog reference pawn", () => {
+    const [fogInfo] = records.fogInfos;
+    expect(computeCameraEnvironment(sources({ referencePawnSourcePosition: fogInfoLocation })).retainedFogInfos)
+      .toEqual({ status: "listed", hour: 12, fogInfos: [{ fogInfo: fogInfo!.record, weight: 1 }] });
+    expect(computeCameraEnvironment(sources()).retainedFogInfos).toEqual({ status: "listed", hour: 12, fogInfos: [] });
+    expect(computeCameraEnvironment(sources({ referencePawnSourcePosition: null })).retainedFogInfos)
+      .toEqual({ status: "unresolved", reason: cameraEnvironmentGaps.fogInfoReferencePawnAbsent });
+  });
 });

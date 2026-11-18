@@ -139,9 +139,10 @@ describe("sky surfaces bound through the UE2 library", () => {
     let skyBoxColour: SkyEnvironmentColour["colour"] = { status: "resolved", value: [66, 124, 176] };
     const environmentColours = vi.fn((): readonly SkyEnvironmentColour[] => shippedSkyBindings.map(binding =>
       ({ ...binding, colour: binding.setupKey === "SKYBOX" ? skyBoxColour : { status: "resolved", value: [1, 2, 3] } })));
-    const binding = await bind([skyMesh(backgroundRoot)], backgroundListing(), { materialUniforms: () => skyUniforms(), environmentColours });
-    expect(binding.environmentColours()[0]).toEqual({ ...shippedSkyBindings[0], materialNode: backgroundRoot, writtenRgb: [66, 124, 176],
-      materialColourSource: "environment-write", reason: null });
+    const binding = await bind([skyMesh(backgroundRoot)], backgroundListing(), { materialUniforms: () => skyUniforms(),
+      environmentColours: { tableColours: environmentColours, retainedFogInfos: () => ({ status: "listed", hour: 12, fogInfos: [] }) } });
+    expect(binding.environmentColours()[0]).toEqual({ ...shippedSkyBindings[0], materialNode: backgroundRoot, tableRgb: [66, 124, 176], localFogInfoCount: 0,
+      writtenRgb: [66, 124, 176], materialColourSource: "environment-write", reason: null });
     expect(binding.environmentColours().slice(1).map(entry => entry.reason)).toEqual(Array(4).fill("sky-environment-material-absent"));
     const callsBeforeFrame = environmentColours.mock.calls.length;
     skyBoxColour = { status: "unresolved", reason: "env-color-transition-unresolved" };
@@ -153,7 +154,8 @@ describe("sky surfaces bound through the UE2 library", () => {
 
   it("writes no time-of-day colour without tile material uniforms and keeps the library sky", async () => {
     const environmentColours = vi.fn((): readonly SkyEnvironmentColour[] => []);
-    const binding = await bind([skyMesh(backgroundRoot)], backgroundListing(), { environmentColours });
+    const binding = await bind([skyMesh(backgroundRoot)], backgroundListing(), { environmentColours: { tableColours: environmentColours,
+      retainedFogInfos: () => ({ status: "listed", hour: 12, fogInfos: [] }) } });
     expect(binding.surfaces[0]!.status).toBe("library-compiled");
     expect(binding.environmentColours()).toEqual([]);
     expect(environmentColours).not.toHaveBeenCalled();
@@ -165,7 +167,8 @@ describe("sky surfaces bound through the UE2 library", () => {
       listedMaterial(nightBackgroundRoot, pin(nightBackgroundProgramSha256))]), tileId);
     const meshes = [skyMesh(backgroundRoot), skyMesh(nightBackgroundRoot)], snapshotMaterials = meshes.map(mesh => mesh.material);
     await expect(bind(meshes, listing, { materialUniforms: () => skyUniforms(),
-      environmentColours: () => shippedSkyBindings.map(binding => ({ ...binding, colour: { status: "resolved", value: [0, 0, 0] } })) }))
+      environmentColours: { tableColours: () => shippedSkyBindings.map(binding => ({ ...binding, colour: { status: "resolved", value: [0, 0, 0] } })),
+        retainedFogInfos: () => ({ status: "listed", hour: 12, fogInfos: [] }) } }))
       .rejects.toThrow("Sky environment binding SKYBOX=SkybackgroundColor matches 2 ColorModifier objects");
     expect(meshes.map(mesh => mesh.material)).toEqual(snapshotMaterials);
     expect(scene.materials.some(material => material.name.startsWith("UE2 material:"))).toBe(false);

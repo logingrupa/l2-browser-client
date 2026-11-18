@@ -1,4 +1,5 @@
 import { decodeTileLighting, type TileLightingModel } from "../../src/scene/world/lighting/decodeTileLighting";
+import { fogWorkedCaseFogInfoField } from "./fogWorkedCaseFixture";
 import { goldenTypedPayloadMetadata, writeTypedPayloadFixture, type TypedPayloadFixture, type TypedPayloadFixtureArray } from "./typedPayloadFixture";
 
 export const hourSetSlotCount = 8;
@@ -20,16 +21,12 @@ export function fieldRecord(field: string, value: unknown, provenance = "authore
 }
 
 const fogInfoField = (field: string, value: unknown, provenance = "authored") => ({ declaringClass: "Engine.L2FogInfo", field, provenance, value });
-const fogColourKey = (time: number, red: number, green: number, blue: number) => ({ Time: time, FogColor: { R: red, G: green, B: blue, A: 0 } });
-
-const fogInfo9236FogColourKeys = [fogColourKey(0, 70, 83, 83), fogColourKey(5, 70, 83, 83), fogColourKey(6, 107, 114, 97), fogColourKey(7, 107, 114, 97),
-  fogColourKey(19, 107, 114, 97), fogColourKey(20, 107, 114, 97), fogColourKey(23, 116, 112, 95)];
 
 export function fogInfo9236Record() {
   return { exportIndex: 9236, object: "20_21.L2FogInfo46", actorClass: "Engine.L2FogInfo", baseClass: "Engine.L2FogInfo", zone: 1, fields: [
     fogInfoField("AffectRange", { Max: 4000, Min: 3000 }),
     ...[2000, 4000, 6000, 8000, 10000].map((maximum, slot) => fogInfoField(`FogRange${slot + 1}`, { Max: maximum, Min: 0 })),
-    fogInfoField("TextureDistance", null, "ue-zero"), fogInfoField("Colors", fogInfo9236FogColourKeys), fogInfoField("CloudTexture", null, "ue-zero"),
+    fogInfoField("TextureDistance", null, "ue-zero"), fogInfoField("Colors", fogWorkedCaseFogInfoField("20_21", 9236, "Colors")), fogInfoField("CloudTexture", null, "ue-zero"),
     fogInfoField("Location", { X: 28491.390625, Y: 110465.5, Z: -1361.5125732421875 }),
   ] };
 }

@@ -15,7 +15,7 @@ interface FogWorkedCaseZoneRecord {
 }
 
 interface FogWorkedCaseTileRecords {
-  readonly fogInfos: { readonly exportIndex: number; readonly object: string }[];
+  readonly fogInfos: { readonly exportIndex: number; readonly object: string; readonly fields: readonly { readonly field: string; readonly value: unknown }[] }[];
   readonly zones: FogWorkedCaseZoneRecord[];
 }
 
@@ -25,6 +25,12 @@ const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as { readonly envi
 
 export function fogWorkedCaseTileRecords(tile: FogWorkedCaseTile): FogWorkedCaseTileRecords {
   return structuredClone(fixture.tiles[tile]);
+}
+
+export function fogWorkedCaseFogInfoField(tile: FogWorkedCaseTile, exportIndex: number, fieldName: string): unknown {
+  const field = fixture.tiles[tile].fogInfos.find(fogInfo => fogInfo.exportIndex === exportIndex)?.fields.find(entry => entry.field === fieldName);
+  if (field === undefined) throw new Error(`The worked-case fixture has no ${tile} fog info ${exportIndex} field ${fieldName}.`);
+  return structuredClone(field.value);
 }
 
 export function convertedEnvironmentFogRanges(): EnvironmentFogRanges {

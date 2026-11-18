@@ -14,7 +14,7 @@ import { validateSectionGlb } from "./loadNativeSection";
 import { bindNativeSkyLibraryMaterials, loadNativeSkyMaterialsListing, type NativeSkyLibraryBinding } from "./nativeSkyLibraryMaterials";
 import { readSelectedTileSkySource, type NativeSkyBundleFile } from "./nativeTileSkySource";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
-import type { SkyEnvironmentColour } from "./worldTimeOfDay";
+import type { SkyEnvironmentColourSources } from "./skyEnvironmentColours";
 
 export const nativeSkySource = {
   manifestSha256: "f7a0b5ef1463d0b5fe47b210585e00d6011be3c3e3bddfec76df0eb08042f80b",
@@ -62,7 +62,7 @@ async function loadSkySource(signal: AbortSignal, tileSelected: boolean): Promis
 }
 
 export async function createNativeSkyPresentation(scene: Scene, signal: AbortSignal, skyMaterialUniforms: (() => NativeMaterialUniforms) | null,
-  environmentColours: (() => readonly SkyEnvironmentColour[]) | null) {
+  environmentColours: SkyEnvironmentColourSources | null) {
   signal.throwIfAborted();
   const tileSelected = selectedNativeTileIdentity(globalThis.location) !== null;
   const candidates = tileSelected ? [] : scene.transformNodes.filter(node => node.metadata?.nativeSkyRoot);

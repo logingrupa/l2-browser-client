@@ -48,7 +48,12 @@ export interface FogRangeBounds {
 export interface FogInfoColourKey {
   readonly time: number;
   readonly fogColourBytes: FogColourBytes;
+  readonly skyColourBytes: FogColourBytes;
+  readonly cloudColourBytes: readonly FogColourBytes[];
+  readonly hazeRingColourBytes: readonly FogColourBytes[];
 }
+
+export type FogInfoColourMember = (key: FogInfoColourKey) => FogColourBytes | undefined;
 
 export interface FogSourcePosition {
   readonly x: number;
@@ -76,8 +81,14 @@ export interface LocalFogListInputs {
   readonly referencePosition: FogSourcePosition;
 }
 
+export interface WeightedFogInfo {
+  readonly fogInfo: L2FogInfoRecord;
+  readonly weight: number;
+}
+
 export interface LocalFogListEvaluation {
   readonly list: LocalFogList;
+  readonly retained: readonly WeightedFogInfo[];
   readonly retentionDistanceDecides: boolean;
   readonly orderCanChangeResult: boolean;
 }
@@ -128,17 +139,37 @@ export function fogRangeSlot(terrainClipRange: number): number {
   return slot < 0 ? fogRangeSlotFloors.length : slot;
 }
 
-export function fogInfoColourAtHour(colours: readonly FogInfoColourKey[], hour: number): FogColourBytes {
+export function interpolateFogColourBytes(from: FogColourBytes, to: FogColourBytes, weight: number): FogColourBytes {
+  return [Math.trunc(from[0] + weight * (to[0] - from[0])), Math.trunc(from[1] + weight * (to[1] - from[1])), Math.trunc(from[2] + weight * (to[2] - from[2]))];
+}
+
+interface FogInfoHourPair {
+  readonly first: FogInfoColourKey;
+  readonly second: FogInfoColourKey;
+  readonly weight: number;
+}
+
+function fogInfoHourPair(colours: readonly FogInfoColourKey[], hour: number): FogInfoHourPair | null {
   const normalisedHour = ((hour % hoursPerDay) + hoursPerDay) % hoursPerDay;
   for (let index = 0; index < colours.length; index++) {
-    const current = colours[index]!, next = colours[(index + 1) % colours.length]!;
-    const nextTime = index + 1 === colours.length ? next.time + hoursPerDay : next.time;
-    if (current.time <= normalisedHour && normalisedHour <= nextTime) {
-      const amount = (hour - current.time) / (nextTime - current.time);
-      return current.fogColourBytes.map((channel, position) => Math.trunc(channel + amount * (next.fogColourBytes[position]! - channel))) as unknown as FogColourBytes;
+    const first = colours[index]!, second = colours[(index + 1) % colours.length]!;
+    const secondTime = index + 1 === colours.length ? second.time + hoursPerDay : second.time;
+    if (first.time <= normalisedHour && normalisedHour <= secondTime) {
+      return { first, second, weight: Math.fround((normalisedHour - first.time) / (secondTime - first.time)) };
     }
   }
-  return unmatchedHourColour;
+  return null;
+}
+
+export function fogInfoMemberAtHour(colours: readonly FogInfoColourKey[], hour: number, member: FogInfoColourMember): FogColourBytes | null {
+  const pair = fogInfoHourPair(colours, hour);
+  if (pair === null) return unmatchedHourColour;
+  const from = member(pair.first), to = member(pair.second);
+  return from === undefined || to === undefined ? null : interpolateFogColourBytes(from, to, pair.weight);
+}
+
+export function fogInfoColourAtHour(colours: readonly FogInfoColourKey[], hour: number): FogColourBytes {
+  return fogInfoMemberAtHour(colours, hour, key => key.fogColourBytes) ?? unmatchedHourColour;
 }
 
 export function fogInfoWeight(affectRange: FogRangeBounds, distance: number, colourCount: number): number {
@@ -183,7 +214,7 @@ function blendLocalFogList(contributions: readonly Pick<FogInfoContribution, "we
   for (const { weight, range, target } of contributions) {
     start += weight * (range.min - start);
     end += weight * (range.max - end);
-    colour = colour.map((channel, position) => Math.trunc(channel + weight * (target[position]! - channel))) as unknown as FogColourBytes;
+    colour = interpolateFogColourBytes(colour, target, weight);
   }
   return { colourBytes: colour, startSourceUnits: start, endSourceUnits: end };
 }
@@ -197,7 +228,8 @@ export function evaluateLocalFogList(fogInfos: readonly L2FogInfoRecord[], basel
   const contributing = retained.filter(contribution => contribution.weight > 0);
   const list: LocalFogList = retained.length === 0 ? { status: "empty" }
     : { status: "blended", record: blendLocalFogList(retained, baseline) };
-  return { list, retentionDistanceDecides, orderCanChangeResult: orderCanChangeResult(contributing) };
+  return { list, retained: retained.map(({ fogInfo, weight }) => ({ fogInfo, weight })), retentionDistanceDecides,
+    orderCanChangeResult: orderCanChangeResult(contributing) };
 }
 
 export function fogTargetColour(family: FogFamily, state: FogState): readonly [number, number, number] | null {

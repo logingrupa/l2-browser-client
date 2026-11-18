@@ -15,7 +15,8 @@ function enabledFog(record: FogRangeRecord, source: FogState["source"]): FogStat
 }
 
 function environment(fog: FogState, fogRoute: CameraFogRoute): CameraEnvironment {
-  return { cameraZone: 1, containingVolume: null, fog, fogRoute, skyFog: { route: "inherit-level", fog, gaps: [] }, gaps: [] };
+  return { cameraZone: 1, containingVolume: null, fog, fogRoute, skyFog: { route: "inherit-level", fog, gaps: [] },
+    retainedFogInfos: { status: "listed", hour: 12, fogInfos: [] }, gaps: [] };
 }
 
 const local = (target = localTarget) => environment(enabledFog(target, "local-fog-list"), { kind: "local-list", target });

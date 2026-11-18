@@ -4,7 +4,7 @@ import type { RgbBytes } from "../../environment/model/sampleNativeTimeTables";
 import { FOG_CONSTANTS } from "../../materials/ue2/model/constants/fogConstants";
 import {
   environmentFogPreset, evaluateFogState, evaluateLocalFogList, type CameraZoneFogRecord, type EnvironmentFogRanges,
-  type FogColourBytes, type FogRangeRecord, type FogState, type LocalFogList, type TerrainZoneEnvironmentFog,
+  type FogColourBytes, type FogRangeRecord, type FogState, type LocalFogList, type TerrainZoneEnvironmentFog, type WeightedFogInfo,
 } from "../../materials/ue2/model/fog";
 import type { Vector3 } from "../../shared/math/vector3";
 import type { TileVisibilityFrame } from "./bspVisibility/core/tileVisibilityFrame";
@@ -49,16 +49,26 @@ export type CameraFogRoute =
   | { readonly kind: "empty-list"; readonly presetPair: readonly [start: number, end: number]; readonly zone: EmptyListZoneFog }
   | { readonly kind: "bypass" };
 
+export type RetainedFogInfoList =
+  | { readonly status: "listed"; readonly hour: number; readonly fogInfos: readonly WeightedFogInfo[] }
+  | { readonly status: "unresolved"; readonly reason: string };
+
 export interface CameraEnvironment {
   readonly cameraZone: number;
   readonly containingVolume: ContainingVolume | null;
   readonly fog: FogState;
   readonly fogRoute: CameraFogRoute;
   readonly skyFog: SkySceneFog;
+  readonly retainedFogInfos: RetainedFogInfoList;
   readonly gaps: readonly string[];
 }
 
-export type CameraEnvironmentFog = Pick<CameraEnvironment, "fog" | "skyFog">;
+export type CameraEnvironmentFog = Pick<CameraEnvironment, "fog" | "skyFog" | "retainedFogInfos">;
+
+interface EvaluatedLocalFogList {
+  readonly list: LocalFogList;
+  readonly retainedFogInfos: RetainedFogInfoList;
+}
 
 const noCameraZone = -1;
 const byteMaximum = 255;
@@ -90,18 +100,21 @@ function zoneFog(zoneIndex: number, records: TileLightingRecords, gaps: string[]
   return zone.fog;
 }
 
-function localFogList(sources: CameraEnvironmentSources, gaps: string[]): LocalFogList {
+function localFogList(sources: CameraEnvironmentSources, gaps: string[]): EvaluatedLocalFogList {
   const { records: { fogInfos }, referencePawnSourcePosition, fogEnvironment } = sources;
-  if (fogInfos.length === 0) return { status: "empty" };
+  if (fogInfos.length === 0) return { list: { status: "empty" }, retainedFogInfos: { status: "listed", hour: fogEnvironment.hour, fogInfos: [] } };
   for (const fogInfo of fogInfos) if (fogInfo.unresolvedReason !== null) gaps.push(fogInfo.unresolvedReason);
-  if (referencePawnSourcePosition === null) { gaps.push(cameraEnvironmentGaps.fogInfoReferencePawnAbsent); return { status: "unresolved" }; }
+  if (referencePawnSourcePosition === null) {
+    gaps.push(cameraEnvironmentGaps.fogInfoReferencePawnAbsent);
+    return { list: { status: "unresolved" }, retainedFogInfos: { status: "unresolved", reason: cameraEnvironmentGaps.fogInfoReferencePawnAbsent } };
+  }
   const resolvedFogInfos = fogInfos.flatMap(fogInfo => fogInfo.record === null ? [] : [fogInfo.record]);
   const terrainClipRange = FOG_CONSTANTS.terrainClipRange.runtimeDefault;
   const evaluation = evaluateLocalFogList(resolvedFogInfos, environmentFogBaseline(fogEnvironment.fogRanges, terrainClipRange),
     { hour: fogEnvironment.hour, terrainClipRange, referencePosition: referencePawnSourcePosition });
   if (evaluation.retentionDistanceDecides) gaps.push(cameraEnvironmentGaps.fogInfoRetentionDistanceUnresolved);
   if (evaluation.orderCanChangeResult) gaps.push(cameraEnvironmentGaps.fogInfoListOrderAssumed);
-  return evaluation.list;
+  return { list: evaluation.list, retainedFogInfos: { status: "listed", hour: fogEnvironment.hour, fogInfos: evaluation.retained } };
 }
 
 function terrainZoneEnvironment(fogEnvironment: FogEnvironment, gaps: string[]): TerrainZoneEnvironmentFog {
@@ -152,9 +165,9 @@ export function computeCameraEnvironment(sources: CameraEnvironmentSources): Cam
   const gaps: string[] = [];
   const cameraZone = sources.frame?.cameraZone ?? noCameraZone;
   const cameraZoneFog = zoneFog(cameraZone, sources.records, gaps);
-  const list = localFogList(sources, gaps);
+  const { list, retainedFogInfos } = localFogList(sources, gaps);
   const fog = fogOfZone(cameraZoneFog, cameraZone, list, sources, gaps);
   if (sources.records.waterVolumeCount > 0) gaps.push(cameraEnvironmentGaps.waterVolumeUnlinked);
   const containingVolume = cameraVolume(sources, gaps);
-  return { cameraZone, containingVolume, fog, fogRoute: fogRouteOf(fog, cameraZoneFog, cameraZone, list, sources), skyFog: skySceneFog(fog), gaps };
+  return { cameraZone, containingVolume, fog, fogRoute: fogRouteOf(fog, cameraZoneFog, cameraZone, list, sources), skyFog: skySceneFog(fog), retainedFogInfos, gaps };
 }

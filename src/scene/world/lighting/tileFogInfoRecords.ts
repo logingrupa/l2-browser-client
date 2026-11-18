@@ -35,12 +35,22 @@ function readLocation(field: LightingFieldValue, label: string): L2FogInfoRecord
   return { x: value.X as number, y: value.Y as number, z: value.Z as number };
 }
 
+function readColourBytes(value: unknown, label: string): FogColourBytes {
+  requireLightingRecords(isJsonRecord(value), `${label} is not a Color.`);
+  const bytes = colourChannels.map(channel => value[channel]);
+  requireLightingRecords(bytes.every(channel => Number.isInteger(channel) && (channel as number) >= 0 && (channel as number) <= 255), `${label} channels must be bytes.`);
+  return bytes as unknown as FogColourBytes;
+}
+
+function readColourList(value: unknown, label: string): FogColourBytes[] {
+  requireLightingRecords(Array.isArray(value), `${label} is not a Color list.`);
+  return (value as unknown[]).map((entry, position) => readColourBytes(entry, `${label}[${position}]`));
+}
+
 function readColourKey(value: unknown, label: string): FogInfoColourKey {
-  requireLightingRecords(isJsonRecord(value) && isFiniteNumber(value.Time) && isJsonRecord(value.FogColor), `${label} needs a Time and a FogColor.`);
-  const fogColor = value.FogColor as Record<string, unknown>;
-  const bytes = colourChannels.map(channel => fogColor[channel]);
-  requireLightingRecords(bytes.every(channel => Number.isInteger(channel) && (channel as number) >= 0 && (channel as number) <= 255), `${label} FogColor channels must be bytes.`);
-  return { time: value.Time, fogColourBytes: bytes as unknown as FogColourBytes };
+  requireLightingRecords(isJsonRecord(value) && isFiniteNumber(value.Time), `${label} needs a Time.`);
+  return { time: value.Time, fogColourBytes: readColourBytes(value.FogColor, `${label}.FogColor`), skyColourBytes: readColourBytes(value.SkyColor, `${label}.SkyColor`),
+    cloudColourBytes: readColourList(value.CloudColor, `${label}.CloudColor`), hazeRingColourBytes: readColourList(value.HazeRingColor, `${label}.HazeRingColor`) };
 }
 
 function readColours(field: LightingFieldValue, label: string): FogInfoColourKey[] {

@@ -9,9 +9,10 @@ import { decodeNativeJsonResource } from "./loadNativeSection";
 import { hasExactKeys, isPlainRecord } from "./nativeManifestRecordGuards";
 import { readNativeSourceReference } from "./nativeSourceReference";
 import type { NativeSkyBundleFile } from "./nativeTileSkySource";
-import { bindSkyEnvironmentColours, type SkyEnvironmentColourInspection, type SkyEnvironmentColourWriter } from "./skyEnvironmentColours";
+import {
+  bindSkyEnvironmentColours, type SkyEnvironmentColourInspection, type SkyEnvironmentColourSources, type SkyEnvironmentColourWriter,
+} from "./skyEnvironmentColours";
 import { parseListedProgramPin } from "./staticMeshLibraryMaterials";
-import type { SkyEnvironmentColour } from "./worldTimeOfDay";
 
 export interface NativeSkyMaterialEntry {
   readonly root: string;
@@ -51,7 +52,7 @@ export interface NativeSkyLibrarySettings {
   readonly listing: NativeSkyMaterialsListing | null;
   readonly sessionSeed: number;
   readonly materialUniforms: (() => NativeMaterialUniforms) | null;
-  readonly environmentColours: (() => readonly SkyEnvironmentColour[]) | null;
+  readonly environmentColours: SkyEnvironmentColourSources | null;
   readonly loadProgram: (materialId: string, signal: AbortSignal) => Promise<LoadedNativeMaterial>;
   readonly signal: AbortSignal;
 }

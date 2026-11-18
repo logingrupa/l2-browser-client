@@ -84,7 +84,10 @@ interface SkyColourReading { readonly text: string; readonly status: "native" | 
 
 function readSkyColour(binding: SkyEnvironmentBinding, context: TimeOfDayGroupContext, timeOfDay: RunningWorldTimeOfDay): SkyColourReading {
   const written = context.skyEnvironmentColours?.().find(entry => entry.setupKey === binding.setupKey) ?? null;
-  if (written?.writtenRgb && written.materialColourSource === "environment-write") return { text: rgbText(written.writtenRgb), status: "native" };
+  if (written?.writtenRgb && written.materialColourSource === "environment-write") {
+    const localFog = written.localFogInfoCount > 0 && written.tableRgb !== null ? ` (table ${rgbText(written.tableRgb)}, ${written.localFogInfoCount} local L2FogInfo)` : "";
+    return { text: `${rgbText(written.writtenRgb)}${localFog}`, status: "native" };
+  }
   if (written?.writtenRgb) return { text: `${rgbText(written.writtenRgb)} held from an earlier frame (${written.reason})`, status: "unverified" };
   const model = timeOfDay.skyEnvironmentColours().find(entry => entry.setupKey === binding.setupKey)?.colour ?? null;
   const reason = written === null ? context.skyAbsentReason : written.reason ?? (model?.status === "unresolved" ? model.reason : "sky-environment-colour-unwritten");
@@ -95,7 +98,7 @@ function readSkyColour(binding: SkyEnvironmentBinding, context: TimeOfDayGroupCo
 function skyColourVariable(binding: SkyEnvironmentBinding, context: TimeOfDayGroupContext, timeOfDay: RunningWorldTimeOfDay): VariableInfo {
   return {
     name: `env.sky.${binding.objectName}`, values: "R, G, B bytes written to the material | unverified reason",
-    source: `Env.int ${binding.setupKey}=${binding.objectName}, ${binding.section} at the current hour written to the ColorModifier Color R, G, B (alpha kept). ${dayNightReport}`,
+    source: `Env.int ${binding.setupKey}=${binding.objectName}, ${binding.section} at the current hour, replaced by each retained local L2FogInfo colour at its weight (Engine 0x1065e940, RM-21), written to the ColorModifier Color R, G, B (alpha kept). ${dayNightReport}`,
     value: () => readSkyColour(binding, context, timeOfDay).text,
     get status() { return readSkyColour(binding, context, timeOfDay).status; },
   };

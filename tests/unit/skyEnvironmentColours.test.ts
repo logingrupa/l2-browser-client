@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { NativeMaterial } from "../../src/materials/ue2/babylon/material";
-import { bindSkyEnvironmentColours, type SkyEnvironmentColourSurface } from "../../src/scene/world/skyEnvironmentColours";
+import type { RetainedFogInfoList } from "../../src/scene/world/cameraEnvironment";
+import { bindSkyEnvironmentColours, type SkyEnvironmentColourSources, type SkyEnvironmentColourSurface } from "../../src/scene/world/skyEnvironmentColours";
 import type { SkyEnvironmentColour, SkyEnvironmentColourResult } from "../../src/scene/world/worldTimeOfDay";
+import { decodeFogInfos } from "../../src/scene/world/lighting/tileFogInfoRecords";
+import { fogInfo9236Record } from "../support/tileLightingFixture";
 import { shippedSkyBindings } from "../support/worldTimeOfDayFixture";
 
 function fakeSurface(colorModifierNodes: readonly string[]) {
@@ -10,8 +13,15 @@ function fakeSurface(colorModifierNodes: readonly string[]) {
   return { surface, overrideColourSourceRgb };
 }
 
-function coloursOf(colourBySetupKey: Readonly<Record<string, SkyEnvironmentColourResult>>): () => readonly SkyEnvironmentColour[] {
+const noLocalFogInfos: RetainedFogInfoList = { status: "listed", hour: 12, fogInfos: [] };
+
+function tableColoursOf(colourBySetupKey: Readonly<Record<string, SkyEnvironmentColourResult>>): () => readonly SkyEnvironmentColour[] {
   return () => shippedSkyBindings.map(binding => ({ ...binding, colour: colourBySetupKey[binding.setupKey] ?? { status: "resolved", value: [1, 2, 3] } }));
+}
+
+function coloursOf(colourBySetupKey: Readonly<Record<string, SkyEnvironmentColourResult>>,
+  retainedFogInfos: () => RetainedFogInfoList = () => noLocalFogInfos): SkyEnvironmentColourSources {
+  return { tableColours: tableColoursOf(colourBySetupKey), retainedFogInfos };
 }
 
 describe("bindSkyEnvironmentColours", () => {
@@ -37,7 +47,8 @@ describe("bindSkyEnvironmentColours", () => {
     const first = fakeSurface(["L2_Skies.Shaders.Cloud_Final"]);
     const second = fakeSurface(["L2_Skies.Shaders.Cloud_Final"]);
     let cloud: SkyEnvironmentColourResult = { status: "resolved", value: [10, 20, 30] };
-    const writer = bindSkyEnvironmentColours([first.surface, second.surface], () => coloursOf({ CLOUD1: cloud })());
+    const writer = bindSkyEnvironmentColours([first.surface, second.surface], { tableColours: () => tableColoursOf({ CLOUD1: cloud })(),
+      retainedFogInfos: () => noLocalFogInfos });
     writer.write();
     cloud = { status: "unresolved", reason: "env-color-transition-unresolved" };
     writer.write();
@@ -62,6 +73,20 @@ describe("bindSkyEnvironmentColours", () => {
     expect(writer.inspection()[0]).toMatchObject({ writtenRgb: null, materialColourSource: "authored-colour", reason: "sky-layer-start-colour-unresolved" });
   });
 
+  it("writes the local L2FogInfo sky colour over the table colour and holds the last write while the fog reference pawn is absent", () => {
+    const sky = fakeSurface(["L2_Skies.Shaders.SkybackgroundColor"]);
+    const fogInfo = decodeFogInfos([fogInfo9236Record()])[0]!.record!;
+    let retained: RetainedFogInfoList = { status: "listed", hour: 12.3, fogInfos: [{ fogInfo, weight: 1 }] };
+    const writer = bindSkyEnvironmentColours([sky.surface], coloursOf({ SKYBOX: { status: "resolved", value: [66, 124, 176] } }, () => retained));
+    writer.write();
+    expect(sky.overrideColourSourceRgb).toHaveBeenLastCalledWith("L2_Skies.Shaders.SkybackgroundColor", [132 / 255, 146 / 255, 131 / 255]);
+    expect(writer.inspection()[0]).toMatchObject({ tableRgb: [66, 124, 176], localFogInfoCount: 1, writtenRgb: [132, 146, 131], materialColourSource: "environment-write" });
+    retained = { status: "unresolved", reason: "fog-info-reference-pawn-absent" };
+    writer.write();
+    expect(sky.overrideColourSourceRgb).toHaveBeenCalledTimes(1);
+    expect(writer.inspection()[0]).toMatchObject({ writtenRgb: [132, 146, 131], materialColourSource: "held-environment-write", reason: "fog-info-reference-pawn-absent" });
+  });
+
   it("refuses an Env.int object name that matches two different ColorModifier objects", () => {
     const sky = fakeSurface(["L2_Skies.Shaders.SkybackgroundColor"]);
     const other = fakeSurface(["L2_SkiesNight.Shaders.SkybackgroundColor"]);
@@ -72,7 +97,8 @@ describe("bindSkyEnvironmentColours", () => {
   it("refuses bindings that change after the sky materials were bound", () => {
     const sky = fakeSurface(["L2_Skies.Shaders.SkybackgroundColor"]);
     let bindings = shippedSkyBindings;
-    const writer = bindSkyEnvironmentColours([sky.surface], () => bindings.map(binding => ({ ...binding, colour: { status: "resolved", value: [0, 0, 0] } })));
+    const writer = bindSkyEnvironmentColours([sky.surface], { tableColours: () => bindings.map(binding => ({ ...binding, colour: { status: "resolved", value: [0, 0, 0] } })),
+      retainedFogInfos: () => noLocalFogInfos });
     bindings = shippedSkyBindings.slice(1);
     expect(() => writer.write()).toThrow("The sky environment bindings changed after the sky materials were bound.");
   });

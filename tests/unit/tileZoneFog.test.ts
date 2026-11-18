@@ -28,9 +28,16 @@ describe("decoded L2FogInfo of 20_21 export 9236", () => {
     record.fields = record.fields.map(field => field.field === "FogRange3" ? { ...field, provenance: "unresolved", value: null } : field);
     expect(decodeFogInfos([record])[0]).toEqual({ exportIndex: 9236, record: null, unresolvedReason: "lighting-fog-info-unresolved:9236:FogRange3" });
     const repeated = fogInfo9236Record();
-    repeated.fields = repeated.fields.map(field => field.field === "Colors" ? { ...field, value: [{ Time: 5, FogColor: { R: 1, G: 2, B: 3, A: 0 } },
-      { Time: 5, FogColor: { R: 1, G: 2, B: 3, A: 0 } }] } : field);
+    repeated.fields = repeated.fields.map(field => field.field === "Colors" ? { ...field, value: [(field.value as unknown[])[1], (field.value as unknown[])[1]] } : field);
     expect(decodeFogInfos([repeated])[0]!.unresolvedReason).toBe("lighting-fog-info-colour-times-not-increasing:9236");
+  });
+
+  it("reads SkyColor, CloudColor and HazeRingColor of every Colors key and refuses a key without them", () => {
+    expect(fogInfo.colours[2]).toEqual({ time: 6, fogColourBytes: [107, 114, 97], skyColourBytes: [132, 146, 131], cloudColourBytes: [[111, 132, 129]],
+      hazeRingColourBytes: [[133, 126, 103]] });
+    const withoutSky = fogInfo9236Record();
+    withoutSky.fields = withoutSky.fields.map(field => field.field === "Colors" ? { ...field, value: [{ Time: 5, FogColor: { R: 1, G: 2, B: 3, A: 0 } }] } : field);
+    expect(() => decodeFogInfos([withoutSky])).toThrow("lighting records: fogInfos[0].Colors[0].SkyColor is not a Color.");
   });
 
   it("refuses a field list entry without a provenance and a Location that is not X, Y, Z", () => {
@@ -49,7 +56,7 @@ describe("L2FogInfo selection by the Q12 answer", () => {
     expect(ENVIRONMENT_ENGINE_CONSTANTS.fogBaselineColour.value.slice(0, 3)).toEqual([127, 127, 127]);
     expect(evaluateLocalFogList([fogInfo], environmentFogBaseline(convertedEnvironmentFogRanges(), 4), { hour: 5.5, terrainClipRange: 4, referencePosition: atDistance(3500) }))
       .toEqual({ list: { status: "blended", record: { colourBytes: [107, 112, 108], startSourceUnits: 1024, endSourceUnits: 5096 } },
-        retentionDistanceDecides: false, orderCanChangeResult: false });
+        retained: [{ fogInfo, weight: 0.5 }], retentionDistanceDecides: false, orderCanChangeResult: false });
   });
 
   it("selects FogRange1 below CR 5, FogRange2 from 5, and FogRange5 from 8, on each side of a boundary", () => {
@@ -94,11 +101,11 @@ describe("L2FogInfo selection by the Q12 answer", () => {
     const inputs = { hour: 6, terrainClipRange: 8, referencePosition: atDistance(5000) };
     const baseline = environmentFogBaseline(convertedEnvironmentFogRanges(), 8);
     expect(evaluateLocalFogList([fogInfo], baseline, inputs))
-      .toEqual({ list: { status: "empty" }, retentionDistanceDecides: true, orderCanChangeResult: false });
+      .toEqual({ list: { status: "empty" }, retained: [], retentionDistanceDecides: true, orderCanChangeResult: false });
     const textured: L2FogInfoRecord = { ...fogInfo, textureDistance: 6000 };
     expect(evaluateLocalFogList([textured], baseline, inputs))
       .toEqual({ list: { status: "blended", record: { colourBytes: [127, 127, 127], startSourceUnits: 8192, endSourceUnits: 20480 } },
-        retentionDistanceDecides: true, orderCanChangeResult: false });
+        retained: [{ fogInfo: textured, weight: 0 }], retentionDistanceDecides: true, orderCanChangeResult: false });
   });
 
   it("holds the RM-4 rows, the RM-17 shared-sky route and the RM-18 table fog curve, and keeps the list order as a named open row", () => {

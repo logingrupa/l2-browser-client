@@ -9,6 +9,8 @@ interface SkyColourEntry { readonly setupKey: string; readonly objectName: strin
 interface ResolvedColourEntry extends SkyColourEntry { readonly colour: { readonly status: string; readonly value?: readonly number[]; readonly reason?: string } }
 interface WrittenColourEntry extends SkyColourEntry {
   readonly materialNode: string | null;
+  readonly tableRgb: readonly number[] | null;
+  readonly localFogInfoCount: number;
   readonly writtenRgb: readonly number[] | null;
   readonly materialColourSource: string;
   readonly reason: string | null;
@@ -81,7 +83,8 @@ test.describe("desktop", () => {
       expect(bound.length, `tile ${captureTileId} binds at least one Env.int sky object`).toBeGreaterThan(0);
       for (const entry of bound) {
         const model = afterFrames.timeOfDay.skyEnvironmentColours!.find(candidate => candidate.setupKey === entry.setupKey)!;
-        expect({ written: entry.writtenRgb, reason: entry.reason }, `${entry.objectName} material parameter`).toEqual({ written: model.colour.value, reason: null });
+        expect({ table: entry.tableRgb, reason: entry.reason }, `${entry.objectName} table colour`).toEqual({ table: model.colour.value, reason: null });
+        if (entry.localFogInfoCount === 0) expect(entry.writtenRgb, `${entry.objectName} material parameter without local fog`).toEqual(model.colour.value);
       }
     }
     await openTimeOfDayGroup(page, "click");
