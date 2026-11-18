@@ -1,4 +1,3 @@
-import { dynamicLightColour } from "../../../environment/model/lightmapRebuild/dynamicLightColour";
 import { DYNAMIC_LIGHT_CONSTANTS } from "../../../environment/model/lightmapRebuild/dynamicLightEngineConstants";
 import { lightAttenuationBranch, type AttenuationLight, type LightAttenuationBranch } from "../../../environment/model/lightmapRebuild/lightAttenuation";
 import { buildLightColourTable } from "../../../environment/model/lightmapRebuild/lightColourTable";
@@ -13,6 +12,7 @@ import {
   allFieldsResolved, readBooleanField, readByteField, readNumberField, readRotatorField, readVectorField, type RebuildFieldOwner, type RebuildFieldResult,
 } from "./rebuildFieldReaders";
 import { rebuiltLightmapNotes, type RebuiltLightmapNote } from "./composeRebuiltLightmap";
+import { resolveLightActorColour } from "./lightActorColour";
 import type { TileLevelInfoRecord, TileLightActorRecord } from "./lightmapRebuildActors";
 
 export interface RebuildFrozenFlag {
@@ -65,12 +65,7 @@ function effectiveLightType(owner: RebuildFieldOwner, hour: number): RebuildFiel
 }
 
 function lightColourTable(owner: RebuildFieldOwner, lightType: number, levelBrightness: number, environment: RebuildLightEnvironment): RebuildFieldResult<Uint8Array> {
-  const source = allFieldsResolved({ lightPeriod: readByteField(owner, "LightPeriod"), lightPhase: readByteField(owner, "LightPhase"),
-    lightHue: readByteField(owner, "LightHue"), lightSaturation: readByteField(owner, "LightSaturation"), lightBrightness: readNumberField(owner, "LightBrightness"),
-    sunlightColour: readBooleanField(owner, "bSunlightColor") });
-  if (source.status !== "resolved") return source;
-  const colour = dynamicLightColour({ lightType, ...source.value },
-    { tables: environment.tables, blend: environment.blend, hour: environment.hour, levelBrightness, levelTimeSeconds: environment.levelTimeSeconds });
+  const colour = resolveLightActorColour(owner, lightType, levelBrightness, environment);
   return colour.status === "resolved" ? resolvedResult(buildLightColourTable(colour.value)) : colour;
 }
 
