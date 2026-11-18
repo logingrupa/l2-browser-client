@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
 import {
-  probeColumn, probeRow, readConverterExpectations, staticMeshLightListArrays, staticMeshSunAffectArray, terrainIntensityArrays, terrainLightMaskArrays,
-  terrainMapEdge,
+  probeColumn, probeRow, readConverterExpectations, staticMeshLightListArrays, staticMeshOrdinaryInputArrays, staticMeshSunAffectArray, terrainIntensityArrays,
+  terrainLightMaskArrays, terrainMapEdge,
 } from "../support/hourlyLightingInputsFixture";
 import { maskBytes, readStaticMeshLightingFixtures } from "../support/staticMeshLightingFixtures";
 import { readHourlyLightingFixtures } from "../support/hourlyLightingFixtures";
@@ -34,6 +34,17 @@ describe("decodeHourlyLightingInputs", () => {
     expect(list.hourlyMasks.map(mask => mask.visibility[0]! & 1)).toEqual(context.staticHourlyVertex0Bits);
     expect(list.ordinaryMasks).toEqual([]);
     expect(list.sunAffect).toEqual({ status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.sunAffect" });
+    expect(list.ordinaryInputs).toEqual({ status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.ordinaryInputsResolved" });
+  });
+
+  it("reads each light list's ScaleGlow and float32 LocalToWorld and names a list whose ordinary inputs did not resolve", () => {
+    const hourly = decodedHourly([...restagedArrays(), ...staticMeshOrdinaryInputArrays()]);
+    if (hourly.staticMeshLightLists.status !== "staged") throw new Error("static mesh light lists not staged");
+    const { pillar, fixtures } = readStaticMeshLightingFixtures();
+    expect(hourly.staticMeshLightLists.value.get(pillar.actorExportIndex)!.ordinaryInputs).toEqual(
+      { status: "staged", value: { scaleGlow: 1, localToWorld: Float32Array.from(fixtures[0]!.matrix) } });
+    expect(hourly.staticMeshLightLists.value.get(readConverterExpectations().staticMesh.instance.actorExportIndex)!.ordinaryInputs).toEqual(
+      { status: "unstaged", reason: "static-mesh-ordinary-inputs-unresolved" });
   });
 
   it("keeps each ordinary light mask with its light reference and reads SMLL.sunAffect when staged", () => {
@@ -79,6 +90,12 @@ describe("decodeHourlyLightingInputs", () => {
       /SMLL.sunAffect\[1\] = 3 is not -1, 0 or 1/],
     ["a sun affect count that differs from the light lists", [...restagedArrays(), { ...staticMeshSunAffectArray, values: [1] }],
       /SMLL.sunAffect holds 1 values for 2 static mesh light lists/],
+    ["an ordinary input flag outside 0 and 1", replaceArray([...restagedArrays(), ...staticMeshOrdinaryInputArrays()], "SMLL.ordinaryInputsResolved", [0, 2]),
+      /SMLL.ordinaryInputsResolved\[1\] = 2 is not 0 or 1/],
+    ["a LocalToWorld that misses a light list", replaceArray([...restagedArrays(), ...staticMeshOrdinaryInputArrays()], "SMLL.localToWorld",
+      new Array<number>(16).fill(0)), /hold 2, 2 and 16 values for 2 static mesh light lists/],
+    ["a resolved LocalToWorld that is not affine", replaceArray([...restagedArrays(), ...staticMeshOrdinaryInputArrays()], "SMLL.localToWorld",
+      new Array<number>(32).fill(0)), /SMLL.localToWorld of static mesh light list 1 is not an affine row-major matrix/],
   ])("refuses %s", (_, arrays, message) => {
     expect(() => decodedHourly(arrays)).toThrow(message);
   });

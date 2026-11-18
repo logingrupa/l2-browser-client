@@ -14,6 +14,11 @@ export type StaticMeshOrdinaryLightState =
   | { readonly contributes: false }
   | { readonly contributes: true; readonly light: StaticMeshOrdinaryLight };
 
+export interface StaticMeshOrdinaryMaskLight {
+  readonly light: StaticMeshOrdinaryLight;
+  readonly visibility: Uint8Array;
+}
+
 export interface StaticMeshOrdinaryLightRecords {
   readonly lightsByExportIndex: ReadonlyMap<number, TileLightActorRecord>;
   readonly levelInfos: readonly TileLevelInfoRecord[];
@@ -22,7 +27,6 @@ export interface StaticMeshOrdinaryLightRecords {
 export const staticMeshOrdinaryLightReasons = {
   timeVaryingColour: "static-mesh-ordinary-light-time-varying-colour-unported",
   lightType7TimeSeconds: "static-mesh-ordinary-light-type7-time-seconds-unverified",
-  vertexPositions: "static-mesh-ordinary-light-vertex-positions-unstaged",
   recordAbsentPrefix: "static-mesh-ordinary-light-record-absent:",
 } as const;
 
@@ -80,17 +84,19 @@ export function staticMeshOrdinaryLightRecords(lightActors: LightActorRecords): 
   return { lightsByExportIndex: new Map(lightActors.lights.map(light => [light.exportIndex, light])), levelInfos: lightActors.levelInfos };
 }
 
-export function staticMeshOrdinaryTermReason(list: StaticMeshLightList, records: StaticMeshOrdinaryLightRecords, environment: RebuildLightEnvironment): string | null {
+export function resolveStaticMeshOrdinaryTerm(list: StaticMeshLightList, records: StaticMeshOrdinaryLightRecords, environment: RebuildLightEnvironment):
+  RebuildFieldResult<readonly StaticMeshOrdinaryMaskLight[]> {
   let levelBrightness: RebuildFieldResult<number> | null = null;
+  const contributing: StaticMeshOrdinaryMaskLight[] = [];
   for (const mask of list.ordinaryMasks) {
     if (mask.light === nullLightReference || !maskSetsAnyVertex(mask.visibility, list.vertexCount)) continue;
     const actor = records.lightsByExportIndex.get(mask.light);
-    if (actor === undefined) return `${staticMeshOrdinaryLightReasons.recordAbsentPrefix}${mask.light}`;
+    if (actor === undefined) return { status: "unresolved", reason: `${staticMeshOrdinaryLightReasons.recordAbsentPrefix}${mask.light}` };
     levelBrightness ??= rebuildLevelBrightness(records.levelInfos);
-    if (levelBrightness.status !== "resolved") return levelBrightness.reason;
+    if (levelBrightness.status !== "resolved") return levelBrightness;
     const state = resolveStaticMeshOrdinaryLight(actor, levelBrightness.value, environment);
-    if (state.status !== "resolved") return state.reason;
-    if (state.value.contributes) return staticMeshOrdinaryLightReasons.vertexPositions;
+    if (state.status !== "resolved") return state;
+    if (state.value.contributes) contributing.push({ light: state.value.light, visibility: mask.visibility });
   }
-  return null;
+  return resolvedResult(contributing);
 }

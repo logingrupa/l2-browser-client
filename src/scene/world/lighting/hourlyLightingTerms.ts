@@ -49,7 +49,7 @@ export interface HourlyLightingTerms {
   readonly unresolvedItems: readonly HourlyLightingUnresolvedItem[];
 }
 
-const staticMeshInstanceColourCondition = "inferred from the D3D9 fixed-function contract (RM-10), not GPU output: COLOR0 is the RM-10 hourly CPU colour of each lit placement: hourly entries present, SMLL.sunAffect 1, every ordinary light whose mask sets a bit adding no colour (RM-19: zero colour plane, bDynamicLight or bDeleteMe), a vertex stream sidecar whose vertex count equals the light list, uniform scale; the shader adds the instance ambient and clamps per vertex, then MODULATE2X";
+const staticMeshInstanceColourCondition = "inferred from the D3D9 fixed-function contract (RM-10), not GPU output: COLOR0 of each lit placement is its RM-19 ordinary CPU colour with the RM-10 hourly CPU colour saturating-added: hourly entries present, SMLL.sunAffect 1, every ordinary light whose mask sets a bit resolved (not LightType 7, effect 0 or 12, no time-varying colour), the staged ScaleGlow and LocalToWorld, a vertex stream sidecar with source positions whose vertex count equals the light list, uniform scale; the shader adds the instance ambient and clamps per vertex, then MODULATE2X";
 const staticMeshAuthoredColourCondition = "both authored colour streams are white on every lit placement, so COLOR1 is 1 whatever the selector, device+0x4244 bit 0x02 or mesh+0x188 choose";
 const sunAffectedActorCondition = "an actor with bSunAffect (actor +0x13c bit 0); other actors are static-mesh-unhourly-ambient-unresolved or actor-unhourly-ambient-unresolved";
 const { staticMeshSunTermLevelOfDetail } = HOURLY_LIGHTING_CONSTANTS;

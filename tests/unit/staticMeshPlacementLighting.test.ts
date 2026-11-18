@@ -21,12 +21,14 @@ import { parseStaticMeshMaterialsListing } from "../../src/scene/world/staticMes
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
 import { maskBytes, readStaticMeshLightingFixtures, type StaticMeshLightingFixture } from "../support/staticMeshLightingFixtures";
 import { rebuildEnvironmentAtHourSix } from "../support/lightmapRebuildFixture";
-import { integratedFixtureOf, readOrdinaryStaticLightingFixtures } from "../support/ordinaryStaticLightingFixtures";
+import { integratedFixtureOf, ordinaryFixtureLightRecord, readOrdinaryStaticLightingFixtures, stagedOrdinarySubsetOf } from "../support/ordinaryStaticLightingFixtures";
 import { staticMeshOrdinaryLightRecords, type StaticMeshOrdinaryLightRecords } from "../../src/scene/world/lighting/staticMeshOrdinaryLights";
 import { staticMeshPlacementSurfacesFixture } from "../support/staticMeshPlacementFixture";
 
 const { pillar, fixtures } = readStaticMeshLightingFixtures();
 const ordinaryPillarCase = integratedFixtureOf(readOrdinaryStaticLightingFixtures(), pillar.actorExportIndex);
+const spotlightCase = integratedFixtureOf(readOrdinaryStaticLightingFixtures(), 1219);
+const pillarPositionsUnreadByDarkLights = new Array<number>(pillar.vertexCount * 3).fill(0);
 const levelInfo = { exportIndex: 1, fields: new Map([["Brightness", { provenance: "class-default", value: 1 }]]) };
 const programSha256 = "a".repeat(64);
 const sidecarSha256 = "d".repeat(64);
@@ -35,39 +37,28 @@ const swatchImage = textureImageFor(swatchTexturePng());
 const parsedListing = parseStaticMeshMaterialsListing({ kind: "native-tile-static-mesh-materials", schemaVersion: 1, tileId: "20_21",
   materials: [{ sourceObject: slotObject, program: { directory: `native-materials/${programSha256}`, programSha256 }, rootPorted: true, gapReasons: [] }],
   files: { [`${programSha256}/program.json`]: { sha256: programSha256, bytes: 10 } } }, "20_21");
-const sceneAxisOfSourceAxis = [0, 2, 1] as const;
 const releases: (() => void)[] = [];
 afterEach(() => { releases.splice(0).reverse().forEach(release => release()); });
 
-function sceneMatrixOf(nativeMatrix: readonly number[]): number[] {
-  const scene = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-  for (let row = 0; row < 3; row += 1) {
-    for (let column = 0; column < 3; column += 1) scene[row * 4 + column] = nativeMatrix[sceneAxisOfSourceAxis[row]! * 4 + sceneAxisOfSourceAxis[column]!]!;
-  }
-  return scene;
-}
-
 function pillarStreams(): StaticMeshVertexStreams {
-  return parseStaticMeshVertexStreams({ kind: "native-static-mesh-vertex-streams", schemaVersion: 2, sourceObject: pillar.meshObject,
-    nativeVertexCount: pillar.vertexCount, nativeNormals: pillar.nativeNormals, primary: { bgraHex: pillar.primaryColoursHex, revision: 0 },
+  return parseStaticMeshVertexStreams({ kind: "native-static-mesh-vertex-streams", schemaVersion: 3, sourceObject: pillar.meshObject,
+    nativeVertexCount: pillar.vertexCount, nativePositions: pillarPositionsUnreadByDarkLights, nativeNormals: pillar.nativeNormals, primary: { bgraHex: pillar.primaryColoursHex, revision: 0 },
     alternate: { bgraHex: pillar.alternateColoursHex, revision: 0 }, selector: null, selectorGapReason: "static-mesh-colour-selector-unresolved",
     primitives: [{ mesh: 0, primitive: 0, nativeVertices: Array.from({ length: pillar.vertexCount }, (_, vertex) => vertex) }] });
 }
 
 function pillarList(fields: Partial<StaticMeshLightList> = {}): StaticMeshLightList {
   return { actorExportIndex: pillar.actorExportIndex, instanceExportIndex: pillar.instanceExportIndex, vertexCount: pillar.vertexCount,
-    sunAffect: { status: "staged", value: 1 }, ordinaryMasks: pillar.ordinaryMasks.map(mask => ({ light: mask.light, visibility: maskBytes(mask.maskHex) })),
+    sunAffect: { status: "staged", value: 1 },
+    ordinaryInputs: { status: "staged", value: { scaleGlow: ordinaryPillarCase.scaleGlow, localToWorld: Float32Array.from(ordinaryPillarCase.localToWorld) } },
+    ordinaryMasks: pillar.ordinaryMasks.map(mask => ({ light: mask.light, visibility: maskBytes(mask.maskHex) })),
     hourlyMasks: pillar.hourlyMasks.map(mask => ({ light: mask.light, visibility: maskBytes(mask.maskHex) })), ...fields };
 }
 
 const sunOnlyPillarList = () => pillarList({ ordinaryMasks: [] });
 
-function pillarLightRecords(lightTypeOfLight40 = 6, lights = ordinaryPillarCase.ordinaryLights): StaticMeshOrdinaryLightRecords {
-  return staticMeshOrdinaryLightRecords({ levelInfos: [levelInfo], lights: lights.map(light => {
-    const fields = new Map(light.fields.map(field => [field.field, { provenance: field.provenance, value: field.value }]));
-    if (light.exportIndex === 40) fields.set("LightType", { provenance: "authored", value: lightTypeOfLight40 });
-    return { exportIndex: light.exportIndex, object: light.object, actorClass: light.actorClass, fields };
-  }) });
+function lightRecords(lights = ordinaryPillarCase.ordinaryLights): StaticMeshOrdinaryLightRecords {
+  return staticMeshOrdinaryLightRecords({ levelInfos: [levelInfo], lights: lights.map(light => ordinaryFixtureLightRecord(light)) });
 }
 
 function frameOf(fixture: StaticMeshLightingFixture): StaticMeshHourlyLightingFrame {
@@ -76,12 +67,12 @@ function frameOf(fixture: StaticMeshLightingFixture): StaticMeshHourlyLightingFr
       staticSunPlane: fixture.sunPlane as NativePlane }, lightEnvironment: { ...rebuildEnvironmentAtHourSix, hour: fixture.hour } };
 }
 
-function pillarMesh(scene: Scene, name: string): Mesh {
+function pillarMesh(scene: Scene, name: string, vertexCount = pillar.vertexCount): Mesh {
   const material = new PBRMaterial(`${name} slot`, scene);
   material.metadata = { gltf: { extras: { nativeSectionIndex: 0, nativeSourceReference: slotObject } } };
   const mesh = new Mesh(name, scene);
-  Object.assign(new VertexData(), { positions: Array.from({ length: pillar.vertexCount * 3 }, (_, index) => index),
-    uvs: Array.from({ length: pillar.vertexCount * 2 }, () => 0), indices: Uint32Array.from({ length: pillar.vertexCount }, (_, index) => index) }).applyToMesh(mesh);
+  Object.assign(new VertexData(), { positions: Array.from({ length: vertexCount * 3 }, (_, index) => index),
+    uvs: Array.from({ length: vertexCount * 2 }, () => 0), indices: Uint32Array.from({ length: vertexCount }, (_, index) => index) }).applyToMesh(mesh);
   mesh.material = material;
   mesh._internalMetadata = { gltf: { pointers: ["/meshes/0/primitives/0"] } };
   return mesh;
@@ -103,7 +94,7 @@ interface PillarBinding {
 }
 
 function pillarBinding(list: StaticMeshLightList, fixture: StaticMeshLightingFixture = fixtures[0]!,
-  loadVertexStreams: VertexStreamsLoader = vi.fn(async () => pillarStreams()), ordinaryLightRecords = pillarLightRecords()): PillarBinding {
+  loadVertexStreams: VertexStreamsLoader = vi.fn(async () => pillarStreams()), ordinaryLightRecords = lightRecords()): PillarBinding {
   const engine = new NullEngine(), scene = new Scene(engine);
   const frame = { current: frameOf(fixture) };
   const binding = bindStaticMeshLibraryMaterials({ scene, load: { listing: parsedListing, gap: null }, sessionSeed: 3,
@@ -116,7 +107,7 @@ function pillarBinding(list: StaticMeshLightList, fixture: StaticMeshLightingFix
 
 function pillarPlacement(fields: Partial<NativeTileChunkPlacement> = {}) {
   return { sourceActor: "20_21.StaticMeshActor2067", exportIndex: pillar.actorExportIndex,
-    fields: { matrix: sceneMatrixOf(fixtures[0]!.matrix), vertexStreams: { status: "pinned", resource: `/l2/static-mesh-vertex-streams/${sidecarSha256}/vertex-streams.json`,
+    fields: { vertexStreams: { status: "pinned", resource: `/l2/static-mesh-vertex-streams/${sidecarSha256}/vertex-streams.json`,
       sha256: sidecarSha256, bytes: 4096 }, ...fields } as Partial<NativeTileChunkPlacement> };
 }
 
@@ -125,7 +116,7 @@ function instanceColourBytes(mesh: Mesh, vertex: number): number[] {
   return Array.from(data.subarray(vertex * 4, vertex * 4 + 4));
 }
 
-const fixtureRgb = (fixture: StaticMeshLightingFixture, position: number) => {
+const fixtureRgb = (fixture: Pick<StaticMeshLightingFixture, "instanceBGRA">, position: number) => {
   const bgra = fixture.instanceBGRA[position]!;
   return [bgra[2], bgra[1], bgra[0]];
 };
@@ -140,12 +131,21 @@ describe("static mesh hourly instance colour drawn per placement (RM-10)", () =>
     fixtures[0]!.vertexIndices.forEach((vertex, position) => expect(instanceColourBytes(mesh, vertex)).toEqual([...fixtureRgb(fixtures[0]!, position), 255]));
   });
 
-  it.each<[string, StaticMeshOrdinaryLightRecords, string]>([
-    ["light 40 adds colour", pillarLightRecords(1), "static-mesh-ordinary-light-vertex-positions-unstaged"],
-    ["light 40 has no record", pillarLightRecords(6, ordinaryPillarCase.ordinaryLights.filter(light => light.exportIndex !== 40)),
-      "static-mesh-ordinary-light-record-absent:40"],
-  ])("keeps the pillar unlit with a named reason when %s", async (_, records, reason) => {
-    const f = pillarBinding(pillarList(), fixtures[0]!, vi.fn(async () => pillarStreams()), records);
+  it("draws actor 1219 instance 3919 with its RM-19 spotlight bytes from staged data when its hourly entry sets no vertex", async () => {
+    const { list, streams } = stagedOrdinarySubsetOf(spotlightCase, [{ light: pillar.hourlyMasks[0]!.light, maskHex: "00" }]);
+    const f = pillarBinding(list, fixtures[0]!, vi.fn(async () => streams), lightRecords(spotlightCase.ordinaryLights));
+    const mesh = pillarMesh(f.scene, "spotlit plane", spotlightCase.vertexIndices.length);
+    const { fields } = pillarPlacement();
+    await f.binding.addChunk("chunk-1-2", [staticMeshPlacementSurfacesFixture(spotlightCase.actorObject, spotlightCase.actorExportIndex, [mesh], fields)]);
+    expect(f.binding.inspection().lighting).toMatchObject({ litPlacements: 1, unlitPlacementReasons: {} });
+    spotlightCase.vertexIndices.forEach((_, position) => expect(instanceColourBytes(mesh, position)).toEqual(
+      [...fixtureRgb({ instanceBGRA: spotlightCase.finalInstanceBGRA }, position), 255]));
+  });
+
+  it("keeps the pillar unlit with a named reason when light 40 has no record", async () => {
+    const reason = "static-mesh-ordinary-light-record-absent:40";
+    const f = pillarBinding(pillarList(), fixtures[0]!, vi.fn(async () => pillarStreams()),
+      lightRecords(ordinaryPillarCase.ordinaryLights.filter(light => light.exportIndex !== 40)));
     const mesh = pillarMesh(f.scene, "pillar");
     const template = mesh.geometry;
     const { sourceActor, exportIndex, fields } = pillarPlacement();
@@ -233,8 +233,12 @@ describe("static mesh hourly instance colour drawn per placement (RM-10)", () =>
       sunAffect: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.sunAffect" } }), {}, "hourly-lighting-input-unstaged:SMLL.sunAffect"],
     ["a model without a vertex stream sidecar", pillarList({ ordinaryMasks: [] }),
       { vertexStreams: { status: "gap", reason: "static-mesh-vertex-streams-unstaged" } }, "static-mesh-vertex-streams-unstaged"],
-    ["a non-uniform DrawScale3D", pillarList({ ordinaryMasks: [] }),
-      { matrix: [1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }, "static-mesh-normal-transform-unresolved"],
+    ["a non-uniform DrawScale3D", pillarList({ ordinaryMasks: [], ordinaryInputs: { status: "staged",
+      value: { scaleGlow: 1, localToWorld: Float32Array.from([1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]) } } }), {}, "static-mesh-normal-transform-unresolved"],
+    ["a list whose ScaleGlow or LocalToWorld did not resolve", pillarList({ ordinaryInputs: { status: "unstaged", reason: "static-mesh-ordinary-inputs-unresolved" } }),
+      {}, "static-mesh-ordinary-inputs-unresolved"],
+    ["a payload without SMLL.localToWorld", pillarList({ ordinaryInputs: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.localToWorld" } }),
+      {}, "hourly-lighting-input-unstaged:SMLL.localToWorld"],
     ["a sidecar whose vertex count differs from the light list", pillarList({ ordinaryMasks: [], vertexCount: 35 }), {},
       "static-mesh-vertex-streams-count-mismatch"],
   ])("leaves %s unlit with a named reason", async (_, list, placementFields, reason) => {

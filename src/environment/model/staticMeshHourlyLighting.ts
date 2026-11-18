@@ -5,8 +5,6 @@ import { ENVIRONMENT_ENGINE_CONSTANTS } from "./nativeEnvironmentEngineConstants
 import type { NativePlane } from "./nativePlane";
 import { blendAdjacentHourlyKeys, type HourlyKeyBlend, type RgbBytes } from "./sampleNativeTimeTables";
 
-export type NativeLocalToWorldRows = readonly [Vector3, Vector3, Vector3];
-
 export interface StaticMeshHourlyEntryContribution {
   readonly contributes: boolean;
   readonly weight: number;
@@ -47,18 +45,6 @@ export function staticMeshVertexVisible(visibilityMask: Uint8Array, vertexIndex:
     throw new RangeError(`Static mesh vertex ${vertexIndex} is outside the ${visibilityMask.length}-byte visibility mask.`);
   }
   return ((maskByte >> (vertexIndex % bitsPerByte)) & 1) === 1;
-}
-
-export function staticMeshWorldNormal(localToWorld: NativeLocalToWorldRows, localNormal: Vector3): Vector3 {
-  const [xAxis, yAxis, zAxis] = localToWorld;
-  const transformed = {
-    x: Math.fround(localNormal.x * xAxis.x + localNormal.y * yAxis.x + localNormal.z * zAxis.x),
-    y: Math.fround(localNormal.x * xAxis.y + localNormal.y * yAxis.y + localNormal.z * zAxis.y),
-    z: Math.fround(localNormal.x * xAxis.z + localNormal.y * yAxis.z + localNormal.z * zAxis.z),
-  };
-  const squaredLength = Math.fround(transformed.x * transformed.x + transformed.y * transformed.y + transformed.z * transformed.z);
-  const inverseLength = Math.fround(1 / Math.sqrt(squaredLength));
-  return { x: Math.fround(transformed.x * inverseLength), y: Math.fround(transformed.y * inverseLength), z: Math.fround(transformed.z * inverseLength) };
 }
 
 export function staticMeshSampleIntensity(worldNormal: Vector3, lightDirection: Vector3): number {

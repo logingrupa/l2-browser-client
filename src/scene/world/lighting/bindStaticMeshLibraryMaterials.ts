@@ -4,6 +4,7 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
 import type { RgbaBytes } from "../../../environment/model/nativeColourBytes";
 import { staticMeshDrawnComposition } from "../../../environment/model/nativeDrawLightingStates";
+import type { NativeLocalToWorld } from "../../../environment/model/staticMeshLocalToWorld";
 import {
   createNativeMaterial, type LoadedNativeMaterial, type MaterialLighting, type NativeMaterial, type NativeMaterialUniforms,
 } from "../../../materials/ue2/babylon/material";
@@ -15,9 +16,10 @@ import type { StagedLightingInput } from "./stagedLightingInput";
 import type { StaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
 import type { RebuildLightEnvironment } from "./rebuildShadowLights";
 import { createStaticMeshInstanceColourGeometry, type StaticMeshInstanceColourGeometry } from "./staticMeshInstanceColourGeometry";
-import { staticMeshOrdinaryTermReason, type StaticMeshOrdinaryLightRecords } from "./staticMeshOrdinaryLights";
+import { resolveStaticMeshOrdinaryTerm, type StaticMeshOrdinaryLightRecords } from "./staticMeshOrdinaryLights";
 import {
-  staticMeshLightingReasons, staticMeshPlacementInstanceColours, staticMeshPlacementLightingJoin, staticMeshVertexStreamsReason, type StaticMeshSunFrame,
+  staticMeshLightingReasons, staticMeshPlacementInstanceColours, staticMeshPlacementLightingJoin, staticMeshVertexStreamsReason,
+  type StaticMeshPlacementOrdinaryTerm, type StaticMeshSunFrame,
 } from "./staticMeshPlacementLighting";
 
 export type StaticMeshSlotStatus = "library-compiled" | "library-diagnostic" | "program-gap";
@@ -98,7 +100,8 @@ interface LitStaticMeshPlacement {
   readonly placement: NativeTileChunkPlacement;
   readonly list: StaticMeshLightList;
   readonly streams: StaticMeshVertexStreams;
-  readonly rows: Parameters<typeof staticMeshPlacementInstanceColours>[2];
+  readonly localToWorld: NativeLocalToWorld;
+  readonly ordinary: StaticMeshPlacementOrdinaryTerm;
   readonly geometries: readonly StaticMeshInstanceColourGeometry[];
   vertexZeroRgb: readonly [number, number, number];
 }
@@ -214,7 +217,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
   };
   const colourPlacement = (lit: LitStaticMeshPlacement) => {
     if (latchedFrame?.status !== "resolved") return;
-    const colours = staticMeshPlacementInstanceColours(lit.list, lit.streams, lit.rows, latchedFrame.sun);
+    const colours = staticMeshPlacementInstanceColours(lit.list, lit.streams, lit.localToWorld, lit.ordinary, latchedFrame.sun);
     lit.vertexZeroRgb = [colours[0]!, colours[1]!, colours[2]!];
     for (const geometry of lit.geometries) geometry.writeColours(colours);
   };
@@ -223,8 +226,8 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
     const join = staticMeshPlacementLightingJoin(settings.lightLists, surfaces.placement);
     if (join.status === "unlit") return { reason: join.reason };
     if (latchedFrame?.status !== "resolved") return { reason: heldReason ?? staticMeshRebuildTriggerUnresolvedReason };
-    const ordinaryReason = staticMeshOrdinaryTermReason(join.list, settings.ordinaryLightRecords, latchedFrame.lightEnvironment);
-    if (ordinaryReason !== null) return { reason: ordinaryReason };
+    const ordinaryLights = resolveStaticMeshOrdinaryTerm(join.list, settings.ordinaryLightRecords, latchedFrame.lightEnvironment);
+    if (ordinaryLights.status !== "resolved") return { reason: ordinaryLights.reason };
     const pin = surfaces.placement.vertexStreams;
     if (pin.status !== "pinned") return { reason: pin.reason };
     const streams = await vertexStreamsFor(pin.resource, pin.sha256, pin.bytes);
@@ -238,7 +241,8 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
       if (vertices === null) return { reason: staticMeshLightingReasons.primitiveUnjoined };
       meshVertices.set(mesh as Mesh, vertices);
     }
-    return { placement: surfaces.placement, list: join.list, streams, rows: join.rows, meshVertices };
+    return { placement: surfaces.placement, list: join.list, streams, localToWorld: join.localToWorld,
+      ordinary: { gain: join.gain, lights: ordinaryLights.value }, meshVertices };
   };
   const observer = scene.onBeforeRenderObservable.add(() => {
     if (readyMaterials.size === 0) return;
@@ -267,8 +271,8 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
           litMeshMaterials.set(mesh, (await nativeMaterialFor(slots.get(mesh)!.programMaterialId!, "vertex-modulate2x")).material);
           geometries.push(createStaticMeshInstanceColourGeometry(mesh, vertices));
         }
-        const lit: LitStaticMeshPlacement = { placement: lighting.placement, list: lighting.list, streams: lighting.streams, rows: lighting.rows, geometries,
-          vertexZeroRgb: [0, 0, 0] };
+        const lit: LitStaticMeshPlacement = { placement: lighting.placement, list: lighting.list, streams: lighting.streams, localToWorld: lighting.localToWorld,
+          ordinary: lighting.ordinary, geometries, vertexZeroRgb: [0, 0, 0] };
         colourPlacement(lit);
         litPlacements.push(lit);
       }

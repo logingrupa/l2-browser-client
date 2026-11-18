@@ -10,6 +10,7 @@ export interface StaticMeshVertexStreamPrimitive {
 export interface StaticMeshVertexStreams {
   readonly sourceObject: string;
   readonly nativeVertexCount: number;
+  readonly nativePositions: Float32Array;
   readonly nativeNormals: Float32Array;
   readonly primaryColours: Uint8Array;
   readonly alternateColours: Uint8Array;
@@ -21,8 +22,8 @@ export class StaticMeshVertexStreamsFormatError extends Error {
 }
 
 const vertexStreamsKind = "native-static-mesh-vertex-streams";
-const vertexStreamsSchemaVersion = 2;
-const normalComponents = 3;
+const vertexStreamsSchemaVersion = 3;
+const vectorComponents = 3;
 const colourBytes = 4;
 const hexPairPattern = /^(?:[0-9a-f]{2})*$/;
 const opaqueWhiteByte = 0xff;
@@ -36,6 +37,12 @@ function colourStreamBytes(value: unknown, label: string, vertexCount: number): 
   const bytes = Uint8Array.from(value.bgraHex.match(/../g) ?? [], pair => Number.parseInt(pair, 16));
   requireStreams(bytes.length === vertexCount * colourBytes, `${label} holds ${bytes.length / colourBytes} colours for ${vertexCount} vertices.`);
   return bytes;
+}
+
+function vertexVectors(value: unknown, label: string, vertexCount: number): Float32Array {
+  requireStreams(Array.isArray(value) && value.length === vertexCount * vectorComponents &&
+    value.every(component => typeof component === "number" && Number.isFinite(component)), `${label} must hold ${vertexCount * vectorComponents} finite numbers.`);
+  return Float32Array.from(value as number[]);
 }
 
 function parsePrimitive(value: unknown, position: number, vertexCount: number): StaticMeshVertexStreamPrimitive {
@@ -53,11 +60,9 @@ export function parseStaticMeshVertexStreams(input: unknown): StaticMeshVertexSt
   requireStreams(typeof input.sourceObject === "string" && input.sourceObject.length > 0, "sourceObject is missing.");
   requireStreams(Number.isSafeInteger(vertexCount) && (vertexCount as number) > 0, "nativeVertexCount is not a positive integer.");
   const count = vertexCount as number;
-  requireStreams(Array.isArray(input.nativeNormals) && input.nativeNormals.length === count * normalComponents &&
-    input.nativeNormals.every(component => typeof component === "number" && Number.isFinite(component)),
-  `nativeNormals must hold ${count * normalComponents} finite numbers.`);
+  const nativePositions = vertexVectors(input.nativePositions, "nativePositions", count), nativeNormals = vertexVectors(input.nativeNormals, "nativeNormals", count);
   requireStreams(Array.isArray(input.primitives) && input.primitives.length > 0, "primitives must be a non-empty list.");
-  return { sourceObject: input.sourceObject, nativeVertexCount: count, nativeNormals: Float32Array.from(input.nativeNormals as number[]),
+  return { sourceObject: input.sourceObject, nativeVertexCount: count, nativePositions, nativeNormals,
     primaryColours: colourStreamBytes(input.primary, "primary", count), alternateColours: colourStreamBytes(input.alternate, "alternate", count),
     primitives: input.primitives.map((primitive, position) => parsePrimitive(primitive, position, count)) };
 }

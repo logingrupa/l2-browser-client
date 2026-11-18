@@ -1,14 +1,15 @@
-import type { BgrBytes } from "../../../environment/model/nativeColourBytes";
 import type { NativePlane } from "../../../environment/model/nativePlane";
 import {
   staticMeshHourlyEntryBlend, staticMeshHourlyEntryContributions, staticMeshHourlyInstanceColour, staticMeshSampleIntensity, staticMeshVertexVisible,
-  staticMeshWorldNormal, type NativeLocalToWorldRows,
 } from "../../../environment/model/staticMeshHourlyLighting";
+import { staticMeshWorldNormal, staticMeshWorldPosition, type NativeLocalToWorld } from "../../../environment/model/staticMeshLocalToWorld";
+import { staticMeshOrdinaryLightGain, staticMeshOrdinaryVertexColour } from "../../../environment/model/staticMeshOrdinaryLighting";
 import type { Vector3 } from "../../../shared/math/vector3";
 import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
 import { sunAffected, type StaticMeshLightList } from "./decodeHourlyLightingInputs";
 import { authoredColourStreamsWhite, type StaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
-import { staticMeshPlacementNormalTransform } from "./staticMeshPlacementNormalTransform";
+import type { StaticMeshOrdinaryMaskLight } from "./staticMeshOrdinaryLights";
+import { staticMeshPlacementLocalToWorld } from "./staticMeshPlacementLocalToWorld";
 import type { StagedLightingInput } from "./stagedLightingInput";
 
 export interface StaticMeshSunFrame {
@@ -17,8 +18,13 @@ export interface StaticMeshSunFrame {
   readonly staticSunPlane: NativePlane;
 }
 
+export interface StaticMeshPlacementOrdinaryTerm {
+  readonly gain: number;
+  readonly lights: readonly StaticMeshOrdinaryMaskLight[];
+}
+
 export type StaticMeshPlacementLightingJoin =
-  | { readonly status: "eligible"; readonly list: StaticMeshLightList; readonly rows: NativeLocalToWorldRows }
+  | { readonly status: "eligible"; readonly list: StaticMeshLightList; readonly localToWorld: NativeLocalToWorld; readonly gain: number }
   | { readonly status: "unlit"; readonly reason: string };
 
 export const staticMeshLightingReasons = {
@@ -30,8 +36,7 @@ export const staticMeshLightingReasons = {
 } as const;
 
 const rgbChannels = 3;
-const normalComponents = 3;
-const nonContributingOrdinaryColour: BgrBytes = [0, 0, 0];
+const vectorComponents = 3;
 
 export function staticMeshPlacementLightingJoin(lightLists: StagedLightingInput<ReadonlyMap<number, StaticMeshLightList>>,
   placement: NativeTileChunkPlacement): StaticMeshPlacementLightingJoin {
@@ -42,9 +47,10 @@ export function staticMeshPlacementLightingJoin(lightLists: StagedLightingInput<
   if (list.sunAffect.status === "unstaged") return { status: "unlit", reason: list.sunAffect.reason };
   if (list.sunAffect.value !== sunAffected) return { status: "unlit", reason: staticMeshLightingReasons.ambientFallbackProducer };
   if (placement.vertexStreams.status === "gap") return { status: "unlit", reason: placement.vertexStreams.reason };
-  const transform = staticMeshPlacementNormalTransform(placement.matrix);
+  if (list.ordinaryInputs.status === "unstaged") return { status: "unlit", reason: list.ordinaryInputs.reason };
+  const transform = staticMeshPlacementLocalToWorld(list.ordinaryInputs.value.localToWorld);
   if (transform.status === "unresolved") return { status: "unlit", reason: transform.reason };
-  return { status: "eligible", list, rows: transform.rows };
+  return { status: "eligible", list, localToWorld: transform.localToWorld, gain: staticMeshOrdinaryLightGain(list.ordinaryInputs.value.scaleGlow) };
 }
 
 export function staticMeshVertexStreamsReason(list: StaticMeshLightList, streams: StaticMeshVertexStreams): string | null {
@@ -52,17 +58,25 @@ export function staticMeshVertexStreamsReason(list: StaticMeshLightList, streams
   return authoredColourStreamsWhite(streams) ? null : staticMeshLightingReasons.colourSelector;
 }
 
-export function staticMeshPlacementInstanceColours(list: StaticMeshLightList, streams: StaticMeshVertexStreams, rows: NativeLocalToWorldRows,
-  frame: StaticMeshSunFrame): Uint8Array {
-  const blend = staticMeshHourlyEntryBlend(list.hourlyMasks.length, frame.hour);
-  const previous = list.hourlyMasks[blend.index]!.visibility, next = list.hourlyMasks[blend.nextIndex]!.visibility;
+function vertexVector(components: Float32Array, vertex: number): Vector3 {
+  const offset = vertex * vectorComponents;
+  return { x: components[offset]!, y: components[offset + 1]!, z: components[offset + 2]! };
+}
+
+export function staticMeshPlacementInstanceColours(list: StaticMeshLightList, streams: StaticMeshVertexStreams, localToWorld: NativeLocalToWorld,
+  ordinary: StaticMeshPlacementOrdinaryTerm, frame: StaticMeshSunFrame): Uint8Array {
+  const blend = list.hourlyMasks.length === 0 ? null : staticMeshHourlyEntryBlend(list.hourlyMasks.length, frame.hour);
   const colours = new Uint8Array(list.vertexCount * rgbChannels);
   for (let vertex = 0; vertex < list.vertexCount; vertex += 1) {
-    const offset = vertex * normalComponents;
-    const normal = { x: streams.nativeNormals[offset]!, y: streams.nativeNormals[offset + 1]!, z: streams.nativeNormals[offset + 2]! };
-    const sampleIntensity = staticMeshSampleIntensity(staticMeshWorldNormal(rows, normal), frame.lightDirection);
-    const entries = staticMeshHourlyEntryContributions(blend, staticMeshVertexVisible(previous, vertex), staticMeshVertexVisible(next, vertex));
-    colours.set(staticMeshHourlyInstanceColour(sampleIntensity, entries, frame.staticSunPlane, nonContributingOrdinaryColour), vertex * rgbChannels);
+    const worldNormal = staticMeshWorldNormal(localToWorld.rows, vertexVector(streams.nativeNormals, vertex));
+    const worldPosition = staticMeshWorldPosition(localToWorld, vertexVector(streams.nativePositions, vertex));
+    const lights = ordinary.lights.filter(entry => staticMeshVertexVisible(entry.visibility, vertex)).map(entry => entry.light);
+    const ordinaryColour = staticMeshOrdinaryVertexColour(lights, ordinary.gain, { worldPosition: [worldPosition.x, worldPosition.y, worldPosition.z],
+      worldNormal: [worldNormal.x, worldNormal.y, worldNormal.z] });
+    const entries = blend === null ? [] : staticMeshHourlyEntryContributions(blend,
+      staticMeshVertexVisible(list.hourlyMasks[blend.index]!.visibility, vertex), staticMeshVertexVisible(list.hourlyMasks[blend.nextIndex]!.visibility, vertex));
+    colours.set(staticMeshHourlyInstanceColour(staticMeshSampleIntensity(worldNormal, frame.lightDirection), entries, frame.staticSunPlane, ordinaryColour),
+      vertex * rgbChannels);
   }
   return colours;
 }

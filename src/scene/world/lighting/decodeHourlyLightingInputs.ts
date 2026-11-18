@@ -27,11 +27,17 @@ export interface StaticMeshLightMask {
   readonly visibility: Uint8Array;
 }
 
+export interface StaticMeshOrdinaryInputs {
+  readonly scaleGlow: number;
+  readonly localToWorld: Float32Array;
+}
+
 export interface StaticMeshLightList {
   readonly actorExportIndex: number;
   readonly instanceExportIndex: number;
   readonly vertexCount: number;
   readonly sunAffect: StagedLightingInput<number>;
+  readonly ordinaryInputs: StagedLightingInput<StaticMeshOrdinaryInputs>;
   readonly ordinaryMasks: readonly StaticMeshLightMask[];
   readonly hourlyMasks: readonly StaticMeshLightMask[];
 }
@@ -48,8 +54,12 @@ export interface HourlyLightingInputs {
 
 export const sunAffectUnresolved = -1;
 export const sunAffected = 1;
+export const staticMeshOrdinaryInputsUnresolvedReason = "static-mesh-ordinary-inputs-unresolved";
 const sunAffectValues: ReadonlySet<number> = new Set([sunAffectUnresolved, 0, sunAffected]);
 const bitsPerByte = 8;
+const localToWorldComponents = 16;
+const localToWorldAffineColumn = [[3, 0], [7, 0], [11, 0], [15, 1]] as const;
+const ordinaryInputsResolved = 1;
 
 function decodeNodeRangeSunAffect(payload: TypedPayload): Int32Array {
   const sunAffect = payload.int32("LMNR.sunAffect"), nodeRangeCount = payload.int32("LMNR.node").length;
@@ -103,6 +113,28 @@ function decodeStaticMeshSunAffect(payload: TypedPayload, listCount: number): (l
   return list => ({ status: "staged", value: staged.value[list]! });
 }
 
+function decodeStaticMeshOrdinaryInputs(payload: TypedPayload, listCount: number): (list: number) => StagedLightingInput<StaticMeshOrdinaryInputs> {
+  const resolvedName = "SMLL.ordinaryInputsResolved", scaleGlowName = "SMLL.scaleGlow", localToWorldName = "SMLL.localToWorld";
+  const staged = stagedWhenListed(payload, [resolvedName, scaleGlowName, localToWorldName], () => {
+    const resolved = payload.int32(resolvedName), scaleGlow = payload.float32(scaleGlowName), localToWorld = payload.float32(localToWorldName);
+    requireLightingInput(resolved.length === listCount && scaleGlow.length === listCount && localToWorld.length === listCount * localToWorldComponents,
+      `${resolvedName}, ${scaleGlowName} and ${localToWorldName} hold ${resolved.length}, ${scaleGlow.length} and ${localToWorld.length} values for ${listCount} static mesh light lists.`);
+    for (let list = 0; list < listCount; list += 1) {
+      requireLightingInput(resolved[list] === 0 || resolved[list] === ordinaryInputsResolved, `${resolvedName}[${list}] = ${resolved[list]} is not 0 or 1.`);
+      if (resolved[list] !== ordinaryInputsResolved) continue;
+      const start = list * localToWorldComponents;
+      requireLightingInput(localToWorldAffineColumn.every(([index, value]) => localToWorld[start + index] === value),
+        `${localToWorldName} of static mesh light list ${list} is not an affine row-major matrix.`);
+    }
+    return { resolved, scaleGlow, localToWorld };
+  });
+  if (staged.status === "unstaged") return () => staged;
+  const { resolved, scaleGlow, localToWorld } = staged.value;
+  return list => resolved[list] === ordinaryInputsResolved
+    ? { status: "staged", value: { scaleGlow: scaleGlow[list]!, localToWorld: localToWorld.subarray(list * localToWorldComponents, (list + 1) * localToWorldComponents) } }
+    : { status: "unstaged", reason: staticMeshOrdinaryInputsUnresolvedReason };
+}
+
 function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, StaticMeshLightList> {
   const actorExportIndex = payload.int32("SMLL.actorExportIndex"), instanceExportIndex = payload.int32("SMLL.instanceExportIndex");
   const colourCount = payload.uint32("SMLL.colorCount"), environmentStart = payload.uint32("SMLL.environmentStart"), sceneStart = payload.uint32("SMLL.sceneStart");
@@ -114,7 +146,7 @@ function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, 
   requireLightingPrefixStarts("SMEN.bitStart", bitStart, light.length, bits.length);
   requireLightingPrefixStarts("SMLL.sceneStart", sceneStart, listCount, sceneLight.length);
   requireLightingPrefixStarts("SMSC.bitStart", sceneBitStart, sceneLight.length, sceneBits.length);
-  const sunAffectOf = decodeStaticMeshSunAffect(payload, listCount);
+  const sunAffectOf = decodeStaticMeshSunAffect(payload, listCount), ordinaryInputsOf = decodeStaticMeshOrdinaryInputs(payload, listCount);
   const lists = new Map<number, StaticMeshLightList>();
   for (let list = 0; list < listCount; list += 1) {
     const vertexCount = colourCount[list]!, actor = actorExportIndex[list]!;
@@ -127,7 +159,7 @@ function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, 
         return { light: lights[entry]!, visibility };
       });
     lists.set(actor, { actorExportIndex: actor, instanceExportIndex: instanceExportIndex[list]!, vertexCount, sunAffect: sunAffectOf(list),
-      ordinaryMasks: masks("ordinary light", sceneStart, sceneLight, sceneBitStart, sceneBits), hourlyMasks: masks("hourly", environmentStart, light, bitStart, bits) });
+      ordinaryInputs: ordinaryInputsOf(list), ordinaryMasks: masks("ordinary light", sceneStart, sceneLight, sceneBitStart, sceneBits), hourlyMasks: masks("hourly", environmentStart, light, bitStart, bits) });
   }
   return lists;
 }

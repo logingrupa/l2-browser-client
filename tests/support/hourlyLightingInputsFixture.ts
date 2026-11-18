@@ -71,6 +71,15 @@ export function staticMeshLightListArrays(): TypedPayloadFixtureArray[] {
 
 export const staticMeshSunAffectArray: TypedPayloadFixtureArray = { name: "SMLL.sunAffect", type: "int32", values: [-1, 1] };
 
+export function staticMeshOrdinaryInputArrays(): TypedPayloadFixtureArray[] {
+  const { fixtures } = readStaticMeshLightingFixtures();
+  return [
+    { name: "SMLL.ordinaryInputsResolved", type: "int32", values: [0, 1] },
+    { name: "SMLL.scaleGlow", type: "float32", values: [0, 1] },
+    { name: "SMLL.localToWorld", type: "float32", values: [...new Array<number>(16).fill(0), ...fixtures[0]!.matrix] },
+  ];
+}
+
 export function hourlyEnvironmentAt(hour: number, blend: NativeEnvironmentBlend = settledBlend): HourlyEnvironmentLighting {
   const tables = readDayNightLoadedTables();
   return { hour,

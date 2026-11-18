@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { NativePlane } from "../../src/environment/model/nativePlane";
 import {
   staticMeshHourlyEntryBlend, staticMeshHourlyEntryContributions, staticMeshHourlyInstanceColour, staticMeshSampleIntensity, staticMeshVertexVisible,
-  staticMeshWorldNormal, type NativeLocalToWorldRows,
 } from "../../src/environment/model/staticMeshHourlyLighting";
+import { staticMeshWorldNormal, type NativeLocalToWorldRows } from "../../src/environment/model/staticMeshLocalToWorld";
 import type { Vector3 } from "../../src/shared/math/vector3";
 import { maskBytes, readStaticMeshLightingFixtures, type StaticMeshLightingFixture } from "../support/staticMeshLightingFixtures";
 

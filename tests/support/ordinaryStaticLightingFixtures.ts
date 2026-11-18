@@ -1,5 +1,9 @@
 import { readFileSync } from "node:fs";
 import type { NativeVector3 } from "../../src/environment/model/lightmapRebuild/lightmapRebuildTypes";
+import type { StaticMeshLightList, StaticMeshLightMask } from "../../src/scene/world/lighting/decodeHourlyLightingInputs";
+import { parseStaticMeshVertexStreams, type StaticMeshVertexStreams } from "../../src/scene/world/lighting/loadStaticMeshVertexStreams";
+import type { TileLightActorRecord } from "../../src/scene/world/lighting/lightmapRebuildActors";
+import { maskBytes } from "./staticMeshLightingFixtures";
 
 export interface OrdinarySampleIntensityFixture {
   readonly function: string;
@@ -56,6 +60,9 @@ export interface OrdinaryIntegratedFixture {
   readonly levelBrightness: number;
   readonly vertexCount: number;
   readonly vertexIndices: readonly number[];
+  readonly localPositions: Readonly<Record<string, NativeVector3>>;
+  readonly primaryColoursHex: string;
+  readonly alternateColoursHex: string;
   readonly localNormals: Readonly<Record<string, NativeVector3>>;
   readonly localToWorld: readonly number[];
   readonly sunDirection: NativeVector3;
@@ -84,4 +91,41 @@ export function integratedFixtureOf(document: OrdinaryStaticLightingFixtureDocum
   const fixture = document.integrated.find(entry => entry.actorExportIndex === actorExportIndex);
   if (fixture === undefined) throw new Error(`RM-19 has no integrated fixture for actor ${actorExportIndex}.`);
   return fixture;
+}
+
+export interface OrdinaryStagedSubset {
+  readonly list: StaticMeshLightList;
+  readonly streams: StaticMeshVertexStreams;
+}
+
+const bitsPerByte = 8;
+
+function subsetMask(fixture: OrdinaryIntegratedFixture, maskHex: string): Uint8Array {
+  const full = maskBytes(maskHex), subset = new Uint8Array(Math.ceil(fixture.vertexIndices.length / bitsPerByte));
+  fixture.vertexIndices.forEach((vertex, position) => {
+    if ((full[Math.floor(vertex / bitsPerByte)]! >> (vertex % bitsPerByte)) & 1) subset[Math.floor(position / bitsPerByte)]! |= 1 << (position % bitsPerByte);
+  });
+  return subset;
+}
+
+export function ordinaryFixtureLightRecord(light: OrdinaryFixtureLight, overrides: Readonly<Record<string, unknown>> = {}): TileLightActorRecord {
+  const fields = new Map(light.fields.map(field => [field.field, { provenance: field.provenance, value: field.value }]));
+  for (const [field, value] of Object.entries(overrides)) fields.set(field, { provenance: "authored", value });
+  return { exportIndex: light.exportIndex, object: light.object, actorClass: light.actorClass, fields };
+}
+
+export function stagedOrdinarySubsetOf(fixture: OrdinaryIntegratedFixture, hourlyEntries = fixture.hourlyEntries): OrdinaryStagedSubset {
+  const masks = (entries: readonly OrdinaryFixtureMaskEntry[]): StaticMeshLightMask[] =>
+    entries.map(entry => ({ light: entry.light, visibility: subsetMask(fixture, entry.maskHex) }));
+  const list: StaticMeshLightList = { actorExportIndex: fixture.actorExportIndex, instanceExportIndex: fixture.instanceExportIndex,
+    vertexCount: fixture.vertexIndices.length, sunAffect: { status: "staged", value: 1 },
+    ordinaryInputs: { status: "staged", value: { scaleGlow: fixture.scaleGlow, localToWorld: Float32Array.from(fixture.localToWorld) } },
+    ordinaryMasks: masks(fixture.ordinaryEntries), hourlyMasks: masks(hourlyEntries) };
+  const vectors = (byVertex: Readonly<Record<string, NativeVector3>>) => fixture.vertexIndices.flatMap(vertex => byVertex[String(vertex)]!);
+  const streams = parseStaticMeshVertexStreams({ kind: "native-static-mesh-vertex-streams", schemaVersion: 3, sourceObject: fixture.meshObject,
+    nativeVertexCount: fixture.vertexIndices.length, nativePositions: vectors(fixture.localPositions), nativeNormals: vectors(fixture.localNormals),
+    primary: { bgraHex: fixture.primaryColoursHex, revision: 0 }, alternate: { bgraHex: fixture.alternateColoursHex, revision: 0 }, selector: null,
+    selectorGapReason: "static-mesh-colour-selector-unresolved",
+    primitives: [{ mesh: 0, primitive: 0, nativeVertices: fixture.vertexIndices.map((_, position) => position) }] });
+  return { list, streams };
 }

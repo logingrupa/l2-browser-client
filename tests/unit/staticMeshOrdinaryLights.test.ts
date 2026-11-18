@@ -1,24 +1,21 @@
 import { describe, expect, it } from "vitest";
-import type { BgrBytes } from "../../src/environment/model/nativeColourBytes";
 import type { NativePlane } from "../../src/environment/model/nativePlane";
-import {
-  staticMeshHourlyEntryBlend, staticMeshHourlyEntryContributions, staticMeshHourlyInstanceColour, staticMeshSampleIntensity, staticMeshVertexVisible,
-  staticMeshWorldNormal, type NativeLocalToWorldRows,
-} from "../../src/environment/model/staticMeshHourlyLighting";
-import { staticMeshOrdinaryLightGain, staticMeshOrdinaryVertexColour, type StaticMeshOrdinaryLight } from "../../src/environment/model/staticMeshOrdinaryLighting";
-import type { StaticMeshLightList } from "../../src/scene/world/lighting/decodeHourlyLightingInputs";
+import { staticMeshHourlyEntryBlend, staticMeshHourlyEntryContributions, staticMeshHourlyInstanceColour } from "../../src/environment/model/staticMeshHourlyLighting";
+import { staticMeshWorldNormal, staticMeshWorldPosition, type NativeLocalToWorld } from "../../src/environment/model/staticMeshLocalToWorld";
+import { staticMeshOrdinaryLightGain } from "../../src/environment/model/staticMeshOrdinaryLighting";
 import { resolveLightActorColour } from "../../src/scene/world/lighting/lightActorColour";
 import type { TileLightActorRecord } from "../../src/scene/world/lighting/lightmapRebuildActors";
 import type { RebuildLightEnvironment } from "../../src/scene/world/lighting/rebuildShadowLights";
 import {
-  resolveStaticMeshOrdinaryLight, staticMeshOrdinaryLightRecords, staticMeshOrdinaryTermReason,
+  resolveStaticMeshOrdinaryLight, resolveStaticMeshOrdinaryTerm, staticMeshOrdinaryLightRecords,
 } from "../../src/scene/world/lighting/staticMeshOrdinaryLights";
-import type { Vector3 } from "../../src/shared/math/vector3";
+import { staticMeshPlacementInstanceColours } from "../../src/scene/world/lighting/staticMeshPlacementLighting";
+import { staticMeshPlacementLocalToWorld } from "../../src/scene/world/lighting/staticMeshPlacementLocalToWorld";
 import { rebuildEnvironmentAtHourSix } from "../support/lightmapRebuildFixture";
 import {
-  integratedFixtureOf, readOrdinaryStaticLightingFixtures, type OrdinaryFixtureLight, type OrdinaryIntegratedFixture, type OrdinaryUpdateFixture,
+  integratedFixtureOf, ordinaryFixtureLightRecord, readOrdinaryStaticLightingFixtures, stagedOrdinarySubsetOf, type OrdinaryFixtureLight,
+  type OrdinaryIntegratedFixture, type OrdinaryUpdateFixture,
 } from "../support/ordinaryStaticLightingFixtures";
-import { maskBytes } from "../support/staticMeshLightingFixtures";
 
 const document = readOrdinaryStaticLightingFixtures();
 const pillarCase = integratedFixtureOf(document, 7732);
@@ -30,11 +27,7 @@ function environmentAt(fixture: { readonly hour: number; readonly levelTimeSecon
   return { ...rebuildEnvironmentAtHourSix, hour: fixture.hour, levelTimeSeconds: fixture.levelTimeSeconds };
 }
 
-function lightRecord(light: OrdinaryFixtureLight, overrides: Readonly<Record<string, unknown>> = {}): TileLightActorRecord {
-  const fields = new Map(light.fields.map(field => [field.field, { provenance: field.provenance, value: field.value }]));
-  for (const [field, value] of Object.entries(overrides)) fields.set(field, { provenance: "authored", value });
-  return { exportIndex: light.exportIndex, object: light.object, actorClass: light.actorClass, fields };
-}
+const lightRecord = (light: OrdinaryFixtureLight, overrides: Readonly<Record<string, unknown>> = {}) => ordinaryFixtureLightRecord(light, overrides);
 
 function updateRecord(row: OrdinaryUpdateFixture): TileLightActorRecord {
   const values: Record<string, unknown> = { LightType: row.lightType, LightEffect: 0, LightBrightness: row.lightBrightness, LightRadius: row.lightRadius,
@@ -45,51 +38,28 @@ function updateRecord(row: OrdinaryUpdateFixture): TileLightActorRecord {
     fields: new Map(Object.entries(values).map(([field, value]) => [field, { provenance: "authored", value }])) };
 }
 
-function lightListOf(fixture: OrdinaryIntegratedFixture): StaticMeshLightList {
-  const masks = (entries: OrdinaryIntegratedFixture["ordinaryEntries"]) => entries.map(entry => ({ light: entry.light, visibility: maskBytes(entry.maskHex) }));
-  return { actorExportIndex: fixture.actorExportIndex, instanceExportIndex: fixture.instanceExportIndex, vertexCount: fixture.vertexCount,
-    sunAffect: { status: "staged", value: 1 }, ordinaryMasks: masks(fixture.ordinaryEntries), hourlyMasks: masks(fixture.hourlyEntries) };
-}
-
 function recordsOf(fixture: OrdinaryIntegratedFixture) {
   return staticMeshOrdinaryLightRecords({ lights: fixture.ordinaryLights.map(light => lightRecord(light)), levelInfos: [levelInfo] });
 }
 
-function contributingLights(fixture: OrdinaryIntegratedFixture, vertex: number): StaticMeshOrdinaryLight[] {
-  return fixture.ordinaryEntries.filter(entry => staticMeshVertexVisible(maskBytes(entry.maskHex), vertex)).flatMap(entry => {
-    const state = resolveStaticMeshOrdinaryLight(lightRecord(fixture.ordinaryLights.find(light => light.exportIndex === entry.light)!), fixture.levelBrightness,
-      environmentAt(fixture));
-    if (state.status !== "resolved") throw new Error(state.reason);
-    return state.value.contributes ? [state.value.light] : [];
-  });
+function stagedLocalToWorld(fixture: OrdinaryIntegratedFixture): NativeLocalToWorld {
+  const transform = staticMeshPlacementLocalToWorld(Float32Array.from(fixture.localToWorld));
+  if (transform.status !== "uniform-scale") throw new Error(transform.reason);
+  return transform.localToWorld;
 }
 
-function ordinaryColourOf(fixture: OrdinaryIntegratedFixture, vertex: number): BgrBytes {
-  const lights = contributingLights(fixture, vertex);
-  if (lights.length === 0) return [0, 0, 0];
-  const sample = fixture.perLightSamples.find(entry => entry.vertex === vertex)!;
-  return staticMeshOrdinaryVertexColour(lights, staticMeshOrdinaryLightGain(fixture.scaleGlow), sample);
-}
-
-function localToWorldRows(matrix: readonly number[]): NativeLocalToWorldRows {
-  const row = (start: number): Vector3 => ({ x: matrix[start]!, y: matrix[start + 1]!, z: matrix[start + 2]! });
-  return [row(0), row(4), row(8)];
-}
-
-function finalColourOf(fixture: OrdinaryIntegratedFixture, vertex: number): readonly number[] {
-  const ordinary = ordinaryColourOf(fixture, vertex);
-  if (fixture.hourlyEntries.length === 0) return [ordinary[2], ordinary[1], ordinary[0]];
-  const blend = staticMeshHourlyEntryBlend(fixture.hourlyEntries.length, fixture.hour);
-  const visible = (index: number) => staticMeshVertexVisible(maskBytes(fixture.hourlyEntries[index]!.maskHex), vertex);
-  const [x, y, z] = fixture.localNormals[String(vertex)]!;
-  const [directionX, directionY, directionZ] = fixture.sunDirection;
-  const sampleIntensity = staticMeshSampleIntensity(staticMeshWorldNormal(localToWorldRows(fixture.localToWorld), { x, y, z }),
-    { x: directionX, y: directionY, z: directionZ });
-  return staticMeshHourlyInstanceColour(sampleIntensity, staticMeshHourlyEntryContributions(blend, visible(blend.index), visible(blend.nextIndex)),
-    fixture.sunPlane as NativePlane, ordinary);
+function stagedInstanceRgb(fixture: OrdinaryIntegratedFixture): number[][] {
+  const { list, streams } = stagedOrdinarySubsetOf(fixture);
+  const ordinary = resolveStaticMeshOrdinaryTerm(list, recordsOf(fixture), environmentAt(fixture));
+  if (ordinary.status !== "resolved") throw new Error(ordinary.reason);
+  const [x, y, z] = fixture.sunDirection;
+  const colours = staticMeshPlacementInstanceColours(list, streams, stagedLocalToWorld(fixture), { gain: staticMeshOrdinaryLightGain(fixture.scaleGlow),
+    lights: ordinary.value }, { hour: fixture.hour, lightDirection: { x, y, z }, staticSunPlane: fixture.sunPlane as NativePlane });
+  return fixture.vertexIndices.map((_, position) => Array.from(colours.subarray(position * 3, position * 3 + 3)));
 }
 
 const rgbOf = (bgra: readonly number[]) => [bgra[2], bgra[1], bgra[0]];
+const tripleOf = ([x, y, z]: readonly number[]) => ({ x: x!, y: y!, z: z! });
 
 describe("ordinary light cache from the light record, FDynamicLight::Update 0x10674660 (RM-19)", () => {
   it.each(document.update.map(row => [row.lightType, row.levelTimeSeconds, row] as const))("LightType %i at %f level seconds gives the native colour plane",
@@ -175,52 +145,68 @@ describe("ordinary light cache from the light record, FDynamicLight::Update 0x10
 });
 
 describe("ordinary term of a whole light list (RM-19)", () => {
-  it("draws the pillar (actor 7732) and actor 1238, whose set mask bits all belong to the zero-colour lights 40 and 30", () => {
-    expect(staticMeshOrdinaryTermReason(lightListOf(pillarCase), recordsOf(pillarCase), environmentAt(pillarCase))).toBeNull();
-    expect(staticMeshOrdinaryTermReason(lightListOf(referenceThirtyCase), recordsOf(referenceThirtyCase), environmentAt(referenceThirtyCase))).toBeNull();
+  it("keeps no light for the pillar (actor 7732) and actor 1238, whose set mask bits all belong to the zero-colour lights 40 and 30", () => {
+    for (const fixture of [pillarCase, referenceThirtyCase]) {
+      expect(resolveStaticMeshOrdinaryTerm(stagedOrdinarySubsetOf(fixture).list, recordsOf(fixture), environmentAt(fixture))).toEqual(
+        { status: "resolved", value: [] });
+    }
   });
 
-  it("names the unstaged vertex positions for actor 1219, whose spotlights add colour", () => {
-    expect(staticMeshOrdinaryTermReason(lightListOf(spotlightCase), recordsOf(spotlightCase), environmentAt(spotlightCase))).toBe(
-      "static-mesh-ordinary-light-vertex-positions-unstaged");
+  it("keeps the spotlights 297 and 321 of actor 1219, whose masks set vertex bits and whose colour planes are lit", () => {
+    const term = resolveStaticMeshOrdinaryTerm(stagedOrdinarySubsetOf(spotlightCase).list, recordsOf(spotlightCase), environmentAt(spotlightCase));
+    if (term.status !== "resolved") throw new Error(term.reason);
+    expect(term.value.map(entry => [entry.light.colour, entry.light.sampler.position])).toEqual([297, 321].map(reference => {
+      const cache = spotlightCase.ordinaryLights.find(light => light.exportIndex === reference)!.cache;
+      return [cache.color38, cache.position];
+    }));
   });
 
   it("names an absent light record only when its mask sets a bit, and skips null references", () => {
-    const list = lightListOf(pillarCase);
-    const withoutLight40 = staticMeshOrdinaryLightRecords({ lights: pillarCase.ordinaryLights.filter(light => light.exportIndex !== 40).map(light => lightRecord(light)),
-      levelInfos: [levelInfo] });
-    expect(staticMeshOrdinaryTermReason(list, withoutLight40, environmentAt(pillarCase))).toBe("static-mesh-ordinary-light-record-absent:40");
-    const withoutLight30 = staticMeshOrdinaryLightRecords({ lights: pillarCase.ordinaryLights.filter(light => light.exportIndex !== 30).map(light => lightRecord(light)),
-      levelInfos: [levelInfo] });
-    expect(staticMeshOrdinaryTermReason(list, withoutLight30, environmentAt(pillarCase))).toBeNull();
+    const { list } = stagedOrdinarySubsetOf(pillarCase);
+    const without = (reference: number) => staticMeshOrdinaryLightRecords({ levelInfos: [levelInfo],
+      lights: pillarCase.ordinaryLights.filter(light => light.exportIndex !== reference).map(light => lightRecord(light)) });
+    expect(resolveStaticMeshOrdinaryTerm(list, without(40), environmentAt(pillarCase))).toEqual(
+      { status: "unresolved", reason: "static-mesh-ordinary-light-record-absent:40" });
+    expect(resolveStaticMeshOrdinaryTerm(list, without(30), environmentAt(pillarCase))).toEqual({ status: "resolved", value: [] });
     const nullReference = { ...list, ordinaryMasks: list.ordinaryMasks.map(mask => ({ ...mask, light: 0 })) };
-    expect(staticMeshOrdinaryTermReason(nullReference, recordsOf(pillarCase), environmentAt(pillarCase))).toBeNull();
+    expect(resolveStaticMeshOrdinaryTerm(nullReference, recordsOf(pillarCase), environmentAt(pillarCase))).toEqual({ status: "resolved", value: [] });
   });
 
   it("names a level brightness the records cannot resolve when a set bit needs a light colour", () => {
     const records = staticMeshOrdinaryLightRecords({ lights: pillarCase.ordinaryLights.map(light => lightRecord(light)), levelInfos: [] });
-    expect(staticMeshOrdinaryTermReason(lightListOf(pillarCase), records, environmentAt(pillarCase))).toBe("bsp-rebuild-level-info-count:0");
+    expect(resolveStaticMeshOrdinaryTerm(stagedOrdinarySubsetOf(pillarCase).list, records, environmentAt(pillarCase))).toEqual(
+      { status: "unresolved", reason: "bsp-rebuild-level-info-count:0" });
   });
 });
 
-describe("final instance colour: ordinary rebuild, then the hourly CPU term saturating-added (RM-19 integrated fixtures)", () => {
+describe("world samples of the ordinary rebuild from the staged LocalToWorld and source vertices (RM-19)", () => {
+  it.each(document.integrated.map(fixture => [fixture.actorExportIndex, fixture] as const))(
+    "actor %i reproduces every SampleIntensity position and SafeNormal argument bit for bit", (_, fixture) => {
+      const localToWorld = stagedLocalToWorld(fixture);
+      for (const sample of fixture.perLightSamples) {
+        const position = staticMeshWorldPosition(localToWorld, tripleOf(fixture.localPositions[String(sample.vertex)]!));
+        const normal = staticMeshWorldNormal(localToWorld.rows, tripleOf(fixture.localNormals[String(sample.vertex)]!));
+        expect([position.x, position.y, position.z]).toEqual(sample.worldPosition);
+        expect([normal.x, normal.y, normal.z]).toEqual(sample.worldNormal);
+      }
+    });
+});
+
+describe("final instance colour from staged data: ordinary rebuild, then the hourly CPU term saturating-added (RM-19 integrated fixtures)", () => {
   it("gives pillar vertices 0, 2 and 3 RGB 5 and vertex 4 RGB 44, all from the hourly term", () => {
-    expect(pillarCase.vertexIndices.map(vertex => ordinaryColourOf(pillarCase, vertex))).toEqual(pillarCase.vertexIndices.map(() => [0, 0, 0]));
-    expect(pillarCase.vertexIndices.map(vertex => finalColourOf(pillarCase, vertex))).toEqual([[5, 5, 5], [5, 5, 5], [5, 5, 5], [44, 44, 44]]);
-    expect(pillarCase.finalInstanceBGRA.map(rgbOf)).toEqual([[5, 5, 5], [5, 5, 5], [5, 5, 5], [44, 44, 44]]);
+    expect(stagedInstanceRgb(pillarCase)).toEqual(pillarCase.finalInstanceBGRA.map(rgbOf));
+    expect(stagedInstanceRgb(pillarCase)).toEqual([[5, 5, 5], [5, 5, 5], [5, 5, 5], [44, 44, 44]]);
   });
 
   it("gives actor 1238 instance 7097 vertex 4 RGB 120, where lights 30 and 40 both set the bit", () => {
-    expect(referenceThirtyCase.vertexIndices).toEqual([4]);
-    expect(contributingLights(referenceThirtyCase, 4)).toEqual([]);
-    expect(finalColourOf(referenceThirtyCase, 4)).toEqual(rgbOf(referenceThirtyCase.finalInstanceBGRA[0]!));
-    expect(finalColourOf(referenceThirtyCase, 4)).toEqual([120, 120, 120]);
+    expect(stagedInstanceRgb(referenceThirtyCase)).toEqual(referenceThirtyCase.finalInstanceBGRA.map(rgbOf));
+    expect(stagedInstanceRgb(referenceThirtyCase)).toEqual([[120, 120, 120]]);
   });
 
   it("gives actor 1219 instance 3919 the ordinary term alone: vertices 0 and 1 BGR 2,3,4 and vertices 2 and 3 BGR 1,1,2", () => {
     expect(spotlightCase.hourlyEntries).toEqual([]);
-    expect(spotlightCase.vertexIndices.map(vertex => finalColourOf(spotlightCase, vertex))).toEqual(spotlightCase.finalInstanceBGRA.map(rgbOf));
-    expect(spotlightCase.vertexIndices.map(vertex => finalColourOf(spotlightCase, vertex))).toEqual([[4, 3, 2], [4, 3, 2], [2, 1, 1], [2, 1, 1]]);
+    expect(stagedInstanceRgb(spotlightCase)).toEqual(spotlightCase.finalInstanceBGRA.map(rgbOf));
+    expect(stagedInstanceRgb(spotlightCase)).toEqual([[4, 3, 2], [4, 3, 2], [2, 1, 1], [2, 1, 1]]);
   });
 
   it("adds the hourly temporary stream onto the ordinary bytes and saturates at 255", () => {
