@@ -3,6 +3,7 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
 import type { RgbaBytes } from "../../../environment/model/nativeColourBytes";
+import { staticMeshDrawnComposition } from "../../../environment/model/nativeDrawLightingStates";
 import {
   createNativeMaterial, type LoadedNativeMaterial, type MaterialLighting, type NativeMaterial, type NativeMaterialUniforms,
 } from "../../../materials/ue2/babylon/material";
@@ -35,6 +36,7 @@ export interface StaticMeshPlacementLightingInspection {
   readonly heldReason: string | null;
   readonly ambient: RgbaBytes | null;
   readonly rebuildTrigger: { readonly status: "unresolved"; readonly reason: typeof staticMeshRebuildTriggerUnresolvedReason };
+  readonly composition: typeof staticMeshDrawnComposition;
   readonly probes: readonly StaticMeshLitPlacementProbe[];
 }
 
@@ -285,7 +287,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
         unlitPlacementReasons: countReasons(boundChunks.flatMap(chunk => chunk.unlitPlacementReasons)), rebuildCount,
         lastRebuildHour: latchedFrame?.status === "resolved" ? latchedFrame.sun.hour : null, heldReason,
         ambient: latchedFrame?.status === "resolved" ? latchedFrame.ambient : null,
-        rebuildTrigger: { status: "unresolved", reason: staticMeshRebuildTriggerUnresolvedReason },
+        rebuildTrigger: { status: "unresolved", reason: staticMeshRebuildTriggerUnresolvedReason }, composition: staticMeshDrawnComposition,
         probes: litPlacements.map(lit => ({ sourceActor: lit.placement.sourceActor, exportIndex: lit.placement.exportIndex, vertexZeroRgb: lit.vertexZeroRgb }))
           .sort((left, right) => left.exportIndex - right.exportIndex) };
       return { gap: load.gap, lighting, meshCount: slots.length, statusCounts, slots: slotInspections(slots) };

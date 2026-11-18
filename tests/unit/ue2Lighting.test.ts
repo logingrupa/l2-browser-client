@@ -38,7 +38,9 @@ afterEach(() => {
 describe("lightmap colour operation", () => {
   it("samples the lightmap on its own coordinates and scales it by the D3D operation before fog only when the material is lightmapped", () => {
     expect(LIGHTING_CONSTANTS.lightmapModulateScale).toMatchObject({ status: "confirmed-interlude", runtimeDefault: 1 });
-    expect(LIGHTING_CONSTANTS.lightmapModulate2xScale).toMatchObject({ status: "unconfirmed", runtimeDefault: 2 });
+    expect(LIGHTING_CONSTANTS.globalModulationModulate2xScale).toMatchObject({ id: "light.global-modulation-modulate2x-scale", status: "unconfirmed",
+      runtimeDefault: 2 });
+    expect(LIGHTING_CONSTANTS.globalModulationModulate2xScale.provenance).toMatch(/RM-10 static mesh vertex stage/);
     const plan = swatchMaterial().plan as CompiledMaterialStagePlan;
     const modulated = buildFragmentChain(plan, "lightmap-modulate"), doubled = buildFragmentChain(plan, "lightmap-modulate2x");
     const unlit = buildFragmentChain(plan, "unlit");

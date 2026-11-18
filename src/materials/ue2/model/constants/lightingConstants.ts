@@ -12,10 +12,10 @@ export const LIGHTING_CONSTANTS = {
     interludeEvidence: `${hourlyLightingReport}; D3DDrv.dll 05622dde 0x1000f090`,
     runtimeDefault: 1,
   },
-  lightmapModulate2xScale: {
-    id: "light.lightmap-modulate2x-scale",
+  globalModulationModulate2xScale: {
+    id: "light.global-modulation-modulate2x-scale",
     value: 2,
-    provenance: `${textureOperationHeader} D3DTOP_MODULATE2X (5) multiplies the two arguments and shifts left by one bit; ${hourlyLightingReport} claim d3d-modulation: the image-initialized global modulation opcode at D3DDrv.dll 0x1011c578 is 5, and a vendor 0x121a device writes 4, so the live opcode is d3d-device-live-state`,
+    provenance: `${textureOperationHeader} D3DTOP_MODULATE2X (5) multiplies the two arguments and shifts left by one bit; ${hourlyLightingReport} claim d3d-modulation: the image-initialized global modulation opcode at D3DDrv.dll 0x1011c578 is 5, and a vendor 0x121a device writes 4, so the live opcode is d3d-device-live-state. Two paths cite it: the lightmap stage of a non-UColorModifier material, and the RM-10 static mesh vertex stage MODULATE2X(material, vertex DIFFUSE) (verified-runtime-lighting.md, answer runtime-lighting-rm10.json cd6fbb66), inferred from the D3D9 fixed-function contract, not GPU output`,
     status: "unconfirmed",
     interludeEvidence: null,
     runtimeDefault: 2,

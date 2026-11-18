@@ -57,7 +57,15 @@ export const hourlyLightingUnresolvedItems = [
   { id: "d3d-programmable-composition", surface: "device", reason: "the GL2Shader vertex and pixel equations are not decoded, so no surface claims a final framebuffer colour" },
   { id: "d3d-device-live-state", surface: "device", reason: "the modulation opcode, device+0x4244 bit 0x02, GL2Shader, the light list and the inherited D3DRS_AMBIENT of the seamless fixed-function terrain path were not observed live" },
   { id: "d3d-universal-stage-number", surface: "device", reason: "the terrain and material stage count depends on the material path, so no single stage number holds" },
+  { id: "rm10-selected-shader", surface: "staticMesh", reason: "RM-10 logged no GL2Shader or selected vertex and pixel bytecode, and L2CompiledShader.bin holds four zero bytes, so the programmable final equation is not claimed" },
+  { id: "rm10-static-live-branch", surface: "staticMesh", reason: "RM-10 captured no live GL2Shader, device caps, cache flags, selected LOD or extra dynamic light list, so the CPU fixture branch is not proved to be the drawn one" },
+  { id: "rm10-live-device-state", surface: "staticMesh", reason: "RM-10 observed no live capability branch, stage number, active lights, material fallback, material source state or GPU precision; the fixed-function equations are a conditional API reading" },
+  { id: "rm10-final-gpu-colour", surface: "staticMesh", reason: "RM-10 proves the CPU instance colour only; the programmable shader output and device quantization of the final textured RGB are not observed" },
 ] as const;
+
+export const staticMeshDrawnComposition = {
+  status: "inferred-d3d9", reasons: ["rm10-selected-shader", "rm10-static-live-branch", "rm10-live-device-state", "rm10-final-gpu-colour"],
+} as const satisfies { readonly status: string; readonly reasons: readonly HourlyLightingUnresolvedItem[] };
 
 export type HourlyLightingUnresolvedItem = typeof hourlyLightingUnresolvedItems[number]["id"];
 

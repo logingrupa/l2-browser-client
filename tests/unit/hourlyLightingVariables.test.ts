@@ -81,7 +81,9 @@ describe("hourly lighting developer variables", () => {
       value: `1 of 1 placements hourly; ${staticMeshVisibilityProbeActor} vertex 0 0.5 (entries 3 > 4 at 0.5)` });
     expect(byName("lighting.actor.ambient")).toMatchObject({ status: "native" });
     expect(byName("lighting.device.finalShaderColour")).toMatchObject({ value: "d3d-programmable-composition", status: "unverified" });
-    expect(byName("lighting.unresolved").value.split(", ")).toHaveLength(13);
+    expect(byName("lighting.unresolved").value.split(", ")).toHaveLength(17);
+    expect(byName("lighting.staticMesh.colour0").value).toMatch(
+      /; composition inferred-d3d9 \(rm10-selected-shader, rm10-static-live-branch, rm10-live-device-state, rm10-final-gpu-colour\)$/);
     timeOfDay.dispose();
     attached.dispose();
   });

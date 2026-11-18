@@ -147,11 +147,11 @@ function emitExpression(builder: ChainBuilder, expression: ColourExpression, use
 
 const lightmapOperationScale = {
   "lightmap-modulate": LIGHTING_CONSTANTS.lightmapModulateScale.runtimeDefault,
-  "lightmap-modulate2x": LIGHTING_CONSTANTS.lightmapModulate2xScale.runtimeDefault,
+  "lightmap-modulate2x": LIGHTING_CONSTANTS.globalModulationModulate2xScale.runtimeDefault,
 } as const;
 
 function litColour(result: string, lighting: MaterialLighting): string {
-  if (isVertexLighting(lighting)) return `${result}.rgb * ${glslFloat(LIGHTING_CONSTANTS.lightmapModulate2xScale.runtimeDefault)} * ${litDiffuseVaryingName}`;
+  if (isVertexLighting(lighting)) return `${result}.rgb * ${glslFloat(LIGHTING_CONSTANTS.globalModulationModulate2xScale.runtimeDefault)} * ${litDiffuseVaryingName}`;
   if (!isLightmapLighting(lighting)) return `${result}.rgb`;
   return `${result}.rgb * ${glslFloat(lightmapOperationScale[lighting])} * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`;
 }

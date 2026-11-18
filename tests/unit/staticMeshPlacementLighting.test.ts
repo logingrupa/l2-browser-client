@@ -5,6 +5,7 @@ import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
+import { staticMeshDrawnComposition } from "../../src/environment/model/nativeDrawLightingStates";
 import type { NativePlane } from "../../src/environment/model/nativePlane";
 import type { LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { FOG_DISABLED, instanceColourAttributeName } from "../../src/materials/ue2/babylon/material";
@@ -79,17 +80,19 @@ function loadedProgram(materialId: string): LoadedNativeMaterial {
     texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
 }
 
+type VertexStreamsLoader = ReturnType<typeof vi.fn<() => Promise<StaticMeshVertexStreams>>>;
+
 interface PillarBinding {
   readonly scene: Scene;
   readonly binding: StaticMeshLibraryBinding;
   readonly frame: { current: StaticMeshHourlyLightingFrame };
-  readonly loadVertexStreams: ReturnType<typeof vi.fn>;
+  readonly loadVertexStreams: VertexStreamsLoader;
 }
 
-function pillarBinding(list: StaticMeshLightList, fixture: StaticMeshLightingFixture = fixtures[0]!): PillarBinding {
+function pillarBinding(list: StaticMeshLightList, fixture: StaticMeshLightingFixture = fixtures[0]!,
+  loadVertexStreams: VertexStreamsLoader = vi.fn(async () => pillarStreams())): PillarBinding {
   const engine = new NullEngine(), scene = new Scene(engine);
   const frame = { current: frameOf(fixture) };
-  const loadVertexStreams = vi.fn(async () => pillarStreams());
   const binding = bindStaticMeshLibraryMaterials({ scene, load: { listing: parsedListing, gap: null }, sessionSeed: 3,
     uniforms: () => ({ levelSeconds: 0, hour: fixture.hour, environmentType: 0, fog: FOG_DISABLED }), loadProgram: async materialId => loadedProgram(materialId),
     lightLists: { status: "staged", value: new Map([[list.actorExportIndex, list]]) }, hourlyLighting: () => frame.current, loadVertexStreams });
@@ -133,7 +136,7 @@ describe("static mesh hourly instance colour drawn per placement (RM-10)", () =>
     const fixture = fixtures[0]!;
     fixture.vertexIndices.forEach((vertex, position) => expect(instanceColourBytes(mesh, vertex)).toEqual([...fixtureRgb(fixture, position), 255]));
     expect(f.binding.inspection().lighting).toMatchObject({ litPlacements: 1, litMeshes: 1, unlitPlacementReasons: {}, ambient: [60, 60, 60, 255],
-      probes: [{ exportIndex: pillar.actorExportIndex, vertexZeroRgb: fixtureRgb(fixture, 0) }] });
+      composition: staticMeshDrawnComposition, probes: [{ exportIndex: pillar.actorExportIndex, vertexZeroRgb: fixtureRgb(fixture, 0) }] });
     expect(mesh.material?.name).toBe("UE2 material: SyntheticSwatch.SwatchFinalBlend");
     const ambient = f.binding.inspection().lighting.ambient!;
     const modulate2x = fixture.vertexIndices.map(vertex => Math.min(255, 2 * Math.min(255, instanceColourBytes(mesh, vertex)[0]! + ambient[0])));

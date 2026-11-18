@@ -110,7 +110,8 @@ function meshAndDeviceReadings(lighting: TileLightingRuntimeInspection): Record<
     "lighting.staticMesh.colour0": () => {
       const lit = lighting.staticMeshSlots.lighting;
       const unlit = Object.entries(lit.unlitPlacementReasons).map(([reason, count]) => `${reason} ${count}`).join(", ") || "none";
-      return unverifiedReading(`${lit.litPlacements} placements (${lit.litMeshes} meshes) drawn with the hourly instance colour; unlit: ${unlit}`);
+      return unverifiedReading(`${lit.litPlacements} placements (${lit.litMeshes} meshes) drawn with the hourly instance colour; unlit: ${unlit}; `
+        + `composition ${lit.composition.status} (${lit.composition.reasons.join(", ")})`);
     },
     "lighting.staticMesh.colour1": () => unverifiedReading(`${terms().staticMesh.colour1.drawn} (${terms().staticMesh.colour1.reasons.join(", ")})`),
     "lighting.staticMesh.instanceColour": () => unverifiedReading(terms().staticMesh.serializedInstanceColour),
@@ -159,7 +160,7 @@ const hourlyVariableSources: Readonly<Record<string, string>> = {
   "lighting.device.materialSourceBit": "device+0x4244 bit 0x02 makes COLOR1 the diffuse and ambient source",
   "lighting.device.lightList": "the enabled D3D light list of mesh and actor draws",
   "lighting.device.finalShaderColour": "the GL2Shader equations are not decoded; no surface claims a framebuffer colour",
-  "lighting.unresolved": "the 13 DB-7 unresolved items (nativeDrawLightingStates.ts)",
+  "lighting.unresolved": "the 13 DB-7 unresolved items and the 4 RM-10 composition items (nativeDrawLightingStates.ts)",
 };
 
 function hourlyReadings(lighting: TileLightingRuntimeInspection): Record<string, () => HourlyReading> {

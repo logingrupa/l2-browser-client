@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   globalModulationOperation, hourlyLightingUnresolvedItems, lightmapStageColourOperation, nativeDrawLightingStates, staticMeshColourStreams,
-  terrainRefreshThreshold,
+  staticMeshDrawnComposition, terrainRefreshThreshold,
 } from "../../src/environment/model/nativeDrawLightingStates";
 
 describe("native draw lighting states", () => {
@@ -26,12 +26,20 @@ describe("native draw lighting states", () => {
     expect(staticMeshColourStreams.authoredColour).toMatchObject({ declarationUsage: "COLOR1", status: "unresolved", reason: "d3d-device-live-state" });
   });
 
-  it("lists all 13 DB-7 unresolved items and the terrain refresh threshold as visible gaps", () => {
+  it("lists all 13 DB-7 unresolved items, the 4 RM-10 composition items and the terrain refresh threshold as visible gaps", () => {
     expect(hourlyLightingUnresolvedItems.map(item => item.id)).toEqual([
       "terrain-general-staticlight-sampleintensity", "terrain-full-runtime-map-reconstruction", "bsp-full-effect-attenuation", "bsp-shadow-slot-origin",
       "bsp-final-filtered-rgb", "bsp-live-cache-state", "ma-final-static-vertex", "ma-live-actor-fixture", "ma-scalar-field-name", "ma-temporal-light-types",
       "d3d-programmable-composition", "d3d-device-live-state", "d3d-universal-stage-number",
+      "rm10-selected-shader", "rm10-static-live-branch", "rm10-live-device-state", "rm10-final-gpu-colour",
     ]);
     expect(terrainRefreshThreshold).toMatchObject({ status: "unresolved", reason: "terrain-refresh-threshold-unresolved" });
+  });
+
+  it("marks the drawn static mesh composition as inferred from the D3D9 contract and lists each RM-10 reason as a static mesh item", () => {
+    expect(staticMeshDrawnComposition).toEqual({ status: "inferred-d3d9",
+      reasons: ["rm10-selected-shader", "rm10-static-live-branch", "rm10-live-device-state", "rm10-final-gpu-colour"] });
+    const staticMeshItems = hourlyLightingUnresolvedItems.filter(item => item.surface === "staticMesh").map(item => item.id);
+    for (const reason of staticMeshDrawnComposition.reasons) expect(staticMeshItems).toContain(reason);
   });
 });
