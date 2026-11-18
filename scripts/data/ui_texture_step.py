@@ -11,7 +11,7 @@ from interface_layout_adapter import INTERFACE_XDAT_PATH
 from lane_unit_outcomes import DECODE_FAILED_REASON_PREFIX, lane_relative_path, replace_step_gap_row
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX, TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX
 from native_store.catalog_record_replacement import catalog_with_records_replaced, catalog_without_records
-from native_store.catalog_writer import add_store_file, read_store_catalog, write_store
+from native_store.catalog_writer import StoreFileEntry, add_store_file_entry, read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN, read_gap_rows
 from native_store.store_paths import SHA256_PATTERN, STEP_NAME_PATTERN
 from reference_client_guard import ReferenceClientLockError
@@ -139,17 +139,22 @@ def native_source_gap_reason(provenance, reference):
 def converted_texture_record(request, conversion):
     archive_path = Path(conversion['file'])
     archive_sha256 = conversion['sha256']
-    if not SHA256_PATTERN.fullmatch(archive_sha256) or hashlib.sha256(archive_path.read_bytes()).hexdigest() != archive_sha256:
+    archive_bytes = archive_path.read_bytes()
+    if not SHA256_PATTERN.fullmatch(archive_sha256) or hashlib.sha256(archive_bytes).hexdigest() != archive_sha256:
         raise UiTextureStepError(f'converted archive {archive_path} differs from its reported SHA-256')
     asset_manifest = json.loads((archive_path.parent / 'asset.json').read_bytes())
     image_name = asset_manifest['image']['file']
     image_entry, image_bytes = pinned_archive_file(archive_path.parent, asset_manifest, image_name, request['reference'])
     _, provenance_bytes = pinned_archive_file(archive_path.parent, asset_manifest, PROVENANCE_FILE_NAME, request['reference'])
     gap_reason = native_source_gap_reason(json.loads(provenance_bytes), request['reference'])
-    record = {'id': UI_TEXTURE_ID_PREFIX + request['reference'], 'archive': f'/l2/{archive_sha256}/asset.l2asset', 'archiveSha256': archive_sha256,
-              'assetId': asset_manifest['id'], 'image': f'/l2/{archive_sha256}/{image_name}', 'imageBytes': len(image_bytes),
+    archive_relative = f'{archive_sha256}/asset.l2asset'
+    image_relative = f'{archive_sha256}/{image_name}'
+    record = {'id': UI_TEXTURE_ID_PREFIX + request['reference'], 'archive': f'/l2/{archive_relative}', 'archiveSha256': archive_sha256,
+              'assetId': asset_manifest['id'], 'image': f'/l2/{image_relative}', 'imageBytes': len(image_bytes),
               'imageSha256': image_entry['sha256'], 'source': {key: value for key, value in asset_manifest['source'].items() if key != 'path'}}
-    return record, {f'{archive_sha256}/asset.l2asset': archive_path.read_bytes(), f'{archive_sha256}/{image_name}': image_bytes}, gap_reason
+    store_file_entries = {archive_relative: StoreFileEntry(archive_relative, archive_bytes, archive_sha256),
+                          image_relative: StoreFileEntry(image_relative, image_bytes, image_entry['sha256'])}
+    return record, store_file_entries, gap_reason
 
 
 def convert_reference(request, converter):
@@ -176,9 +181,9 @@ def write_texture_records(output_root, conversions, gap_references, capacity):
     catalog = catalog_without_records(catalog, TEXTURES_CATALOG_SLICE, stale_gap_record_ids)
     catalog = catalog_with_records_replaced(catalog, TEXTURES_CATALOG_SLICE, [record for record, _ in conversions], capacity)
     store_files = {}
-    for _, files in conversions:
-        for relative, payload in files.items():
-            add_store_file(store_files, relative, payload)
+    for _, store_file_entries in conversions:
+        for entry in store_file_entries.values():
+            add_store_file_entry(store_files, entry)
     catalog[TEXTURES_CATALOG_SLICE] = sorted(catalog[TEXTURES_CATALOG_SLICE], key=lambda record: record['id'])
     write_store(output_root, store_files, before, canonical_json_bytes(catalog))
     return [{'path': f'l2/{relative}', 'sha256': expected_sha256, 'bytes': len(payload)}

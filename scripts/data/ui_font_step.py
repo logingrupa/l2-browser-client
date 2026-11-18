@@ -5,7 +5,7 @@ import struct
 
 from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import lane_relative_path
-from native_store.catalog_writer import add_store_file, read_store_catalog, validate_catalog_record, write_store
+from native_store.catalog_writer import add_store_file, add_store_file_entry, read_store_catalog, validate_catalog_record, write_store
 from native_store.verified_file_writes import sha256_hex
 from reference_client_guard import ReferenceClientLockError
 from native_store.catalog_record_replacement import catalog_with_records_replaced
@@ -147,8 +147,9 @@ def write_font_record(output_root, font_type, manifest_bytes, texture_files, cap
     catalog = catalog_with_records_replaced(catalog, FONTS_CATALOG_SLICE, [record], capacity)
     catalog[FONTS_CATALOG_SLICE] = sorted(catalog[FONTS_CATALOG_SLICE], key=lambda existing: existing['id'])
     store_files = {}
-    for relative, payload in {**texture_files, manifest_relative: manifest_bytes}.items():
-        add_store_file(store_files, relative, payload)
+    for entry in texture_files.values():
+        add_store_file_entry(store_files, entry)
+    add_store_file(store_files, manifest_relative, manifest_bytes)
     write_store(output_root, store_files, before, canonical_json_bytes(catalog))
     return record, [{'path': f'l2/{relative}', 'sha256': expected_sha256, 'bytes': len(payload)}
                     for relative, payload, expected_sha256 in sorted(store_files.values())]
@@ -181,7 +182,7 @@ def convert_font_texture(unit_plan, converter):
     if conversion is None:
         return outcome, None
     record, files = conversion
-    width, height = png_dimensions(files[record['image'][len('/l2/'):]])
+    width, height = png_dimensions(files[record['image'][len('/l2/'):]].payload)
     texture = unit_plan.entry['texture']
     if (width, height) != (texture['width'], texture['height']):
         raise UiFontStepError(f'converted {texture["object"]} is {width} x {height}, not the recipe {texture["width"]} x {texture["height"]}')

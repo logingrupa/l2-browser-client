@@ -10,12 +10,17 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
+sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from hash_reference_client_tree import canonical_json_bytes
 from native_store.gap_rows import read_gap_rows, read_gap_reason_list
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
+from native_store.verified_file_writes import StorePayloadIntegrityError
 from reference_client_guard import ReferenceClientLockError
+from support.flipped_rereads import payload_with_first_byte_flipped, rereads_of_files_named_flip_one_byte
 import ui_texture_step
+
+TEXTURE_ARCHIVE_NAME = 'asset.l2asset'
 
 INTERFACE_SHA256 = '1' * 64
 SYNTHETIC_PACKAGE_PATH = 'systextures/SyntheticUI.utx'
@@ -237,6 +242,31 @@ class ConvertWindowTexturesTests(unittest.TestCase):
                 self.assertIsNone(self.ledger().sealed_receipt('window:SyntheticStatusWnd'))
                 self.assertEqual(read_gap_rows(self.project_root, 'data-ui'), [])
                 self.assertFalse((self.output_root / 'catalog.json').exists())
+
+    def test_an_archive_whose_reread_flips_one_byte_is_stored_from_its_single_verified_read(self):
+        self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', ['SyntheticUI.Status.Plate'])], CENSUS, LOCK)
+        with rereads_of_files_named_flip_one_byte(TEXTURE_ARCHIVE_NAME) as read_counts_by_path:
+            self.convert()
+        self.assertEqual(list(read_counts_by_path.values()), [1])
+        [record] = json.loads((self.output_root / 'catalog.json').read_bytes())['textures']
+        stored_archive = (self.output_root / record['archive'].removeprefix('/l2/')).read_bytes()
+        self.assertEqual(hashlib.sha256(stored_archive).hexdigest(), record['archiveSha256'])
+
+    def test_a_converted_file_that_flips_one_byte_while_it_is_held_is_refused_before_any_store_write(self):
+        conversion = self.converter.convert({'kind': 'texture', 'package': 'SyntheticUI', 'object': 'SyntheticUI.Status.Plate'})
+        request = {'reference': 'SyntheticUI.Status.Plate'}
+        for held_file_name in (TEXTURE_ARCHIVE_NAME, 'texture.png'):
+            with self.subTest(held_file_name=held_file_name):
+                record, files, _ = ui_texture_step.converted_texture_record(request, conversion)
+                held_relative = f'{conversion["sha256"]}/{held_file_name}'
+                held_entry = files[held_relative]
+                flipped_payload = payload_with_first_byte_flipped(held_entry.payload)
+                held_files = {**files, held_relative: held_entry._replace(payload=flipped_payload)}
+                with self.assertRaises(StorePayloadIntegrityError) as refusal:
+                    ui_texture_step.write_texture_records(self.output_root, [(record, held_files)], [], 1)
+                self.assertEqual(str(refusal.exception), f'Store file {held_relative} payload changed in memory since verification: it hashes to '
+                                                         f'{hashlib.sha256(flipped_payload).hexdigest()} where {held_entry.expected_sha256} was verified')
+                self.assertFalse(self.output_root.exists())
 
     def test_a_reference_client_lock_error_propagates_and_leaves_the_window_unsealed(self):
         self.converter.failing_error = ReferenceClientLockError('systextures/SyntheticUI.utx differs from the reference client lock')
