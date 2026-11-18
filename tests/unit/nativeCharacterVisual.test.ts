@@ -14,6 +14,11 @@ import { sourceHeadingToWorldYaw, sourcePositionToWorld } from "../../src/world/
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
 import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
+import { nativeNpcCharacterProfile } from "../../src/runtime/sandboxNpcAppearances";
+import { servedPlayerCharacterProfile } from "../../src/runtime/sandboxCharacterAppearances";
+import { defaultNativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
+import type { NativeNpcProfile } from "../../src/assets/native/loadNativeNpcProfiles";
+import { musverenProfile } from "../support/nativeCatalogIndexFixtures";
 
 const initial: WorldEntity = { id: "fixture-player", kind: "local-player", displayName: "Fixture player", appearanceId: "fixture",
   health: 100, maximumHealth: 100, position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, animation: "idle" };
@@ -116,9 +121,9 @@ describe("native character presentation boundary", () => {
     expect(scene.transformNodes).toHaveLength(0);
   });
 
-  it("aligns a verified +X native facing axis with semantic movement in every horizontal direction", async () => {
+  it("aligns the converted actor +X facing axis with semantic movement in every horizontal direction", async () => {
     scene.useRightHandedSystem = true;
-    const { visual } = await create({ forwardAxis: Vector3.Right() });
+    const { visual } = await create();
     if (!visual.hasNativeModel) expect(visual.forwardDirection).toBeNull();
     await visual.ready;
     const placement = scene.getTransformNodeByName(`${initial.id}:native-actor-placement`)!;
@@ -176,15 +181,20 @@ describe("native character presentation boundary", () => {
     expect(scene.meshes).toHaveLength(0);
   });
 
-  it("faces source heading 0 along world +X and heading 16384 along world +Z for a +X native forward axis (CR-14)", async () => {
+  it("faces an NPC and a player profile alike: source heading 0 along world +X and heading 16384 along world +Z (CR-14)", async () => {
     scene.useRightHandedSystem = true;
-    const { visual } = await create({ forwardAxis: Vector3.Right() });
-    await visual.ready;
-    for (const [sourceHeading, sourceForward] of [[0, { x: 1, y: 0, z: 0 }], [16384, { x: 0, y: 1, z: 0 }]] as const) {
-      visual.root.rotation.y = sourceHeadingToWorldYaw(sourceHeading);
-      const { x, y, z } = sourcePositionToWorld(sourceForward);
-      const worldForward = new Vector3(x, y, z).normalize();
-      expect(Vector3.Dot(visual.forwardDirection!, worldForward)).toBeCloseTo(1, 7);
+    const asset = await nativeVisualFixture();
+    const npcProfile = { ...nativeNpcCharacterProfile({ ...musverenProfile, drawScale: 1 } as unknown as NativeNpcProfile, asset), clips: nativeVisualClips };
+    const playerProfile = { ...servedPlayerCharacterProfile(defaultNativePlayerProfile, asset), clips: nativeVisualClips };
+    for (const profile of [npcProfile, playerProfile]) {
+      const { visual } = await create(profile);
+      await visual.ready;
+      for (const [sourceHeading, sourceForward] of [[0, { x: 1, y: 0, z: 0 }], [16384, { x: 0, y: 1, z: 0 }]] as const) {
+        visual.root.rotation.y = sourceHeadingToWorldYaw(sourceHeading);
+        const { x, y, z } = sourcePositionToWorld(sourceForward);
+        const worldForward = new Vector3(x, y, z).normalize();
+        expect(Vector3.Dot(visual.forwardDirection!, worldForward)).toBeCloseTo(1, 7);
+      }
     }
   });
 

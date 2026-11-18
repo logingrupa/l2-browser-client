@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import { defaultNativePlayerProfile, type NativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
+import { convertedActorForwardAxis } from "../../src/assets/native/convertedActorForwardAxis";
 import { assetFixture } from "../fixtures/assetPackageFixture";
 
 export const fixturePlayerProfile: NativePlayerProfile = {
@@ -11,6 +12,10 @@ export const fixturePlayerProfile: NativePlayerProfile = {
   upperItems: [{ itemId: 22, catalogId: "female-equipment:0", sourceObject: "Fixture.Female", sourceSha256: "a".repeat(64) }],
   sourceEvidence: { fixture: true }, limitations: ["Synthetic fixture, not native acceptance."],
 };
+
+export function servedPlayerProfileRows(profiles: readonly unknown[]): unknown[] {
+  return profiles.map(profile => ({ forwardAxis: [...convertedActorForwardAxis], ...(profile as object) }));
+}
 
 export async function modelArchiveFixture(sourceObject: string, sourceSha256: string) {
   const fixture = await assetFixture("model", { source: { edition: "interlude", package: "Fixture", object: sourceObject, sha256: sourceSha256,

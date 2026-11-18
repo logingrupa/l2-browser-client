@@ -21,7 +21,7 @@ import { catalogWith } from "../support/nativeCatalogIndexFixtures";
 const loadedProfileId = "human-male-fighter";
 const loadedAppearanceId = `native-player:${loadedProfileId}`;
 const generatedProfile = { ...fixturePlayerProfile, id: "character-1", chargrpIndex: 1, catalogId: "character-model:1", upperItems: [],
-  forwardAxis: [1, 0, 0] as const, actorScale: [1, 2, 3] as const };
+  actorScale: [1, 2, 3] as const };
 
 function characterAppearanceSources(catalog = catalogWith({})) {
   return { catalog, playerProfiles: new Map([[generatedProfile.id, generatedProfile]]),
@@ -99,7 +99,6 @@ describe("spawn-character presentation through the catalog index", () => {
     expect(sources.characterProfiles.get("native-player:character-1")).toBe(registered);
     expect([...sources.characterProfiles.keys()]).toEqual(["native-player:character-1"]);
     expect(registered.clips).toEqual(generatedProfile.clips);
-    expect(registered.forwardAxis?.asArray()).toEqual([1, 0, 0]);
     expect(registered.actorScale?.asArray()).toEqual([1, 2, 3]);
     expect(typeof registered.asset).toBe("function");
   });

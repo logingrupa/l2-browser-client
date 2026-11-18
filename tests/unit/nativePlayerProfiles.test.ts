@@ -6,12 +6,12 @@ import { loadNativeActorCatalog } from "../../src/assets/native/loadNativeCatalo
 import { nativeAliasCoverage, nativeAliasCoverageText, nativeAnimationAliases } from "../../src/assets/native/nativeAnimationAliases";
 import { readAssetPackage, sha256 } from "../../src/assets/package/readAssetPackage";
 import { assetFixture } from "../fixtures/assetPackageFixture";
-import { fixturePlayerProfile } from "../support/nativeActorCatalogFixtures";
+import { fixturePlayerProfile, servedPlayerProfileRows } from "../support/nativeActorCatalogFixtures";
 
 const encoder = new TextEncoder();
 const profile = fixturePlayerProfile;
 async function manifest(profiles: unknown[] = [profile]) {
-  const bytes = encoder.encode(JSON.stringify({ schemaVersion: 1, kind: "native-player-profiles", profiles }));
+  const bytes = encoder.encode(JSON.stringify({ schemaVersion: 1, kind: "native-player-profiles", profiles: servedPlayerProfileRows(profiles) }));
   const manifestSha256 = await sha256(bytes);
   return { bytes, record: { id: "native-player-profiles", manifest: `/l2/player-profiles/${manifestSha256}/manifest.json`, manifestSha256, manifestBytes: bytes.length } };
 }
@@ -49,7 +49,7 @@ describe("native player profile loading and source boundaries", () => {
     if (field === "path") expect(fetcher).not.toHaveBeenCalled();
   });
   it.each([
-    { actorScale: [0, 1, 1] }, { forwardAxis: [0, 1, 0] }, { collisionRadius: -1 },
+    { actorScale: [0, 1, 1] }, { forwardAxis: [0, 1, 0] }, { forwardAxis: [0, 0, 1] }, { collisionRadius: -1 },
     { sourceUnitsPerMetre: 1 }, { limitations: [] }, { sourceEvidence: {} },
     { upperItems: [...profile.upperItems, ...profile.upperItems] },
   ])("rejects invalid source/presentation metadata %j", async patch => {
@@ -171,7 +171,7 @@ describe("native animation alias maps", () => {
   }
 
   it("keeps the TypeScript built-in male fighter equal to the base recipe the alias stager starts from", () => {
-    expect(base.profile).toEqual(defaultNativePlayerProfile);
+    expect(base.profile).toEqual(servedPlayerProfileRows([defaultNativePlayerProfile])[0]);
   });
   it("accepts the staged alias update for all four Human models with 45 of 46 aliases and no damage clip", async () => {
     const profiles = await load(recipe.profiles);

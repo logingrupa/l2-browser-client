@@ -1,5 +1,6 @@
 import { validatePackageModel, type AssetPackage } from "../package/readAssetPackage";
 import { fetchVerifiedNativeResource } from "./fetchVerifiedNativeResource";
+import { isConvertedActorForwardAxis } from "./convertedActorForwardAxis";
 import {
   boundAliasStatuses, isNativeAnimationAlias, requiredNativeAliases, unboundAliasStatuses,
   type NativeAliasEvidence, type NativeAliasEvidenceRow, type NativeAliasStatus, type NativePlayerClips,
@@ -14,7 +15,6 @@ export interface NativePlayerProfile {
   readonly sourceSha256: string;
   readonly clips: NativePlayerClips;
   readonly aliasEvidence?: NativeAliasEvidence;
-  readonly forwardAxis: readonly [number, number, number];
   readonly actorScale: readonly [number, number, number];
   readonly collisionRadius: number;
   readonly collisionHeight: number;
@@ -30,7 +30,7 @@ export const defaultNativePlayerProfile: NativePlayerProfile = {
   assetId: "interlude:assembly:MFighter-native-body-face0-hair0", sourceObject: "Fighter.MFighter_m001_u",
   sourceSha256: "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c",
   clips: { idle: "Wait_Hand_MFighter", run: "Run_Hand_MFighter", attack: "Atk01_Hand_MFighter", death: "Death_MFighter" },
-  forwardAxis: [1, 0, 0], actorScale: [1, 1, 1], collisionRadius: 9, collisionHeight: 23, sourceUnitsPerMetre: 100,
+  actorScale: [1, 1, 1], collisionRadius: 9, collisionHeight: 23, sourceUnitsPerMetre: 100,
   upperItems: [{ itemId: 22, catalogId: "fighter-equipment:0", sourceObject: "Fighter.MFighter_m001_u",
     sourceSha256: "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c" }],
   sourceEvidence: { scope: "Existing verified male slice, LineageWarrior.MFighter dimensions and preserved mesh-facing transform" },
@@ -147,9 +147,7 @@ function parseProfile(value: unknown): ParsedNativePlayerProfile {
   const unresolvedFields = parseUnresolvedFields(row.unresolved);
   const { collisionRadius, collisionHeight } = collisionDimensions(row, unresolvedFields);
   const clips = parseClips(row.clips);
-  const axis = row.forwardAxis;
-  if (!Array.isArray(axis) || axis.length !== 3 || !axis.every(v => typeof v === "number" && Number.isFinite(v)) ||
-    axis[1] !== 0 || Math.abs(Math.hypot(axis[0], axis[2]) - 1) > 1e-6) throw new Error("Native player forward axis must be a horizontal unit vector.");
+  if (!isConvertedActorForwardAxis(row.forwardAxis)) throw new Error("Native player forward axis must be the converted actor forward axis [1, 0, 0].");
   const scale = row.actorScale;
   if (!Array.isArray(scale) || scale.length !== 3 || !scale.every(v => typeof v === "number" && Number.isFinite(v) && v > 0 && v <= 100)) throw new Error("Native player actor scale is invalid.");
   if (row.sourceUnitsPerMetre !== 100 || !Array.isArray(row.upperItems) || row.upperItems.length > 64 ||
@@ -167,7 +165,7 @@ function parseProfile(value: unknown): ParsedNativePlayerProfile {
   const profileIdentity = { id: string(row.id, identity), name: string(row.name), catalogId: string(row.catalogId, identity),
     assetId: string(row.assetId), sourceObject: string(row.sourceObject, qualified), sourceSha256: string(row.sourceSha256, hash),
     clips, ...(row.aliasEvidence !== undefined ? { aliasEvidence: parseAliasEvidence(row.aliasEvidence, clips) } : {}),
-    forwardAxis: [axis[0], axis[1], axis[2]] as const, actorScale: [scale[0], scale[1], scale[2]] as const, sourceUnitsPerMetre: 100 as const,
+    actorScale: [scale[0], scale[1], scale[2]] as const, sourceUnitsPerMetre: 100 as const,
     upperItems, sourceEvidence, limitations: row.limitations.map((v: unknown) => string(v)), ...optionalChargrpIndex(row.chargrpIndex) };
   if (collisionRadius === null || collisionHeight === null) return { kind: "unresolved", id: profileIdentity.id, fields: unresolvedFields };
   return { kind: "resolved", profile: { ...profileIdentity, collisionRadius, collisionHeight } };
@@ -177,7 +175,7 @@ function matchesBuiltInMaleFighterIdentity(profile: NativePlayerProfile): boolea
   const builtIn = defaultNativePlayerProfile;
   return profile.catalogId === builtIn.catalogId && profile.assetId === builtIn.assetId && profile.sourceObject === builtIn.sourceObject &&
     profile.sourceSha256 === builtIn.sourceSha256 && profile.collisionRadius === builtIn.collisionRadius &&
-    profile.collisionHeight === builtIn.collisionHeight && profile.forwardAxis.every((value, index) => value === builtIn.forwardAxis[index]) &&
+    profile.collisionHeight === builtIn.collisionHeight &&
     profile.actorScale.every((value, index) => value === builtIn.actorScale[index]) &&
     requiredNativeAliases.every(alias => profile.clips[alias] === builtIn.clips[alias]) &&
     JSON.stringify(profile.upperItems) === JSON.stringify(builtIn.upperItems);

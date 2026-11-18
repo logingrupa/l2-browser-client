@@ -14,15 +14,18 @@ import { presentEquippedItem, type GeneratedCharacterProfile } from "./nativeEqu
 import { NativeEquippedBodyPartItems, type EquippedItemPresenter } from "./nativeEquippedBodyPartItems";
 import type { NativeEquippedItemSource } from "./nativeEquippedItemSource";
 import type { ActorMaterialPrograms } from "./actorMaterialPrograms";
+import { convertedActorForwardAxis } from "./convertedActorForwardAxis";
 
 export type NativeCharacterAssetLoader = (signal: AbortSignal) => Promise<AssetPackage>;
+
+const [convertedActorForwardX, , convertedActorForwardZ] = convertedActorForwardAxis;
+const yawAligningConvertedActorForwardWithAdapterHeadingZero = -Math.atan2(convertedActorForwardX, convertedActorForwardZ);
 
 export interface NativeCharacterProfile {
   readonly asset: AssetPackage | NativeCharacterAssetLoader;
   readonly clips: Readonly<Record<AnimationState | "death", string> & { walk?: string; specialAttack?: string }>;
   readonly upperItems?: ReadonlyMap<number, AssetPackage>;
   readonly actorScale?: Vector3;
-  readonly forwardAxis?: Vector3;
   readonly boneAnchors?: readonly { id: string; sourceObject: string; boneName: string }[];
   readonly generatedProfile?: GeneratedCharacterProfile;
 }
@@ -202,14 +205,9 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       if (profile.actorScale && !profile.actorScale.asArray().every(value => Number.isFinite(value) && value > 0)) {
         throw new Error("Native profile actor scale must be finite and positive.");
       }
-      if (profile.forwardAxis && (!profile.forwardAxis.asArray().every(Number.isFinite) || profile.forwardAxis.y !== 0 || profile.forwardAxis.lengthSquared() === 0)) {
-        throw new Error("Native profile forward axis must be finite, horizontal and nonzero.");
-      }
       placement = new TransformNode(`${initial.id}:native-actor-placement`, scene);
       placement.scaling.copyFrom(profile.actorScale ?? Vector3.OneReadOnly);
-      const assetForwardAxis = profile.forwardAxis ?? Vector3.Forward();
-      const yawAligningAssetForwardWithAdapterHeadingZero = -Math.atan2(assetForwardAxis.x, assetForwardAxis.z);
-      placement.rotation.y = yawAligningAssetForwardWithAdapterHeadingZero;
+      placement.rotation.y = yawAligningConvertedActorForwardWithAdapterHeadingZero;
       loaded.root.parent = placement;
       for (const name of Object.values(profile.clips)) if (!loaded.clips.some(clip => clip.name === name)) throw new Error(`Native profile clip ${name} is missing.`);
       const cuePlayers = [actionCuePreview?.bindActor(initial.id, asset), footstepPreview?.bindActor(initial.id, asset)]
@@ -259,11 +257,11 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       },
       sourceClock: () => initialized && actor && !disposed ? actor.clock() : null,
       get forwardDirection() {
-        if (!initialized || !actor || !profile!.forwardAxis) return null;
+        if (!initialized || !actor) return null;
         root.computeWorldMatrix(true);
-        actor?.root.parent?.computeWorldMatrix(true);
-        actor?.root.computeWorldMatrix(true);
-        return actor.root.getDirection(profile!.forwardAxis).normalize();
+        actor.root.parent?.computeWorldMatrix(true);
+        actor.root.computeWorldMatrix(true);
+        return actor.root.getDirection(Vector3.FromArray(convertedActorForwardAxis)).normalize();
       },
       setEntity(entity) {
         current = entity;

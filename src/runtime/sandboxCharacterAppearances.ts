@@ -24,7 +24,7 @@ export async function loadServedPlayerModel(catalog: NativeCatalog, profile: Nat
 }
 
 export function servedPlayerCharacterProfile(profile: NativePlayerProfile, asset: NativeCharacterProfile["asset"]): NativeCharacterProfile {
-  return { asset, clips: profile.clips, forwardAxis: Vector3.FromArray(profile.forwardAxis), actorScale: Vector3.FromArray(profile.actorScale) };
+  return { asset, clips: profile.clips, actorScale: Vector3.FromArray(profile.actorScale) };
 }
 
 export function sandboxCharacterAppearances(sources: SandboxCharacterAppearanceSources): SandboxAppearanceOfCharacterRecord {

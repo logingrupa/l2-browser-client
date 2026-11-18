@@ -4,6 +4,7 @@ import { vi } from "vitest";
 import { buildNativeCatalogIndex } from "../../src/assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../src/assets/native/readNativeCatalog";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
+import { servedPlayerProfileRows } from "./nativeActorCatalogFixtures";
 
 export const goldenStoreRoot = "tests/fixtures/golden/l2";
 export const nativeCoveragePath = "/l2/coverage.json";
@@ -24,7 +25,7 @@ export function npcProfileManifest(profiles: unknown[]) {
 }
 
 export function playerProfileManifest(profiles: unknown[]) {
-  return profileManifest("native-player-profiles", "player-profiles", { profiles });
+  return profileManifest("native-player-profiles", "player-profiles", { profiles: servedPlayerProfileRows(profiles) });
 }
 
 function coverageResponse(coverage: unknown): Response {

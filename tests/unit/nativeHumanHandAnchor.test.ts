@@ -86,7 +86,7 @@ describe("rig anchors cross the character presentation boundary", () => {
     const asset = await nativeVisualFixture({ skinned: true, nativeParentTranslation: [3, 4, 5] });
     const replacement = await nativeVisualFixture({ skinned: true, parts: ["Upper"], material: "leather", nativeParentTranslation: [3, 4, 5] });
     const visual = nativeCharacterFactory(new Map([["fixture", { asset, clips: nativeVisualClips, boneAnchors: bindings,
-      upperItems: new Map([[22, replacement]]), actorScale: new Vector3(1.2, 1.2, 1.2), forwardAxis: Vector3.Right() }]]), itemlessEquippedItemSource, unlistedActorMaterialPrograms)(scene, initial);
+      upperItems: new Map([[22, replacement]]), actorScale: new Vector3(1.2, 1.2, 1.2) }]]), itemlessEquippedItemSource, unlistedActorMaterialPrograms)(scene, initial);
     releases.push(() => visual.dispose()); return { visual, scene };
   }
 

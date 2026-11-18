@@ -13,7 +13,6 @@ describe("native slice runtime player profiles", () => {
     expect(profiles.get("native-human-fighter").clips).toEqual(defaultNativePlayerProfile.clips);
     expect(profiles.get("native-human-fighter").clips.idle).toBe("Wait_Hand_MFighter");
     expect(profiles.get("native-human-fighter").actorScale.asArray()).toEqual([...defaultNativePlayerProfile.actorScale]);
-    expect(profiles.get("native-human-fighter").forwardAxis.asArray()).toEqual([...defaultNativePlayerProfile.forwardAxis]);
     expect(runtimeBoundaryMocks.uis[0]!.adapter.getInitialState().find(entity => entity.id === "local-player"))
       .toMatchObject({ appearanceId: "native-human-fighter", displayName: "Human male fighter" });
   });
