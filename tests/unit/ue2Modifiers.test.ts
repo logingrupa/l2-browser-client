@@ -71,6 +71,19 @@ describe("texture coordinate modifiers", () => {
     expectMatrix(evaluated(program, "Synthetic.Panner", levelSeconds), [1, 0, levelSeconds * 0.5 * Math.cos(Math.PI / 2), 0, 1, levelSeconds * 0.5]);
   });
 
+  it.each([[0, 0], [1, 0.002], [60, 0.12], [500, 1]])("TexPanner 0x105df3e0 with PanRate 0.002 and no PanDirection shifts U by %f s to %f and V by 0", (levelSeconds, shift) => {
+    const program = programWith([modifier("Synthetic.Panner", "Engine.TexPanner", [field("PanRate", 0.002)])]);
+    expectMatrix(evaluated(program, "Synthetic.Panner", levelSeconds), [1, 0, shift, 0, 1, 0]);
+  });
+
+  it("wraps the TexPanner shift at 1024 by 1024 * frac(dir * q / 1024), also for a negative direction", () => {
+    const panner = (yaw: number) => programWith([modifier("Synthetic.Panner", "Engine.TexPanner", [field("PanRate", 1), field("PanDirection", rotator(0, yaw, 0), "authored", "raw")])]);
+    expectMatrix(evaluated(panner(0), "Synthetic.Panner", 1030.5), [1, 0, 6.5, 0, 1, 0]);
+    expectMatrix(evaluated(panner(32768), "Synthetic.Panner", 3), [1, 0, 1021, 0, 1, 0]);
+    expect(TEXTURE_COORDINATE_CONSTANTS.pannerForm).toMatchObject({ status: "confirmed-interlude", interludeEvidence: "Engine.dll 4dd2f63c UTexPanner::GetMatrix 0x105df3e0",
+      runtimeDefault: { wrapPeriod: 1024 } });
+  });
+
   it("TexRotator turns about UOffset / USize for fixed, constant and oscillating rotation", () => {
     const rotatorNode = (rotationType: string, extra: FixtureProgramField[]) => programWith([modifier("Synthetic.Rotator", "Engine.TexRotator", [
       field("TexRotationType", enumValue(0, rotationType)), field("Rotation", rotator(0, 8192, 0), "authored", "raw"),

@@ -2,7 +2,8 @@ import type { ReferenceConstantRow } from "../../../../shared/referenceConstant"
 import { materialNotes, texOscillatorTriggeredReplay } from "./materialNotes";
 
 const oscillatorEvidence = `Engine.dll 4dd2f63c UTexOscillatorTriggered::GetMatrix 0x1030b94c jumps to 0x105e1270, which calls UTexOscillator::GetMatrix 0x1030e98f, body 0x105df780; Engine.u 9b04ff5c; ${texOscillatorTriggeredReplay}`;
-const chainOrderEvidence = `D3DDrv.dll 05622dde 0x10011ca0 visits the outer modifier before its Material at +0x578 and accumulates identity (0x10007630) * current.GetMatrix(t) on the CPU path; ${texOscillatorTriggeredReplay}`;
+const pannerForm = { translation: "1024 * frac(dir * t * PanRate / 1024), dir = (cos(Pitch) cos(Yaw), cos(Pitch) sin(Yaw))", wrapPeriod: 1024 } as const;
+const chainOrderEvidence =`D3DDrv.dll 05622dde 0x10011ca0 visits the outer modifier before its Material at +0x578 and accumulates identity (0x10007630) * current.GetMatrix(t) on the CPU path; ${texOscillatorTriggeredReplay}`;
 
 export const TEXTURE_COORDINATE_CONSTANTS = {
   chainOrder: {
@@ -15,11 +16,11 @@ export const TEXTURE_COORDINATE_CONSTANTS = {
   },
   pannerForm: {
     id: "uv.panner",
-    value: "translate by t * PanRate * (cos(Pitch) cos(Yaw), cos(Pitch) sin(Yaw))",
-    provenance: `${materialNotes} uv.modifiers: TexPanner translates by t * PanRate * (dir.x, dir.y), dir the PanDirection rotator as a unit vector; lineage2js/src/materials/mesh-static-material/shader/shader-mesh-static.vs:407-444`,
-    status: "unconfirmed",
-    interludeEvidence: null,
-    runtimeDefault: "translate by t * PanRate * (cos(Pitch) cos(Yaw), cos(Pitch) sin(Yaw))",
+    value: pannerForm,
+    provenance: `RM-5 sky-colours-by-hour.json 8519638b...acb3, claim audit verified-sky-hour-colours.md: UTexPanner::GetMatrix (export thunk 0x10302400, UTexPanner vtable +0xa8) takes dir = FRotator::Vector(PanDirection +0x584) and q = PanRate (+0x590) * time, then du = 1024 * frac(dir.X * q / 1024) and dv = 1024 * frac(dir.Y * q / 1024) (1/1024 at 0x108d2218, 1024 at 0x108d2208, Core appFloor) into M[2][0] and M[2][1] of an identity at +0x594; no other input and no ZoneInfo read. The D3D route 0x10011ca0 passes the main viewport level TimeSeconds, the presentation levelSeconds here`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll 4dd2f63c UTexPanner::GetMatrix 0x105df3e0",
+    runtimeDefault: pannerForm,
   },
   rotatorComponent: {
     id: "uv.rotator-component",

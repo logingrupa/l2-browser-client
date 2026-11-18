@@ -23,6 +23,7 @@ const fullTurn = 2 * Math.PI;
 const rotatorComponent = TEXTURE_COORDINATE_CONSTANTS.rotatorComponent.runtimeDefault;
 const rotatorOscillationUnitsPerTurn = TEXTURE_COORDINATE_CONSTANTS.rotatorOscillationUnitsPerTurn.runtimeDefault;
 const triggeredOscillatorStartTriggeredTime = TEXTURE_COORDINATE_CONSTANTS.triggeredOscillatorStartState.runtimeDefault;
+const pannerWrapPeriod = TEXTURE_COORDINATE_CONSTANTS.pannerForm.runtimeDefault.wrapPeriod;
 
 export function multiplyTextureCoordinateMatrices(outer: TextureCoordinateMatrix, inner: TextureCoordinateMatrix): TextureCoordinateMatrix {
   const [a, b, c, d, e, f] = outer;
@@ -45,11 +46,15 @@ function centreOf(node: MaterialProgramNode, context: TextureCoordinateContext):
   return [centre(readNumberField(node, "UOffset"), context.textureWidth), centre(readNumberField(node, "VOffset"), context.textureHeight)];
 }
 
+function pannerWrappedShift(directionComponent: number, distance: number): number {
+  return pannerWrapPeriod * fraction(directionComponent * distance / pannerWrapPeriod);
+}
+
 export function texPannerMatrix(node: MaterialProgramNode, levelSeconds: number): TextureCoordinateMatrix {
   const direction = readRotatorField(node, "PanDirection");
   const pitch = rotatorUnitsToRadians(direction.pitch), yaw = rotatorUnitsToRadians(direction.yaw);
-  const distance = levelSeconds * readNumberField(node, "PanRate");
-  return [1, 0, distance * Math.cos(pitch) * Math.cos(yaw), 0, 1, distance * Math.cos(pitch) * Math.sin(yaw)];
+  const distance = readNumberField(node, "PanRate") * levelSeconds;
+  return [1, 0, pannerWrappedShift(Math.cos(pitch) * Math.cos(yaw), distance), 0, 1, pannerWrappedShift(Math.cos(pitch) * Math.sin(yaw), distance)];
 }
 
 function rotationAbout(angle: number, centreU: number, centreV: number): TextureCoordinateMatrix {
