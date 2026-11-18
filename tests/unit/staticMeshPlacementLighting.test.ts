@@ -174,6 +174,27 @@ describe("static mesh hourly instance colour drawn per placement (RM-10)", () =>
     expect(sibling.geometry!.getIndices()).toHaveLength(pillar.vertexCount);
   });
 
+  it("drops a chunk removed while its vertex streams load, so the chunk id binds its new meshes when it returns", async () => {
+    const pendingStreams: ((streams: StaticMeshVertexStreams) => void)[] = [];
+    const loadVertexStreams: VertexStreamsLoader = vi.fn(() => new Promise<StaticMeshVertexStreams>(resolve => { pendingStreams.push(resolve); }));
+    const f = pillarBinding(sunOnlyPillarList(), fixtures[0]!, loadVertexStreams);
+    const { sourceActor, exportIndex, fields } = pillarPlacement();
+    const removedMesh = pillarMesh(f.scene, "pillar removed");
+    const removedMaterial = removedMesh.material;
+    const removedAdd = f.binding.addChunk("chunk-1-2", [staticMeshPlacementSurfacesFixture(sourceActor, exportIndex, [removedMesh], fields)]);
+    await vi.waitFor(() => expect(loadVertexStreams).toHaveBeenCalledTimes(1));
+    f.binding.removeChunk("chunk-1-2");
+    pendingStreams[0]!(pillarStreams());
+    await removedAdd;
+    expect(f.binding.inspection().lighting.litPlacements).toBe(0);
+    expect(removedMesh.material).toBe(removedMaterial);
+    const returnedMesh = pillarMesh(f.scene, "pillar returned");
+    await f.binding.addChunk("chunk-1-2", [staticMeshPlacementSurfacesFixture(sourceActor, exportIndex, [returnedMesh], fields)]);
+    expect(f.binding.inspection().lighting).toMatchObject({ litPlacements: 1, litMeshes: 1 });
+    expect(returnedMesh.material?.name).toBe("UE2 material: SyntheticSwatch.SwatchFinalBlend");
+    expect(instanceColourBytes(returnedMesh, 0)).toEqual([...fixtureRgb(fixtures[0]!, 0), 255]);
+  });
+
   it.each<[string, StaticMeshLightList, Partial<NativeTileChunkPlacement>, string]>([
     ["an actor without bSunAffect", pillarList({ ordinaryLightVertexMask: new Uint8Array(5), sunAffect: { status: "staged", value: 0 } }), {},
       "rm10-static-ambient-fallback-producer"],

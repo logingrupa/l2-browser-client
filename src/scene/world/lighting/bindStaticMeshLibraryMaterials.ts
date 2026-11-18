@@ -153,6 +153,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
   const litMaterials = new Set<NativeMaterial>();
   const pendingStreams = new Map<string, Promise<StaticMeshVertexStreams>>();
   const chunks = new Map<string, BoundStaticMeshChunk>();
+  const pendingChunkTokens = new Map<string, object>();
   const sourceObjectByMesh = new WeakMap<AbstractMesh, string | null>();
   let latchedFrame: StaticMeshHourlyLightingFrame | null = null, rebuildCount = 0, heldReason: string | null = null;
   const createdMaterial = async (programMaterialId: string, lighting: MaterialLighting) => {
@@ -245,6 +246,8 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
   return {
     async addChunk(chunkId, placements) {
       if (lifetime.signal.aborted || chunks.has(chunkId)) return;
+      const chunkToken = {};
+      pendingChunkTokens.set(chunkId, chunkToken);
       if (latchedFrame === null) latchFrame();
       const slots = new Map<AbstractMesh, BoundStaticMeshSlot & { readonly libraryMaterial: Material | null }>();
       for (const mesh of placements.flatMap(surfaces => surfaces.meshes)) slots.set(mesh, await boundSlot(mesh));
@@ -264,13 +267,18 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
         litPlacements.push(lit);
       }
       lifetime.signal.throwIfAborted();
+      if (pendingChunkTokens.get(chunkId) !== chunkToken) return;
+      pendingChunkTokens.delete(chunkId);
       for (const slot of slots.values()) {
         const material = slot.mesh instanceof Mesh ? litMeshMaterials.get(slot.mesh) ?? slot.libraryMaterial : slot.libraryMaterial;
         if (material !== null) slot.mesh.material = material;
       }
       chunks.set(chunkId, { slots: [...slots.values()], litPlacements, unlitPlacementReasons });
     },
-    removeChunk(chunkId) { chunks.delete(chunkId); },
+    removeChunk(chunkId) {
+      pendingChunkTokens.delete(chunkId);
+      chunks.delete(chunkId);
+    },
     update(lightingDirty) {
       if (!lightingDirty && latchedFrame !== null) return;
       latchFrame();
@@ -297,6 +305,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
       lifetime.abort();
       scene.onBeforeRenderObservable.remove(observer);
       chunks.clear();
+      pendingChunkTokens.clear();
       for (const nativeMaterial of readyMaterials.values()) nativeMaterial.dispose();
       readyMaterials.clear();
       litMaterials.clear();
