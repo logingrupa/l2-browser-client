@@ -5,6 +5,7 @@ import faulthandler
 import multiprocessing
 import signal
 import sys
+import traceback
 from typing import NamedTuple
 
 from native_store.interprocess_lock import hold_lane_in_use_part_until_process_end
@@ -53,6 +54,11 @@ class TileStepsOutcome(NamedTuple):
     preflights: list
 
 
+def write_failed_step_traceback(tile_id, step, error):
+    sys.stderr.write(f'tile {tile_id} step {step} failed\n' + ''.join(traceback.format_exception(error)))
+    sys.stderr.flush()
+
+
 class TileStepRun:
     def __init__(self, project_root, step_runner, preflight, step_seal_checks):
         self.project_root, self.step_runner, self.preflight, self.step_seal_checks = project_root, step_runner, preflight, step_seal_checks
@@ -78,6 +84,7 @@ class TileStepRun:
                 raise StepSealMissingError(f'step {step} of {tile_unit_key(tile_id)} reported pass without a ledger seal')
             return row
         except Exception as error:
+            write_failed_step_traceback(tile_id, step, error)
             return failed_step_row(tile_id, step, source_identity, error, evidence)
 
     def run_tile(self, tile_id, source_identity, step_names, blocking_earlier_row, earlier_tile_stopped):
