@@ -108,7 +108,9 @@ def visibility_entry_arrays(group, entries, hours=None):
     return arrays
 
 
-def static_mesh_light_list_arrays(light_lists):
+def static_mesh_light_list_arrays(light_lists, light_list_sun_affect):
+    if len(light_list_sun_affect) != len(light_lists):
+        raise ValueError(f'{len(light_list_sun_affect)} sun affect values for {len(light_lists)} static mesh light lists')
     scene = [entry for light_list in light_lists for entry in light_list.scene_lights]
     environment = [entry for light_list in light_lists for entry in light_list.environment_lights]
     environment_hours = [slot_center_hour(slot, len(light_list.environment_lights))
@@ -116,6 +118,7 @@ def static_mesh_light_list_arrays(light_lists):
     return [array('SMLL.actorExportIndex', 'int32', [light_list.actor_export_index for light_list in light_lists]),
             array('SMLL.instanceExportIndex', 'int32', [light_list.instance_export_index for light_list in light_lists]),
             array('SMLL.colorCount', 'uint32', [light_list.color_count for light_list in light_lists]),
+            array('SMLL.sunAffect', 'int32', light_list_sun_affect),
             array('SMLL.sceneStart', 'uint32', prefix_starts(len(light_list.scene_lights) for light_list in light_lists)),
             array('SMLL.environmentStart', 'uint32', prefix_starts(len(light_list.environment_lights) for light_list in light_lists)),
             *visibility_entry_arrays('SMSC', scene), array('SMSC.applied', 'int32', [entry.applied for entry in scene]),

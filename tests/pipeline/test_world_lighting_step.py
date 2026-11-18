@@ -29,7 +29,8 @@ from world.tile_step_registry import TILE_STEP_NAMES
 from world.light_actors import ClassChains, LightingActor, read_lighting_actors, read_static_mesh_light_lists
 from world.lighting_payload import bsp_lightmap_arrays, static_mesh_light_list_arrays, terrain_lighting_arrays, typed_payload_byte_count
 from world.lighting_step import (APPLIED_LIGHTING_RULES, LIGHTING_STEP_ALGORITHM_VERSION, LIGHTING_STEP_NAME, class_chain_unresolved_reasons,
-                                 lighting_unit, load_lighting_rules, water_volume_links)
+                                 lighting_unit, load_lighting_rules, static_mesh_light_list_sun_affect, water_volume_links)
+from world.actor_field_values import ActorField
 from world.raw_map_step import read_tile_map_lock_record
 from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.terrain_lighting import read_terrain_sector_lighting
@@ -41,6 +42,7 @@ RULE_FIELDS = {'id', 'value', 'provenance', 'status', 'interludeEvidence', 'runt
 METADATA = {'sourceSha256': '0' * 64, 'converterVersion': 'lighting_step.py:1'}
 SQUARE_UVS = ((0.0, 0.0), (0.25, 0.0), (0.25, 0.25), (0.0, 0.25))
 DB7_EXPECTATIONS_PATH = ROOT / 'tests/fixtures/environment/hourly-lighting-db7-converter-expectations.json'
+RM10_STATIC_FIXTURES_PATH = ROOT / 'tests/fixtures/environment/runtime-lighting-rm10-static-fixtures.json'
 SUN_ZONES = (lightmap_zone(False), lightmap_zone(True))
 
 
@@ -182,12 +184,23 @@ class LightingActorTests(unittest.TestCase):
         self.assertEqual([(entry.light_reference, entry.visibility_bits, entry.applied) for entry in light_lists[0].scene_lights], list(SCENE_LIGHTS))
         self.assertEqual([(entry.light_reference, entry.visibility_bits, entry.applied) for entry in light_lists[0].environment_lights],
                          list(ENVIRONMENT_LIGHTS))
-        named = arrays_by_name(static_mesh_light_list_arrays(light_lists))
+        named = arrays_by_name(static_mesh_light_list_arrays(light_lists, (SUN_AFFECTED,)))
         self.assertEqual((named['SMLL.actorExportIndex'].values, named['SMLL.instanceExportIndex'].values), ((9,), (4,)))
+        self.assertEqual(named['SMLL.sunAffect'].values, (SUN_AFFECTED,))
         self.assertEqual(named['SMLL.colorCount'].values, (len(INSTANCE_COLOURS) // 4,))
         self.assertFalse({'SMIC.bytes', 'SMIC.revision'} & set(named))
         self.assertEqual((named['SMSC.light'].values, bytes(named['SMSC.bits'].values)), ((1, 2), b'\x05\x0a\x01'))
         self.assertEqual((named['SMSC.bitStart'].values, named['SMEN.hour'].values), ((0, 1, 3), (12.0,)))
+        with self.assertRaisesRegex(ValueError, '0 sun affect values for 1 static mesh light lists'):
+            static_mesh_light_list_arrays(light_lists, ())
+
+    def test_each_light_list_takes_the_bsunaffect_of_its_actor_and_an_unread_field_stays_unresolved(self):
+        package = mock.Mock(exports=[{'classObject': 'Engine.StaticMeshActor'}] * 3)
+        light_lists = [mock.Mock(actor_export_index=index) for index in (1, 2, 3)]
+        fields = [ActorField('bSunAffect', True, 'authored', 'Engine.Actor'), ActorField('bSunAffect', False, 'class-default', 'Engine.Actor'),
+                  ActorField('bSunAffect', None, 'unresolved', None)]
+        with mock.patch('world.lighting_step.serialized_actor_values'), mock.patch('world.lighting_step.resolved_actor_field', side_effect=fields):
+            self.assertEqual(static_mesh_light_list_sun_affect(package, light_lists, None), (SUN_AFFECTED, NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED))
 
     def test_terrain_sector_shadow_maps_and_light_bits_keep_their_stored_bytes(self):
         sector = read_terrain_sector_lighting(self.package, 5)
@@ -242,7 +255,7 @@ class LightingActorTests(unittest.TestCase):
 class LightingRegistrationTests(unittest.TestCase):
     def test_the_step_kind_and_reasons_are_registered(self):
         self.assertIn(LIGHTING_STEP_NAME, TILE_STEP_NAMES)
-        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 6)
+        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 7)
         self.assertIn('lighting', load_tile_manifest_vocabulary().resource_kinds)
         patterns = load_gap_reason_patterns()
         for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large',
@@ -309,6 +322,17 @@ class RealClientLightmapTests(unittest.TestCase):
         self.assertEqual(len(light_list.scene_lights), expected['sceneLightCount'])
         self.assertEqual([{'light': entry.light_reference, 'maskHex': entry.visibility_bits.hex(), 'flag': entry.applied}
                           for entry in light_list.environment_lights], expected['environmentLights'])
+
+    def test_the_rm10_pillar_actor_7732_is_sun_affected(self):
+        from native_assets_lib.class_defaults import ReferenceClientClassScripts
+        from native_store.store_paths import lane_work_root
+        from world.light_actors import read_static_mesh_light_list
+        from world.static_placement import ClassDefaults
+        from world.world_lane_names import WORLD_LANE_NAME
+        pillar = json.loads(RM10_STATIC_FIXTURES_PATH.read_text(encoding='utf-8'))['pillar']
+        light_list = read_static_mesh_light_list(self.package, pillar['actorExportIndex'], pillar['instanceExportIndex'])
+        class_defaults = ClassDefaults(lane_work_root(ROOT, WORLD_LANE_NAME), ReferenceClientClassScripts(REFERENCE_CLIENT))
+        self.assertEqual(static_mesh_light_list_sun_affect(self.package, [light_list], class_defaults), (SUN_AFFECTED,))
 
     def test_every_lit_node_of_20_21_has_uvs_inside_its_record_rectangle(self):
         from world.lighting_payload import lightmap_node_ranges
