@@ -4,7 +4,7 @@ from pathlib import Path
 from native_assets import implementation_hash
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import add_store_file
+from native_store.catalog_writer import StoreFileEntry, add_store_file_entry
 from native_store.verified_file_writes import sha256_hex
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.store_file_publish import publish_store_files
@@ -136,13 +136,13 @@ def surface_materials(identities, sources):
 
 def write_chunk_glbs(project_root, chunk_glbs):
     store_root = lane_store_root(project_root, WORLD_LANE_NAME)
-    files = {chunk_bsp_store_path(sha256_hex(glb)): glb for glb in chunk_glbs.values()}
     store_files = {}
-    for relative, payload in files.items():
-        add_store_file(store_files, relative, payload)
+    for glb in chunk_glbs.values():
+        glb_sha256 = sha256_hex(glb)
+        add_store_file_entry(store_files, StoreFileEntry(chunk_bsp_store_path(glb_sha256), glb, glb_sha256))
     publish_store_files(store_root, store_files)
-    return [{'path': (store_root / relative).relative_to(store_root.parent).as_posix(), 'sha256': sha256_hex(payload), 'bytes': len(payload)}
-            for relative, payload in sorted(files.items())]
+    return [{'path': (store_root / entry.relative).relative_to(store_root.parent).as_posix(), 'sha256': entry.expected_sha256,
+             'bytes': len(entry.payload)} for entry in sorted(store_files.values())]
 
 
 def surface_material_files(outcomes):

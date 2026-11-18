@@ -154,7 +154,7 @@ def mesh_requests(read_movers):
 
 def model_glb(outcome):
     model_file = outcome.model_record['model']['file']
-    return outcome.store_files[model_file.casefold()][1]
+    return outcome.store_files[model_file.casefold()].payload
 
 
 def tile_mover_entry(mover, collision):
