@@ -10,6 +10,8 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT / 'scripts'))
 sys.path.insert(0, str(REPOSITORY_ROOT / 'tests' / 'pipeline'))
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
+from native_environment import build_products
+from reference_client_guard import require_reference_client
 from synthetic_class_scripts import link_world_class_default_cache
 from world.level_model import read_level_model
 from world.level_zones import read_level_zones
@@ -24,6 +26,7 @@ RECORDS_ARRAY_NAME = 'RECS.canonicalJson'
 LIGHTING_RESOURCE_KIND = 'lighting'
 FOG_INFO_TILE_ID = '20_21'
 TERRAIN_ZONE_TILE_ID = '15_22'
+ENVIRONMENT_SETUP_FILE = 'Env.int'
 
 
 def sha256_of(data):
@@ -64,6 +67,12 @@ def converter_zone_records(client_root, tile_id):
         shutil.rmtree(work_root, ignore_errors=True)
 
 
+def converted_environment_fog_setup(client_root):
+    path, env_int_sha256 = require_reference_client(client_root).require_equal_file_with_sha256(f'system/{ENVIRONMENT_SETUP_FILE}')
+    time_tables = json.loads(build_products({ENVIRONMENT_SETUP_FILE: path.read_bytes()})['time-tables.json'])
+    return time_tables['setup']['fog'], {'envIntSha256': env_int_sha256, 'reader': 'scripts/native_environment.py build_products time-tables.json setup.fog'}
+
+
 def main():
     parser = argparse.ArgumentParser(description='Writes the fog worked-case fixture from converted lighting records and the converter zone reader.')
     parser.add_argument('--store-root', type=Path, required=True)
@@ -73,7 +82,8 @@ def main():
     fog_info_zones, fog_info_zone_source = converter_zone_records(arguments.client_root, FOG_INFO_TILE_ID)
     terrain_records, terrain_source = converted_lighting_records(arguments.store_root, TERRAIN_ZONE_TILE_ID)
     terrain_zones, terrain_zone_source = converter_zone_records(arguments.client_root, TERRAIN_ZONE_TILE_ID)
-    fixture = {'schemaVersion': 1, 'kind': 'fog-worked-cases', 'tiles': {
+    environment_fog, environment_fog_source = converted_environment_fog_setup(arguments.client_root)
+    fixture = {'schemaVersion': 1, 'kind': 'fog-worked-cases', 'environmentFog': {'setup': environment_fog, 'source': environment_fog_source}, 'tiles': {
         FOG_INFO_TILE_ID: {'fogInfos': fog_info_records['fogInfos'], 'zones': fog_info_zones,
                            'source': {'fogInfos': fog_info_source, 'zones': fog_info_zone_source}},
         TERRAIN_ZONE_TILE_ID: {'fogInfos': terrain_records['fogInfos'], 'zones': terrain_zones,

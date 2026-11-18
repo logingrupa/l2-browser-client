@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
+import { parseNativeTimeTables } from "../../src/environment/parseNativeTimeTables";
+import type { EnvironmentFogRanges } from "../../src/materials/ue2/model/fog";
 import type { TileVisibilityFrame } from "../../src/scene/world/bspVisibility/core/tileVisibilityFrame";
 import { zoneSetOf } from "../../src/scene/world/bspVisibility/core/zoneSet";
 import { decodeTileLightingRecords, type TileLightingRecords } from "../../src/scene/world/lighting/tileLightingRecords";
+import { timeTablesDocument } from "./worldTimeOfDayFixture";
 
 export type FogWorkedCaseTile = "15_22" | "20_21";
 
@@ -17,10 +20,18 @@ interface FogWorkedCaseTileRecords {
 }
 
 const fixturePath = new URL("../fixtures/fog/fog-worked-cases.json", import.meta.url);
-const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as { readonly tiles: Record<FogWorkedCaseTile, FogWorkedCaseTileRecords> };
+const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as { readonly environmentFog: { readonly setup: unknown };
+  readonly tiles: Record<FogWorkedCaseTile, FogWorkedCaseTileRecords> };
 
 export function fogWorkedCaseTileRecords(tile: FogWorkedCaseTile): FogWorkedCaseTileRecords {
   return structuredClone(fixture.tiles[tile]);
+}
+
+export function convertedEnvironmentFogRanges(): EnvironmentFogRanges {
+  const document = timeTablesDocument();
+  const parsed = parseNativeTimeTables({ ...document, setup: { ...document.setup, fog: fixture.environmentFog.setup } });
+  if (parsed.status !== "complete") throw new Error(`The converted Env.int fog setup is incomplete: ${parsed.unresolved.join(", ")}.`);
+  return parsed.timeTables.fogRanges;
 }
 
 export function decodedFogWorkedCaseRecords(tileRecords: FogWorkedCaseTileRecords): TileLightingRecords {

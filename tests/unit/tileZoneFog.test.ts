@@ -4,8 +4,8 @@ import { FOG_CONSTANTS } from "../../src/materials/ue2/model/constants/fogConsta
 import { evaluateLocalFogList, fogInfoColourAtHour, fogInfoWeight, fogRangeSlot, type L2FogInfoRecord } from "../../src/materials/ue2/model/fog";
 import { environmentFogBaseline } from "../../src/scene/world/cameraEnvironment";
 import { decodeFogInfos } from "../../src/scene/world/lighting/tileFogInfoRecords";
+import { convertedEnvironmentFogRanges } from "../support/fogWorkedCaseFixture";
 import { fogInfo9236Record } from "../support/tileLightingFixture";
-import { shippedEnvironmentFogRanges } from "../support/worldTimeOfDayFixture";
 
 const [decoded] = decodeFogInfos([fogInfo9236Record()]);
 const fogInfo = decoded!.record!;
@@ -36,16 +36,16 @@ describe("decoded L2FogInfo of 20_21 export 9236", () => {
 
 describe("L2FogInfo selection by the Q12 answer", () => {
   it("matches the replay checker example: d 3500, hour 5.5, CR 4 gives start 1024, end 5096 and colour (107, 112, 108)", () => {
-    expect(environmentFogBaseline(shippedEnvironmentFogRanges, 4)).toEqual({ colourBytes: [127, 127, 127], startSourceUnits: 2048, endSourceUnits: 8192 });
+    expect(environmentFogBaseline(convertedEnvironmentFogRanges(), 4)).toEqual({ colourBytes: [127, 127, 127], startSourceUnits: 2048, endSourceUnits: 8192 });
     expect(ENVIRONMENT_ENGINE_CONSTANTS.fogBaselineColour.value.slice(0, 3)).toEqual([127, 127, 127]);
-    expect(evaluateLocalFogList([fogInfo], environmentFogBaseline(shippedEnvironmentFogRanges, 4), { hour: 5.5, terrainClipRange: 4, referencePosition: atDistance(3500) }))
+    expect(evaluateLocalFogList([fogInfo], environmentFogBaseline(convertedEnvironmentFogRanges(), 4), { hour: 5.5, terrainClipRange: 4, referencePosition: atDistance(3500) }))
       .toEqual({ list: { status: "blended", record: { colourBytes: [107, 112, 108], startSourceUnits: 1024, endSourceUnits: 5096 } },
         retentionDistanceDecides: false, orderCanChangeResult: false });
   });
 
   it("selects FogRange1 below CR 5, FogRange2 from 5, and FogRange5 from 8, on each side of a boundary", () => {
     expect([4.999, 5, 5.999, 6, 6.999, 7, 7.999, 8, 12].map(fogRangeSlot)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4]);
-    expect(environmentFogBaseline(shippedEnvironmentFogRanges, 8)).toMatchObject({ startSourceUnits: 4 * 2048, endSourceUnits: 10 * 2048 });
+    expect(environmentFogBaseline(convertedEnvironmentFogRanges(), 8)).toMatchObject({ startSourceUnits: 4 * 2048, endSourceUnits: 10 * 2048 });
   });
 
   it("takes the fog colour of the first hour pair that holds the hour, both ends inclusive, wraps the last pair past 24 and is black without a match", () => {
@@ -65,14 +65,14 @@ describe("L2FogInfo selection by the Q12 answer", () => {
 
   it("blends each actor in list order over the earlier result without normalising", () => {
     const near: L2FogInfoRecord = { ...fogInfo, affectRange: { min: 10000, max: 20000 } };
-    const both = evaluateLocalFogList([near, near], environmentFogBaseline(shippedEnvironmentFogRanges, 4), { hour: 6, terrainClipRange: 4, referencePosition: atDistance(0) });
+    const both = evaluateLocalFogList([near, near], environmentFogBaseline(convertedEnvironmentFogRanges(), 4), { hour: 6, terrainClipRange: 4, referencePosition: atDistance(0) });
     expect(both.list).toEqual({ status: "blended", record: { colourBytes: [107, 114, 97], startSourceUnits: 0, endSourceUnits: 2000 } });
     expect(both.orderCanChangeResult).toBe(false);
   });
 
   it("names the export-order assumption only when two contributing actors could blend differently in another order", () => {
     const inputs = { hour: 6, terrainClipRange: 4, referencePosition: atDistance(3500) };
-    const baseline = environmentFogBaseline(shippedEnvironmentFogRanges, 4);
+    const baseline = environmentFogBaseline(convertedEnvironmentFogRanges(), 4);
     const partial: L2FogInfoRecord = { ...fogInfo, affectRange: { min: 3000, max: 4000 } };
     expect(evaluateLocalFogList([partial, partial], baseline, inputs).orderCanChangeResult).toBe(true);
     const fullOtherRange: L2FogInfoRecord = { ...fogInfo, affectRange: { min: 5000, max: 6000 }, fogRanges: fogInfo.fogRanges.map(range => ({ ...range, max: range.max + 1 })) };
@@ -83,7 +83,7 @@ describe("L2FogInfo selection by the Q12 answer", () => {
 
   it("keeps an actor beyond AffectRange.Max inside TextureDistance at weight 0, so the list blends the grey preset instead of emptying", () => {
     const inputs = { hour: 6, terrainClipRange: 8, referencePosition: atDistance(5000) };
-    const baseline = environmentFogBaseline(shippedEnvironmentFogRanges, 8);
+    const baseline = environmentFogBaseline(convertedEnvironmentFogRanges(), 8);
     expect(evaluateLocalFogList([fogInfo], baseline, inputs))
       .toEqual({ list: { status: "empty" }, retentionDistanceDecides: true, orderCanChangeResult: false });
     const textured: L2FogInfoRecord = { ...fogInfo, textureDistance: 6000 };

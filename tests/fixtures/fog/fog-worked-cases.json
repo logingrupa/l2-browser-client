@@ -1,4 +1,126 @@
 {
+ "environmentFog": {
+  "setup": {
+   "FogSpeed": {
+    "key": "FogSpeed",
+    "raw": "1",
+    "recordIndex": 63,
+    "source": "file",
+    "unresolved": null,
+    "value": 1.0,
+    "valueSourceOffset": 1027
+   },
+   "endRanges": [
+    {
+     "index": 1,
+     "key": "EndRange1",
+     "raw": "4.0",
+     "recordIndex": 58,
+     "source": "file",
+     "unresolved": null,
+     "value": 4.0,
+     "valueSourceOffset": 952
+    },
+    {
+     "index": 2,
+     "key": "EndRange2",
+     "raw": "5.0",
+     "recordIndex": 59,
+     "source": "file",
+     "unresolved": null,
+     "value": 5.0,
+     "valueSourceOffset": 967
+    },
+    {
+     "index": 3,
+     "key": "EndRange3",
+     "raw": "6.0",
+     "recordIndex": 60,
+     "source": "file",
+     "unresolved": null,
+     "value": 6.0,
+     "valueSourceOffset": 982
+    },
+    {
+     "index": 4,
+     "key": "EndRange4",
+     "raw": "7.0",
+     "recordIndex": 61,
+     "source": "file",
+     "unresolved": null,
+     "value": 7.0,
+     "valueSourceOffset": 997
+    },
+    {
+     "index": 5,
+     "key": "EndRange5",
+     "raw": "10.0",
+     "recordIndex": 62,
+     "source": "file",
+     "unresolved": null,
+     "value": 10.0,
+     "valueSourceOffset": 1012
+    }
+   ],
+   "section": "FOG",
+   "startRanges": [
+    {
+     "index": 1,
+     "key": "StartRange1",
+     "raw": "1.0",
+     "recordIndex": 53,
+     "source": "file",
+     "unresolved": null,
+     "value": 1.0,
+     "valueSourceOffset": 869
+    },
+    {
+     "index": 2,
+     "key": "StartRange2",
+     "raw": "1.5",
+     "recordIndex": 54,
+     "source": "file",
+     "unresolved": null,
+     "value": 1.5,
+     "valueSourceOffset": 886
+    },
+    {
+     "index": 3,
+     "key": "StartRange3",
+     "raw": "2.0",
+     "recordIndex": 55,
+     "source": "file",
+     "unresolved": null,
+     "value": 2.0,
+     "valueSourceOffset": 903
+    },
+    {
+     "index": 4,
+     "key": "StartRange4",
+     "raw": "2.5",
+     "recordIndex": 56,
+     "source": "file",
+     "unresolved": null,
+     "value": 2.5,
+     "valueSourceOffset": 920
+    },
+    {
+     "index": 5,
+     "key": "StartRange5",
+     "raw": "4.0",
+     "recordIndex": 57,
+     "source": "file",
+     "unresolved": null,
+     "value": 4.0,
+     "valueSourceOffset": 937
+    }
+   ]
+  },
+  "source": {
+   "envIntSha256": "972439ef9087daaadcbb3179a988c61a5fa16848c6cd257414690c72873eb587",
+   "reader": "scripts/native_environment.py build_products time-tables.json setup.fog"
+  }
+ },
  "kind": "fog-worked-cases",
  "schemaVersion": 1,
  "tiles": {

@@ -3,13 +3,12 @@ import { skyLayerColour } from "../../src/environment/model/nativeEnvironmentCol
 import { FOG_UNRESOLVED } from "../../src/materials/ue2/model/fog";
 import { cameraEnvironmentGaps, computeCameraEnvironment, type FogEnvironment } from "../../src/scene/world/cameraEnvironment";
 import { readDayNightLoadedTables } from "../support/dayNightFixtures";
-import { decodedFogWorkedCaseRecords, fogWorkedCaseTileRecords, frameInZone, zoneIndexOfActor } from "../support/fogWorkedCaseFixture";
-import { shippedEnvironmentFogRanges } from "../support/worldTimeOfDayFixture";
+import { convertedEnvironmentFogRanges, decodedFogWorkedCaseRecords, fogWorkedCaseTileRecords, frameInZone, zoneIndexOfActor } from "../support/fogWorkedCaseFixture";
 
 const rm1Hour = 12.078453;
 const settledType0 = { oldType: 0, targetType: 0, weight: 0 };
 const tables = readDayNightLoadedTables();
-const fogEnvironment: FogEnvironment = { hour: rm1Hour, fogRanges: shippedEnvironmentFogRanges,
+const fogEnvironment: FogEnvironment = { hour: rm1Hour, fogRanges: convertedEnvironmentFogRanges(),
   hazeColour: skyLayerColour(tables, settledType0, "HazeringColor", rm1Hour) };
 const tileRecords = fogWorkedCaseTileRecords("15_22");
 const zoneInfo0 = zoneIndexOfActor(tileRecords, "15_22.ZoneInfo0");

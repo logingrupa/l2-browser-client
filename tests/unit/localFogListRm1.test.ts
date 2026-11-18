@@ -4,15 +4,14 @@ import { fogInfoWeight } from "../../src/materials/ue2/model/fog";
 import { cameraEnvironmentGaps, computeCameraEnvironment } from "../../src/scene/world/cameraEnvironment";
 import type { TileLightingRecords } from "../../src/scene/world/lighting/tileLightingRecords";
 import { readDayNightLoadedTables } from "../support/dayNightFixtures";
-import { decodedFogWorkedCaseRecords, fogWorkedCaseTileRecords, frameInZone, zoneIndexOfActor } from "../support/fogWorkedCaseFixture";
-import { shippedEnvironmentFogRanges } from "../support/worldTimeOfDayFixture";
+import { convertedEnvironmentFogRanges, decodedFogWorkedCaseRecords, fogWorkedCaseTileRecords, frameInZone, zoneIndexOfActor } from "../support/fogWorkedCaseFixture";
 
 const rm1Hour = 12.3;
 const rm1Pawn = { x: 9181.81, y: 119378.66, z: -3673.31 };
 const tileRecords = fogWorkedCaseTileRecords("20_21");
 const records = decodedFogWorkedCaseRecords(tileRecords);
 const cameraZone = zoneIndexOfActor(tileRecords, "20_21.ZoneInfo40");
-const fogEnvironment = { hour: rm1Hour, fogRanges: shippedEnvironmentFogRanges,
+const fogEnvironment = { hour: rm1Hour, fogRanges: convertedEnvironmentFogRanges(),
   hazeColour: skyLayerColour(readDayNightLoadedTables(), { oldType: 0, targetType: 0, weight: 0 }, "HazeringColor", rm1Hour) };
 
 function environmentOf(fogRecords: TileLightingRecords) {
