@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  environmentColour, environmentLightPlane, environmentScale, nativeFogBaseline, skyLayerColour,
+  environmentColour, environmentLightPlane, environmentScale, skyLayerColour,
 } from "../../src/environment/model/nativeEnvironmentColours";
 import type { NativeEnvironmentBlend } from "../../src/environment/model/nativeEnvironmentManager";
 import {
@@ -64,11 +64,5 @@ describe("sky layer, plane and scale getters", () => {
   it("reads scale from the settled target table only", () => {
     expect(environmentScale(tables, settled(1, 0.1), "MoonScale", 12)).toEqual({ status: "sampled", value: 2 });
     expect(environmentScale(tables, settled(9, 1), "SunScale", 12)).toEqual({ status: "unwritten" });
-  });
-});
-
-describe("fog baseline", () => {
-  it("holds the constant fog baseline and leaves local hour fog unresolved", () => {
-    expect(nativeFogBaseline).toEqual({ colour: [127, 127, 127, 255], localHourFog: { status: "unresolved", reason: "local-hour-fog-unresolved" } });
   });
 });

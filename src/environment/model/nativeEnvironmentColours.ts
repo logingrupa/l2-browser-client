@@ -1,4 +1,3 @@
-import { ENVIRONMENT_ENGINE_CONSTANTS } from "./nativeEnvironmentEngineConstants";
 import type { NativeEnvironmentBlend } from "./nativeEnvironmentManager";
 import type { BlackStartColourSection, HsvLightSection, NativeEnvironmentTables, NativeTimeColourSection, ScaleSection, SkyLayerColourSection } from "./nativeEnvironmentTypeTables";
 import { lerpPlanes, zeroPlane, type NativePlane } from "./nativePlane";
@@ -10,15 +9,9 @@ export type EnvironmentResult<Value, Reason extends string = never> =
   | EnvironmentTransitionGap
   | { readonly status: "unresolved"; readonly reason: Reason };
 
-const { fogBaselineColour } = ENVIRONMENT_ENGINE_CONSTANTS;
 const defaultEnvironmentType = 0;
 const blackStart: RgbBytes = [0, 0, 0];
 const transitionGap: EnvironmentTransitionGap = { status: "unresolved", reason: "env-color-transition-unresolved" };
-
-export const nativeFogBaseline = {
-  colour: fogBaselineColour.value,
-  localHourFog: { status: "unresolved", reason: "local-hour-fog-unresolved" },
-} as const;
 
 function resolved<Value>(value: Value): { readonly status: "resolved"; readonly value: Value } {
   return { status: "resolved", value };

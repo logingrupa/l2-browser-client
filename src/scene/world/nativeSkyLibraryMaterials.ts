@@ -3,7 +3,7 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 import {
-  createNativeMaterial, FOG_DISABLED, type LoadedNativeMaterial, type NativeMaterial, type NativeMaterialUniforms,
+  createNativeMaterial, type LoadedNativeMaterial, type NativeMaterial, type NativeMaterialUniforms,
 } from "../../materials/ue2/babylon/material";
 import { decodeNativeJsonResource } from "./loadNativeSection";
 import { hasExactKeys, isPlainRecord } from "./nativeManifestRecordGuards";
@@ -146,10 +146,6 @@ function inspectSkySurface(surface: NativeSkySurface): NativeSkySurfaceInspectio
     reasons: surface.reasons };
 }
 
-function skyUniformsWithoutFog(materialUniforms: () => NativeMaterialUniforms): NativeMaterialUniforms {
-  return { ...materialUniforms(), fog: FOG_DISABLED };
-}
-
 export async function bindNativeSkyLibraryMaterials(settings: NativeSkyLibrarySettings): Promise<NativeSkyLibraryBinding> {
   const { scene, materialUniforms } = settings;
   const surfaces: NativeSkySurface[] = [];
@@ -172,7 +168,7 @@ export async function bindNativeSkyLibraryMaterials(settings: NativeSkyLibrarySe
   }
   const writeFrame = (uniforms: () => NativeMaterialUniforms) => {
     environmentColours?.write();
-    const frameUniforms = skyUniformsWithoutFog(uniforms);
+    const frameUniforms = uniforms();
     for (const surface of compiled) surface.library.update(frameUniforms);
   };
   if (materialUniforms !== null) writeFrame(materialUniforms);

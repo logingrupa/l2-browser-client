@@ -3,6 +3,7 @@ import type { FogFamily } from "./blendFactorTypes";
 import { materialNotes } from "./materialNotes";
 
 const fogAnswer = "Q12 replay-verified l2foginfo-runtime.json 77cffb57...c465 (Engine.dll, D3DDrv.dll, Engine.u, Env.int, 20_21.unr lock-equal)";
+const fogScopeAnswer = "RM-4 replay-verified fog-draw-scope.json b93571c0...c2ee4 (Engine.dll, Core.dll, D3DDrv.dll, Engine.u, Env.int, 15_22.unr, 20_21.unr lock-equal)";
 
 const materialFogFamilies = {
   finalBlend: ["fog-colour", "neutral-grey", "fog-colour", "black", "black", "black", "black", "black", null],
@@ -55,41 +56,65 @@ const fogConstantRows = {
   },
   sourcePrecedence: {
     id: "fog.source-precedence",
-    value: ["volume", "local-fog-list", "camera-zone"],
-    provenance: `${fogAnswer}: a physics volume with its fog flag sets fog directly; else a non-empty local L2FogInfo list blends over the Env.int preset; else ZoneInfo DistanceFog is the fallback`,
+    value: ["volume", "local-fog-list", "terrain-zone-environment", "camera-zone"],
+    provenance: `${fogAnswer} and ${fogScopeAnswer}: a physics volume with its fog flag sets fog directly; else a non-empty local L2FogInfo list blends over the Env.int preset; else with an empty list a ZoneInfo with bDistanceFog and bTerrainZone takes the Env.int haze colour at the hour over the Env.int preset; else ZoneInfo DistanceFog is the fallback; alpha never gates enable. Reading the +0x3d8 bits 0x04 and 0x08 as bTerrainZone and bDistanceFog is not re-derived from the Engine.u bool layout`,
     status: "confirmed-interlude",
-    interludeEvidence: "Engine.dll FLevelSceneNode::Render 0x1065e940",
-    runtimeDefault: ["volume", "local-fog-list", "camera-zone"],
+    interludeEvidence: "Engine.dll FLevelSceneNode::Render 0x1065e940, setters 0x1065f96a and 0x1065f9ba",
+    runtimeDefault: ["volume", "local-fog-list", "terrain-zone-environment", "camera-zone"],
   },
   terrainClipRange: {
     id: "fog.terrain-clip-range",
-    value: null,
-    provenance: `${fogAnswer}: the FogRange slot follows the imported GL2TerrainCR (< 5 FogRange1 to >= 8 FogRange5); its runtime value and producer are unresolved`,
-    status: "unknown",
-    interludeEvidence: null,
-    runtimeDefault: null,
+    value: 8,
+    provenance: `${fogScopeAnswer}: Option.ini [ClippingRange] Terrain=8.000000 is read in UEngine::Init and clamped to [1, 16]; ModifyGlobalClippingRange 0x10589df0 keeps the origin value with IsKeepMinFrameRate=False; the 15_22 capture shows FogRange5. This is the configured state; the live GL2TerrainCR is unmeasured`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll ModifyGlobalClippingRange 0x10589df0",
+    runtimeDefault: 8,
   },
   fadeReferencePosition: {
     id: "fog.fade-reference-position",
-    value: null,
-    provenance: `${fogAnswer}: the fade 0x10444560 measures from a reference position held in the unnamed viewport field +0x3bc; which position that is stays unresolved`,
-    status: "unknown",
-    interludeEvidence: null,
-    runtimeDefault: null,
+    value: "possessed-pawn-location",
+    provenance: `${fogScopeAnswer}: 0x1065ef77 reads viewport+0x3c -> Actor+0x3bc (Controller.Pawn) and measures the fade 0x10444560 from Pawn+0x1bc (Location), else from the viewport actor Location; the camera position is not used. The client takes the adapter local-player position; its height against Pawn Location is unmeasured`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll 0x1065ef77",
+    runtimeDefault: "possessed-pawn-location",
   },
   localListProducer: {
     id: "fog.local-list-producer",
+    value: "al2foginfo-tick-add-unique",
+    provenance: `${fogScopeAnswer}: AL2FogInfo::Tick 0x10444d10 runs AddUnique 0x104446c0 (pointer-equality search plus Add, no sort, no distance test) into level+0x74 -> +0x18c, and FLevelSceneNode::Render blends the list in index order`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll AL2FogInfo::Tick 0x10444d10, AddUnique 0x104446c0",
+    runtimeDefault: "al2foginfo-tick-add-unique",
+  },
+  localListOrder: {
+    id: "fog.local-list-order",
+    value: "export-order",
+    provenance: `assumption: ${fogScopeAnswer} leaves the actor tick order unresolved, so the list follows map export order; the runtime names the assumption only when two contributing actors could blend differently in another order`,
+    status: "unconfirmed",
+    interludeEvidence: null,
+    runtimeDefault: "export-order",
+  },
+  localListRetention: {
+    id: "fog.local-list-retention",
+    value: "distance <= AffectRange.Max or distance < TextureDistance",
+    provenance: `${fogScopeAnswer}: retention 0x106560f0 keeps an actor when d <= AffectRange.Max (+0x3c0) or d < [+0x3ec] (0x10652540); the weight is unchanged. Reading +0x3ec as TextureDistance is not re-derived`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll 0x106560f0",
+    runtimeDefault: "distance <= AffectRange.Max or distance < TextureDistance",
+  },
+  skySceneRoute: {
+    id: "fog.sky-scene-route",
     value: null,
-    provenance: `${fogAnswer}: FLevelSceneNode::Render loops the local fog list at level+0x74 -> +0x18c in index order; which L2FogInfo actors fill it, and in which order, stays unresolved`,
+    provenance: `${fogScopeAnswer}: the sky scene 0x10660000 inherits the level fog through PushState, RenderLevel and PopState when !GIsEditor && GIsL2Seamless && GL2SharedSky, and otherwise runs FLevelSceneNode::Render for the sky zone; the runtime values of GIsL2Seamless and GL2SharedSky are unresolved`,
     status: "unknown",
     interludeEvidence: null,
     runtimeDefault: null,
   },
 } as const satisfies Record<string, ReferenceConstantRow<unknown>>;
 
-export const FOG_CONSTANTS: Omit<typeof fogConstantRows, "terrainClipRange" | "fadeReferencePosition" | "localListProducer"> & {
-  readonly terrainClipRange: ReferenceConstantRow<number | null>;
-  readonly fadeReferencePosition: ReferenceConstantRow<"camera" | null>;
-  readonly localListProducer: ReferenceConstantRow<"tile-fog-infos-in-export-order" | null>;
+export type SkySceneFogRoute = "inherit-level" | "own-zone";
+
+export const FOG_CONSTANTS: Omit<typeof fogConstantRows, "skySceneRoute"> & {
+  readonly skySceneRoute: ReferenceConstantRow<SkySceneFogRoute | null>;
 } = fogConstantRows;
 

@@ -22,7 +22,7 @@ import type { TileVisibilityRuntimeInspection } from "./bspVisibility/attachTile
 import type { TileVisibilityBinding } from "./bspVisibility/bindTileVisibility";
 import type { TileLightingGapInspection, TileLightingRuntimeInspection } from "./lighting/attachTileLighting";
 import type { MapEmitterPlacementInspection } from "./tileMapEmitterPlacements";
-import type { NativeMaterialUniforms } from "../../materials/ue2/babylon/material";
+import type { FogState, NativeMaterialUniforms } from "../../materials/ue2/babylon/material";
 
 interface Resource { file: string; sha256: string; bytes: number; }
 interface Model { id: string; sourceObject: string; model: Resource; archive: Resource; }
@@ -60,7 +60,8 @@ export interface NativeSection {
   readonly spawnCandidate: Vector3 | null;
   readonly tileMovers?: NativeMovers | null;
   readonly tileVisibility?: TileVisibilityBinding | null;
-  readonly materialUniforms?: (() => NativeMaterialUniforms) | null;
+  readonly skyMaterialUniforms?: (() => NativeMaterialUniforms) | null;
+  readonly levelFog?: (() => FogState) | null;
   inspection(): NativeWorldSceneInspection;
   setTerrainPreview(enabled: boolean): void;
   dispose(): void;

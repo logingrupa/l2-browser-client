@@ -4,7 +4,6 @@ import type { FogState } from "../materials/ue2/babylon/material";
 import { inspectWorldTimeOfDay, type WorldTimeOfDay, type WorldTimeOfDayInspection } from "../scene/world/worldTimeOfDay";
 import type { WorldEvent } from "../world/worldTypes";
 import type { NativeEnvironmentManager } from "../environment/model/nativeEnvironmentManager";
-import type { NativeSection } from "../scene/world/loadNativeSection";
 
 export type CameraFarPlaneSource = "fog-end" | "presentation";
 
@@ -17,7 +16,7 @@ export interface WorldEnvironmentOptions {
   readonly adapter: Pick<GameWorldAdapter, "subscribe">;
   readonly camera: { maxZ: number };
   readonly timeOfDay: WorldTimeOfDay;
-  readonly cameraFog: () => FogState | null;
+  readonly levelFog: () => FogState | null;
   readonly presentationFarPlane: number;
 }
 
@@ -39,20 +38,6 @@ export interface WorldEnvironment {
 }
 
 const serverPacketGap = { producer: "sandbox-command", status: "unresolved", reason: "server-packet-unresolved" } as const;
-const noCameraZone = -1;
-
-export function cameraFogOnZoneChange(section: Pick<NativeSection, "tileVisibility" | "inspection">): () => FogState | null {
-  let readCameraZone: number | null = null, fog: FogState | null = null;
-  return () => {
-    const cameraZone = section.tileVisibility?.frame()?.cameraZone ?? noCameraZone;
-    if (cameraZone === readCameraZone) return fog;
-    readCameraZone = cameraZone;
-    const lighting = section.inspection().lighting;
-    fog = lighting !== undefined && "cameraEnvironment" in lighting ? lighting.cameraEnvironment.fog : null;
-    return fog;
-  };
-}
-
 export function cameraFarPlane(fog: FogState | null, presentationFarPlane: number): CameraFarPlane {
   if (fog !== null && fog.enabled && fog.fogEnd !== null) return { maxZ: sourceDistanceToWorld(fog.fogEnd), source: "fog-end" };
   return { maxZ: presentationFarPlane, source: "presentation" };
@@ -99,7 +84,7 @@ export function wireWorldEnvironment(options: WorldEnvironmentOptions): WorldEnv
   });
   return {
     update() {
-      farPlane = cameraFarPlane(options.cameraFog(), presentationFarPlane);
+      farPlane = cameraFarPlane(options.levelFog(), presentationFarPlane);
       camera.maxZ = farPlane.maxZ;
     },
     inspection: () => ({ timeOfDay: inspectWorldTimeOfDay(timeOfDay), serverPacket: serverPacketGap, farPlane, appliedEventCount, ignoredEventCount, lastIgnoredEvent,

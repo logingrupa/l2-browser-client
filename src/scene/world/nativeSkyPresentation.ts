@@ -61,7 +61,7 @@ async function loadSkySource(signal: AbortSignal, tileSelected: boolean): Promis
     tileSkyGap: tileSky.gapReason, snapshot: tileSky.snapshot, bytes };
 }
 
-export async function createNativeSkyPresentation(scene: Scene, signal: AbortSignal, materialUniforms: (() => NativeMaterialUniforms) | null,
+export async function createNativeSkyPresentation(scene: Scene, signal: AbortSignal, skyMaterialUniforms: (() => NativeMaterialUniforms) | null,
   environmentColours: (() => readonly SkyEnvironmentColour[]) | null) {
   signal.throwIfAborted();
   const tileSelected = selectedNativeTileIdentity(globalThis.location) !== null;
@@ -109,7 +109,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
   let libraryBinding: NativeSkyLibraryBinding;
   try {
     const listing = source.snapshot !== null && source.tileId !== null ? await loadNativeSkyMaterialsListing(source.snapshot, source.tileId, signal) : null;
-    libraryBinding = await bindNativeSkyLibraryMaterials({ scene, meshes: skyMeshes, listing, sessionSeed: drawNativeSessionSeed(), materialUniforms,
+    libraryBinding = await bindNativeSkyLibraryMaterials({ scene, meshes: skyMeshes, listing, sessionSeed: drawNativeSessionSeed(), materialUniforms: skyMaterialUniforms,
       environmentColours, loadProgram: loadNativeMaterial, signal });
   } catch (error) {
     if (!authored) { container?.dispose(); skyRoot.dispose(); }

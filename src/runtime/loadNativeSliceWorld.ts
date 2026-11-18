@@ -146,7 +146,7 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
     if (section) {
       try {
         options.onProgress?.({ stage: "assets", detail: "Preparing original sky geometry and textures…" });
-        sky = await createNativeSkyPresentation(scene, worldLifetime.signal, section.materialUniforms ?? null,
+        sky = await createNativeSkyPresentation(scene, worldLifetime.signal, section.skyMaterialUniforms ?? null,
           timeOfDay.status === "running" ? () => timeOfDay.skyEnvironmentColours() : null);
         if (sky) releases.push(() => sky?.dispose());
       } catch (error) {

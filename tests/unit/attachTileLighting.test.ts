@@ -5,6 +5,9 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
+import { FOG_DISABLED } from "../../src/materials/ue2/model/fog";
+import { cameraEnvironmentGaps } from "../../src/scene/world/cameraEnvironment";
+import { provideFogReferencePawn } from "../../src/scene/world/fogReferencePawn";
 import { attachTileLighting, type TileLightingRuntimeInspection } from "../../src/scene/world/lighting/attachTileLighting";
 import { terrainLightingUnportedReason } from "../../src/scene/world/lighting/bindTerrainLayerMaterials";
 import type { TileLightingBspChunk } from "../../src/scene/world/lighting/bindTileLighting";
@@ -13,6 +16,7 @@ import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifes
 import { staticMeshMaterialsResourceAbsentReason } from "../../src/scene/world/staticMeshLibraryMaterials";
 import { terrainMaterialsResourceAbsentReason } from "../../src/scene/world/terrainLayerMaterials";
 import { provideWorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
+import { sourcePositionToWorld } from "../../src/world/sourceFrame";
 import { provideDayNightTimeOfDay } from "../support/worldTimeOfDayFixture";
 
 vi.mock("../../src/scene/world/lighting/loadTileLighting", async () => {
@@ -77,6 +81,27 @@ describe("attachTileLighting", () => {
     engine.dispose();
   });
 
+  it("measures the local fog list from the provided reference pawn, never the camera, and keeps the sky unfogged behind the named route gap", async () => {
+    const engine = new NullEngine();
+    const scene = new Scene(engine);
+    provideDayNightTimeOfDay(scene);
+    scene.activeCamera = new FreeCamera("camera", Vector3.Zero(), scene);
+    const unplaced = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
+    const unplacedEnvironment = (unplaced.inspection() as TileLightingRuntimeInspection).cameraEnvironment;
+    expect(unplacedEnvironment.gaps).toContain(cameraEnvironmentGaps.fogInfoReferencePawnAbsent);
+    expect(unplacedEnvironment.skyFog).toEqual({ route: null, fog: FOG_DISABLED, gaps: [cameraEnvironmentGaps.skyFogSceneRouteUnresolved] });
+    unplaced.dispose();
+    provideFogReferencePawn(scene, { position: () => sourcePositionToWorld({ x: 28491.390625 + 3500, y: 110465.5, z: -1361.5125732421875 }) });
+    const placed = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
+    const placedEnvironment = (placed.inspection() as TileLightingRuntimeInspection).cameraEnvironment;
+    expect(placedEnvironment.gaps).not.toContain(cameraEnvironmentGaps.fogInfoReferencePawnAbsent);
+    expect(placedEnvironment.fog).toMatchObject({ enabled: true, source: "local-fog-list" });
+    expect(placedEnvironment.fog.endSourceUnits).toBeCloseTo(20480 - 0.5 * (20480 - 10000), 6);
+    placed.dispose();
+    scene.dispose();
+    engine.dispose();
+  });
+
   it("attaches lighting on a scene that has no camera yet", async () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
@@ -98,7 +123,7 @@ describe("attachTileLighting", () => {
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], staticMeshPlacements: [], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
     expect((attached.inspection() as TileLightingRuntimeInspection).environment).toEqual(timeOfDay.sample());
-    expect(attached.materialUniforms!()).toMatchObject({ hour: 12, environmentType: 0 });
+    expect(attached.skyMaterialUniforms!()).toMatchObject({ hour: 12, environmentType: 0, fog: FOG_DISABLED });
     expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots).toMatchObject({ gap: staticMeshMaterialsResourceAbsentReason, meshCount: 1,
       statusCounts: { "library-compiled": 0, "library-diagnostic": 0, "program-gap": 1 } });
     attached.removeChunk(lateChunkId);
@@ -138,7 +163,7 @@ describe("attachTileLighting", () => {
     const observersBefore = scene.onBeforeRenderObservable.observers.length;
     const unprovided = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
     expect(unprovided.inspection()).toEqual({ gap: "environment-time-of-day-unprovided" });
-    expect(unprovided.materialUniforms).toBeNull();
+    expect(unprovided.skyMaterialUniforms).toBeNull();
     provideWorldTimeOfDay(scene, { status: "gap", reason: "environment-time-tables-unstaged", detail: "not staged" });
     const unstaged = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
     expect(unstaged.inspection()).toEqual({ gap: "environment-time-tables-unstaged" });

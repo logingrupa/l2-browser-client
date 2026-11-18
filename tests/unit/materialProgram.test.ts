@@ -152,7 +152,8 @@ describe("createNativeMaterial", () => {
     program.nodes.push(reviewedNode("SyntheticSwatch.Panner", "Engine.TexPanner", [field("Material", nodeReference("SyntheticSwatch.SwatchTexture")),
       field("PanRate", 2), field("PanDirection", rawStruct("Rotator", "000000000000000000000000"), "authored", "raw")]));
     const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(program), testMaterialOptions);
-    const fog = evaluateFogState({ volume: null, cameraZone: null, localFogList: { colourBytes: [10, 20, 30], startSourceUnits: 100, endSourceUnits: 900 } });
+    const fog = evaluateFogState({ volume: null, cameraZone: null, terrainZoneEnvironment: { status: "unresolved" },
+      localFogList: { status: "blended", record: { colourBytes: [10, 20, 30], startSourceUnits: 100, endSourceUnits: 900 } } });
     nativeMaterial.update({ levelSeconds: 0.25, hour: 6.5, environmentType: 2, fog });
     const inspection = nativeMaterial.inspect();
     expect(inspection.uniforms).toEqual({ levelSeconds: 0.25, hour: 6.5, environmentType: 2, fog });

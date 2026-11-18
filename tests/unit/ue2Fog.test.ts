@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildDisplayGammaTable, defaultDisplayGammaSettings, DISPLAY_GAMMA_ENTRY_COUNT } from "../../src/materials/ue2/model/displayGamma";
-import { evaluateFogState, FOG_DISABLED, fogTargetColour, type FogInputs } from "../../src/materials/ue2/model/fog";
+import { evaluateFogState, FOG_DISABLED, FOG_UNRESOLVED, fogTargetColour, type FogInputs } from "../../src/materials/ue2/model/fog";
 import { blendFactorsForParticleDrawStyle } from "../../src/materials/ue2/model/blendTable";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
@@ -11,32 +11,47 @@ import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../su
 const zoneFog = { colourBytes: [10, 20, 30] as const, startSourceUnits: 100, endSourceUnits: 1100 };
 const localFog = { colourBytes: [200, 50, 25] as const, startSourceUnits: 500, endSourceUnits: 4500 };
 const volumeFog = { colourBytes: [39, 87, 126] as const, startSourceUnits: 200, endSourceUnits: 3000 };
-const noSources: FogInputs = { volume: null, localFogList: null, cameraZone: null };
+const hazeFog = { colourBytes: [188, 203, 224] as const, startSourceUnits: 8192, endSourceUnits: 20480 };
+const blendedLocalFog = { status: "blended", record: localFog } as const;
+const resolvedHaze = { status: "resolved", record: hazeFog } as const;
+const noSources: FogInputs = { volume: null, localFogList: { status: "empty" }, cameraZone: null, terrainZoneEnvironment: { status: "unresolved" } };
+const distanceFogZone = { distanceFog: true, terrainZone: false, fog: zoneFog };
+const terrainZone = { ...distanceFogZone, terrainZone: true };
 
 describe("evaluateFogState", () => {
   it("is off without a source and exports no fogEnd", () => {
     expect(evaluateFogState(noSources)).toEqual(FOG_DISABLED);
   });
 
-  it("takes a fogged volume first, then a non-empty local fog list, then the camera zone distance fog, and exports fogEnd for the frame", () => {
-    const zone = { distanceFog: true, fog: zoneFog };
-    expect(evaluateFogState({ ...noSources, cameraZone: zone })).toMatchObject({ source: "camera-zone", fogEnd: 1100, colour: [10 / 255, 20 / 255, 30 / 255] });
-    expect(evaluateFogState({ ...noSources, localFogList: localFog, cameraZone: zone })).toMatchObject({ source: "local-fog-list", fogEnd: 4500 });
-    expect(evaluateFogState({ volume: volumeFog, localFogList: localFog, cameraZone: zone })).toMatchObject({ source: "volume", fogEnd: 3000 });
+  it("takes a fogged volume, then a non-empty local list, then the terrain zone haze, then ZoneInfo distance fog, and exports fogEnd for the frame", () => {
+    expect(evaluateFogState({ ...noSources, cameraZone: distanceFogZone })).toMatchObject({ source: "camera-zone", fogEnd: 1100, colour: [10 / 255, 20 / 255, 30 / 255] });
+    expect(evaluateFogState({ ...noSources, cameraZone: terrainZone, terrainZoneEnvironment: resolvedHaze }))
+      .toMatchObject({ source: "terrain-zone-environment", fogEnd: 20480, colour: [188 / 255, 203 / 255, 224 / 255] });
+    expect(evaluateFogState({ ...noSources, localFogList: blendedLocalFog, cameraZone: terrainZone, terrainZoneEnvironment: resolvedHaze }))
+      .toMatchObject({ source: "local-fog-list", fogEnd: 4500 });
+    expect(evaluateFogState({ volume: volumeFog, localFogList: blendedLocalFog, cameraZone: terrainZone, terrainZoneEnvironment: resolvedHaze }))
+      .toMatchObject({ source: "volume", fogEnd: 3000 });
   });
 
-  it("turns fog off in a zone without distance fog when no local fog list applies", () => {
-    expect(evaluateFogState({ ...noSources, cameraZone: { distanceFog: false, fog: null } })).toMatchObject({ enabled: false, source: "zone-without-fog", fogEnd: null });
+  it("turns fog off in a zone without distance fog even when it is a terrain zone", () => {
+    expect(evaluateFogState({ ...noSources, cameraZone: { distanceFog: false, terrainZone: true, fog: null }, terrainZoneEnvironment: resolvedHaze }))
+      .toMatchObject({ enabled: false, source: "zone-without-fog", fogEnd: null });
+  });
+
+  it("shows an unresolved local list, terrain flag or haze colour as unresolved fog, never as grey or ZoneInfo fog", () => {
+    expect(evaluateFogState({ ...noSources, localFogList: { status: "unresolved" }, cameraZone: distanceFogZone })).toEqual(FOG_UNRESOLVED);
+    expect(evaluateFogState({ ...noSources, cameraZone: { ...distanceFogZone, terrainZone: null } })).toEqual(FOG_UNRESOLVED);
+    expect(evaluateFogState({ ...noSources, cameraZone: terrainZone })).toEqual(FOG_UNRESOLVED);
   });
 
   it("refuses a range that does not increase and colours that are not bytes", () => {
-    expect(() => evaluateFogState({ ...noSources, localFogList: { ...localFog, endSourceUnits: 500 } })).toThrow(/must be finite and increasing/);
-    expect(() => evaluateFogState({ ...noSources, localFogList: { ...localFog, colourBytes: [256, 0, 0] } })).toThrow(/three bytes/);
+    expect(() => evaluateFogState({ ...noSources, localFogList: { status: "blended", record: { ...localFog, endSourceUnits: 500 } } })).toThrow(/must be finite and increasing/);
+    expect(() => evaluateFogState({ ...noSources, localFogList: { status: "blended", record: { ...localFog, colourBytes: [256, 0, 0] } } })).toThrow(/three bytes/);
   });
 });
 
 describe("fog families", () => {
-  const state = evaluateFogState({ ...noSources, localFogList: localFog });
+  const state = evaluateFogState({ ...noSources, localFogList: blendedLocalFog });
 
   it("targets the fog colour, black or 127/255 grey, and nothing for the none family or with fog off", () => {
     expect(fogTargetColour("fog-colour", state)).toEqual([200 / 255, 50 / 255, 25 / 255]);

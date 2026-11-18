@@ -34,17 +34,16 @@ export function fogInfo9236Record() {
   ] };
 }
 
-export const environmentFogRanges = { startRanges: [1, 1.5, 2, 2.5, 4], endRanges: [4, 5, 6, 7, 10] };
-
 export function tileLightingRecordsDocument() {
-  const zone = (zoneIndex: number, provenance: string, distanceFog: boolean) => ({ zoneIndex, unresolved: provenance === "unresolved",
+  const zone = (zoneIndex: number, provenance: string, distanceFog: boolean, terrainZone = false) => ({ zoneIndex, unresolved: provenance === "unresolved",
     distanceFog: [fieldRecord("bDistanceFog", provenance === "unresolved" ? null : distanceFog, provenance),
+      fieldRecord("bTerrainZone", provenance === "unresolved" ? null : terrainZone, provenance),
       fieldRecord("DistanceFogColor", provenance === "unresolved" ? null : { R: 95, G: 112, B: 116, A: 0 }, provenance),
       fieldRecord("DistanceFogStart", provenance === "unresolved" ? null : 100, provenance),
       fieldRecord("DistanceFogEnd", provenance === "unresolved" ? null : 20000, provenance)],
     sunAffect: fieldRecord("bSunAffect", provenance === "unresolved" ? null : true, provenance === "unresolved" ? provenance : "class-default") });
   return { schemaVersion: 1, kind: "native-tile-lighting-records", lights: [], fogInfos: [fogInfo9236Record()], levelInfos: [], rules: [],
-    waterVolumes: [{ exportIndex: 8 }], zones: [zone(0, "unresolved", false), zone(1, "authored", true), zone(2, "authored", false)] };
+    waterVolumes: [{ exportIndex: 8 }], zones: [zone(0, "unresolved", false), zone(1, "authored", true), zone(2, "authored", false), zone(3, "authored", true, true)] };
 }
 
 export function tileLightingArrays(records: unknown = tileLightingRecordsDocument()): TypedPayloadFixtureArray[] {

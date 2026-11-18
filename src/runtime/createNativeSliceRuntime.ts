@@ -46,10 +46,11 @@ import { buildNativeCatalogIndexOrUnavailable } from "./buildNativeCatalogIndexO
 import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
 import { wireWorldMovement } from "./worldMovementWiring";
 import { loadTileCollisionCells } from "./tileCollisionCells";
+import { provideFogReferencePawn } from "../scene/world/fogReferencePawn";
 import { provideCollisionCellContext } from "../scene/world/movement/collisionCellContext";
 import { createCollisionWorld } from "../scene/world/movement/core/collisionWorld";
 import { committedMovementRules } from "./committedMovementRules";
-import { cameraFogOnZoneChange, wireWorldEnvironment } from "./worldEnvironmentWiring";
+import { wireWorldEnvironment } from "./worldEnvironmentWiring";
 import { installTransparentRenderingOrder } from "./transparentRenderingOrder";
 import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearances } from "./sandboxNpcAppearances";
 import type { WorldEntity } from "../world/worldTypes";
@@ -136,6 +137,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const collisionWorld = createCollisionWorld();
     let localPlayerFocus: (() => WorldPosition | null) | null = null;
     boundaryReleases.push(provideCollisionCellContext(scene, { world: collisionWorld, focusPosition: () => localPlayerFocus?.() ?? null }));
+    let localPlayerEntityPosition: (() => WorldPosition | null) | null = null;
+    boundaryReleases.push(provideFogReferencePawn(scene, { position: () => localPlayerEntityPosition?.() ?? null }));
     const playerCapsuleFromSourceCollision = () => ({ radius: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
       height: 2 * playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre });
     const world = await loadNativeSliceWorld(scene, camera, settings, options.worldSource ?? catalogNativeSliceWorldSource, signal, {
@@ -215,6 +218,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       clipEvents: entityId => actorClipListingEvents(clipPreview.actorClipListing(entityId)), clipClock: entityId => registry.sourceClock(entityId) });
     boundaryReleases.push(() => spawnedActorSounds.dispose());
     localPlayerFocus = () => registry.localPlayerPosition;
+    localPlayerEntityPosition = () => registry.localPlayer?.position ?? null;
     const localPawnListenerLocation = (): [number, number, number] | null => {
       const pawn = listenerFollowsLocalPawn() ? registry.localPlayerPosition : null;
       return pawn ? [pawn.x, pawn.y + playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre, pawn.z] : null;
@@ -310,7 +314,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       });
     }
     const environment = wireWorldEnvironment({ adapter, camera, timeOfDay: world.timeOfDay,
-      cameraFog: section ? cameraFogOnZoneChange(section) : () => null, presentationFarPlane: camera.maxZ });
+      levelFog: section?.levelFog ?? (() => null), presentationFarPlane: camera.maxZ });
     boundaryReleases.push(() => environment.release());
     if (effectComponents) {
       let priorFollow = followFighter;

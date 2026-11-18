@@ -1,10 +1,8 @@
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { FOG_DISABLED, type FogState } from "../../src/materials/ue2/babylon/material";
-import { cameraFarPlane, cameraFogOnZoneChange, wireWorldEnvironment } from "../../src/runtime/worldEnvironmentWiring";
-import type { NativeSection } from "../../src/scene/world/loadNativeSection";
-import type { TileVisibilityBinding } from "../../src/scene/world/bspVisibility/bindTileVisibility";
+import { cameraFarPlane, wireWorldEnvironment } from "../../src/runtime/worldEnvironmentWiring";
 import { startWorldTimeOfDay, type WorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
 import type { WorldEvent } from "../../src/world/worldTypes";
 import { dayNightTimeTables } from "../support/worldTimeOfDayFixture";
@@ -25,7 +23,7 @@ function environmentOn(fog: FogState | null, timeOfDay: WorldTimeOfDay = running
   const camera = { maxZ: 1 };
   let currentFog = fog;
   const environment = wireWorldEnvironment({ adapter: { subscribe(listener) { emit = listener; return () => { emit = () => {}; }; } }, camera,
-    timeOfDay, cameraFog: () => currentFog, presentationFarPlane: 480 });
+    timeOfDay, levelFog: () => currentFog, presentationFarPlane: 480 });
   return { environment, camera, emit: (event: WorldEvent) => emit(event), setFog: (next: FogState | null) => { currentFog = next; } };
 }
 
@@ -85,22 +83,17 @@ describe("world environment wiring", () => {
     environment.update();
     expect(camera.maxZ).toBe(480);
     expect(environment.inspection().farPlane).toEqual({ maxZ: 480, source: "presentation" });
-    expect(() => wireWorldEnvironment({ adapter: { subscribe: () => () => {} }, camera, timeOfDay: unstagedTimeOfDay, cameraFog: () => null, presentationFarPlane: 0 })).toThrow(RangeError);
+    expect(() => wireWorldEnvironment({ adapter: { subscribe: () => () => {} }, camera, timeOfDay: unstagedTimeOfDay, levelFog: () => null, presentationFarPlane: 0 })).toThrow(RangeError);
   });
 
-  it("reads the camera-environment fog from the tile inspection only when the camera zone changes", () => {
-    let cameraZone = 3, fog: FogState = zoneFog;
-    const inspection = vi.fn(() => ({ lighting: { cameraEnvironment: { fog } } }) as unknown as ReturnType<NativeSection["inspection"]>);
-    const section = { tileVisibility: { frame: () => ({ cameraZone }) } as unknown as TileVisibilityBinding, inspection };
-    const cameraFog = cameraFogOnZoneChange(section);
-    expect(cameraFog()).toBe(zoneFog);
-    fog = FOG_DISABLED;
-    expect(cameraFog()).toBe(zoneFog);
-    expect(inspection).toHaveBeenCalledTimes(1);
-    cameraZone = 4;
-    expect(cameraFog()).toBe(FOG_DISABLED);
-    expect(inspection).toHaveBeenCalledTimes(2);
-    const unlit = cameraFogOnZoneChange({ tileVisibility: null, inspection: () => ({}) as ReturnType<NativeSection["inspection"]> });
-    expect(unlit()).toBeNull();
+  it("reads the level fog on every frame, so a pawn or hour change inside one camera zone moves the far plane", () => {
+    const localFog: FogState = { ...zoneFog, source: "local-fog-list", startSourceUnits: 0, endSourceUnits: 10000, fogEnd: 10000 };
+    const { environment, camera, setFog } = environmentOn(zoneFog);
+    environment.update();
+    expect(camera.maxZ).toBe(120);
+    setFog(localFog);
+    environment.update();
+    expect(camera.maxZ).toBe(100);
+    expect(environment.inspection().farPlane).toEqual({ maxZ: 100, source: "fog-end" });
   });
 });

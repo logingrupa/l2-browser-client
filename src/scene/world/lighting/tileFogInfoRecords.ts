@@ -16,7 +16,7 @@ interface FogInfoField {
 const unresolvedProvenance = "unresolved";
 const ueZeroProvenance = "ue-zero";
 const fogRangeFields = Array.from({ length: FOG_RANGE_SLOT_COUNT }, (_, slot) => `FogRange${slot + 1}`);
-const requiredFogInfoFields = ["Location", "AffectRange", ...fogRangeFields, "Colors"];
+const requiredFogInfoFields = ["Location", "AffectRange", "TextureDistance", ...fogRangeFields, "Colors"];
 const colourChannels = ["R", "G", "B"] as const;
 const locationAxes = ["X", "Y", "Z"] as const;
 
@@ -32,6 +32,12 @@ function readRange(field: FogInfoField, label: string): FogRangeBounds {
   const value = field.value;
   requireFogInfo(isRecord(value) && isFiniteNumber(value.Min) && isFiniteNumber(value.Max), label, "is not a Min and Max range.");
   return { min: value.Min, max: value.Max };
+}
+
+function readTextureDistance(field: FogInfoField, label: string): number {
+  if (field.provenance === ueZeroProvenance && field.value === null) return 0;
+  requireFogInfo(isFiniteNumber(field.value), label, "is not a finite distance.");
+  return field.value;
 }
 
 function readLocation(field: FogInfoField, label: string): L2FogInfoRecord["sourceLocation"] {
@@ -73,6 +79,7 @@ function readFogInfo(value: unknown, position: number): DecodedFogInfo {
   }
   return { exportIndex, unresolvedReason: null, record: {
     exportIndex, sourceLocation: readLocation(fields.get("Location")!, `${label}.Location`), affectRange: readRange(fields.get("AffectRange")!, `${label}.AffectRange`),
+    textureDistance: readTextureDistance(fields.get("TextureDistance")!, `${label}.TextureDistance`),
     fogRanges: fogRangeFields.map(name => readRange(fields.get(name)!, `${label}.${name}`)), colours } };
 }
 

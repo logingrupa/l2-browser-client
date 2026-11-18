@@ -15,7 +15,7 @@ function adapterWiredToTimeOfDay() {
   const scene = new Scene(new NullEngine());
   scenes.push(scene);
   const timeOfDay = startWorldTimeOfDay(scene, dayNightTimeTables(), () => 0);
-  const environment = wireWorldEnvironment({ adapter, camera: { maxZ: 1 }, timeOfDay, cameraFog: () => null, presentationFarPlane: 480 });
+  const environment = wireWorldEnvironment({ adapter, camera: { maxZ: 1 }, timeOfDay, levelFog: () => null, presentationFarPlane: 480 });
   const receivedEvents: WorldEvent[] = [];
   adapter.subscribe(event => receivedEvents.push(event));
   return { adapter, environment, timeOfDay, receivedEvents };

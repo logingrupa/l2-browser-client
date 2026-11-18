@@ -1,11 +1,13 @@
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { drawNativeSessionSeed } from "../../../assets/native/nativeSessionSeed";
-import { loadNativeMaterial, type NativeMaterialUniforms } from "../../../materials/ue2/babylon/material";
+import { loadNativeMaterial, type FogState, type NativeMaterialUniforms } from "../../../materials/ue2/babylon/material";
+import { FOG_CONSTANTS } from "../../../materials/ue2/model/constants/fogConstants";
 import { createPresentationClock } from "../../../shared/presentationClock";
 import { worldPositionToSource } from "../../../world/sourceFrame";
 import type { TileVisibilityFrame } from "../bspVisibility/core/tileVisibilityFrame";
 import { computeCameraEnvironment, type CameraEnvironment } from "../cameraEnvironment";
+import { fogReferencePawnFor, type FogReferencePawn } from "../fogReferencePawn";
 import type { NativeTileManifest } from "../nativeTileManifest";
 import { loadStaticMeshMaterialsListing } from "../staticMeshLibraryMaterials";
 import { loadTerrainMaterialsListing } from "../terrainLayerMaterials";
@@ -20,7 +22,7 @@ import {
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
 import type { TileLightingVisibility } from "./tileLightingVisibility";
-import { worldTimeOfDayFor } from "../worldTimeOfDay";
+import { worldTimeOfDayFor, type RunningWorldTimeOfDay } from "../worldTimeOfDay";
 
 export interface TileLightingGapInspection {
   readonly gap: string;
@@ -48,7 +50,8 @@ export interface TileLightingChunkSurfaces {
 }
 
 export interface AttachedTileLighting {
-  readonly materialUniforms: (() => NativeMaterialUniforms) | null;
+  readonly skyMaterialUniforms: (() => NativeMaterialUniforms) | null;
+  readonly levelFog: (() => FogState) | null;
   readonly binding: TileLightingBinding | null;
   addChunk(surfaces: TileLightingChunkSurfaces): Promise<void>;
   removeChunk(chunkId: string): void;
@@ -62,14 +65,17 @@ const payloadInvalidReasonPrefix = "lighting-payload-invalid:";
 const millisecondsPerSecond = 1000;
 
 function unboundTileLighting(gap: string): AttachedTileLighting {
-  return { materialUniforms: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
+  return { skyMaterialUniforms: null, levelFog: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
 }
 
-function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, frame: TileVisibilityFrame | null, hour: number): CameraEnvironment {
+function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, frame: TileVisibilityFrame | null, timeOfDay: RunningWorldTimeOfDay,
+  referencePawn: FogReferencePawn): CameraEnvironment {
   const cameraPosition = scene.activeCamera?.globalPosition;
   const cameraSourcePosition = cameraPosition === undefined ? null : worldPositionToSource({ x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z });
-  return computeCameraEnvironment({ frame, cameraSourcePosition, collision: null, records: model.records,
-    environmentFogRanges: null, hour });
+  const pawnPosition = referencePawn.position();
+  return computeCameraEnvironment({ frame, cameraSourcePosition, referencePawnSourcePosition: pawnPosition === null ? null : worldPositionToSource(pawnPosition),
+    collision: null, records: model.records, skySceneRoute: FOG_CONSTANTS.skySceneRoute.runtimeDefault,
+    fogEnvironment: { hour: timeOfDay.sample().hour, fogRanges: timeOfDay.fogRanges, hazeColour: timeOfDay.hazeColour() } });
 }
 
 export async function attachTileLighting(scene: Scene, manifest: NativeTileManifest, visibility: TileLightingVisibility | null, signal: AbortSignal):
@@ -92,10 +98,11 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   const terrainVertexLighting = bindTerrainVertexLighting(model.hourly.terrainIntensityMaps, model.hourly.terrainLightMasks);
   const staticMeshVisibility = bindStaticMeshHourlyVisibility(model.hourly.staticMeshLightLists);
   const hourlyEnvironment = () => timeOfDay.hourlyEnvironmentLighting();
-  let cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay.sample().hour);
+  const referencePawn = fogReferencePawnFor(scene);
+  let cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay, referencePawn);
   const advance = scene.onBeforeRenderObservable.add(() => {
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
-    cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay.sample().hour);
+    cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay, referencePawn);
     terrainVertexLighting.update(timeOfDay.manager.snapshot().lightingDirty, hourlyEnvironment);
   });
   const sessionSeed = drawNativeSessionSeed();
@@ -103,6 +110,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     const environment = timeOfDay.sample();
     return { levelSeconds: presentationClock.levelSeconds, hour: environment.hour, environmentType: environment.targetType, fog: cameraEnvironment.fog };
   };
+  const skyMaterialUniforms = (): NativeMaterialUniforms => ({ ...materialUniforms(), fog: cameraEnvironment.skyFog.fog });
   const binding = bindTileLighting({ scene, model, sessionSeed, environment: () => timeOfDay.sample(),
     levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, visibility, loadProgram: loadNativeMaterial });
   const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
@@ -113,7 +121,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     return { terms: hourlyLightingTerms(environment), terrain: terrainVertexLighting.inspection(), staticMeshVisibility: staticMeshVisibility.inspection(environment.hour) };
   };
   return {
-    materialUniforms, binding,
+    skyMaterialUniforms, levelFog: () => cameraEnvironment.fog, binding,
     async addChunk(surfaces) {
       if (surfaces.bspChunk !== null) await binding.addChunk(surfaces.bspChunk);
       await staticMeshBinding.addChunk(surfaces.chunkId, surfaces.staticMeshes);
