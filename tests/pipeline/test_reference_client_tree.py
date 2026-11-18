@@ -15,7 +15,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 import build_reference_client_lock
 from build_reference_client_lock import (ReferenceClientManifestError, classify_reference_client_trees,
     hashing_script_sha256, write_reference_client_lock)
-from hash_reference_client_tree import canonical_json_bytes, reference_tree_lock_sha256
+from hash_reference_client_tree import canonical_json_bytes
+from reference_tree_lock_digest import reference_tree_lock_sha256
 from native_assets_lib.gltf import json_bytes
 
 HASHING_SCRIPT = ROOT / 'scripts' / 'hash_reference_client_tree.py'
