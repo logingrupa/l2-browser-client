@@ -53,6 +53,7 @@ class WritersBesideLinkedFilesTests(SharedLaneTestCase):
         super().setUp()
         self.store_path = self.lanes.write_store_file('actors', 'models/first/asset.l2asset', TWIN)
         self.converter_path = self.lanes.write_converter_file('actors', 'asset.l2asset', TWIN)
+        self.lanes.write_converter_index_record('actors')
         self.unit_path = self.lanes.seal_unit('actors', 'mesh:first', {'asset.l2asset': TWIN}) / 'asset.l2asset'
         self.share(lanes_free_of_conversions=['actors'])
         self.assertEqual([file_number(path) for path in (self.converter_path, self.unit_path)], [file_number(self.store_path)] * 2)

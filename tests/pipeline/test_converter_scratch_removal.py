@@ -23,6 +23,7 @@ ACTORS_LANE_CHILD_CONVERTER_FOLDER = 'converter'
 LANES_WITH_SCRATCH_REMOVAL = ('actors', 'world')
 SCRATCH_REPORT_KEYS = ('scratchJobFoldersRemoved', 'scratchJobFoldersNotRemoved', 'scratchBytesRemoved', 'scratchBytesLeftByLane')
 STOPPED_REMOVAL_MESSAGE = 'the removal stopped after its first file'
+HALF_PUBLISHED_CONTENT_FOLDER_NAME = 'd' * 64
 
 
 class ConverterScratchRemovalTests(SharedLaneTestCase):
@@ -134,6 +135,26 @@ class ConverterScratchRemovalTests(SharedLaneTestCase):
         self.assertEqual((exit_code, error, report['filesSkippedByRule']['unit-step-of-a-lane-in-use']), (0, '', 1))
         self.assertEqual((link_count(unit_paths['world']), link_count(unit_paths['data-ui'])), (3, 1))
         self.assertEqual(self.scratch_report(report), (1, 0, SCRATCH_FILE_BYTES, {'data-ui': SCRATCH_FILE_BYTES, 'world': 0}))
+
+    def test_a_content_folder_that_no_index_record_names_is_removed_and_indexed_content_folders_stay(self):
+        indexed_path = self.lanes.write_converter_file('world', 'asset.l2asset', OTHER)
+        self.lanes.write_converter_index_record('world')
+        half_published_folder = self.lanes.converter_folder('world') / HALF_PUBLISHED_CONTENT_FOLDER_NAME
+        write_file(half_published_folder / 'model.glb', SCRATCH)
+        write_file(half_published_folder / 'asset.json', b'')
+        plan = self.share(plan_only=True, lanes_free_of_conversions=['world'])
+        self.assertEqual((self.scratch_report(plan), half_published_folder.is_dir()), ((1, 0, SCRATCH_FILE_BYTES, {'world': 0}), True))
+        report = self.share(lanes_free_of_conversions=['world'])
+        self.assertEqual(self.scratch_report(report), (1, 0, SCRATCH_FILE_BYTES, {'world': 0}))
+        self.assertEqual((half_published_folder.exists(), indexed_path.read_bytes()), (False, OTHER))
+
+    def test_a_converter_folder_with_an_index_record_that_names_no_content_folder_keeps_every_content_folder(self):
+        unindexed_folder = self.lanes.converter_folder('world') / HALF_PUBLISHED_CONTENT_FOLDER_NAME
+        write_file(unindexed_folder / 'model.glb', SCRATCH)
+        write_file(self.lanes.converter_folder('world') / 'index' / 'foreign.json', b'{"slot": 3}')
+        report = self.share(lanes_free_of_conversions=['world'])
+        self.assertEqual(self.scratch_report(report), (0, 0, 0, {'world': 0}))
+        self.assertEqual((unindexed_folder / 'model.glb').read_bytes(), SCRATCH)
 
     def test_a_converter_cache_hit_after_the_scratch_removal_still_does_no_work(self):
         converter, request = synthetic_audio_converter_and_request(self, self.lanes)

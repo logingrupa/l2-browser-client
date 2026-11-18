@@ -3,6 +3,7 @@ import ctypes
 from ctypes import wintypes
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import struct
@@ -153,6 +154,10 @@ class SharedLaneFixture:
 
     def write_converter_file(self, lane_name, relative, payload, content_folder_name=CONTENT_FOLDER_NAME):
         return write_file(self.converter_folder(lane_name) / content_folder_name / relative, payload)
+
+    def write_converter_index_record(self, lane_name, content_folder_name=CONTENT_FOLDER_NAME):
+        return write_file(self.converter_folder(lane_name) / 'index' / f'{content_folder_name}.json',
+                          json.dumps({'directory': content_folder_name}).encode('utf-8'))
 
     def ledger(self, lane_name, step='model'):
         return UnitLedger(self.lane_folder(lane_name) / 'work', step, 1, riga_clock=lambda: FIXTURE_RIGA_TIME,
