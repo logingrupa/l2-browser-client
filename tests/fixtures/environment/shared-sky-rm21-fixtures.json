@@ -1,0 +1,466 @@
+{
+ "schemaVersion": 1,
+ "kind": "shared-sky-rm21-fixtures",
+ "source": {
+  "file": "shared-sky-render-passes.json",
+  "sha256": "7cc8a82e1d5e222d6a652127768bcdad5aab25e53caa598f51d65d0603b95e22"
+ },
+ "localSkyOverride": {
+  "baselineRGB": {
+   "SkyColor": [
+    66,
+    124,
+    176
+   ],
+   "CloudColor": [
+    [
+     255,
+     255,
+     255
+    ],
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "HazeRingColor": [
+    [
+     188,
+     203,
+     224
+    ]
+   ]
+  },
+  "finalRGB": {
+   "SkyColor": [
+    132,
+    146,
+    131
+   ],
+   "CloudColor": [
+    [
+     111,
+     132,
+     129
+    ],
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "HazeRingColor": [
+    [
+     133,
+     126,
+     103
+    ]
+   ]
+  },
+  "actors": [
+   {
+    "actor": "20_21.L2FogInfo100",
+    "exportIndex": 10719,
+    "referencePoint": [
+     9272.5,
+     119849.1015625,
+     -3572.10009765625
+    ],
+    "hour": 12.3,
+    "selectedTimes": [
+     7.0,
+     19.0
+    ],
+    "nativeSpatialWeight": 1.0,
+    "nativeHourWeight": 0.44166669249534607,
+    "runningRGB": {
+     "SkyColor": [
+      132,
+      146,
+      131
+     ],
+     "CloudColor": [
+      [
+       111,
+       132,
+       129
+      ],
+      [
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0
+      ]
+     ],
+     "HazeRingColor": [
+      [
+       133,
+       126,
+       103
+      ]
+     ]
+    }
+   },
+   {
+    "actor": "20_21.L2FogInfo89",
+    "exportIndex": 10746,
+    "referencePoint": [
+     9272.5,
+     119849.1015625,
+     -3572.10009765625
+    ],
+    "hour": 12.3,
+    "selectedTimes": [
+     7.0,
+     19.0
+    ],
+    "nativeSpatialWeight": 0.06276391446590424,
+    "nativeHourWeight": 0.44166669249534607,
+    "runningRGB": {
+     "SkyColor": [
+      132,
+      146,
+      131
+     ],
+     "CloudColor": [
+      [
+       111,
+       132,
+       129
+      ],
+      [
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0
+      ]
+     ],
+     "HazeRingColor": [
+      [
+       133,
+       126,
+       103
+      ]
+     ]
+    }
+   },
+   {
+    "actor": "20_21.L2FogInfo99",
+    "exportIndex": 10757,
+    "referencePoint": [
+     9272.5,
+     119849.1015625,
+     -3572.10009765625
+    ],
+    "hour": 12.3,
+    "selectedTimes": [
+     7.0,
+     19.0
+    ],
+    "nativeSpatialWeight": 1.0,
+    "nativeHourWeight": 0.44166669249534607,
+    "runningRGB": {
+     "SkyColor": [
+      132,
+      146,
+      131
+     ],
+     "CloudColor": [
+      [
+       111,
+       132,
+       129
+      ],
+      [
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0
+      ]
+     ],
+     "HazeRingColor": [
+      [
+       133,
+       126,
+       103
+      ]
+     ]
+    }
+   }
+  ]
+ },
+ "fogCrossCheck": {
+  "map": "20_21",
+  "hour": 12.3,
+  "materialRGB": [
+   132,
+   146,
+   131
+  ],
+  "fogRGB": [
+   107,
+   114,
+   97
+  ],
+  "depth": 571.34375,
+  "fogWeight": 0.057134375,
+  "unquantizedRGB": [
+   130.57164062500001,
+   144.17170000000002,
+   129.05743125
+  ],
+  "observedRGB": [
+   131,
+   144,
+   129
+  ]
+ },
+ "outputBlendingPasses": [
+  {
+   "ordinal": 0,
+   "hasOpacityMaterial": false,
+   "srcBlend": 2,
+   "destBlend": 1,
+   "fogOverride": 0,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 0,
+   "hasOpacityMaterial": true,
+   "srcBlend": 5,
+   "destBlend": 6,
+   "fogOverride": 0,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 1,
+   "hasOpacityMaterial": false,
+   "srcBlend": 2,
+   "destBlend": 1,
+   "fogOverride": 0,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 2,
+   "hasOpacityMaterial": false,
+   "srcBlend": 9,
+   "destBlend": 3,
+   "fogOverride": 1,
+   "fogBGRA": [
+    127,
+    127,
+    127,
+    0
+   ]
+  },
+  {
+   "ordinal": 3,
+   "hasOpacityMaterial": false,
+   "srcBlend": 2,
+   "destBlend": 2,
+   "fogOverride": 1,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 4,
+   "hasOpacityMaterial": false,
+   "srcBlend": 1,
+   "destBlend": 2,
+   "fogOverride": 0,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 5,
+   "hasOpacityMaterial": false,
+   "srcBlend": 2,
+   "destBlend": 4,
+   "fogOverride": 1,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 6,
+   "hasOpacityMaterial": false,
+   "srcBlend": 1,
+   "destBlend": 4,
+   "fogOverride": 1,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ ],
+ "frameBufferBlendingPasses": [
+  {
+   "ordinal": 0,
+   "hasOpacityMaterial": false,
+   "srcBlend": 2,
+   "destBlend": 1,
+   "fogOverride": 0,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 1,
+   "hasOpacityMaterial": false,
+   "srcBlend": 9,
+   "destBlend": 3,
+   "fogOverride": 1,
+   "fogBGRA": [
+    127,
+    127,
+    127,
+    0
+   ]
+  },
+  {
+   "ordinal": 2,
+   "hasOpacityMaterial": false,
+   "srcBlend": 5,
+   "destBlend": 6,
+   "fogOverride": 0,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 3,
+   "hasOpacityMaterial": false,
+   "srcBlend": 2,
+   "destBlend": 6,
+   "fogOverride": 1,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 4,
+   "hasOpacityMaterial": false,
+   "srcBlend": 2,
+   "destBlend": 4,
+   "fogOverride": 1,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 5,
+   "hasOpacityMaterial": false,
+   "srcBlend": 1,
+   "destBlend": 4,
+   "fogOverride": 1,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 6,
+   "hasOpacityMaterial": false,
+   "srcBlend": 5,
+   "destBlend": 2,
+   "fogOverride": 1,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 7,
+   "hasOpacityMaterial": false,
+   "srcBlend": 1,
+   "destBlend": 2,
+   "fogOverride": 1,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "ordinal": 8,
+   "hasOpacityMaterial": false,
+   "srcBlend": 2,
+   "destBlend": 2,
+   "fogOverride": 0,
+   "fogBGRA": [
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ ]
+}
