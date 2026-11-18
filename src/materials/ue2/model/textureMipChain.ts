@@ -15,6 +15,7 @@ export interface TextureMipLevelPin {
 
 export interface TextureMipChainPin {
   readonly format: TextureMipChainFormat;
+  readonly firstMip: number;
   readonly levels: readonly TextureMipLevelPin[];
 }
 
@@ -26,7 +27,7 @@ const maximumMipLevels = 16;
 const maximumMipDimension = 4096;
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const levelMembers = ["bytes", "height", "path", "sha256", "width"];
-const chainMembers = ["format", "levels"];
+const chainMembers = ["firstMip", "format", "levels"];
 const blockEdge = 4;
 const blockBytesByFormat: Readonly<Record<Exclude<TextureMipChainFormat, "RGBA8">, number>> = { DXT1: 8, DXT3: 16, DXT5: 16 };
 const rgba8BytesPerPixel = 4;
@@ -57,7 +58,7 @@ function readTextureMipLevel(value: unknown, label: string, format: TextureMipCh
   const { width, height, path, sha256, bytes } = value;
   requireMipChain(isBoundedDimension(width) && isBoundedDimension(height), `${label} width and height must be 1 to ${maximumMipDimension}.`);
   if (previous !== null) {
-    const halvesThePreviousLevel = (previous.width !== 1 || previous.height !== 1)
+    const halvesThePreviousLevel = Math.min(previous.width, previous.height) > 1
       && width === Math.max(1, Math.floor(previous.width / 2)) && height === Math.max(1, Math.floor(previous.height / 2));
     requireMipChain(halvesThePreviousLevel, `${label} ${width}x${height} does not halve the previous level ${previous.width}x${previous.height}.`);
   }
@@ -74,11 +75,14 @@ export function readTextureMipChainPin(value: unknown, label: string): TextureMi
   requireMipChain(typeof format === "string" && (TEXTURE_MIP_CHAIN_FORMATS as readonly string[]).includes(format),
     `${label}.format ${JSON.stringify(format)} is not one of ${TEXTURE_MIP_CHAIN_FORMATS.join(", ")}.`);
   const chainFormat = format as TextureMipChainFormat;
+  const firstMip = value.firstMip;
+  requireMipChain(Number.isSafeInteger(firstMip) && (firstMip as number) >= 0 && (firstMip as number) < maximumMipLevels,
+    `${label}.firstMip ${String(firstMip)} is not a level index below ${maximumMipLevels}.`);
   requireMipChain(Array.isArray(value.levels) && value.levels.length >= 1 && value.levels.length <= maximumMipLevels,
     `${label}.levels must hold 1 to ${maximumMipLevels} levels.`);
   const levels: TextureMipLevelPin[] = [];
   value.levels.forEach((level: unknown, index: number) => {
     levels.push(readTextureMipLevel(level, `${label}.levels[${index}]`, chainFormat, levels.at(-1) ?? null));
   });
-  return { format: chainFormat, levels };
+  return { format: chainFormat, firstMip: firstMip as number, levels };
 }

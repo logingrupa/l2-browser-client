@@ -53,8 +53,9 @@ async function loadTextureImage(image: MaterialTextureImage, signal: AbortSignal
 
 async function loadTextureMipChain(chain: TextureMipChainPin, frameNode: string, size: MaterialTextureSize, signal: AbortSignal): Promise<LoadedTextureMipChain> {
   const [firstLevel] = chain.levels;
-  if (firstLevel?.width !== size.width || firstLevel.height !== size.height) {
-    throw new NativeMaterialLoadError(`Native texture ${frameNode} mip chain starts at ${firstLevel?.width} x ${firstLevel?.height}, not its Engine.Texture USize x VSize ${size.width} x ${size.height}.`);
+  const firstWidth = size.width >> chain.firstMip, firstHeight = size.height >> chain.firstMip;
+  if (firstLevel?.width !== firstWidth || firstLevel.height !== firstHeight) {
+    throw new NativeMaterialLoadError(`Native texture ${frameNode} mip chain starts at ${firstLevel?.width} x ${firstLevel?.height}, not its Engine.Texture USize x VSize ${size.width} x ${size.height} shifted by firstMip ${chain.firstMip}.`);
   }
   const levels: LoadedTextureMipLevel[] = [];
   for (const level of chain.levels) {

@@ -29,25 +29,30 @@ export function nativeMipLevelBytes(level: NativeMipChainFixtureLevel): Uint8Arr
   return new Uint8Array(Buffer.from(level.base64, "base64"));
 }
 
-export function nativeMipChainPin(fixture: NativeMipChainFixture): TextureMipChainPin {
-  return { format: fixture.format, levels: fixture.mips.map(level => ({ width: level.width, height: level.height, bytes: level.bytes, sha256: level.sha256,
-    path: textureMipLevelStorePath(level.sha256) })) };
+export function nativeMipChainPin(fixture: NativeMipChainFixture, firstMip = 0): TextureMipChainPin {
+  return { format: fixture.format, firstMip, levels: fixture.mips.slice(firstMip).map(level => ({ width: level.width, height: level.height, bytes: level.bytes,
+    sha256: level.sha256, path: textureMipLevelStorePath(level.sha256) })) };
 }
 
-export function swatchProgramWithSquareTexture(image: FixtureTextureImage, size: number): FixtureProgram {
+export function swatchProgramWithTextureSize(image: FixtureTextureImage, width: number, height: number): FixtureProgram {
   const program = syntheticSwatchProgram(image);
+  const sizeByField: Readonly<Record<string, number>> = { USize: width, VSize: height };
   return { ...program, nodes: program.nodes.map(node => node.class !== "Engine.Texture" ? node : { ...node, fields: node.fields.map(entry =>
-    entry.field === "USize" || entry.field === "VSize" ? { ...entry, value: size } : entry) }) };
+    entry.field in sizeByField ? { ...entry, value: sizeByField[entry.field]! } : entry) }) };
 }
 
-export function mipChainSwatch(object: string): MipChainSwatch {
+export function mipChainSwatchWithPin(object: string, pin: TextureMipChainPin): MipChainSwatch {
   const fixture = nativeMipChainFixture(object);
-  const size = fixture.mips[0]!.width;
-  const png = new Uint8Array(encodeSolidRgbaPng(size, size, swatchTextureRgba));
-  const image: FixtureTextureImage = { ...textureImageFor(png), mips: nativeMipChainPin(fixture) };
-  const programBytes = new Uint8Array(canonicalProgramBytes(swatchProgramWithSquareTexture(image, size)));
+  const { width, height } = fixture.mips[0]!;
+  const png = new Uint8Array(encodeSolidRgbaPng(width, height, swatchTextureRgba));
+  const image: FixtureTextureImage = { ...textureImageFor(png), mips: pin };
+  const programBytes = new Uint8Array(canonicalProgramBytes(swatchProgramWithTextureSize(image, width, height)));
   const materialId = sha256Hex(programBytes);
   const servedFiles = new Map<string, Uint8Array<ArrayBuffer>>([[nativeMaterialProgramPath(materialId), programBytes], [image.path, png],
     ...fixture.mips.map(level => [textureMipLevelStorePath(level.sha256), nativeMipLevelBytes(level)] as const)]);
   return { fixture, materialId, image, servedFiles };
+}
+
+export function mipChainSwatch(object: string, firstMip = 0): MipChainSwatch {
+  return mipChainSwatchWithPin(object, nativeMipChainPin(nativeMipChainFixture(object), firstMip));
 }

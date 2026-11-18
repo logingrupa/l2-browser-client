@@ -9,15 +9,26 @@ import {
   TEXTURE_COMPRESSION_BC_UNALIGNED_SIZE_REASON, TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON, textureMipLevelStorePath, type TextureMipChainPin,
 } from "../../src/materials/ue2/model/textureMipChain";
 import { canonicalProgramBytes, encodeSolidRgbaPng, sha256Hex, swatchTextureRgba, textureImageFor } from "../support/materialProgramFixture";
-import { mipChainSwatch, nativeMipChainFixture, nativeMipChainPin, swatchProgramWithSquareTexture } from "../support/nativeMipChainFixture";
+import { mipChainSwatch, mipChainSwatchWithPin, type MipChainSwatch, nativeMipChainFixture, nativeMipChainPin, swatchProgramWithTextureSize } from "../support/nativeMipChainFixture";
 
-function serveProgramWithMipChain(object: string) {
-  const swatch = mipChainSwatch(object);
+function serveSwatch(swatch: MipChainSwatch): MipChainSwatch {
   vi.stubGlobal("fetch", vi.fn(async (url: string) => {
     const bytes = swatch.servedFiles.get(url);
     return new Response(bytes === undefined ? null : bytes.slice(), { status: bytes === undefined ? 404 : 200 });
   }));
   return swatch;
+}
+
+function serveProgramWithMipChain(object: string, firstMip = 0): MipChainSwatch {
+  return serveSwatch(mipChainSwatch(object, firstMip));
+}
+
+function parsedTextureImageMips(object: string, pin: TextureMipChainPin): unknown {
+  const fixture = nativeMipChainFixture(object);
+  const { width, height } = fixture.mips[0]!;
+  const image = { ...textureImageFor(encodeSolidRgbaPng(width, height, swatchTextureRgba)), mips: pin };
+  const program = parseMaterialProgram(JSON.parse(new TextDecoder().decode(canonicalProgramBytes(swatchProgramWithTextureSize(image, width, height)))));
+  return program.nodes.find(node => node.class === "Engine.Texture")?.image?.mips;
 }
 
 const scenes: Scene[] = [];
@@ -61,7 +72,7 @@ describe("native texture mip chain pins", () => {
   it("parses the original DXT3 levels of l2_skies.FlareSet.Sun01 in source order", () => {
     const fixture = nativeMipChainFixture("l2_skies.FlareSet.Sun01");
     const image = { ...textureImageFor(encodeSolidRgbaPng(128, 128, swatchTextureRgba)), mips: nativeMipChainPin(fixture) };
-    const program = parseMaterialProgram(JSON.parse(new TextDecoder().decode(canonicalProgramBytes(swatchProgramWithSquareTexture(image, 128)))));
+    const program = parseMaterialProgram(JSON.parse(new TextDecoder().decode(canonicalProgramBytes(swatchProgramWithTextureSize(image, 128, 128)))));
     const texture = program.nodes.find(node => node.class === "Engine.Texture");
     expect(texture?.image?.mips).toEqual(nativeMipChainPin(fixture));
   });
@@ -72,10 +83,39 @@ describe("native texture mip chain pins", () => {
     ["an unpublished format", (pin: TextureMipChainPin) => ({ ...pin, format: "P8" }), /format/],
     ["a level path that is not its SHA-256 store path", (pin: TextureMipChainPin) => ({ ...pin, levels: [{ ...pin.levels[0]!, path: "/l2/native-materials/elsewhere.bin" }, ...pin.levels.slice(1)] }), /store path/],
     ["an empty chain", (pin: TextureMipChainPin) => ({ ...pin, levels: [] }), /1 to 16 levels/],
+    ["a firstMip that is not a level index", (pin: TextureMipChainPin) => ({ ...pin, firstMip: -1 }), /firstMip/],
   ])("refuses %s at the trust boundary", (_case, corrupt, message) => {
     const fixture = nativeMipChainFixture("l2_skies.FlareSet.Sun01");
     const image = { ...textureImageFor(encodeSolidRgbaPng(128, 128, swatchTextureRgba)), mips: corrupt(nativeMipChainPin(fixture)) as TextureMipChainPin };
-    expect(() => parseMaterialProgram(JSON.parse(new TextDecoder().decode(canonicalProgramBytes(swatchProgramWithSquareTexture(image, 128)))))).toThrow(message);
+    expect(() => parseMaterialProgram(JSON.parse(new TextDecoder().decode(canonicalProgramBytes(swatchProgramWithTextureSize(image, 128, 128)))))).toThrow(message);
+  });
+});
+
+describe("native texture mip chain retention", () => {
+  it("parses the nine RM-25 Cm_o_wall008 levels down to its 2x1 tail", () => {
+    const pin = nativeMipChainPin(nativeMipChainFixture("cruma_tr_t.Cm_o_wall008"));
+    expect(parsedTextureImageMips("cruma_tr_t.Cm_o_wall008", pin)).toEqual(pin);
+    expect(pin.levels.at(-1)).toMatchObject({ width: 2, height: 1 });
+  });
+
+  it("refuses a level past the smaller dimension of the chain", () => {
+    const pin = nativeMipChainPin(nativeMipChainFixture("cruma_tr_t.Cm_o_wall008"));
+    const pastSha256 = "a".repeat(64);
+    const pastTheCap = { ...pin, levels: [...pin.levels, { width: 1, height: 1, bytes: 8, sha256: pastSha256, path: textureMipLevelStorePath(pastSha256) }] };
+    expect(() => parsedTextureImageMips("cruma_tr_t.Cm_o_wall008", pastTheCap)).toThrow(/does not halve/);
+  });
+
+  it("loads a chain whose first level is USize and VSize shifted by its firstMip", async () => {
+    const served = serveProgramWithMipChain("l2_skies.FlareSet.Sun01", 1);
+    const loaded = await loadNativeMaterial(served.materialId, new AbortController().signal);
+    const [chain] = [...loaded.textureMipChains.values()];
+    expect(chain?.levels.map(level => [level.width, level.height])).toEqual(served.fixture.mips.slice(1).map(level => [level.width, level.height]));
+  });
+
+  it("refuses a chain whose first level is not USize and VSize shifted by its firstMip", async () => {
+    const fixture = nativeMipChainFixture("l2_skies.FlareSet.Sun01");
+    const served = serveSwatch(mipChainSwatchWithPin(fixture.object, { ...nativeMipChainPin(fixture, 1), firstMip: 2 }));
+    await expect(loadNativeMaterial(served.materialId, new AbortController().signal)).rejects.toThrow(/USize x VSize 128 x 128 shifted by firstMip 2/);
   });
 });
 
