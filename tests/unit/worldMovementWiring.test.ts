@@ -5,7 +5,7 @@ import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldCommand, WorldEvent } from "../../src/world/worldTypes";
-import type { WorldPosition } from "../../src/world/sourceFrame";
+import { sourceHeadingToWorldYaw, type WorldPosition } from "../../src/world/sourceFrame";
 import { createCollisionWorld, type CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
 import { decodeNativeTileCollisionCell } from "../../src/scene/world/movement/core/decodeNativeTileCollision";
 import { wireWorldMovement, type WorldMovement } from "../../src/runtime/worldMovementWiring";
@@ -95,6 +95,24 @@ describe("world movement wiring", () => {
     adapter.dispatch({ type: "preview-action", action: "special-attack", targetId: "native-musveren" });
     advanceFrames(2);
     expect(movement.pose(localPlayerId)!.orientationRadians).toBeCloseTo(towardMusveren, 4);
+    expect(movement.inspection().rejectedRecordCount).toBe(0);
+  });
+
+  it("moves the local pawn pose on a local teleport while a report-position leaves the simulated pose in place", async () => {
+    const { adapter, movement, advanceFrames, settle } = await wiredWorld();
+    await settle();
+    advanceFrames(2);
+    const settled = movement.pose(localPlayerId)!;
+    adapter.dispatch({ type: "report-position", position: { x: 300, y: 100, z: 0 }, heading: 16384 });
+    advanceFrames(2);
+    expect(movement.pose(localPlayerId)!.feetPosition).toEqual(settled.feetPosition);
+    adapter.dispatch({ type: "teleport-local", position: { x: 300, y: 100, z: 0 }, heading: 16384 });
+    advanceFrames(120);
+    const teleported = movement.pose(localPlayerId)!;
+    expect(teleported.feetPosition.x).toBeCloseTo(3, 5);
+    expect(teleported.feetPosition.z).toBeCloseTo(1, 5);
+    expect(teleported.feetPosition.y).toBeCloseTo(settled.feetPosition.y, 2);
+    expect(teleported.orientationRadians).toBeCloseTo(sourceHeadingToWorldYaw(16384), 6);
     expect(movement.inspection().rejectedRecordCount).toBe(0);
   });
 

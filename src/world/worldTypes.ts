@@ -81,6 +81,7 @@ export type WorldCommand =
   | { readonly type: "set-health"; readonly entityId: string; readonly health: number }
   | { readonly type: "report-position"; readonly position: SourcePosition; readonly heading: number }
   | { readonly type: "cannot-move"; readonly position: SourcePosition; readonly heading: number }
+  | { readonly type: "teleport-local"; readonly position: SourcePosition; readonly heading: number }
   | { readonly type: "set-server-time"; readonly gameMinutes: number }
   | { readonly type: "set-environment-ssq-info"; readonly first: number; readonly second: number }
   | { readonly type: "set-environment-red-sky"; readonly timeoutSeconds: number };

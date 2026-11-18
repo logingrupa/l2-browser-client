@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { SourceCollisionCylinder, WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worldTypes";
+import type { SourcePosition } from "../../src/world/sourceFrame";
 
 const createNativeSliceAdapter = (): GameWorldAdapter => new NativeSliceAdapter({ x: 0, y: 0, z: 0 });
 
@@ -18,8 +19,10 @@ describe("GameWorldAdapter contract", () => {
     expectTypeOf<WorldCommand["type"]>().toEqualTypeOf<
       | "set-animation" | "preview-action" | "set-locomotion" | "move-local" | "spawn-npc"
       | "despawn" | "set-paused" | "equip-item" | "cast-skill" | "set-health" | "spawn-character" | "play-clip"
-      | "report-position" | "cannot-move" | "set-server-time" | "set-environment-ssq-info" | "set-environment-red-sky"
+      | "report-position" | "cannot-move" | "teleport-local" | "set-server-time" | "set-environment-ssq-info" | "set-environment-red-sky"
     >();
+    expectTypeOf<Extract<WorldCommand, { readonly type: "teleport-local" }>>()
+      .toEqualTypeOf<{ readonly type: "teleport-local"; readonly position: SourcePosition; readonly heading: number }>();
     expectTypeOf<Extract<WorldCommand, { readonly type: "set-server-time" }>>()
       .toEqualTypeOf<{ readonly type: "set-server-time"; readonly gameMinutes: number }>();
     expectTypeOf<Extract<WorldCommand, { readonly type: "set-environment-ssq-info" }>>()

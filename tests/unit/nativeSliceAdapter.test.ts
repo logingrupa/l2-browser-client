@@ -143,6 +143,35 @@ describe("native slice adapter boundary", () => {
     adapter.dispose();
   });
 
+  it("places the local player with a server teleport record and turns it with a stop record at the requested heading", () => {
+    const adapter = movingAdapter();
+    adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });
+    const events = recorded(adapter);
+    adapter.dispatch({ type: "teleport-local", position: { x: 500, y: 600, z: 300 }, heading: 16384 });
+    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: 0 });
+    expect(events).toEqual([{ type: "update", entity: player(adapter), shouldSnap: true },
+      { type: "teleport", entityId: "local-player", position: { x: 500, y: 600, z: 300 } },
+      { type: "stop", entityId: "local-player", position: { x: 500, y: 600, z: 300 }, heading: 16384 }]);
+    adapter.dispatch({ type: "set-animation", animation: "attack" });
+    expect(events.filter(event => event.type === "stop")).toHaveLength(1);
+    adapter.dispose();
+  });
+
+  it("rejects a local teleport without a finite position, an integer heading or a local collision cylinder", () => {
+    const withoutCollision = new NativeSliceAdapter(origin), withoutCollisionEvents = recorded(withoutCollision);
+    withoutCollision.dispatch({ type: "teleport-local", position: { x: 1, y: 2, z: 3 }, heading: 0 });
+    expect(withoutCollisionEvents).toEqual([{ type: "command-rejected", commandType: "teleport-local", reason: "local-collision-cylinder-absent" }]);
+    const adapter = movingAdapter(), events = recorded(adapter);
+    adapter.dispatch({ type: "teleport-local", position: { x: Number.NaN, y: 2, z: 3 }, heading: 0 });
+    adapter.dispatch({ type: "teleport-local", position: { x: 1, y: 2, z: 3 }, heading: .5 });
+    expect(events).toEqual([
+      { type: "command-rejected", commandType: "teleport-local", reason: reportedPositionNotFiniteReason },
+      { type: "command-rejected", commandType: "teleport-local", reason: reportedHeadingNotIntegerReason },
+    ]);
+    expect(player(adapter).position).toEqual(origin);
+    withoutCollision.dispose(); adapter.dispose();
+  });
+
   it("rejects a reported position it cannot apply with a named reason instead of throwing", () => {
     const adapter = new NativeSliceAdapter(origin), events = recorded(adapter);
     expect(() => adapter.dispatch({ type: "report-position", position: { x: Number.NaN, y: 0, z: 0 }, heading: 0 })).not.toThrow();

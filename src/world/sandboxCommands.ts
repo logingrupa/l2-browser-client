@@ -4,7 +4,7 @@ import type { WorldPosition } from "./sourceFrame";
 type EquipItemCommand = Extract<WorldCommand, { readonly type: "equip-item" }>;
 type CastSkillCommand = Extract<WorldCommand, { readonly type: "cast-skill" }>;
 type PlayClipCommand = Extract<WorldCommand, { readonly type: "play-clip" }>;
-type ReportedPositionCommand = Extract<WorldCommand, { readonly type: "report-position" | "cannot-move" }>;
+type PositionedCommand = Extract<WorldCommand, { readonly type: "report-position" | "cannot-move" | "teleport-local" }>;
 
 export const reportedPositionNotFiniteReason = "reported-position-not-finite";
 export const reportedHeadingNotIntegerReason = "reported-heading-not-integer";
@@ -63,7 +63,7 @@ export function unknownWorldCommandError(unhandledCommand: never): RangeError {
   return new RangeError(`Unknown world command type: ${String(commandType)}.`);
 }
 
-export function reportedPositionRejectionReason(command: ReportedPositionCommand): string | null {
+export function reportedPositionRejectionReason(command: PositionedCommand): string | null {
   if (![command.position.x, command.position.y, command.position.z].every(Number.isFinite)) return reportedPositionNotFiniteReason;
   if (!Number.isSafeInteger(command.heading)) return reportedHeadingNotIntegerReason;
   return null;

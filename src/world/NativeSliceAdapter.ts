@@ -7,6 +7,7 @@ import { sourceHeadingToWorldYaw, sourcePositionToWorld, worldPositionToSource, 
 type PreviewActionCommand = Extract<WorldCommand, { readonly type: "preview-action" }>;
 type ReportPositionCommand = Extract<WorldCommand, { readonly type: "report-position" }>;
 type CannotMoveCommand = Extract<WorldCommand, { readonly type: "cannot-move" }>;
+type TeleportLocalCommand = Extract<WorldCommand, { readonly type: "teleport-local" }>;
 type MoveLocalCommand = Extract<WorldCommand, { readonly type: "move-local" }>;
 type SpawnEvent = Extract<WorldEvent, { readonly type: "spawn" }>;
 export type SpawnCollisionOfEntity = (entity: WorldEntity) => SourceCollisionCylinder | null;
@@ -186,6 +187,9 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       case "cannot-move":
         if (player) this.stopAtReportedPosition(player, command);
         break;
+      case "teleport-local":
+        if (player) this.teleportLocalPlayer(player, command);
+        break;
       case "set-server-time":
         this.emit({ type: "server-time", gameMinutes: command.gameMinutes });
         break;
@@ -251,6 +255,18 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     this.localMoveIssued = false;
     this.update({ ...player, position: sourcePositionToWorld(command.position), orientationRadians: sourceHeadingToWorldYaw(command.heading) });
     this.emit({ type: "stop", entityId: player.id, position: { x: command.position.x, y: command.position.y, z: command.position.z }, heading: command.heading });
+  }
+  private teleportLocalPlayer(player: WorldEntity, command: TeleportLocalCommand): void {
+    const rejectionReason = reportedPositionRejectionReason(command);
+    if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
+    if (this.localCollision === null) { this.emit(commandRejectedEvent(command.type, localCollisionAbsentReason)); return; }
+    this.localMoveIssued = false;
+    const position = { x: command.position.x, y: command.position.y, z: command.position.z };
+    const teleported = { ...player, position: sourcePositionToWorld(position), orientationRadians: sourceHeadingToWorldYaw(command.heading) };
+    this.entities.set(teleported.id, teleported);
+    this.emit({ type: "update", entity: teleported, shouldSnap: true });
+    this.emit({ type: "teleport", entityId: player.id, position });
+    this.emit({ type: "stop", entityId: player.id, position, heading: command.heading });
   }
   private nextSandboxSpawnPosition(player: WorldEntity): WorldPosition {
     this.sandboxSpawnPlacementOrdinal += 1;

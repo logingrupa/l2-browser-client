@@ -70,7 +70,7 @@ async function stopInsideFirstMusicVolume(page: Page, audio: NativeWorldAudioSna
   if (!volume) throw new Error(`${tileKey} music lists no MusicVolume`);
   const [x, y, z] = [0, 1, 2].map(axis => (volume.boundsNative.min[axis]! + volume.boundsNative.max[axis]!) / 2);
   await page.evaluate(position => {
-    window.__nativeSlice!.dispatch({ type: "cannot-move", position, heading: 0 });
+    window.__nativeSlice!.dispatch({ type: "teleport-local", position, heading: 0 });
     window.__nativeSlice!.dispatch({ type: "set-animation", animation: "idle" });
   }, { x: x!, y: y!, z: z! });
   return volume.object;
