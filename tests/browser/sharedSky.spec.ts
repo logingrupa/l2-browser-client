@@ -8,6 +8,7 @@ import { servedLaneCatalogSha256, writeLoadCheckRecord } from "./support/loadChe
 interface SkyCatalogRecord { readonly id: string; readonly manifest: string; readonly manifestSha256: string }
 interface SkyBundleManifest { readonly id: string; readonly counts: { readonly materialRoots: number } }
 interface SkySurfaceInspection { readonly sourceReference: string | null; readonly status: string }
+interface SkyVisibilityInspection { readonly drawn: boolean; readonly acceptedNodes: number; readonly runs: number; readonly runParts: readonly number[] }
 
 const laneName = "world";
 const skyKey = "map:skylevel";
@@ -68,7 +69,16 @@ async function openSharedSky(page: Page, tileId: string, screenshotName: string)
   const { sky, failure } = await skySnapshot(page);
   expect(failure).toBeNull();
   expect(sky).toMatchObject({ status: "shared-sky", sourceId: bundle.id, manifestSha256: skyRecord!.manifestSha256, meshes: bundle.counts.materialRoots,
-    drawGate: "always", gaps: ["shared-sky-view-gate-unresolved"] });
+    drawGate: "fakebackdrop-trigger" });
+  expect(sky!.gaps).toEqual(expect.arrayContaining(["shared-sky-viewport160-unresolved", "shared-sky-matrix-construction-unreplayed"]));
+  expect(sky!.gaps).not.toContain("shared-sky-view-gate-unresolved");
+  expect(sky!.gaps).not.toContain("shared-sky-visibility-unstaged");
+  const visibility = sky!.skyVisibility as SkyVisibilityInspection | null;
+  if (sky!.drawn === true) {
+    expect(sky!.triggerNode).toBeGreaterThanOrEqual(0);
+    expect(visibility).toMatchObject({ drawn: true });
+    expect(visibility!.runParts).toHaveLength(visibility!.runs);
+  }
   const sourceReferences = (sky!.librarySurfaces as readonly SkySurfaceInspection[]).map(surface => surface.sourceReference?.toLowerCase());
   expect(sourceReferences).toHaveLength(7);
   expect(sourceReferences).not.toContain("l2_skies.shaders.starfield_final02");
