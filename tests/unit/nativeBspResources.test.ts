@@ -55,21 +55,14 @@ describe("native BSP section extras", () => {
     expect(parsed.sections.map(entry => entry.nativeRenderSection)).toEqual([0, 1]);
   });
 
-  it("reads sections keyed by the outdoor class as having no native render section", () => {
-    const outdoorClassSection = (primitive: number) => {
-      const { nativeRenderSection: _nativeRenderSection, ...fields } = section(primitive);
-      return { ...fields, outdoor: true };
-    };
-    const parsed = parseNativeBspSectionExtras(extras({ nativeBspSections: [outdoorClassSection(0), outdoorClassSection(1)] }));
-    expect(parsed.sections.map(entry => entry.nativeRenderSection)).toEqual([null, null]);
-  });
-
   it.each<[string, Document]>([
     ["missing sections", { nativeBspSections: undefined }],
     ["no sections", { nativeBspSections: [] }],
     ["a section whose primitive differs from its position", { nativeBspSections: [section(1)] }],
     ["a section with an unknown field", { nativeBspSections: [{ ...section(0), extra: 1 }, section(1)] }],
     ["a section with both the outdoor class and a native render section", { nativeBspSections: [{ ...section(0), outdoor: true }, section(1)] }],
+    ["a section keyed by the outdoor class from before the native render section", { nativeBspSections: [
+      Object.fromEntries(Object.entries({ ...section(0), outdoor: true }).filter(([field]) => field !== "nativeRenderSection")), section(1)] }],
     ["a negative native render section", { nativeBspSections: [section(0, { nativeRenderSection: -1 }), section(1)] }],
     ["a range that points at a missing section", { nativeBspNodeRanges: [{ node: 1, primitive: 5, firstIndex: 0, indexCount: 3 }] }],
     ["a range that is not whole triangles", { nativeBspNodeRanges: [{ node: 1, primitive: 0, firstIndex: 0, indexCount: 4 }] }],

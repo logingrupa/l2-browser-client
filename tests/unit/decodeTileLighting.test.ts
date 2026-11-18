@@ -12,7 +12,7 @@ import { bindTileLighting, lightmapColourOperationOf, type TileLightingBspChunk 
 import { decodeTileLighting, type TileLightingModel } from "../../src/scene/world/lighting/decodeTileLighting";
 import { decodeDxt1Texels, lightmapPageAtHour } from "../../src/scene/world/lighting/lightmapPages";
 import {
-  nativeRenderSectionUnstagedReason, planLightmapSections, sectionSunAffectUnresolvedReason, type LightmapSectionChunk,
+  planLightmapSections, sectionSunAffectUnresolvedReason, type LightmapSectionChunk,
 } from "../../src/scene/world/lighting/tileLightmapSections";
 import type { WorldEnvironmentSample } from "../../src/scene/world/worldTimeOfDay";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
@@ -131,8 +131,6 @@ describe("planLightmapSections", () => {
       "hourly-lighting-input-unstaged:LMPG.compressedRevision"],
     ["a page whose revision differs from its compressed revision",
       () => decoded(replaceArray(tileLightingArrays(), "LMPG.compressedRevision", [3, 3, 4, 3, 3, 3, 3, 3, 3])), plainChunk(), "bsp-live-cache-state"],
-    ["a chunk BSP keyed by the outdoor class", tileLightingModel, { ...plainChunk(), sections: sections.map(section => ({ ...section, nativeRenderSection: null })) },
-      nativeRenderSectionUnstagedReason],
   ])("turns %s into a named gap instead of a lightmap", (_, model, chunk, reason) => {
     expect(planLightmapSections(model(), [chunk])[0]).toMatchObject({ kind: "gap", reason });
   });

@@ -19,7 +19,6 @@ export type LightmapSectionPlan =
   | { readonly kind: "gap"; readonly chunkId: string; readonly primitive: number; readonly reason: string };
 
 const coordinateComponents = 2;
-export const nativeRenderSectionUnstagedReason = "bsp-native-render-section-unstaged";
 export const sectionSunAffectUnresolvedReason = "bsp-section-sun-affect-unresolved";
 export const sortedSectionMixedSunAffectReason = "bsp-sorted-section-mixed-sun-affect";
 
@@ -55,7 +54,6 @@ function planSection(chunk: LightmapSectionChunk, primitive: number, rangeIndexB
   if (section.unlit) return { kind: "unlit", chunkId, primitive, reason: "section-unlit" };
   if (section.lightmap === null || section.lightmap === lightmapTextureNone) return { kind: "unlit", chunkId, primitive, reason: "section-without-lightmap" };
   if (section.lightmap >= model.textureCount) return { kind: "gap", chunkId, primitive, reason: `lighting-section-texture-invalid:${section.lightmap}` };
-  if (section.nativeRenderSection === null) return { kind: "gap", chunkId, primitive, reason: nativeRenderSectionUnstagedReason };
   const nodeRangeSunAffect = model.hourly.nodeRangeSunAffect;
   if (nodeRangeSunAffect.status === "unstaged") return { kind: "gap", chunkId, primitive, reason: nodeRangeSunAffect.reason };
   const pagesGap = compressedPagesGap(model, section.lightmap);
