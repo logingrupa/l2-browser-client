@@ -32,6 +32,7 @@ describe("hourlyLightingTerms", () => {
     expect(terms.staticMesh.colour0).toMatchObject({ drawn: "per-placement-instance-colour", ineligibleReason: "ma-final-static-vertex",
       composition: staticMeshDrawnComposition });
     expect(terms.staticMesh.colour0.condition).toMatch(/^inferred from the D3D9 fixed-function contract \(RM-10\), not GPU output/);
+    expect(terms.staticMesh.colour0.condition).toContain("not the serialized cache (static-mesh-light-changed-clearing)");
     expect(terms.staticMesh.colour1).toMatchObject({ drawn: "white", reasons: ["static-mesh-colour-selector-unresolved", "d3d-device-live-state"] });
     expect(terms.dynamicLights).toEqual({ applied: false, reasons: ["d3d-device-live-state", "ma-temporal-light-types"] });
     expect(terms.device.modulationOperation).toMatchObject({ imageDefaultOpcode: 5, status: "unresolved", reason: "d3d-device-live-state" });
@@ -40,7 +41,7 @@ describe("hourlyLightingTerms", () => {
     }
     expect(terms.device.finalShaderColour).toMatchObject({ status: "unresolved", reason: "d3d-programmable-composition" });
     expect(terms.unresolvedItems).toEqual(hourlyLightingUnresolvedItems.map(item => item.id));
-    expect(terms.unresolvedItems).toHaveLength(17);
+    expect(terms.unresolvedItems).toHaveLength(18);
   });
 
   it("passes an environment type transition through as the named gap", () => {

@@ -21,7 +21,13 @@ export interface StaticMeshAmbientFixture {
   readonly hasInstance: boolean;
   readonly ordinaryEntryCount: number | null;
   readonly hourlyEntryCount: number | null;
-  readonly lighting: readonly StaticMeshAmbientLightingRow[];
+  readonly vertexIndices: readonly number[];
+  readonly serializedInstanceBGRA: readonly (readonly [number, number, number, number])[] | null;
+  readonly forcedOrdinaryRebuildBGRA: readonly (readonly [number, number, number, number])[] | null;
+  readonly forcedRebuildWithLightChangedClearedBGRA: readonly (readonly [number, number, number, number])[] | null;
+  readonly retainedNoExtraDynamicLights: readonly StaticMeshAmbientLightingRow[] | null;
+  readonly clearedLightChangedNoExtraDynamicLights: readonly StaticMeshAmbientLightingRow[] | null;
+  readonly noInstanceNoExtraDynamicLights: readonly StaticMeshAmbientLightingRow[] | null;
 }
 
 export interface StaticMeshAmbientZoneFixture {
@@ -55,7 +61,7 @@ export function staticMeshAmbientFixtureOf(document: StaticMeshAmbientFixtureDoc
 
 export function zoneFieldRecords(zone: StaticMeshAmbientZoneFixture) {
   const field = (name: string, value: unknown) => ({ field: name, value, provenance: "authored", declaringClass: "Engine.ZoneInfo" });
-  return { zoneIndex: zone.zoneIndex, levelInfoFallback: false, distanceFog: [], sunAffect:field("bSunAffect", zone.sunAffect),
+  return { zoneIndex: zone.zoneIndex, levelInfoFallback: false, distanceFog: [], sunAffect: field("bSunAffect", zone.sunAffect),
     ambient: [field("AmbientVector", null), field("AmbientBrightness", zone.ambientBrightness), field("AmbientHue", zone.ambientHue),
       field("AmbientSaturation", zone.ambientSaturation)] };
 }

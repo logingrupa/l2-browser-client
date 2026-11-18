@@ -5,7 +5,7 @@ import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
-import { staticMeshDrawnComposition } from "../../src/environment/model/nativeDrawLightingStates";
+import { hourlyLightingUnresolvedItems, staticMeshDrawnComposition } from "../../src/environment/model/nativeDrawLightingStates";
 import type { NativePlane } from "../../src/environment/model/nativePlane";
 import type { LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { FOG_DISABLED, instanceColourAttributeName } from "../../src/materials/ue2/babylon/material";
@@ -290,15 +290,25 @@ describe("static mesh ambient without hourly entries or without an instance (RM-
     return { f, mesh };
   }
 
-  it.each([950, 1123, 1143])("draws actor %i, whose instance has no hourly entries, with its RM-20 ambient and texture multiplier", async actorExportIndex => {
+  it.each([950, 1123, 1143])("checks the RM-20 ambient of actor %i for the retained-cache branch with its ordinary lights removed", async actorExportIndex => {
     const fixture = staticMeshAmbientFixtureOf(rm20, actorExportIndex);
     expect(fixture.hourlyEntryCount).toBe(0);
+    const [blue, green, red] = fixture.forcedOrdinaryRebuildBGRA![0]!;
     const { f, mesh } = await drawnRm20Actor(fixture, pillarList({ ordinaryMasks: [], hourlyMasks: [] }));
     const probe = f.binding.inspection().lighting.probes[0]!;
     expect(probe).toMatchObject({ hasInstance: true, ambientSource: fixture.runtimeSunAffect ? "hourly" : "render-data", ambient: [...fixture.setAmbientRGB, 255],
-      vertexZeroRgb: [0, 0, 0] });
+      vertexZeroRgb: [red, green, blue] });
     expect(f.binding.inspection().lighting.unlitPlacementReasons).toEqual({});
-    expect(modulate2xMultiplier(instanceColourBytes(mesh, 0), probe.ambient!)).toEqual(fixture.lighting[0]!.textureMultiplierRGB);
+    expect(modulate2xMultiplier(instanceColourBytes(mesh, 0), probe.ambient!)).toEqual(fixture.retainedNoExtraDynamicLights![0]!.textureMultiplierRGB);
+  });
+
+  it.each([950, 1123])("names the cleared bLightChanged rebuild of actor %i, which the retained-cache check leaves out, as the RM-20 light-changed gap", actorExportIndex => {
+    const fixture = staticMeshAmbientFixtureOf(rm20, actorExportIndex);
+    const retained = fixture.retainedNoExtraDynamicLights![0]!, cleared = fixture.clearedLightChangedNoExtraDynamicLights![0]!;
+    expect(cleared.vertex).toBe(retained.vertex);
+    expect(cleared.lightingRGB255).not.toEqual(retained.lightingRGB255);
+    expect(fixture.forcedRebuildWithLightChangedClearedBGRA![0]).not.toEqual(fixture.forcedOrdinaryRebuildBGRA![0]);
+    expect(hourlyLightingUnresolvedItems.map(item => item.id)).toContain("static-mesh-light-changed-clearing");
   });
 
   it("draws actor 1155, which has no static mesh instance, with zero COLOR0, the hourly ambient 60 and the 120/255 multiplier", async () => {
@@ -309,7 +319,7 @@ describe("static mesh ambient without hourly entries or without an instance (RM-
     expect(probe).toMatchObject({ hasInstance: false, ambientSource: "hourly", ambient: [60, 60, 60, 255], vertexZeroRgb: [0, 0, 0] });
     expect(Array.from({ length: pillar.vertexCount }, (_, vertex) => instanceColourBytes(mesh, vertex)).every(bytes => bytes.join() === "0,0,0,255")).toBe(true);
     expect(modulate2xMultiplier(instanceColourBytes(mesh, 0), probe.ambient!)).toEqual([120 / 255, 120 / 255, 120 / 255]);
-    expect(fixture.lighting[0]!.textureMultiplierRGB).toEqual([120 / 255, 120 / 255, 120 / 255]);
+    expect(fixture.noInstanceNoExtraDynamicLights![0]!.textureMultiplierRGB).toEqual([120 / 255, 120 / 255, 120 / 255]);
   });
 
   it("drops the hourly entries of an actor that touches no sun-affected zone and gives it a material of its own render data ambient", async () => {

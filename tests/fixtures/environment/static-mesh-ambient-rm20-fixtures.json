@@ -102,7 +102,53 @@
           255
         ]
       ],
-      "lighting": [
+      "vertexIndices": [
+        0,
+        1
+      ],
+      "serializedInstanceBGRA": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ],
+      "forcedOrdinaryRebuildBGRA": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ],
+      "forcedRebuildWithLightChangedClearedBGRA": [
+        [
+          8,
+          9,
+          11,
+          255
+        ],
+        [
+          8,
+          9,
+          11,
+          255
+        ]
+      ],
+      "retainedNoExtraDynamicLights": [
         {
           "vertex": 0,
           "lightingRGB255": [
@@ -129,7 +175,36 @@
             0.47058823529411764
           ]
         }
-      ]
+      ],
+      "clearedLightChangedNoExtraDynamicLights": [
+        {
+          "vertex": 0,
+          "lightingRGB255": [
+            71,
+            69,
+            68
+          ],
+          "textureMultiplierRGB": [
+            0.5568627450980392,
+            0.5411764705882353,
+            0.5333333333333333
+          ]
+        },
+        {
+          "vertex": 1,
+          "lightingRGB255": [
+            71,
+            69,
+            68
+          ],
+          "textureMultiplierRGB": [
+            0.5568627450980392,
+            0.5411764705882353,
+            0.5333333333333333
+          ]
+        }
+      ],
+      "noInstanceNoExtraDynamicLights": null
     },
     {
       "actorExportIndex": 1123,
@@ -213,7 +288,53 @@
           255
         ]
       ],
-      "lighting": [
+      "vertexIndices": [
+        4,
+        5
+      ],
+      "serializedInstanceBGRA": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "forcedOrdinaryRebuildBGRA": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ],
+      "forcedRebuildWithLightChangedClearedBGRA": [
+        [
+          9,
+          12,
+          20,
+          255
+        ],
+        [
+          8,
+          11,
+          19,
+          255
+        ]
+      ],
+      "retainedNoExtraDynamicLights": [
         {
           "vertex": 4,
           "lightingRGB255": [
@@ -240,7 +361,36 @@
             0.3137254901960784
           ]
         }
-      ]
+      ],
+      "clearedLightChangedNoExtraDynamicLights": [
+        {
+          "vertex": 4,
+          "lightingRGB255": [
+            60,
+            52,
+            49
+          ],
+          "textureMultiplierRGB": [
+            0.47058823529411764,
+            0.40784313725490196,
+            0.3843137254901961
+          ]
+        },
+        {
+          "vertex": 5,
+          "lightingRGB255": [
+            59,
+            51,
+            48
+          ],
+          "textureMultiplierRGB": [
+            0.4627450980392157,
+            0.4,
+            0.3764705882352941
+          ]
+        }
+      ],
+      "noInstanceNoExtraDynamicLights": null
     },
     {
       "actorExportIndex": 1143,
@@ -324,7 +474,40 @@
           255
         ]
       ],
-      "lighting": [
+      "vertexIndices": [
+        0,
+        1
+      ],
+      "serializedInstanceBGRA": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "forcedOrdinaryRebuildBGRA": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ],
+      "forcedRebuildWithLightChangedClearedBGRA": null,
+      "retainedNoExtraDynamicLights": [
         {
           "vertex": 0,
           "lightingRGB255": [
@@ -351,7 +534,9 @@
             0.3137254901960784
           ]
         }
-      ]
+      ],
+      "clearedLightChangedNoExtraDynamicLights": null,
+      "noInstanceNoExtraDynamicLights": null
     },
     {
       "actorExportIndex": 1155,
@@ -439,13 +624,27 @@
           255
         ]
       ],
-      "lighting": [
+      "vertexIndices": [
+        0,
+        1
+      ],
+      "serializedInstanceBGRA": null,
+      "forcedOrdinaryRebuildBGRA": null,
+      "forcedRebuildWithLightChangedClearedBGRA": null,
+      "retainedNoExtraDynamicLights": null,
+      "clearedLightChangedNoExtraDynamicLights": null,
+      "noInstanceNoExtraDynamicLights": [
         {
           "vertex": 0,
+          "materialAmbientRGB": [
+            1.0,
+            1.0,
+            1.0
+          ],
           "lightingRGB255": [
-            60,
-            60,
-            60
+            60.0,
+            60.0,
+            60.0
           ],
           "textureMultiplierRGB": [
             0.47058823529411764,
@@ -455,10 +654,15 @@
         },
         {
           "vertex": 1,
+          "materialAmbientRGB": [
+            1.0,
+            1.0,
+            1.0
+          ],
           "lightingRGB255": [
-            60,
-            60,
-            60
+            60.0,
+            60.0,
+            60.0
           ],
           "textureMultiplierRGB": [
             0.47058823529411764,
@@ -554,7 +758,40 @@
           255
         ]
       ],
-      "lighting": [
+      "vertexIndices": [
+        0,
+        1
+      ],
+      "serializedInstanceBGRA": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ],
+      "forcedOrdinaryRebuildBGRA": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ],
+      "forcedRebuildWithLightChangedClearedBGRA": null,
+      "retainedNoExtraDynamicLights": [
         {
           "vertex": 0,
           "lightingRGB255": [
@@ -581,7 +818,9 @@
             0.47058823529411764
           ]
         }
-      ]
+      ],
+      "clearedLightChangedNoExtraDynamicLights": null,
+      "noInstanceNoExtraDynamicLights": null
     }
   ],
   "zones": [

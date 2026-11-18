@@ -26,13 +26,15 @@ describe("native draw lighting states", () => {
     expect(staticMeshColourStreams.authoredColour).toMatchObject({ declarationUsage: "COLOR1", status: "unresolved", reason: "d3d-device-live-state" });
   });
 
-  it("lists all 13 DB-7 unresolved items, the 4 RM-10 composition items and the terrain refresh threshold as visible gaps", () => {
+  it("lists all 13 DB-7 unresolved items, the 4 RM-10 composition items, the RM-20 light-changed item and the terrain refresh threshold as visible gaps", () => {
     expect(hourlyLightingUnresolvedItems.map(item => item.id)).toEqual([
       "terrain-general-staticlight-sampleintensity", "terrain-full-runtime-map-reconstruction", "bsp-full-effect-attenuation", "bsp-shadow-slot-origin",
       "bsp-final-filtered-rgb", "bsp-live-cache-state", "ma-final-static-vertex", "ma-live-actor-fixture", "ma-scalar-field-name", "ma-temporal-light-types",
       "d3d-programmable-composition", "d3d-device-live-state", "d3d-universal-stage-number",
-      "rm10-selected-shader", "rm10-static-live-branch", "rm10-live-device-state", "rm10-final-gpu-colour",
+      "rm10-selected-shader", "rm10-static-live-branch", "rm10-live-device-state", "rm10-final-gpu-colour", "static-mesh-light-changed-clearing",
     ]);
+    expect(hourlyLightingUnresolvedItems.find(item => item.id === "static-mesh-light-changed-clearing")).toMatchObject({ surface: "staticMesh",
+      reason: expect.stringContaining("950 retained 60 vs cleared 71,69,68") });
     expect(terrainRefreshThreshold).toMatchObject({ status: "unresolved", reason: "terrain-refresh-threshold-unresolved" });
   });
 
