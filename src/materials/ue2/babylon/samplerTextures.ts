@@ -35,9 +35,14 @@ const blockCompressedBabylonFormats: Readonly<Record<Exclude<TextureMipChainForm
 };
 const blockCompressionEdge = 4;
 
+export function blockCompressionGapReason(scene: Scene): string | null {
+  return scene.getEngine().getCaps().s3tc ? null : TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON;
+}
+
 export function nativeMipChainUpload(scene: Scene, chain: LoadedTextureMipChain): MipChainUpload {
   if (chain.format === "RGBA8") return { babylonFormat: Constants.TEXTUREFORMAT_BGRA };
-  if (!scene.getEngine().getCaps().s3tc) return { gapReason: TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON };
+  const unavailableReason = blockCompressionGapReason(scene);
+  if (unavailableReason !== null) return { gapReason: unavailableReason };
   const [firstLevel] = chain.levels;
   if (firstLevel!.width % blockCompressionEdge !== 0 || firstLevel!.height % blockCompressionEdge !== 0) {
     return { gapReason: TEXTURE_COMPRESSION_BC_UNALIGNED_SIZE_REASON };

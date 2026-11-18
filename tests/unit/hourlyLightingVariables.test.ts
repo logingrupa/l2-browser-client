@@ -82,7 +82,11 @@ describe("hourly lighting developer variables", () => {
     expect(sourceReadings.find(entry => entry.name === "lighting.bsp.textureSources")!.value())
       .toBe("0: rebuild not requested | 1: rebuild pending | 2: gap bsp-rebuild-composition-failed:worker stopped");
     expect(byName("lighting.bsp.upload")).toMatchObject({ status: "unverified",
-      value: "compressed child rgba8-mip0-cpu-decoded (lightmap-bc1-cpu-decode); rebuilt composite rgba8-single-mip-rebuilt" });
+      value: "compressed child rgba8-mip0-cpu-decoded (texture-compression-bc-unavailable); rebuilt composite rgba8-single-mip-rebuilt" });
+    const blockCompressedReadings = hourlyLightingVariables(() => ({ ...(attached.inspection() as TileLightingRuntimeInspection),
+      lightmapUploads: { compressedChild: { format: "bc1-native-levels", reason: null }, rebuiltComposite: { format: "rgba8-single-mip-rebuilt", reason: null } } }));
+    expect(blockCompressedReadings.find(entry => entry.name === "lighting.bsp.upload")!.value())
+      .toBe("compressed child bc1-native-levels; rebuilt composite rgba8-single-mip-rebuilt");
     expect(byName("lighting.staticMesh.ambient")).toMatchObject({ status: "native" });
     expect(byName("lighting.staticMesh.visibility")).toMatchObject({ status: "native",
       value: `1 of 1 placements hourly; ${staticMeshVisibilityProbeActor} vertex 0 0.5 (entries 3 > 4 at 0.5)` });

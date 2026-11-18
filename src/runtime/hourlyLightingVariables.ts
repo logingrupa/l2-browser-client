@@ -91,7 +91,8 @@ function bspReadings(lighting: TileLightingRuntimeInspection): Record<string, ()
     "lighting.bsp.colourOperation": () => unverifiedReading(operations()),
     "lighting.bsp.upload": () => {
       const { compressedChild, rebuiltComposite } = lighting.lightmapUploads;
-      return unverifiedReading(`compressed child ${compressedChild.format} (${compressedChild.reason}); rebuilt composite ${rebuiltComposite.format}`);
+      const compressedChildReason = compressedChild.reason === null ? "" : ` (${compressedChild.reason})`;
+      return unverifiedReading(`compressed child ${compressedChild.format}${compressedChildReason}; rebuilt composite ${rebuiltComposite.format}`);
     },
   };
 }

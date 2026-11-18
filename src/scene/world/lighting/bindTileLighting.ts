@@ -1,17 +1,20 @@
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
-import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { VertexBuffer } from "@babylonjs/core/Buffers/buffer";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { createNativeMaterial, type FogState, type LightmapLighting, type LoadedNativeMaterial, type NativeMaterial } from "../../../materials/ue2/babylon/material";
+import type { LoadedTextureMipChain } from "../../../materials/ue2/babylon/loadNativeMaterial";
+import {
+  applyNativeSampler, blockCompressionGapReason, createNativeMipChainTexture, createNativeSingleLevelTexture, nativeMipChainUpload,
+} from "../../../materials/ue2/babylon/samplerTextures";
+import { TEXTURE_SAMPLING_CONSTANTS } from "../../../materials/ue2/model/constants/textureSamplingConstants";
 import { lightmapStageColourOperation, type LightmapColourOperation } from "../../../environment/model/nativeDrawLightingStates";
 import { bspLightmapSlot } from "../../../environment/model/bspLightmapSelection";
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
 import type { BspLightmapPageSource } from "../../../environment/model/bspLightmapSelection";
 import type { RebuiltLightmapResult } from "./composeRebuiltLightmap";
-import type { TileLightingModel } from "./decodeTileLighting";
+import type { TileLightingModel, TileLightmapPage } from "./decodeTileLighting";
 import { decodeDxt1Texels, lightmapHourPages, lightmapPageAtHour, lightmapPageSource } from "./lightmapPages";
 import type { RebuiltLightmapRequest } from "./rebuiltLightmapRequest";
 import { createRebuiltLightmapStore, type LightmapTextureSource } from "./rebuiltLightmapStore";
@@ -69,6 +72,16 @@ export interface LightmapTextureSlot {
   readonly sunAffectedSlot: number | null;
 }
 
+export interface LightmapPageUpload {
+  readonly format: string;
+  readonly reason: string | null;
+}
+
+export interface LightmapPageUploads {
+  readonly compressedChild: LightmapPageUpload;
+  readonly rebuiltComposite: LightmapPageUpload;
+}
+
 export interface TileLightingInspection {
   readonly gap: null;
   readonly sourceSha256: string;
@@ -80,7 +93,7 @@ export interface TileLightingInspection {
   readonly sunAffectedSectionCount: number;
   readonly sunAffectNodeSet: SunAffectNodeSet;
   readonly textureSlots: readonly LightmapTextureSlot[];
-  readonly lightmapUploads: typeof lightmapPageUploads;
+  readonly lightmapUploads: LightmapPageUploads;
   readonly textureSources: readonly LightmapTextureSource[];
   readonly statusCounts: Readonly<Record<TileLightingSurfaceStatus, number>>;
   readonly sections: readonly TileLightingSectionInspection[];
@@ -116,10 +129,15 @@ interface BoundChunk {
 
 const lightmapHourOutsideDayReason = "lightmap-hour-outside-day";
 const colourModifierClass = "Engine.ColorModifier";
-const lightmapPageUploads = {
-  compressedChild: { format: "rgba8-mip0-cpu-decoded", reason: "lightmap-bc1-cpu-decode" },
-  rebuiltComposite: { format: "rgba8-single-mip-rebuilt", reason: null },
-} as const;
+const compressedLightmapFormat = "DXT1";
+const lightmapAddress = TEXTURE_SAMPLING_CONSTANTS.lightmapAddress.runtimeDefault;
+const rebuiltCompositeUpload: LightmapPageUpload = { format: "rgba8-single-mip-rebuilt", reason: null };
+
+function lightmapPageUploads(scene: Scene): LightmapPageUploads {
+  const unavailableReason = blockCompressionGapReason(scene);
+  return { compressedChild: unavailableReason === null ? { format: "bc1-native-levels", reason: null } : { format: "rgba8-mip0-cpu-decoded", reason: unavailableReason },
+    rebuiltComposite: rebuiltCompositeUpload };
+}
 
 function textureSlots(model: TileLightingModel, hour: number): LightmapTextureSlot[] {
   return Array.from({ length: model.textureCount }, (_, texture) => {
@@ -162,12 +180,19 @@ function applyPreparedSections(prepared: readonly PreparedSection[]): BoundSecti
   return prepared.map(({ section }) => section);
 }
 
-function lightmapTexture(scene: Scene, rgba: Uint8Array, edge: number, name: string): BaseTexture {
-  const texture = RawTexture.CreateRGBATexture(rgba, edge, edge, scene, false, false, Texture.BILINEAR_SAMPLINGMODE);
-  texture.name = name;
-  texture.gammaSpace = false;
-  texture.wrapU = Texture.CLAMP_ADDRESSMODE; texture.wrapV = Texture.CLAMP_ADDRESSMODE;
-  return texture;
+function lightmapTexture(texture: BaseTexture, name: string): BaseTexture {
+  return applyNativeSampler(texture, name, lightmapAddress, lightmapAddress);
+}
+
+function compressedLightmapChain(page: TileLightmapPage): LoadedTextureMipChain {
+  return { format: compressedLightmapFormat, levels: page.levels.map(level => ({ width: level.edge, height: level.edge, data: level.texels })) };
+}
+
+function compressedLightmapTexture(scene: Scene, page: TileLightmapPage): BaseTexture {
+  const chain = compressedLightmapChain(page), upload = nativeMipChainUpload(scene, chain);
+  if ("babylonFormat" in upload) return createNativeMipChainTexture(scene, chain, upload.babylonFormat);
+  const [firstLevel] = page.levels;
+  return createNativeSingleLevelTexture(scene, decodeDxt1Texels(firstLevel!.texels, firstLevel!.edge), firstLevel!.edge, firstLevel!.edge);
 }
 
 function cachedTexture(cache: Map<number, BaseTexture>, key: number, create: () => BaseTexture): BaseTexture {
@@ -182,14 +207,12 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
   const programs = new Map<string, LoadedNativeMaterial>(), chunks = new Map<string, BoundChunk>();
   const rebuiltLightmaps = createRebuiltLightmapStore({ model, environment: settings.rebuildEnvironment, compose: settings.composeRebuiltLightmap });
   let disposed = false;
-  const compressedPageTexture = (page: number) => cachedTexture(pageTextures, page, () => {
-    const source = model.pages[page]!;
-    return lightmapTexture(scene, decodeDxt1Texels(source.texels, source.edge), source.edge, `Tile lightmap page ${page}`);
-  });
+  const compressedPageTexture = (page: number) => cachedTexture(pageTextures, page, () =>
+    lightmapTexture(compressedLightmapTexture(scene, model.pages[page]!), `Tile lightmap page ${page}`));
   const rebuiltTexture = (texture: number) => cachedTexture(rebuiltTextures, texture, () => {
     const rebuilt = rebuiltLightmaps.result(texture);
     if (rebuilt.status !== "resolved") throw new RangeError(`Lightmap texture ${texture} is bound although its rebuild is ${rebuilt.reason}.`);
-    return lightmapTexture(scene, rebuilt.value.rgba, rebuilt.value.edge, `Tile rebuilt lightmap ${texture}`);
+    return lightmapTexture(createNativeSingleLevelTexture(scene, rebuilt.value.rgba, rebuilt.value.edge, rebuilt.value.edge), `Tile rebuilt lightmap ${texture}`);
   });
   const pageTexture = (page: number, texture: number): BaseTexture =>
     lightmapPageSource(model, page) === "rebuilt-composite" ? rebuiltTexture(texture) : compressedPageTexture(page);
@@ -270,7 +293,7 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
       return { gap: null, sourceSha256: model.sourceSha256, environment, lightmapHourGap: lightmapHourGap(environment.hour), fog: settings.fog(), sectionCount: sections.length,
         lightmappedSectionCount: sections.filter(({ section }) => section.plan.kind === "lightmapped").length,
         sunAffectedSectionCount: sections.filter(({ sunAffect }) => sunAffect).length, sunAffectNodeSet: sunAffectNodeSetOf(visibility),
-        textureSlots: textureSlots(model, environment.hour), lightmapUploads: lightmapPageUploads, textureSources: rebuiltLightmaps.textureSources(), statusCounts,
+        textureSlots: textureSlots(model, environment.hour), lightmapUploads: lightmapPageUploads(scene), textureSources: rebuiltLightmaps.textureSources(), statusCounts,
         sections: sections.map(({ section: { plan, status, programMaterialId, reasons, colourOperation }, sunAffect }) => {
           const page = pageAtHour(model, plan, environment.hour, sunAffect);
           return { chunkId: plan.chunkId, primitive: plan.primitive, lighting: plan.kind, lightmapTexture: plan.kind === "lightmapped" ? plan.lightmapTexture : null,

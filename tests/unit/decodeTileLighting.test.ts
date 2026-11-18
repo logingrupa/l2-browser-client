@@ -4,6 +4,11 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Constants } from "@babylonjs/core/Engines/constants";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { inspectNativeSampler } from "../../src/materials/ue2/babylon/samplerTextures";
+import { TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON } from "../../src/materials/ue2/model/textureMipChain";
+import { liveBoundStage, liveLightmapTexture } from "../support/textureSamplersFixture";
 import { FOG_DISABLED, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/material";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
@@ -42,6 +47,24 @@ function decoded(arrays: readonly TypedPayloadFixtureArray[]) {
   return decodeTileLighting(payload.assetRecord, payload.payloadBytes);
 }
 
+function swatchLoadedMaterial(): LoadedNativeMaterial {
+  const swatchImage = textureImageFor(swatchTexturePng());
+  const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
+  return { materialId: "ef".repeat(32), program, plan: compileMaterialStagePlan(program),
+    texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
+}
+
+function convertedMeshes(scene: Scene, materialId: string): Mesh[] {
+  return sections.map((section, primitive) => {
+    const mesh = new Mesh(section.material, scene);
+    const positions = Array.from({ length: primitiveVertexCounts[primitive]! * 3 }, (_, index) => index);
+    Object.assign(new VertexData(), { positions, indices: primitiveIndices[primitive], uvs: new Array(primitiveVertexCounts[primitive]! * 2).fill(0) }).applyToMesh(mesh);
+    mesh.material = new Material(`${section.material} converted`, scene);
+    mesh.material.metadata = primitive === 2 ? null : { gltf: { extras: { nativeMaterialProgram: { directory: `native-materials/${materialId}`, programSha256: materialId } } } };
+    return mesh;
+  });
+}
+
 function plainChunk(ranges: readonly NativeBspNodeRange[] = nodeRanges): LightmapSectionChunk {
   return { chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges: ranges, primitiveVertexCount: primitive => primitiveVertexCounts[primitive]!,
     primitiveIndices: primitive => primitiveIndices[primitive]! };
@@ -61,7 +84,7 @@ describe("decodeTileLighting", () => {
     expect(model).toMatchObject({ textureCount: 2, sourceSha256: "0123456789abcdef".repeat(4) });
     expect(model.pages).toHaveLength(9);
     expect(model.pages[3]).toMatchObject({ texture: 0, slot: 3, slotCount: 8, edge: 8 });
-    expect(model.pages[3]!.texels).toHaveLength(32);
+    expect(model.pages[3]!.levels.map(level => [level.edge, level.texels.length])).toEqual([[8, 32], [4, 8]]);
     expect(model.nodeRanges.map(range => [range.node, range.texture, range.lightmapCoordinates.length])).toEqual([[10, 0, 8], [11, 1, 6], [12, -1, 0]]);
     const unstagedBlendTime = { status: "unstaged", reason: "fog-zone-blend-time-unstaged" };
     expect(model.records.zones).toEqual([
@@ -149,18 +172,8 @@ describe("bindTileLighting", () => {
   it("gives every BSP section a native material whose lightmap page follows its section lightmap texture and the hour", async () => {
     const scene = new Scene(new NullEngine());
     scenes.push(scene);
-    const swatchImage = textureImageFor(swatchTexturePng());
-    const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
-    const loaded: LoadedNativeMaterial = { materialId: "ef".repeat(32), program, plan: compileMaterialStagePlan(program),
-      texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
-    const meshes = sections.map((section, primitive) => {
-      const mesh = new Mesh(section.material, scene);
-      const positions = Array.from({ length: primitiveVertexCounts[primitive]! * 3 }, (_, index) => index);
-      Object.assign(new VertexData(), { positions, indices: primitiveIndices[primitive], uvs: new Array(primitiveVertexCounts[primitive]! * 2).fill(0) }).applyToMesh(mesh);
-      mesh.material = new Material(`${section.material} converted`, scene);
-      mesh.material.metadata = primitive === 2 ? null : { gltf: { extras: { nativeMaterialProgram: { directory: `native-materials/${loaded.materialId}`, programSha256: loaded.materialId } } } };
-      return mesh;
-    });
+    const loaded = swatchLoadedMaterial();
+    const meshes = convertedMeshes(scene, loaded.materialId);
     const chunk: TileLightingBspChunk = { chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes };
     let environment = environmentAtHour(1);
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1, environment: () => environment,
@@ -177,7 +190,7 @@ describe("bindTileLighting", () => {
     expect(pagesAtOne).toEqual([0, 8, null]);
     expect(pagesAtThirteen).toEqual([4, 8, null]);
     expect(binding.inspection().textureSlots).toEqual([{ texture: 0, childCount: 8, sunAffectedSlot: 4 }, { texture: 1, childCount: 1, sunAffectedSlot: 0 }]);
-    expect(binding.inspection()).toMatchObject({ sunAffectedSectionCount: 1, lightmapUploads: { compressedChild: { reason: "lightmap-bc1-cpu-decode" } } });
+    expect(binding.inspection()).toMatchObject({ sunAffectedSectionCount: 1, lightmapUploads: { compressedChild: { format: "rgba8-mip0-cpu-decoded", reason: TEXTURE_COMPRESSION_BC_UNAVAILABLE_REASON } } });
     expect(binding.inspection().sections.map(section => [section.sunAffect, section.colourOperation?.operation ?? null, section.reasons])).toEqual([
       [true, "global-modulation", ["d3d-device-live-state"]], [false, "global-modulation", ["d3d-device-live-state"]], [null, null, ["section-unlit"]]]);
     expect(binding.inspection().lightmapHourGap).toBeNull();
@@ -201,6 +214,31 @@ describe("bindTileLighting", () => {
     await binding.addChunk(chunk);
     expect(binding.inspection()).toMatchObject({ sectionCount: 3, lightmappedSectionCount: 2 });
     expect(meshes[0]!.material!.getClassName()).toBe("ShaderMaterial");
+    binding.dispose();
+  });
+
+  it("uploads both original BC1 levels of a compressed lightmap page clamped, trilinear and with anisotropy 1 when the device has BC", async () => {
+    const engine = new NullEngine();
+    (engine.getCaps() as { s3tc?: unknown }).s3tc = {};
+    const uploads: [number, number, number, number][] = [];
+    vi.spyOn(engine, "_uploadCompressedDataToTextureDirectly").mockImplementation((_texture, format, width, _height, data, _face, level) => {
+      uploads.push([format, width, data.byteLength, level ?? 0]);
+    });
+    const scene = new Scene(engine);
+    scenes.push(scene);
+    const loaded = swatchLoadedMaterial();
+    const meshes = convertedMeshes(scene, loaded.materialId);
+    const model = tileLightingModel();
+    const binding = bindTileLighting({ scene, model, sessionSeed: 1, environment: () => environmentAtHour(13),
+      levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility: null, loadProgram: async () => loaded, ...inThreadLightmapRebuild() });
+    await binding.addChunk({ chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes });
+    const lightmap = meshes[0]!.material!.getActiveTextures().find(texture => texture.name === "Tile lightmap page 4")!;
+    expect(uploads.slice(0, 2)).toEqual(model.pages[4]!.levels.map((level, levelIndex) =>
+      [Constants.TEXTUREFORMAT_COMPRESSED_RGBA_S3TC_DXT1, level.edge, level.texels.length, levelIndex]));
+    expect(inspectNativeSampler(lightmap)).toEqual({ texture: "Tile lightmap page 4", levelCount: 2, samplingMode: Texture.TRILINEAR_SAMPLINGMODE,
+      anisotropicFilteringLevel: liveBoundStage(liveLightmapTexture).maxAnisotropy, wrapU: Texture.CLAMP_ADDRESSMODE, wrapV: Texture.CLAMP_ADDRESSMODE });
+    expect(liveBoundStage(liveLightmapTexture).levelCount).toBe(model.pages[4]!.levels.length);
+    expect(binding.inspection().lightmapUploads.compressedChild).toEqual({ format: "bc1-native-levels", reason: null });
     binding.dispose();
   });
 

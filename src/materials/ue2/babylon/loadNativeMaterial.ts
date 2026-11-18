@@ -8,7 +8,7 @@ import type { TextureMipChainFormat, TextureMipChainPin } from "../model/texture
 export interface LoadedTextureMipLevel {
   readonly width: number;
   readonly height: number;
-  readonly data: Uint8Array<ArrayBuffer>;
+  readonly data: Uint8Array;
 }
 
 export interface LoadedTextureMipChain {

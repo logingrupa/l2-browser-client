@@ -5,12 +5,17 @@ import { dxt1ByteCount, pageRangeHasRebuiltPage } from "./lightmapPages";
 import { requireLightingInput, requireLightingPrefixStarts } from "./stagedLightingInput";
 import { decodeTileLightingRecords, readTileLightingRecordsDocument, type TileLightingRecords } from "./tileLightingRecords";
 
+export interface TileLightmapLevel {
+  readonly edge: number;
+  readonly texels: Uint8Array;
+}
+
 export interface TileLightmapPage {
   readonly texture: number;
   readonly slot: number;
   readonly slotCount: number;
   readonly edge: number;
-  readonly texels: Uint8Array;
+  readonly levels: readonly TileLightmapLevel[];
 }
 
 export interface TileLightmapNodeRange {
@@ -63,13 +68,14 @@ function decodePages(payload: TypedPayload, textureCount: number, texturePageSta
     requireLightingInput(page >= firstPage && page < endPage, `page ${page} of texture ${pageTexture} lies outside its pages ${firstPage} to ${endPage}.`);
     requireLightingInput(slotCount[page] === endPage - firstPage && slot[page] === page - firstPage,
       `page ${page} is slot ${slot[page]} of ${slotCount[page]}, but texture ${pageTexture} lists it as slot ${page - firstPage} of ${endPage - firstPage}.`);
-    const mip = page * mipsPerPage, edge = mipEdge[mip]!, start = texelStart[mip]!, end = texelStart[mip + 1]!;
-    for (let level = 0; level < mipsPerPage; level++) {
-      const levelEdge = mipEdge[mip + level]!;
+    const mip = page * mipsPerPage;
+    const levels = Array.from({ length: mipsPerPage }, (_, level) => {
+      const levelEdge = mipEdge[mip + level]!, start = texelStart[mip + level]!, end = texelStart[mip + level + 1]!;
       requireLightingInput(Number.isSafeInteger(levelEdge) && levelEdge >= 4 && levelEdge % 4 === 0, `page ${page} mip ${level} edge ${levelEdge} is not a DXT1 edge.`);
-      requireCount(`page ${page} mip ${level} DXT1 bytes`, texelStart[mip + level + 1]! - texelStart[mip + level]!, dxt1ByteCount(levelEdge));
-    }
-    return { texture: pageTexture, slot: slot[page]!, slotCount: slotCount[page]!, edge, texels: texels.subarray(start, end) };
+      requireCount(`page ${page} mip ${level} DXT1 bytes`, end - start, dxt1ByteCount(levelEdge));
+      return { edge: levelEdge, texels: texels.subarray(start, end) };
+    });
+    return { texture: pageTexture, slot: slot[page]!, slotCount: slotCount[page]!, edge: levels[0]!.edge, levels };
   });
 }
 
