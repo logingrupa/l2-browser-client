@@ -14,7 +14,6 @@ CORE_OBJECT_CLASS = 'Core.Object'
 BYTE_PROPERTY_TYPE = 1
 UNSET_ENUM_ORDINAL = 0
 PROGRAM_PROVENANCE_OF_CLASS_DEFAULT = {'authored': 'class-default', 'class-default': 'class-default', 'ue-zero': 'ue-zero'}
-UNCONFIRMED_ENUM_MEMBERS = {('Engine.FinalBlend', 'FrameBufferBlending'): ('FB_Add',)}
 TRIGGER_IGNORING_ENUM_MEMBERS = {('Engine.MaterialSequence', 'TriggerAction'): 'MSTA_Ignore'}
 TEXTURE_CLASS = 'Engine.Texture'
 NO_TEXTURE_IMAGES = MappingProxyType({})
@@ -113,10 +112,7 @@ def enum_name_of(field):
 
 
 def apply_unported_value_rules(class_object, field):
-    key = (class_object, field['field'])
-    if enum_name_of(field) in UNCONFIRMED_ENUM_MEMBERS.get(key, ()):
-        return {**field, 'status': 'unconfirmed'}, material_feature_unported_reason(field['field'])
-    ignoring_member = TRIGGER_IGNORING_ENUM_MEMBERS.get(key)
+    ignoring_member = TRIGGER_IGNORING_ENUM_MEMBERS.get((class_object, field['field']))
     if ignoring_member is not None and field['provenance'] != 'ue-zero' and enum_name_of(field) != ignoring_member:
         return {**field, 'status': 'unported'}, material_feature_unported_reason(field['field'])
     if field['status'] == 'unported':

@@ -258,13 +258,13 @@ class MaterialProgramTests(unittest.TestCase):
         _, quiet_graph = graph_of(UNPORTED_FIXTURE, 'QuietSequence')
         self.assertEqual(derive_material_program(quiet_graph, SYNTHETIC_CLASS_DEFAULTS)['gapReasons'], [])
 
-    def test_final_blend_add_stays_unconfirmed_with_a_feature_reason(self):
+    def test_final_blend_add_is_typed_without_a_feature_reason_since_rm21_confirms_one_one_with_black_fog(self):
         _, graph = graph_of(UNPORTED_FIXTURE, 'AddBlend')
         program = derive_material_program(graph, SYNTHETIC_CLASS_DEFAULTS)
         final_blend = fields_of(program, 'SyntheticUnported.AddBlend')
         self.assertEqual((final_blend['FrameBufferBlending']['status'], final_blend['FrameBufferBlending']['value']),
-                         ('unconfirmed', {'ordinal': 8, 'name': 'FB_Add'}))
-        self.assertEqual(program['gapReasons'], ['material-feature-unported:FrameBufferBlending'])
+                         ('typed', {'ordinal': 8, 'name': 'FB_Add'}))
+        self.assertEqual(program['gapReasons'], [])
 
     def test_an_unset_enum_field_writes_its_declared_member_zero(self):
         _, graph = graph_of(UNPORTED_FIXTURE, 'TriggeredOscillator')
