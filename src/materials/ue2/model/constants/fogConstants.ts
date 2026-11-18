@@ -57,10 +57,18 @@ const fogConstantRows = {
   sourcePrecedence: {
     id: "fog.source-precedence",
     value: ["volume", "local-fog-list", "terrain-zone-environment", "camera-zone"],
-    provenance: `${fogAnswer} and ${fogScopeAnswer}: a physics volume with its fog flag sets fog directly; else a non-empty local L2FogInfo list blends over the Env.int preset; else with an empty list a ZoneInfo with bDistanceFog and bTerrainZone takes the Env.int haze colour at the hour over the Env.int preset; else ZoneInfo DistanceFog is the fallback; alpha never gates enable. Reading the +0x3d8 bits 0x04 and 0x08 as bTerrainZone and bDistanceFog is not re-derived from the Engine.u bool layout`,
+    provenance: `${fogAnswer} and ${fogScopeAnswer}: fog is enabled only when the camera ZoneInfo has bDistanceFog (+0x3d8 & 8) and the viewport actor +0x5ac & 0x80000 (fog.viewport-actor-enable-flag), a separate argument from colour, so without a known camera zone a colour source is unresolved; the sources then pick colour and range: a physics volume with its fog flag sets fog directly; else a non-empty local L2FogInfo list blends over the Env.int preset; else with an empty list a ZoneInfo with bTerrainZone takes the Env.int haze colour at the hour over the Env.int preset; else ZoneInfo DistanceFog is the fallback; alpha never gates enable. Reading the +0x3d8 bits 0x04 and 0x08 as bTerrainZone and bDistanceFog is not re-derived from the Engine.u bool layout`,
     status: "confirmed-interlude",
     interludeEvidence: "Engine.dll FLevelSceneNode::Render 0x1065e940, setters 0x1065f96a and 0x1065f9ba",
     runtimeDefault: ["volume", "local-fog-list", "terrain-zone-environment", "camera-zone"],
+  },
+  viewportActorEnableFlag: {
+    id: "fog.viewport-actor-enable-flag",
+    value: true,
+    provenance: `assumption: ${fogScopeAnswer} gates enable on viewport actor +0x5ac & 0x80000 as well as ZoneInfo +0x3d8 & 8; the flag is unnamed and the client has no viewport actor, so it is assumed set`,
+    status: "unconfirmed",
+    interludeEvidence: null,
+    runtimeDefault: true,
   },
   terrainClipRange: {
     id: "fog.terrain-clip-range",

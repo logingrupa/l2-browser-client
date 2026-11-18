@@ -85,6 +85,7 @@ export interface LocalFogListEvaluation {
 
 export const FOG_DISABLED: FogState = { enabled: false, source: "none", colour: [0, 0, 0], startSourceUnits: 0, endSourceUnits: 0, fogEnd: null };
 export const FOG_UNRESOLVED: FogState = { ...FOG_DISABLED, source: "unresolved" };
+const FOG_ZONE_WITHOUT_FOG: FogState = { ...FOG_DISABLED, source: "zone-without-fog" };
 export const FOG_RANGE_SLOT_COUNT = 5;
 
 const hoursPerDay = 24;
@@ -109,19 +110,18 @@ function enabledFog(record: FogRangeRecord, source: FogSourceName): FogState {
 }
 
 export function evaluateFogState(inputs: FogInputs): FogState {
-  if (inputs.volume) return enabledFog(inputs.volume, "volume");
-  if (inputs.localFogList.status === "blended") return enabledFog(inputs.localFogList.record, "local-fog-list");
-  if (inputs.localFogList.status === "unresolved") return FOG_UNRESOLVED;
   const zone = inputs.cameraZone;
-  if (zone === null) return FOG_DISABLED;
-  if (!zone.distanceFog) return { ...FOG_DISABLED, source: "zone-without-fog" };
+  if (zone === null) return inputs.volume === null && inputs.localFogList.status === "empty" ? FOG_DISABLED : FOG_UNRESOLVED;
+  if (!zone.distanceFog) return FOG_ZONE_WITHOUT_FOG;
+  if (inputs.volume) return enabledFog(inputs.volume, "volume");
+  if (inputs.localFogList.status === "unresolved") return FOG_UNRESOLVED;
+  if (inputs.localFogList.status === "blended") return enabledFog(inputs.localFogList.record, "local-fog-list");
   if (zone.terrainZone === null) return FOG_UNRESOLVED;
   if (zone.terrainZone) {
     const environment = inputs.terrainZoneEnvironment;
     return environment.status === "resolved" ? enabledFog(environment.record, "terrain-zone-environment") : FOG_UNRESOLVED;
   }
-  if (zone.fog === null) throw new RangeError("A camera zone with distance fog needs its fog range.");
-  return enabledFog(zone.fog, "camera-zone");
+  return zone.fog === null ? FOG_UNRESOLVED : enabledFog(zone.fog, "camera-zone");
 }
 
 export function fogRangeSlot(terrainClipRange: number): number {

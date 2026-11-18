@@ -100,7 +100,9 @@ describe("L2FogInfo selection by the Q12 answer", () => {
     expect(FOG_CONSTANTS.localListOrder).toMatchObject({ status: "unconfirmed", runtimeDefault: "export-order" });
     expect(FOG_CONSTANTS.localListOrder.provenance).toMatch(/^assumption:/);
     expect(FOG_CONSTANTS.skySceneRoute).toMatchObject({ status: "unknown", runtimeDefault: null });
-    expect(FOG_CONSTANTS.sourcePrecedence.runtimeDefault).toEqual(["volume", "local-fog-list", "terrain-zone-environment", "camera-zone"]);
+    expect(FOG_CONSTANTS.viewportActorEnableFlag).toMatchObject({ id: "fog.viewport-actor-enable-flag", status: "unconfirmed", runtimeDefault: true });
+    expect(FOG_CONSTANTS.viewportActorEnableFlag.provenance).toMatch(/^assumption:.*\+0x5ac & 0x80000/);
+    expect(FOG_CONSTANTS.sourcePrecedence.provenance).toMatch(/enabled only when the camera ZoneInfo has bDistanceFog \(\+0x3d8 & 8\) and the viewport actor \+0x5ac & 0x80000/);    expect(FOG_CONSTANTS.sourcePrecedence.runtimeDefault).toEqual(["volume", "local-fog-list", "terrain-zone-environment", "camera-zone"]);
     expect(FOG_CONSTANTS.rangeUnit).toMatchObject({ status: "confirmed-interlude", runtimeDefault: 2048 });
     expect(FOG_CONSTANTS.factor.provenance).toMatch(/^assumption:/);
   });
