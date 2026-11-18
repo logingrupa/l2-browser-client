@@ -4,14 +4,14 @@ from pathlib import Path
 from native_assets import implementation_hash
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
-from native_store.canonical_json import canonical_json_bytes
 from native_store.verified_file_writes import sha256_hex
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_chunk_geometry import (BspPolygonError, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb, chunk_bsp_record,
-                                      drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon)
+                                      drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon,
+                                      poly_flags_recipe_sha256)
 from world.bsp_lightmaps import lightmap_texture_of_record, read_bsp_lightmaps
 from world.bsp_material_mapping_size import surface_material_identities
 from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
