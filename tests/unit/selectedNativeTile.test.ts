@@ -30,7 +30,7 @@ describe("native sky presentation with or without a selected tile", () => {
   it.each(["?map=20_20", "?map=20_21", ""])("reads only the shared skies catalog record, never a tile or pinned sky, with search %j", async search => {
     const fetcher = missingSkyStore();
     vi.stubGlobal("location", { search, protocol: "http:" });
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).resolves.toBeNull();
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null, null)).resolves.toBeNull();
     expect(fetcher.mock.calls.map(call => call[0])).toEqual(["/l2/catalog.json"]);
   });
 });

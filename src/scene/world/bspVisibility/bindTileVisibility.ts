@@ -97,7 +97,7 @@ export interface TileVisibilityBinding {
 export const cullingVariableName = "world.visibility.culling";
 const noCameraZone = -1;
 
-function sameOrder(left: Int32Array | undefined, right: Int32Array): boolean {
+export function sameOrder(left: Int32Array | undefined, right: Int32Array): boolean {
   return left !== undefined && left.length === right.length && left.every((range, position) => range === right[position]);
 }
 

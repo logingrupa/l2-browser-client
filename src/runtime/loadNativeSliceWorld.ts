@@ -149,7 +149,8 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
         const cameraFog = section.cameraFog ?? null;
         sky = await createNativeSkyPresentation(scene, worldLifetime.signal, section.skyMaterialUniforms ?? null,
           timeOfDay.status === "running" && cameraFog !== null
-            ? { tableColours: () => timeOfDay.skyEnvironmentColours(), retainedFogInfos: () => cameraFog().retainedFogInfos } : null);
+            ? { tableColours: () => timeOfDay.skyEnvironmentColours(), retainedFogInfos: () => cameraFog().retainedFogInfos } : null,
+          section.tileVisibility ?? null);
         if (sky) releases.push(() => sky?.dispose());
       } catch (error) {
         options.validateLifetime();

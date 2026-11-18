@@ -56,7 +56,7 @@ export function sceneTileViewSource(scene: Scene): TileViewSource {
   };
 }
 
-function translucentMeshTarget(mesh: AbstractMesh): TranslucentSectionTarget | string {
+export function indexBlockReorderTarget(mesh: AbstractMesh): TranslucentSectionTarget | string {
   if (!(mesh instanceof Mesh)) return `${mesh.name} is not a Mesh, so its index buffer cannot be rewritten`;
   if (mesh.geometry === null || mesh.geometry.meshes.length !== 1) return `${mesh.name} shares its geometry`;
   const fileOrder = mesh.getIndices();
@@ -128,7 +128,7 @@ export function chunkVisibilityTargets(model: BspVisibilityModel, chunk: TileVis
   if (typeof mapped === "string") return { kind: "gap", reason: `${sectionUnmappedReason}: ${mapped}` };
   const translucentSections = new Map<number, TranslucentSectionTarget>(), translucentOrderErrors: string[] = [];
   for (const section of mapped.translucentSections) {
-    const target = translucentMeshTarget(mapped.meshes.get(section)!);
+    const target = indexBlockReorderTarget(mapped.meshes.get(section)!);
     if (typeof target === "string") translucentOrderErrors.push(`section ${section}: ${target}; file order kept`);
     else translucentSections.set(section, target);
   }

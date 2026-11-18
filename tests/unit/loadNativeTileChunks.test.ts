@@ -9,6 +9,7 @@ import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { loadNativeSliceWorld } from "../../src/runtime/loadNativeSliceWorld";
 import { loadNativeMovers } from "../../src/scene/world/loadNativeMovers";
+import { createNativeSkyPresentation } from "../../src/scene/world/nativeSkyPresentation";
 import { loadNativeSection, type NativeSection } from "../../src/scene/world/loadNativeSection";
 import { loadNativeTileChunks, type NativeTileSectionView } from "../../src/scene/world/loadNativeTileChunks";
 import { decodeJsonDocument, fixtureTileId, jsonBytes, readFixtureTileFiles, sha256Hex } from "../support/nativeTileFixtureStore";
@@ -19,7 +20,7 @@ import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
 
 vi.mock("@babylonjs/core/Loading/sceneLoader", () => ({ LoadAssetContainerAsync: vi.fn() }));
 vi.mock("../../src/scene/world/loadNativeMovers", () => ({ loadNativeMovers: vi.fn(async () => null) }));
-vi.mock("../../src/scene/world/nativeSkyPresentation", () => ({ createNativeSkyPresentation: async () => null }));
+vi.mock("../../src/scene/world/nativeSkyPresentation", () => ({ createNativeSkyPresentation: vi.fn(async () => null) }));
 
 type Document = Record<string, unknown>;
 
@@ -238,6 +239,19 @@ describe("native tile chunk loading", () => {
     expect(world.movers!.manifestSha256).toBe((tile.resources as Document[]).find(resource => resource.kind === "movers")!.manifestSha256);
     world.release();
     expect(scene.transformNodes.filter(node => node.name.includes(".Mover"))).toEqual([]);
+  });
+
+  it("hands the selected tile visibility binding to the shared sky as its FakeBackdrop view trigger", async () => {
+    serve(tileStore({ tileMovers: true }));
+    const tileVisibility = { frame: () => null };
+    const section = { tileMovers: null, spawnCandidate: Vector3.Zero(), inspection: () => ({ materialFailure: null }), dispose: () => {}, tileVisibility };
+    const camera = new ArcRotateCamera("slice camera", 0, 0, 10, Vector3.Zero(), scene);
+    const world = await loadNativeSliceWorld(scene, camera, { origin: Vector3.Zero(), leatherShirt: true, flamePreviewEnabled: false },
+      async () => ({ section: section as unknown as NativeSection, release: () => {} }), new AbortController().signal,
+      { requireWorld: false, validateLifetime: () => {} });
+    expect(world.worldFailure).toBeUndefined();
+    expect(vi.mocked(createNativeSkyPresentation).mock.calls.at(-1)![4]).toBe(tileVisibility);
+    world.release();
   });
 
   it("loads each chunk model archive pinned by SHA-256 once and instantiates its placements at their source matrices", async () => {

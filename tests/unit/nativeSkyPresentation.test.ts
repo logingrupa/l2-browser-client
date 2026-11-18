@@ -12,7 +12,11 @@ import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { loadNativeMaterial, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
-import { createNativeSkyPresentation, sharedSkyViewGateUnresolvedReason, sharedSkyVisibilityUnstagedReason } from "../../src/scene/world/nativeSkyPresentation";
+import {
+  createNativeSkyPresentation, sharedSkyPortalZoneVolumesUnresolvedReason, sharedSkyViewGateUnresolvedReason, sharedSkyViewport160UnresolvedReason,
+  sharedSkyVisibilityUnstagedReason, worldGroupDepthClear, type SharedSkyViewTrigger,
+} from "../../src/scene/world/nativeSkyPresentation";
+import { sharedSkyVisibilityRules } from "../../src/scene/world/bspVisibility/sharedSkyVisibilityRules";
 import { swatchTexturePng, syntheticSkyColourModifierProgram, textureImageFor } from "../support/materialProgramFixture";
 import { jsonBytes, sha256Hex } from "../support/nativeTileFixtureStore";
 
@@ -92,7 +96,7 @@ describe("shared sky presentation", () => {
     const { skyManifestSha256 } = sharedSkyStore({ materialRoots: 1, listedMaterials: [listedSkyBackground] });
     vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 1, [skyBackgroundRoot]));
     vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
-    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null);
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null, null);
     const drawn = scene.meshes.find(mesh => mesh.name === "shared sky part 0")!.material;
     expect(drawn).toBeInstanceOf(ShaderMaterial);
     expect(drawn?.name).toBe(`UE2 material: ${skyBackgroundRoot}`);
@@ -114,7 +118,7 @@ describe("shared sky presentation", () => {
     laterGroup.renderingGroupId = 2;
     scene.setRenderingAutoClearDepthStencil(1, false, false, false);
     const abort = new AbortController();
-    const sky = await createNativeSkyPresentation(scene, abort.signal, null, null);
+    const sky = await createNativeSkyPresentation(scene, abort.signal, null, null, null);
     expect(world.renderingGroupId).toBe(1); expect(laterGroup.renderingGroupId).toBe(2);
     const added = MeshBuilder.CreateBox("later actor", {}, scene);
     const camera = new FreeCamera("camera", new Vector3(8, 9, 10), scene); camera.getViewMatrix(true);
@@ -133,7 +137,7 @@ describe("shared sky presentation", () => {
     vi.spyOn(container.materials[0]!, "getActiveTextures").mockReturnValue([unreadyTexture]);
     vi.mocked(LoadAssetContainerAsync).mockResolvedValue(container);
     vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
-    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null);
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null, null);
     const drawnTextures = vi.spyOn(scene.meshes.find(mesh => mesh.name === "shared sky part 0")!.material!, "getActiveTextures").mockReturnValue([readyTexture]);
     expect(sky?.inspection().texturesReady).toBe(true);
     drawnTextures.mockReturnValue([unreadyTexture]);
@@ -144,16 +148,54 @@ describe("shared sky presentation", () => {
   it("refuses a shared sky whose meshes differ from its material root count", async () => {
     sharedSkyStore({ materialRoots: 3 });
     vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 2));
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).rejects.toThrow("each of its 3 material roots");
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null, null)).rejects.toThrow("each of its 3 material roots");
     expect(scene.meshes).toHaveLength(0);
+  });
+
+  it("draws the sky only while the main view selects a FakeBackdrop node and names the open viewport+0x160 and portal zone routes", async () => {
+    sharedSkyStore({ materialRoots: 1, listedMaterials: [listedSkyBackground] });
+    vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 1, [skyBackgroundRoot]));
+    vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
+    let mainView: { sharedSkyTriggerNode: number; sharedSkyOtherZoneCandidates: number } | null = null;
+    const viewTrigger: SharedSkyViewTrigger = { frame: () => mainView };
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null, viewTrigger);
+    const skyMesh = scene.meshes.find(mesh => mesh.name === "shared sky part 0")!;
+    const camera = new FreeCamera("camera", new Vector3(0, 0, 0), scene);
+    const renderCamera = () => scene.onBeforeCameraRenderObservable.notifyObservers(camera);
+    renderCamera();
+    expect(skyMesh.isVisible).toBe(false);
+    mainView = { sharedSkyTriggerNode: -1, sharedSkyOtherZoneCandidates: 0 };
+    renderCamera();
+    expect(skyMesh.isVisible).toBe(false);
+    mainView = { sharedSkyTriggerNode: 4297, sharedSkyOtherZoneCandidates: 2 };
+    renderCamera();
+    expect(skyMesh.isVisible).toBe(true);
+    expect(sky?.inspection()).toMatchObject({ drawGate: "fakebackdrop-trigger", drawn: true, triggerNode: 4297,
+      gaps: [sharedSkyViewport160UnresolvedReason, sharedSkyPortalZoneVolumesUnresolvedReason, sharedSkyVisibilityUnstagedReason] });
+    sky?.dispose();
+  });
+
+  it("turns depth writes off on a sky surface left on its glTF material, since only the library background writes depth", async () => {
+    sharedSkyStore({ materialRoots: 2, listedMaterials: [listedSkyBackground] });
+    vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 2, [skyBackgroundRoot, "l2_skies.Shaders.Unlisted"]));
+    vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null, null);
+    const [library, gltf] = ["shared sky part 0", "shared sky part 1"].map(name => scene.meshes.find(mesh => mesh.name === name)!.material!);
+    expect([library!.disableDepthWrite, gltf!.disableDepthWrite]).toEqual([false, true]);
+    sky?.dispose();
+  });
+
+  it("sets the world group depth clear from the RM-24 clear rule and refuses a clear Babylon cannot give between groups", () => {
+    expect(worldGroupDepthClear(sharedSkyVisibilityRules.depthClear, engine)).toEqual({ autoClear: true, depth: true, stencil: false });
+    expect(() => worldGroupDepthClear({ ...sharedSkyVisibilityRules.depthClear, colorCleared: true }, engine)).toThrow("colour");
   });
 
   it("presents no sky while the catalog has no skylevel record and rejects corrupted sky bytes", async () => {
     sharedSkyStore({ materialRoots: 1, catalogHasSky: false });
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).resolves.toBeNull();
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null, null)).resolves.toBeNull();
     vi.unstubAllGlobals();
     sharedSkyStore({ materialRoots: 1, corruptGlb: true });
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).rejects.toThrow();
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null, null)).rejects.toThrow();
     expect(LoadAssetContainerAsync).not.toHaveBeenCalled();
     expect(scene.meshes).toHaveLength(0);
   });
