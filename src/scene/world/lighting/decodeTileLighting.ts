@@ -14,7 +14,6 @@ export interface TileLightmapPage {
   readonly texture: number;
   readonly slot: number;
   readonly slotCount: number;
-  readonly edge: number;
   readonly levels: readonly TileLightmapLevel[];
 }
 
@@ -69,13 +68,15 @@ function decodePages(payload: TypedPayload, textureCount: number, texturePageSta
     requireLightingInput(slotCount[page] === endPage - firstPage && slot[page] === page - firstPage,
       `page ${page} is slot ${slot[page]} of ${slotCount[page]}, but texture ${pageTexture} lists it as slot ${page - firstPage} of ${endPage - firstPage}.`);
     const mip = page * mipsPerPage;
+    const firstLevelEdge = mipEdge[mip]!;
     const levels = Array.from({ length: mipsPerPage }, (_, level) => {
       const levelEdge = mipEdge[mip + level]!, start = texelStart[mip + level]!, end = texelStart[mip + level + 1]!;
       requireLightingInput(Number.isSafeInteger(levelEdge) && levelEdge >= 4 && levelEdge % 4 === 0, `page ${page} mip ${level} edge ${levelEdge} is not a DXT1 edge.`);
+      requireLightingInput(levelEdge === firstLevelEdge >> level, `page ${page} mip ${level} edge ${levelEdge} is not half of its mip ${level - 1} edge ${mipEdge[mip + level - 1]}.`);
       requireCount(`page ${page} mip ${level} DXT1 bytes`, end - start, dxt1ByteCount(levelEdge));
       return { edge: levelEdge, texels: texels.subarray(start, end) };
     });
-    return { texture: pageTexture, slot: slot[page]!, slotCount: slotCount[page]!, edge: levels[0]!.edge, levels };
+    return { texture: pageTexture, slot: slot[page]!, slotCount: slotCount[page]!, levels };
   });
 }
 
@@ -105,7 +106,7 @@ function requireRebuildInputsMatchPages(hourly: HourlyLightingInputs, texturePag
   if (lightmapRebuild.status === "unstaged") return;
   requireLightingInput(pageRevisions.status === "staged", "the payload lists lightmap rebuild inputs without page revisions.");
   const textureFirstPages = Array.from(texturePageStart.subarray(0, -1));
-  requireLightmapRebuildInputsMatchModel(lightmapRebuild.value, { textureEdges: textureFirstPages.map(page => pages[page]!.edge),
+  requireLightmapRebuildInputsMatchModel(lightmapRebuild.value, { textureEdges: textureFirstPages.map(page => pages[page]!.levels[0]!.edge),
     textureHasMismatchedPage: textureFirstPages.map((firstPage, texture) => pageRangeHasRebuiltPage(pageRevisions.value, firstPage, texturePageStart[texture + 1]!)) });
 }
 

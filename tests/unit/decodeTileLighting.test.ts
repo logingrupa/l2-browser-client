@@ -15,7 +15,7 @@ import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePla
 import type { NativeBspNodeRange, NativeBspSection } from "../../src/scene/world/nativeBspResources";
 import { bindTileLighting, lightmapColourOperationOf, type TileLightingBspChunk } from "../../src/scene/world/lighting/bindTileLighting";
 import { decodeTileLighting, type TileLightingModel } from "../../src/scene/world/lighting/decodeTileLighting";
-import { decodeDxt1Texels, lightmapPageAtHour } from "../../src/scene/world/lighting/lightmapPages";
+import { decodeDxt1Texels, dxt1ByteCount, lightmapPageAtHour } from "../../src/scene/world/lighting/lightmapPages";
 import {
   sectionSunAffectUnresolvedReason, type LightmapSectionChunk,
 } from "../../src/scene/world/lighting/tileLightmapSections";
@@ -83,7 +83,7 @@ describe("decodeTileLighting", () => {
     const model = tileLightingModel();
     expect(model).toMatchObject({ textureCount: 2, sourceSha256: "0123456789abcdef".repeat(4) });
     expect(model.pages).toHaveLength(9);
-    expect(model.pages[3]).toMatchObject({ texture: 0, slot: 3, slotCount: 8, edge: 8 });
+    expect(model.pages[3]).toEqual({ texture: 0, slot: 3, slotCount: 8, levels: model.pages[3]!.levels });
     expect(model.pages[3]!.levels.map(level => [level.edge, level.texels.length])).toEqual([[8, 32], [4, 8]]);
     expect(model.nodeRanges.map(range => [range.node, range.texture, range.lightmapCoordinates.length])).toEqual([[10, 0, 8], [11, 1, 6], [12, -1, 0]]);
     const unstagedBlendTime = { status: "unstaged", reason: "fog-zone-blend-time-unstaged" };
@@ -104,6 +104,14 @@ describe("decodeTileLighting", () => {
     expect(() => decoded(replaceArray(tileLightingArrays(), "LMPG.slotCount", [8, 8, 8, 8, 8, 8, 8, 4, 1]))).toThrow(/page 7 is slot 7 of 4/);
     const mipEdge = tileLightingArrays().find(array => array.name === "LMPG.mipEdge")!.values.map((edge, index) => index === 0 ? 16 : edge);
     expect(() => decoded(replaceArray(tileLightingArrays(), "LMPG.mipEdge", mipEdge))).toThrow(/page 0 mip 0 DXT1 bytes holds 32 values; the counts need 128/);
+  });
+
+  it("refuses a lightmap page whose second level does not halve its first", () => {
+    const mipEdge = tileLightingArrays().find(array => array.name === "LMPG.mipEdge")!.values.map((edge, index) => index === 1 ? 8 : edge);
+    const texelStart = mipEdge.map(dxt1ByteCount).reduce<number[]>((starts, size) => [...starts, starts.at(-1)! + size], [0]);
+    const arrays = replaceArray(replaceArray(replaceArray(tileLightingArrays(), "LMPG.mipEdge", mipEdge), "LMPG.texelStart", texelStart),
+      "LMPG.texels", new Array<number>(texelStart.at(-1)!).fill(0));
+    expect(() => decoded(arrays)).toThrow(/page 0 mip 1 edge 8 is not half of its mip 0 edge 8/);
   });
 
   it("refuses lightmap coordinate counts that disagree with the node ranges", () => {

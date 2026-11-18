@@ -41,7 +41,7 @@ export function createRebuiltLightmapStore(settings: RebuiltLightmapStoreSetting
     const inputs = model.hourly.lightmapRebuild;
     if (inputs.status === "unstaged") throw new RangeError(`Lightmap texture ${texture} has no rebuild inputs: ${inputs.reason}.`);
     const { lights, levelInfos, zoneAmbients } = inputs.value.actors;
-    return { edge: model.pages[model.texturePageStart[texture]!]!.edge, records: inputs.value.textureRecords[texture]!, lights, levelInfos, zones: zoneAmbients,
+    return { edge: model.pages[model.texturePageStart[texture]!]!.levels[0]!.edge, records: inputs.value.textureRecords[texture]!, lights, levelInfos, zones: zoneAmbients,
       environment };
   };
   const compositionOf = (texture: number): Promise<void> => {
