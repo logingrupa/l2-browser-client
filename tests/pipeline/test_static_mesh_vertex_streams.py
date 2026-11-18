@@ -17,6 +17,7 @@ from ue2_package_fixture import compact, package_bytes
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
 DB7_EXPECTATIONS_PATH = ROOT / 'tests/fixtures/environment/hourly-lighting-db7-converter-expectations.json'
 RM10_STATIC_FIXTURES_PATH = ROOT / 'tests/fixtures/environment/runtime-lighting-rm10-static-fixtures.json'
+RM19_FIXTURES_PATH = ROOT / 'tests/fixtures/environment/ordinary-static-lighting-rm19-fixtures.json'
 REVIEWED_LAYOUT = (123, 12)
 PACKAGE_RECORD = {'path': 'staticmeshes/Synthetic_S.usx', 'sha256': '0' * 64}
 SYNTHETIC_POSITIONS = ((100.0, 200.0, 300.0), (-100.0, 200.0, 300.0), (100.0, -200.0, 300.0))
@@ -88,7 +89,8 @@ class StaticMeshVertexStreamTests(unittest.TestCase):
         self.assertEqual((document['primary']['bgraHex'], document['alternate']['revision']), (PRIMARY_COLOURS.hex(), 4))
         self.assertEqual((document['selector'], document['selectorGapReason']), (None, COLOUR_SELECTOR_UNRESOLVED_REASON))
         self.assertEqual(document['package'], PACKAGE_RECORD)
-        self.assertEqual((document['kind'], document['schemaVersion']), ('native-static-mesh-vertex-streams', 2))
+        self.assertEqual((document['kind'], document['schemaVersion']), ('native-static-mesh-vertex-streams', 3))
+        self.assertEqual(document['nativePositions'], [component for position in SYNTHETIC_POSITIONS for component in position])
         self.assertEqual(document['nativeNormals'], [component for normal in SYNTHETIC_NORMALS for component in normal])
 
     def test_a_primitive_whose_vertices_differ_from_its_section_order_or_count_makes_the_join_a_named_gap(self):
@@ -147,6 +149,17 @@ class ReferenceClientVertexStreamTests(unittest.TestCase):
         package = Package(path.read_bytes(), path.name)
         streams = read_static_mesh_vertex_streams(package, static_mesh_export(package, pillar['meshObject']))
         self.assertEqual([component for normal in streams.normals for component in normal], pillar['nativeNormals'])
+
+    def test_every_rm19_integrated_mesh_keeps_the_source_unit_positions_and_normals_the_native_rebuild_read(self):
+        for fixture in json.loads(RM19_FIXTURES_PATH.read_text(encoding='utf-8'))['integrated']:
+            with self.subTest(mesh=fixture['meshObject']):
+                package_name, _ = fixture['meshObject'].split('.')
+                path = REFERENCE_CLIENT / 'StaticMeshes' / f'{package_name}.usx'
+                package = Package(path.read_bytes(), path.name)
+                streams = read_static_mesh_vertex_streams(package, static_mesh_export(package, fixture['meshObject']))
+                self.assertEqual(len(streams.positions), fixture['vertexCount'])
+                self.assertEqual({str(vertex): list(streams.positions[vertex]) for vertex in fixture['vertexIndices']}, fixture['localPositions'])
+                self.assertEqual({str(vertex): list(streams.normals[vertex]) for vertex in fixture['vertexIndices']}, fixture['localNormals'])
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-STATIC_MESH_STEP_ALGORITHM_VERSION = 7
+STATIC_MESH_STEP_ALGORITHM_VERSION = 8
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
 STATIC_MESH_REQUESTS_PRODUCT_NAME = 'static-mesh-requests.json'

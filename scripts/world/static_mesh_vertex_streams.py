@@ -25,7 +25,7 @@ GLTF_FLOAT_COMPONENT_TYPE = 5126
 GLB_HEADER_BYTES = 12
 GLB_CHUNK_HEADER_BYTES = 8
 VERTEX_STREAMS_KIND = 'native-static-mesh-vertex-streams'
-VERTEX_STREAMS_SCHEMA_VERSION = 2
+VERTEX_STREAMS_SCHEMA_VERSION = 3
 VERTEX_STREAMS_FILE_NAME = 'vertex-streams.json'
 VERTEX_STREAMS_STORE_FOLDER = 'static-mesh-vertex-streams'
 COLOUR_SELECTOR_UNRESOLVED_REASON = 'static-mesh-colour-selector-unresolved'
@@ -186,6 +186,7 @@ def joined_primitive_vertices(glb, streams):
 def vertex_streams_document(source_object, package_record, streams, primitives):
     return {'schemaVersion': VERTEX_STREAMS_SCHEMA_VERSION, 'kind': VERTEX_STREAMS_KIND, 'sourceObject': source_object,
             'package': package_record, 'nativeVertexCount': len(streams.positions),
+            'nativePositions': [component for position in streams.positions for component in position],
             'nativeNormals': [component for normal in streams.normals for component in normal],
             'primary': {'bgraHex': streams.primary_colours.hex(), 'revision': streams.primary_revision},
             'alternate': {'bgraHex': streams.alternate_colours.hex(), 'revision': streams.alternate_revision},
