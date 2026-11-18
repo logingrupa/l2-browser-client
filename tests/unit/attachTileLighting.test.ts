@@ -17,6 +17,7 @@ import { staticMeshMaterialsResourceAbsentReason } from "../../src/scene/world/s
 import { terrainMaterialsResourceAbsentReason } from "../../src/scene/world/terrainLayerMaterials";
 import { provideWorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
 import { sourcePositionToWorld } from "../../src/world/sourceFrame";
+import { frameInZone } from "../support/fogWorkedCaseFixture";
 import { provideDayNightTimeOfDay } from "../support/worldTimeOfDayFixture";
 
 vi.mock("../../src/scene/world/lighting/loadTileLighting", async () => {
@@ -92,7 +93,8 @@ describe("attachTileLighting", () => {
     expect(unplacedEnvironment.skyFog).toEqual({ route: null, fog: FOG_DISABLED, gaps: [cameraEnvironmentGaps.skyFogSceneRouteUnresolved] });
     unplaced.dispose();
     provideFogReferencePawn(scene, { position: () => sourcePositionToWorld({ x: 28491.390625 + 3500, y: 110465.5, z: -1361.5125732421875 }) });
-    const placed = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
+    const visibilityInDistanceFogZone = { frame: () => frameInZone(1), nodeRangeVisible: () => true, nodeRangeListed: () => true };
+    const placed = await attachTileLighting(scene, lightingTileManifest(), visibilityInDistanceFogZone, new AbortController().signal);
     const placedEnvironment = (placed.inspection() as TileLightingRuntimeInspection).cameraEnvironment;
     expect(placedEnvironment.gaps).not.toContain(cameraEnvironmentGaps.fogInfoReferencePawnAbsent);
     expect(placedEnvironment.fog).toMatchObject({ enabled: true, source: "local-fog-list" });
