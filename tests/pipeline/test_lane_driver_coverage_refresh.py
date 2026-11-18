@@ -32,7 +32,7 @@ from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_cl
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 from world import tile_census
 from world.tile_census import CENSUS_STEP
-from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
+from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH, census_first_step
 
 MACHINE_SCHEDULE_PATCH_TARGET = 'native_store.build_coverage_report.read_machine_schedule'
 NPCNAME_FILE = 'system/npcname-e.dat'
@@ -174,7 +174,7 @@ class WorldCensusDriverCoverageRefreshTests(unittest.TestCase):
         self.assertEqual(committed_write.call_args.args[0], TILE_CENSUS_RELATIVE_PATH)
         report = json.loads((self.store_root / 'coverage.json').read_bytes())
         self.assertEqual(report['catalogSha256'], sha256_of_file(self.store_root / 'catalog.json'))
-        expected_statuses = {row['key']: ('pending', 'step-pending:raw') if row['status'] == 'eligible' else ('gap', row['reason'])
+        expected_statuses = {row['key']: ('pending', f'step-pending:{census_first_step(row["key"])}') if row['status'] == 'eligible' else ('gap', row['reason'])
                              for row in COMMITTED_TILE_CENSUS['maps']}
         self.assertEqual({row['key']: (row['status'], row['reason']) for row in report['rows'] if row['part'] == 'world'}, expected_statuses)
 

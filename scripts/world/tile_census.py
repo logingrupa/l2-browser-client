@@ -20,12 +20,12 @@ from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from reference_tree_lock_digest import reference_tree_lock_sha256
 from world.package_header import read_package_header
-from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, MAP_READERS, reader_gap_reason, reviewed_reader_pairs
+from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, reader_gap_reason, reviewed_reader_pairs
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
 from world.tile_census_validation import (CENSUS_READER_NAMES, DECLARED_TERRAIN_MAP_BASIS, ELIGIBLE_STATUS, GAP_STATUS, GATE_FAIL,
                                           GATE_MISSING, GATE_NOT_APPLICABLE, GATE_PASS, NON_TILE_KIND, PACKAGE_NAME_TERRAIN_MAP_BASIS,
                                           TILE_CENSUS_RELATIVE_PATH, TILE_CENSUS_SCHEMA_VERSION, TILE_KIND, TileCensusError,
-                                          validate_tile_census)
+                                          census_first_step, census_map_readers, validate_tile_census)
 from world.world_lane_names import WORLD_LANE_NAME, WORLD_PART_NAME
 
 DEFAULT_CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
@@ -38,7 +38,7 @@ TERRAIN_INFO_CLASS_OBJECT = 'Engine.TerrainInfo'
 TERRAIN_MAP_PROPERTY_NAME = 'TerrainMap'
 TERRAIN_HEIGHT_PACKAGE_MISSING_REASON = 'terrain-height-package-missing'
 ELIGIBLE_GAP_ROW_STATUS = 'pending'
-ELIGIBLE_GAP_ROW_REASON = 'step-pending:raw'
+ELIGIBLE_GAP_ROW_REASON_PREFIX = 'step-pending:'
 
 
 def casefolded_unique_paths(lock_records):
@@ -75,10 +75,10 @@ def reviewed_pair_gate(readers, header):
     return GATE_PASS, None
 
 
-def map_reader_gate(header):
+def map_reader_gate(header, census_key):
     if 'error' in header:
         return GATE_FAIL, f'decode-failed:{header["error"]}'
-    return reviewed_pair_gate(MAP_READERS, header)
+    return reviewed_pair_gate(census_map_readers(census_key), header)
 
 
 def terrain_map_package_record(basis, terrain_map_object, package_path, header):
@@ -146,7 +146,7 @@ def terrain_height_gate_of_readable_tile(client_access, lock_records, map_relati
 
 def census_row(client_access, lock_records, census_key):
     header = read_package_header(client_access, census_key['map'])
-    map_gate, map_reason = map_reader_gate(header)
+    map_gate, map_reason = map_reader_gate(header, census_key['key'])
     if census_key['kind'] == NON_TILE_KIND:
         terrain_gate, terrain_reason, terrain_map_package = GATE_NOT_APPLICABLE, None, None
     elif map_reason is None:
@@ -164,7 +164,7 @@ def census_gap_row(row, lock_records):
     eligible = row['status'] == ELIGIBLE_STATUS
     return {'key': row['key'], 'part': WORLD_PART_NAME, 'step': CENSUS_STEP,
             'status': ELIGIBLE_GAP_ROW_STATUS if eligible else GAP_STATUS,
-            'reason': ELIGIBLE_GAP_ROW_REASON if eligible else row['reason'],
+            'reason': f'{ELIGIBLE_GAP_ROW_REASON_PREFIX}{census_first_step(row["key"])}' if eligible else row['reason'],
             'sourceIdentity': {'path': row['map'], 'sha256': lock_records[row['map']]['eSha256']},
             'evidence': TILE_CENSUS_RELATIVE_PATH}
 

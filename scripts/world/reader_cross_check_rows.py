@@ -19,19 +19,21 @@ from world.elbera_reader_cross_check import (ElberaCrossCheckError, elbera_actor
                                              elbera_terrain_sector_properties, elbera_texture_mip_bytes, elbera_tool_record,
                                              level_model_projection)
 from world.level_model import read_level_model_without_layout_gate
-from world.map_actor_properties import HAS_STACK, actor_properties, property_value
+from world.map_actor_properties import HAS_STACK, actor_properties, decode_property, property_value
 from world.map_sources import MapSources, safe_path
 from world.native_terrain_sectors import native_terrain
-from world.raw_map_step import raw_map_recipe, read_tile_map_lock_record, tile_map_path
+from world.raw_map_step import raw_map_recipe, read_map_lock_record, read_tile_map_lock_record, tile_map_path
 from world.reader_licensee_layouts import (G16_HEIGHTMAP_READER, LEVEL_MODEL_READER, MAP_ACTOR_READER, READER_LICENSEE_LAYOUTS,
-                                           REVIEWED_PACKAGE_VERSION, TERRAIN_INFO_READER, reader_cross_check_tile, reader_fixture_path)
+                                           REVIEWED_PACKAGE_VERSION, TERRAIN_INFO_READER, reader_cross_check_map, reader_fixture_path)
 from world.terrain_height_texture import read_g16
+from world.tile_chunk_plan import read_locked_map_package_by_path
 from world.world_lane_names import WORLD_LANE_NAME
 
 CROSS_CHECKS_RELATIVE_PATH = 'tests/fixtures/world-readers/cross-checks.json'
 AMBIENT_SOUND_CLASS_OBJECT = 'Engine.AmbientSoundObject'
 TERRAIN_INFO_CLASS_OBJECT = 'Engine.TerrainInfo'
 BOOLEAN_PROPERTY_TYPE = 3
+SKY_ZONE_INFO_CLASS_OBJECT = 'Engine.SkyZoneInfo'
 LEVEL_BINDING_FIXTURE_FIELDS = ('levelSHA256', 'decodedPrefixSHA256', 'decodedPrefixBytes', 'remainingTailBytes', 'remainingTailSHA256')
 
 
@@ -117,32 +119,37 @@ def declared_terrain_map_reference(map_package):
     return reference['object']
 
 
-def require_package_licensee(package, licensee, tile_id):
-    if (package.summary['version'], package.summary['licenseeVersion']) != (REVIEWED_PACKAGE_VERSION, licensee):
-        raise ReaderCrossCheckError(f'tile {tile_id} package {package.filename} is '
-                                    f'{package.summary["version"]}/{package.summary["licenseeVersion"]}, not {REVIEWED_PACKAGE_VERSION}/{licensee}')
+def require_package_licensee(package, version, licensee, map_name):
+    if (package.summary['version'], package.summary['licenseeVersion']) != (version, licensee):
+        raise ReaderCrossCheckError(f'map {map_name} package {package.filename} is '
+                                    f'{package.summary["version"]}/{package.summary["licenseeVersion"]}, not {version}/{licensee}')
+
+
+def locked_map_package(client, map_name):
+    map_path = tile_map_path(map_name)
+    return read_locked_map_package_by_path(client, map_path, read_map_lock_record(map_path))
 
 
 def heightmap_decodes(access, sources, tile_id, licensee):
     reference = declared_terrain_map_reference(sources.get(tile_map_path(tile_id)))
     relative_path, height_package, height_item = sources.resolve(reference, 'Texture')
-    require_package_licensee(height_package, licensee, tile_id)
+    require_package_licensee(height_package, REVIEWED_PACKAGE_VERSION, licensee, tile_id)
     ours = hashlib.sha256(read_g16(height_package, height_item)['mips'][0]['raw']).hexdigest()
     theirs = hashlib.sha256(elbera_texture_mip_bytes(access, relative_path, reference)).hexdigest()
     return relative_path, ours, theirs
 
 
-def map_decodes(client, access, sources, tile_id, licensee, reader):
-    relative_path = tile_map_path(tile_id)
-    map_package = sources.get(relative_path)
-    require_package_licensee(map_package, licensee, tile_id)
+def map_decodes(client, access, map_name, version, licensee, reader):
+    relative_path = tile_map_path(map_name)
+    map_package = locked_map_package(client, map_name)
+    require_package_licensee(map_package, version, licensee, map_name)
     if reader == MAP_ACTOR_READER:
         return relative_path, canonical_json_sha256(our_actor_property_projection(map_package)), canonical_json_sha256(
             elbera_actor_properties(access, relative_path))
     if reader == TERRAIN_INFO_READER:
         return relative_path, canonical_json_sha256(our_terrain_sector_projection(map_package)), canonical_json_sha256(
             elbera_terrain_sector_properties(access, relative_path))
-    _, projection = build_map_into_temporary_directory(client, tile_id)
+    _, projection = build_map_into_temporary_directory(client, map_name)
     return relative_path, canonical_json_sha256(projection), canonical_json_sha256(elbera_actor_properties(access, relative_path))
 
 
@@ -150,10 +157,10 @@ def our_level_model_projection(level):
     return level_model_projection(level.binding['model']['qualified'], level.model)
 
 
-def level_model_decodes(access, sources, tile_id, licensee):
-    relative_path = tile_map_path(tile_id)
-    map_package = sources.get(relative_path)
-    require_package_licensee(map_package, licensee, tile_id)
+def level_model_decodes(client, access, map_name, version, licensee):
+    relative_path = tile_map_path(map_name)
+    map_package = locked_map_package(client, map_name)
+    require_package_licensee(map_package, version, licensee, map_name)
     ours = theirs = refusal = None
     try:
         ours = canonical_json_sha256(our_level_model_projection(read_level_model_without_layout_gate(map_package)))
@@ -168,21 +175,20 @@ def level_model_decodes(access, sources, tile_id, licensee):
     return relative_path, ours, theirs, refusal
 
 
-def reader_cross_check_row(client, reader, licensee, tile_id):
+def reader_cross_check_row(client, reader, version, licensee, map_name):
     if reader not in READER_LICENSEE_LAYOUTS:
         raise ReaderCrossCheckError(f'unknown world reader {reader!r}')
     access = require_reference_client(client)
-    sources = MapSources(Path(client).resolve())
     refusal = {}
     if reader == G16_HEIGHTMAP_READER:
-        relative_path, ours, theirs = heightmap_decodes(access, sources, tile_id, licensee)
+        relative_path, ours, theirs = heightmap_decodes(access, MapSources(Path(client).resolve()), map_name, licensee)
     elif reader == LEVEL_MODEL_READER:
-        relative_path, ours, theirs, refusal_reason = level_model_decodes(access, sources, tile_id, licensee)
+        relative_path, ours, theirs, refusal_reason = level_model_decodes(client, access, map_name, version, licensee)
         refusal = {'refusalReason': refusal_reason}
     else:
-        relative_path, ours, theirs = map_decodes(client, access, sources, tile_id, licensee, reader)
+        relative_path, ours, theirs = map_decodes(client, access, map_name, version, licensee, reader)
     _, package_sha256 = access.require_equal_file_with_sha256(relative_path)
-    return {'reader': reader, 'version': REVIEWED_PACKAGE_VERSION, 'licensee': licensee, 'tile': tile_id, 'package': relative_path,
+    return {'reader': reader, 'version': version, 'licensee': licensee, 'tile': map_name, 'package': relative_path,
             'lockSha256': package_sha256, 'ourDecodeSha256': ours, 'crossCheckDecodeSha256': theirs, 'tool': elbera_tool_record(),
             'equal': ours is not None and ours == theirs, **refusal}
 
@@ -191,17 +197,17 @@ def node_flag_histogram(checks):
     return {str(flags): count for flags, count in checks['nodeFlagHistogram'].items()}
 
 
-def level_model_reader_fixture(client, licensee, tile_id):
+def level_model_reader_fixture(client, version, licensee, map_name):
     access = require_reference_client(client)
-    relative_path = tile_map_path(tile_id)
-    map_package = MapSources(Path(client).resolve()).get(relative_path)
-    require_package_licensee(map_package, licensee, tile_id)
+    relative_path = tile_map_path(map_name)
+    map_package = locked_map_package(client, map_name)
+    require_package_licensee(map_package, version, licensee, map_name)
     level = read_level_model_without_layout_gate(map_package)
     _, package_sha256 = access.require_equal_file_with_sha256(relative_path)
     export_start = level.export.serial_offset
     export_bytes = map_package.data[export_start:export_start + level.export.serial_size]
     projection = our_level_model_projection(level)
-    return {'packageVersion': REVIEWED_PACKAGE_VERSION, 'licenseeVersion': licensee, 'tile': tile_id, 'package': relative_path,
+    return {'packageVersion': version, 'licenseeVersion': licensee, 'tile': map_name, 'package': relative_path,
             'lockSha256': package_sha256, 'levelModel': projection['object'], 'exportBytes': len(export_bytes),
             'exportSha256': hashlib.sha256(export_bytes).hexdigest(),
             'levelBinding': {field: level.binding[field] for field in LEVEL_BINDING_FIXTURE_FIELDS},
@@ -211,9 +217,39 @@ def level_model_reader_fixture(client, licensee, tile_id):
             'checks': {**level.checks, 'nodeFlagHistogram': node_flag_histogram(level.checks)}}
 
 
-def write_level_model_reader_fixture(project_root, client, licensee, tile_id):
-    path = Path(project_root) / reader_fixture_path(LEVEL_MODEL_READER, licensee)
-    path.write_text(json.dumps(level_model_reader_fixture(client, licensee, tile_id), indent=1) + '\n', encoding='utf-8')
+def sky_zone_actor_location(package, actor_export, relative_path):
+    properties, _, _, _ = actor_properties(package, actor_export)
+    locations = [decode_property(package, prop, relative_path)['value'] for prop in properties if prop['name'] == 'Location']
+    if len(locations) != 1:
+        raise ReaderCrossCheckError(f'{actor_export["object"]} serializes Location {len(locations)} times, not once')
+    return [locations[0][axis] for axis in 'XYZ']
+
+
+def map_actor_reader_fixture(client, version, licensee, map_name):
+    access = require_reference_client(client)
+    relative_path = tile_map_path(map_name)
+    map_package = locked_map_package(client, map_name)
+    require_package_licensee(map_package, version, licensee, map_name)
+    _, package_sha256 = access.require_equal_file_with_sha256(relative_path)
+    projection = our_actor_property_projection(map_package)
+    sky_zone_actors = [item for item in map_package.exports if item['classObject'] == SKY_ZONE_INFO_CLASS_OBJECT]
+    return {'packageVersion': version, 'licenseeVersion': licensee, 'tile': map_name, 'package': relative_path, 'lockSha256': package_sha256,
+            'actorCount': len(projection), 'actorPropertiesSha256': canonical_json_sha256(projection),
+            'skyZoneActors': [{'exportIndex': item['exportIndex'], 'object': item['object'],
+                               'location': sky_zone_actor_location(map_package, item, relative_path)} for item in sky_zone_actors]}
+
+
+def write_reader_fixture(project_root, reader, version, licensee, fixture):
+    path = Path(project_root) / reader_fixture_path(reader, version, licensee)
+    path.write_text(json.dumps(fixture, indent=1) + '\n', encoding='utf-8')
+
+
+def reader_fixture(client, reader, version, licensee, map_name):
+    if reader == LEVEL_MODEL_READER:
+        return level_model_reader_fixture(client, version, licensee, map_name)
+    if reader == MAP_ACTOR_READER and version != REVIEWED_PACKAGE_VERSION:
+        return map_actor_reader_fixture(client, version, licensee, map_name)
+    return None
 
 
 def read_cross_check_rows(project_root):
@@ -237,17 +273,19 @@ def main(argv=None):
                                                  'and the pinned Elbera l2lib, and record the exact comparison row.')
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--reader', choices=sorted(READER_LICENSEE_LAYOUTS), required=True)
+    parser.add_argument('--version', type=int, default=REVIEWED_PACKAGE_VERSION)
     parser.add_argument('--licensee', type=int, required=True)
     arguments = parser.parse_args(argv)
     try:
         require_reference_client(arguments.client)
         require_batch_preflight(REPOSITORY_ROOT, WORLD_LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
-        tile_id = reader_cross_check_tile(arguments.reader, arguments.licensee)
-        row = reader_cross_check_row(arguments.client, arguments.reader, arguments.licensee, tile_id)
+        map_name = reader_cross_check_map(arguments.reader, arguments.version, arguments.licensee)
+        row = reader_cross_check_row(arguments.client, arguments.reader, arguments.version, arguments.licensee, map_name)
         write_cross_check_row(REPOSITORY_ROOT, row)
-        if arguments.reader == LEVEL_MODEL_READER and row['equal']:
-            write_level_model_reader_fixture(REPOSITORY_ROOT, arguments.client, arguments.licensee, tile_id)
+        fixture = reader_fixture(arguments.client, arguments.reader, arguments.version, arguments.licensee, map_name) if row['equal'] else None
+        if fixture is not None:
+            write_reader_fixture(REPOSITORY_ROOT, arguments.reader, arguments.version, arguments.licensee, fixture)
     except (OSError, ValueError) as error:
         print(f'World reader cross-check failed: {error}', file=sys.stderr)
         return 1

@@ -1,17 +1,24 @@
+import json
+from pathlib import Path
+
 from data.pinned_elbera_module import ELBERA_COMMIT
 from native_assets_lib.lineage_material_prefix import (ELBERA_L2LIB_README_PATH, ELBERA_L2LIB_README_SHA256, ELBERA_SOURCE_NAME,
                                                      MATERIAL_PREFIX_EVIDENCE, layout_evidence, lineage_material_prefix)
+from native_assets_lib.texture_package_118 import PACKAGE_118_LAYOUT
 from native_catalog.ue2 import FormatError
 from world.bsp_model_licensee_rules import LICENSEE_GATED_RULE_NAMES, RULE_NAMES, read_bsp_model_licensee_rules
 from world.bsp_reader_binding import READER_SHA as VENDORED_BSP_READER_SHA256
 from world.elbera_reader_cross_check import ELBERA_L2LIB_PINS, ELBERA_UE2PACKAGE_PATH
+from world.shared_sky_map import SHARED_SKY_MAP_NAME
 
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 G16_HEIGHTMAP_READER = 'g16-heightmap'
 MAP_ACTOR_READER = 'map-actor'
 TERRAIN_INFO_READER = 'terrain-info'
 RAW_MAP_READER = 'raw-map'
 LEVEL_MODEL_READER = 'level-model'
 MAP_READERS = (MAP_ACTOR_READER, TERRAIN_INFO_READER, RAW_MAP_READER)
+SHARED_SKY_READERS = (MAP_ACTOR_READER, LEVEL_MODEL_READER)
 REVIEWED_PACKAGE_VERSION = 123
 BASELINE_LICENSEE = 28
 WORLD_READER_FIXTURE_FOLDER = 'tests/fixtures/world-readers'
@@ -22,6 +29,12 @@ VENDORED_BSP_READER_PATH = 'scripts/vendor/lineage2elbera_bsp/__init__.py'
 REVIEWED_LEVEL_MODEL_LICENSEES = (28, 23, 25, 30, 31, 18, 19, 20)
 LEVEL_MODEL_RULES_SOURCE_NAME = 'Engine.dll level model rules'
 LEVEL_MODEL_RULES_COMMIT = '4dd2f63c'
+RM18_SKYLEVEL_DECODE_SOURCE_NAME = 'REA RM-18 sky fog depth answer'
+RM18_SKYLEVEL_DECODE_COMMIT = '2078c337'
+RM18_SKYLEVEL_DECODE_PATH = 'sky-fog-depth-rm18/data/shared-skylevel-data.json'
+RM18_SKYLEVEL_DECODE_SHA256 = '6a7899f97b8678185ec3fa17a2540a78d1277ce4141cdb035a6e765bb9aed33b'
+UNVERIFIED_LEVEL_TAIL_QUESTION = ('RM-22: ULevel::Serialize 0x105d07f0 tests the package Ver; the Ver-gated fields after the Model reference '
+                                  'at package version 118 are not verified, so the tail length is checked and its bytes are not interpreted')
 READER_GAP_REASON_TEMPLATES = {
     G16_HEIGHTMAP_READER: ('terrain-height-version-unsupported:{version}', 'terrain-height-licensee-unsupported:{version}/{licensee}'),
     **{reader: ('map-version-unsupported:{version}', 'map-licensee-unsupported:{version}/{licensee}')
@@ -46,6 +59,13 @@ LEVEL_MODEL_EVIDENCE = (
     layout_evidence(VENDORED_BSP_READER_SOURCE_NAME, ELBERA_COMMIT, VENDORED_BSP_READER_PATH, VENDORED_BSP_READER_SHA256,
                     'level_model_binding: ULevelBase::Serialize writes its first actor array for LicenseeVersion 23 or later; validate_model'),
 )
+SHARED_SKY_PACKAGE_EVIDENCE = (
+    layout_evidence(ELBERA_SOURCE_NAME, ELBERA_COMMIT, ELBERA_UE2PACKAGE_PATH, ELBERA_L2LIB_PINS[ELBERA_UE2PACKAGE_PATH],
+                    'Package reads the plain UnrealPackage 118/0 tables of maps/skylevel.unr; read_texture_source_118 container evidence'),
+    layout_evidence(RM18_SKYLEVEL_DECODE_SOURCE_NAME, RM18_SKYLEVEL_DECODE_COMMIT, RM18_SKYLEVEL_DECODE_PATH, RM18_SKYLEVEL_DECODE_SHA256,
+                    'skylevel.unr 5ecfe789: Level export 68, Model export 61, SkyZoneInfo0 export 13 Location, 2 zones, 1372 surfaces, '
+                    '4970 nodes'),
+)
 
 
 def level_model_rule_minimums_above(licensee_version):
@@ -53,9 +73,9 @@ def level_model_rule_minimums_above(licensee_version):
     return [(name, rules[name]) for name in LICENSEE_GATED_RULE_NAMES if licensee_version < rules[name]['minimumLicensee']]
 
 
-def level_model_rule_differences(licensee_version):
+def level_model_rule_differences(version, licensee_version):
     return [f'{name} at {rule["function"]} {rule["address"]} applies from LicenseeVer {rule["minimumLicensee"]}; '
-            f'{REVIEWED_PACKAGE_VERSION}/{licensee_version} is below it' for name, rule in level_model_rule_minimums_above(licensee_version)]
+            f'{version}/{licensee_version} is below it' for name, rule in level_model_rule_minimums_above(licensee_version)]
 
 
 def level_model_rules_evidence():
@@ -73,6 +93,7 @@ def level_model_rules_evidence():
 READER_EVIDENCE = {G16_HEIGHTMAP_READER: MATERIAL_PREFIX_EVIDENCE, MAP_ACTOR_READER: ACTOR_PROPERTY_EVIDENCE,
                    TERRAIN_INFO_READER: TERRAIN_INFO_EVIDENCE, RAW_MAP_READER: ACTOR_PROPERTY_EVIDENCE, LEVEL_MODEL_READER: LEVEL_MODEL_EVIDENCE}
 READER_FIXTURE_STEMS = {G16_HEIGHTMAP_READER: 'g16-heightmap', **{reader: 'map' for reader in MAP_READERS}, LEVEL_MODEL_READER: 'level-model'}
+SHARED_SKY_READER_FIXTURE_STEMS = {MAP_ACTOR_READER: 'map-actor', LEVEL_MODEL_READER: 'level-model'}
 MAP_ACTOR_CROSS_CHECK_TILES = {28: '20_21', 30: '17_22', 23: '17_20', 18: '17_18', 31: '19_23', 16: '24_10', 19: '26_11', 20: '24_26',
                                25: '15_20'}
 REVIEWED_LICENSEE_CROSS_CHECK_TILES = {
@@ -93,8 +114,9 @@ def material_prefix_differences(licensee_version):
     return [] if prefix == baseline else [f'UMaterial prefix after the property stream is {prefix}, not {baseline}']
 
 
-def reader_fixture_path(reader, licensee_version):
-    return f'{WORLD_READER_FIXTURE_FOLDER}/{READER_FIXTURE_STEMS[reader]}-{REVIEWED_PACKAGE_VERSION}-{licensee_version}.json'
+def reader_fixture_path(reader, version, licensee_version):
+    stem = SHARED_SKY_READER_FIXTURE_STEMS[reader] if (version, licensee_version) == PACKAGE_118_LAYOUT else READER_FIXTURE_STEMS[reader]
+    return f'{WORLD_READER_FIXTURE_FOLDER}/{stem}-{version}-{licensee_version}.json'
 
 
 def map_material_export_differences(licensee_version):
@@ -103,13 +125,13 @@ def map_material_export_differences(licensee_version):
 
 
 def reviewed_reader_layout(reader, licensee_version, cross_check_tile):
-    record = {'fixture': reader_fixture_path(reader, licensee_version), 'crossCheck': {'tile': cross_check_tile}}
+    record = {'fixture': reader_fixture_path(reader, REVIEWED_PACKAGE_VERSION, licensee_version), 'crossCheck': {'tile': cross_check_tile}}
     if reader == G16_HEIGHTMAP_READER:
         record['differencesFrom123_28'] = material_prefix_differences(licensee_version)
         record['materialPrefix'] = lineage_material_prefix(REVIEWED_PACKAGE_VERSION, licensee_version)
         evidence = READER_EVIDENCE[reader]
     elif reader == LEVEL_MODEL_READER:
-        record['differencesFrom123_28'] = level_model_rule_differences(licensee_version)
+        record['differencesFrom123_28'] = level_model_rule_differences(REVIEWED_PACKAGE_VERSION, licensee_version)
         evidence = level_model_rules_evidence() if record['differencesFrom123_28'] else READER_EVIDENCE[reader]
     else:
         record['differencesFrom123_28'] = map_material_export_differences(licensee_version)
@@ -118,10 +140,33 @@ def reviewed_reader_layout(reader, licensee_version, cross_check_tile):
     return record
 
 
+def reviewed_level_tail_bytes(level_model_layout):
+    fixture = json.loads((REPOSITORY_ROOT / level_model_layout['fixture']).read_text(encoding='utf-8'))
+    return fixture['levelBinding']['remainingTailBytes']
+
+
+def shared_sky_reader_layout(reader):
+    version, licensee_version = PACKAGE_118_LAYOUT
+    container_difference = f'plain UnrealPackage {version}/{licensee_version} tables read by UnrealPackage118, not the Lineage2Ver 123 container'
+    record = {'fixture': reader_fixture_path(reader, version, licensee_version), 'crossCheck': {'tile': SHARED_SKY_MAP_NAME}}
+    if reader == LEVEL_MODEL_READER:
+        record['differencesFrom123_28'] = [container_difference, *level_model_rule_differences(version, licensee_version),
+                                           'Level tail after the Model reference stays one unverified item']
+        record['unverifiedLevelTail'] = UNVERIFIED_LEVEL_TAIL_QUESTION
+        evidence = (*level_model_rules_evidence(), *SHARED_SKY_PACKAGE_EVIDENCE)
+    else:
+        record['differencesFrom123_28'] = [container_difference]
+        evidence = (*ACTOR_PROPERTY_EVIDENCE, *SHARED_SKY_PACKAGE_EVIDENCE)
+    record['evidence'] = [dict(entry) for entry in evidence]
+    return record
+
+
 READER_LICENSEE_LAYOUTS = {
     reader: {(REVIEWED_PACKAGE_VERSION, licensee): reviewed_reader_layout(reader, licensee, tile) for licensee, tile in tiles.items()}
     for reader, tiles in REVIEWED_LICENSEE_CROSS_CHECK_TILES.items()
 }
+for shared_sky_reader in SHARED_SKY_READERS:
+    READER_LICENSEE_LAYOUTS[shared_sky_reader][PACKAGE_118_LAYOUT] = shared_sky_reader_layout(shared_sky_reader)
 
 
 def reader_layouts(reader):
@@ -134,9 +179,13 @@ def reviewed_reader_pairs(reader):
     return sorted(reader_layouts(reader))
 
 
+def reviewed_reader_versions(reader):
+    return sorted({version for version, _ in reader_layouts(reader)})
+
+
 def reader_gap_reason(reader, version, licensee):
     version_template, licensee_template = READER_GAP_REASON_TEMPLATES[reader]
-    if all(reviewed_version != version for reviewed_version, _ in reader_layouts(reader)):
+    if version not in reviewed_reader_versions(reader):
         return version_template.format(version=version)
     return licensee_template.format(version=version, licensee=licensee)
 
@@ -149,9 +198,9 @@ def require_reviewed_reader_layout(reader, package_summary):
     return record
 
 
-def reader_cross_check_tile(reader, licensee):
-    if reader == LEVEL_MODEL_READER:
+def reader_cross_check_map(reader, version, licensee):
+    if reader == LEVEL_MODEL_READER and version == REVIEWED_PACKAGE_VERSION:
         if licensee not in MAP_ACTOR_CROSS_CHECK_TILES:
             raise FormatError(f'licensee {licensee} has no map-actor cross-check tile to read its Level.Model from')
         return MAP_ACTOR_CROSS_CHECK_TILES[licensee]
-    return require_reviewed_reader_layout(reader, {'version': REVIEWED_PACKAGE_VERSION, 'licenseeVersion': licensee})['crossCheck']['tile']
+    return require_reviewed_reader_layout(reader, {'version': version, 'licenseeVersion': licensee})['crossCheck']['tile']

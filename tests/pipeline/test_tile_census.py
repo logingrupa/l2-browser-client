@@ -10,15 +10,18 @@ from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from tile_census_fixture import (NO_TERRAIN_MAP_PROPERTY, UNREADABLE_PACKAGE_HEADER, SyntheticMapClient, census_reviewed_reader_pairs,
                                  lineage_version_111_package_header, plain_package_header, synthetic_terrain_map_package)
 from world.package_header import read_package_header
-from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, MAP_READERS, RAW_MAP_READER, reviewed_reader_pairs
+from world.reader_licensee_layouts import (G16_HEIGHTMAP_READER, LEVEL_MODEL_READER, MAP_ACTOR_READER, MAP_READERS, RAW_MAP_READER,
+                                           reviewed_reader_pairs)
 from world.tile_census import (census_gap_row, declared_terrain_map_package, map_census_keys, map_reader_gate,
                                terrain_height_gate_by_package_name, tile_census_bytes)
-from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH, TileCensusError, validate_tile_census
+from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATIVE_PATH, TileCensusError, census_map_readers, validate_tile_census
 
 COMMITTED_TILE_CENSUS_PATH = ROOT / TILE_CENSUS_RELATIVE_PATH
 UNREVIEWED_LICENSEE = 27
 SYNTHETIC_MAP_PAIRS = [(123, 28), (123, 30)]
-SYNTHETIC_REVIEWED_READER_PAIRS = {G16_HEIGHTMAP_READER: [(123, 25), (123, 28)], **{reader: SYNTHETIC_MAP_PAIRS for reader in MAP_READERS}}
+SYNTHETIC_SHARED_SKY_PAIRS = [*SYNTHETIC_MAP_PAIRS, (118, 0)]
+SYNTHETIC_REVIEWED_READER_PAIRS = {G16_HEIGHTMAP_READER: [(123, 25), (123, 28)], **{reader: SYNTHETIC_MAP_PAIRS for reader in MAP_READERS},
+                                  MAP_ACTOR_READER: SYNTHETIC_SHARED_SKY_PAIRS, LEVEL_MODEL_READER: SYNTHETIC_SHARED_SKY_PAIRS}
 
 
 SYNTHETIC_MAP_PACKAGES = {
@@ -94,18 +97,24 @@ class MapReaderGateTests(unittest.TestCase):
     def test_a_map_passes_only_when_every_map_reader_reviews_its_pair(self):
         cases = ((package_header(28), ('pass', None)), (package_header(30), ('pass', None)),
                  (package_header(UNREVIEWED_LICENSEE), ('fail', f'map-licensee-unsupported:123/{UNREVIEWED_LICENSEE}')),
-                 (package_header(28, 118), ('fail', 'map-version-unsupported:118')),
+                 (package_header(28, 118), ('fail', 'map-licensee-unsupported:118/28')),
+                 (package_header(28, 111), ('fail', 'map-version-unsupported:111')),
                  ({'error': 'Truncated package summary'}, ('fail', 'decode-failed:Truncated package summary')))
         with census_reviewed_reader_pairs(SYNTHETIC_REVIEWED_READER_PAIRS):
             for header, expected in cases:
                 with self.subTest(header=header):
-                    self.assertEqual(map_reader_gate(header), expected)
+                    self.assertEqual(map_reader_gate(header, 'tile:20_21'), expected)
 
     def test_a_pair_that_only_the_raw_map_reader_reviews_stays_a_map_licensee_gap(self):
         only_raw_map_reviews_30 = {reader: [(123, 28)] for reader in MAP_READERS}
         only_raw_map_reviews_30[RAW_MAP_READER] = SYNTHETIC_MAP_PAIRS
         with census_reviewed_reader_pairs(only_raw_map_reviews_30):
-            self.assertEqual(map_reader_gate(package_header(30)), ('fail', 'map-licensee-unsupported:123/30'))
+            self.assertEqual(map_reader_gate(package_header(30), 'tile:20_21'), ('fail', 'map-licensee-unsupported:123/30'))
+
+    def test_the_shared_sky_map_is_gated_on_the_map_actor_and_level_model_readers_alone(self):
+        with census_reviewed_reader_pairs(SYNTHETIC_REVIEWED_READER_PAIRS):
+            self.assertEqual(map_reader_gate(package_header(0, 118), 'map:skylevel'), ('pass', None))
+            self.assertEqual(map_reader_gate(package_header(0, 118), 'map:Auto0'), ('fail', 'map-version-unsupported:118'))
 
     def test_the_real_reader_state_refuses_a_map_pair_that_one_map_reader_still_refuses(self):
         refused_by_one_reader = [pair for pair in reviewed_reader_pairs(RAW_MAP_READER)
@@ -113,7 +122,7 @@ class MapReaderGateTests(unittest.TestCase):
         self.assertTrue(refused_by_one_reader)
         for package_version, licensee in refused_by_one_reader:
             with self.subTest(licensee=licensee):
-                self.assertEqual(map_reader_gate(package_header(licensee, package_version)),
+                self.assertEqual(map_reader_gate(package_header(licensee, package_version), 'tile:20_21'),
                                  ('fail', f'map-licensee-unsupported:{package_version}/{licensee}'))
 
 
@@ -170,7 +179,7 @@ class SyntheticTileCensusTests(unittest.TestCase):
                           if key not in ('tile:17_21', 'tile:20_30')}, {
             'map:Lobby': ('pass', 'not-applicable', 'eligible', None),
             'map:entry': ('fail', 'not-applicable', 'gap', 'map-licensee-unsupported:123/0'),
-            'map:skylevel': ('fail', 'not-applicable', 'gap', 'map-version-unsupported:118'),
+            'map:skylevel': ('pass', 'not-applicable', 'eligible', None),
             'tile:18_21': ('fail', 'missing', 'gap', 'map-version-unsupported:118'),
             'tile:19_21': ('fail', 'pass', 'gap', f'map-licensee-unsupported:123/{UNREVIEWED_LICENSEE}'),
             'tile:19_22': ('fail', 'fail', 'gap', f'map-licensee-unsupported:123/{UNREVIEWED_LICENSEE}'),
@@ -311,7 +320,7 @@ class CommittedTileCensusTests(unittest.TestCase):
         self.assertTrue(eligible_rows)
         for row in eligible_rows:
             with self.subTest(key=row['key']):
-                self.assertTrue(all((row['packageVersion'], row['licensee']) in pairs[reader] for reader in MAP_READERS))
+                self.assertTrue(all((row['packageVersion'], row['licensee']) in pairs[reader] for reader in census_map_readers(row['key'])))
                 if row['kind'] == 'tile':
                     package = row['terrainMapPackage']
                     self.assertEqual(package['basis'], 'TerrainInfo.TerrainMap')
@@ -320,7 +329,13 @@ class CommittedTileCensusTests(unittest.TestCase):
 
     def test_the_committed_census_was_built_from_the_current_reviewed_reader_pairs(self):
         self.assertEqual(self.census['reviewedReaderPairs'],
-                         {reader: [list(pair) for pair in reviewed_reader_pairs(reader)] for reader in sorted((G16_HEIGHTMAP_READER, *MAP_READERS))})
+                         {reader: [list(pair) for pair in reviewed_reader_pairs(reader)] for reader in sorted(CENSUS_READER_NAMES)})
+
+    def test_the_shared_sky_map_is_eligible_and_pending_its_shared_sky_step(self):
+        skylevel = rows_by_key(self.census)['map:skylevel']
+        self.assertEqual((skylevel['packageVersion'], skylevel['licensee'], skylevel['mapReaderGate'], skylevel['status'], skylevel['reason']),
+                         (118, 0, 'pass', 'eligible', None))
+        self.assertEqual(census_gap_row(skylevel, {'maps/skylevel.unr': {'eSha256': 'a' * 64}})['reason'], 'step-pending:shared-sky')
 
     def test_a_map_gate_pass_row_whose_pair_is_not_reviewed_is_refused(self):
         census = copy.deepcopy(self.census)

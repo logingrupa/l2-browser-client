@@ -11,6 +11,7 @@ from world.raw_map_extraction import build_map
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, process_reference_client_lock
 from world.map_sources import safe_path
+from world.shared_sky_map import SHARED_SKY_MAP_NAME, SHARED_SKY_STEP_NAME
 from world.world_lane_names import WORLD_LANE_NAME, WORLD_PART_NAME
 from world.tile_census_validation import ELIGIBLE_STATUS, GAP_STATUS, NON_TILE_KIND, TILE_CENSUS_RELATIVE_PATH
 
@@ -86,6 +87,8 @@ def is_non_tile_census_row_of(row, map_name):
 def raw_map_unit(project_root, map_name):
     if isinstance(map_name, str) and TILE_ID_PATTERN.fullmatch(map_name):
         return RawMapUnit(tile_unit_key(map_name), tile_map_path(map_name), read_tile_census_row(project_root, map_name))
+    if map_name == SHARED_SKY_MAP_NAME:
+        raise RawMapStepError(f'{SHARED_SKY_MAP_NAME} is converted by the {SHARED_SKY_STEP_NAME} step, not the {RAW_STEP_NAME} step')
     if not isinstance(map_name, str) or not any(is_non_tile_census_row_of(row, map_name) for row in read_census_rows(project_root)):
         raise RawMapStepError(f'map must be a tile id matching {TILE_ID_PATTERN.pattern} or a non-tile map of the tile census: {map_name!r}')
     row = read_census_row(project_root, f'{NON_TILE_KEY_PREFIX}{map_name}')

@@ -1,7 +1,8 @@
 from collections import Counter
 import re
 
-from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, MAP_READERS
+from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, LEVEL_MODEL_READER, MAP_READERS, SHARED_SKY_READERS
+from world.shared_sky_map import SHARED_SKY_CENSUS_KEY, SHARED_SKY_STEP_NAME
 
 TILE_CENSUS_RELATIVE_PATH = 'docs/parts/world/tile-census.json'
 TILE_CENSUS_SCHEMA_VERSION = 1
@@ -22,7 +23,8 @@ GAP_STATUS = 'gap'
 CENSUS_ROW_FIELDS = ('map', 'kind', 'key', 'packageVersion', 'licensee', 'wrapper', 'mapReaderGate', 'terrainHeightGate',
                      'terrainMapPackage', 'status', 'reason')
 CENSUS_FIELDS = frozenset({'schemaVersion', 'referenceTreeLockSha256', 'reviewedReaderPairs', 'maps'})
-CENSUS_READER_NAMES = (G16_HEIGHTMAP_READER, *MAP_READERS)
+CENSUS_READER_NAMES = (G16_HEIGHTMAP_READER, *MAP_READERS, LEVEL_MODEL_READER)
+RAW_STEP_NAME = 'raw'
 SHA256_TEXT_PATTERN = re.compile(r'[0-9a-f]{64}')
 
 
@@ -42,9 +44,16 @@ def require_reviewed_reader_pairs(reviewed_reader_pairs):
             raise TileCensusError(f'tile census reviewedReaderPairs {reader} must be sorted with one entry per pair')
 
 
-def reviewed_pair_sets(reviewed_reader_pairs):
-    map_pairs = set.intersection(*({tuple(pair) for pair in reviewed_reader_pairs[reader]} for reader in MAP_READERS))
-    return map_pairs, {tuple(pair) for pair in reviewed_reader_pairs[G16_HEIGHTMAP_READER]}
+def census_map_readers(census_key):
+    return SHARED_SKY_READERS if census_key == SHARED_SKY_CENSUS_KEY else MAP_READERS
+
+
+def census_first_step(census_key):
+    return SHARED_SKY_STEP_NAME if census_key == SHARED_SKY_CENSUS_KEY else RAW_STEP_NAME
+
+
+def reviewed_map_pairs(reviewed_reader_pairs, census_key):
+    return set.intersection(*({tuple(pair) for pair in reviewed_reader_pairs[reader]} for reader in census_map_readers(census_key)))
 
 
 def require_terrain_map_package_rules(row, terrain_pairs):
@@ -65,7 +74,7 @@ def require_terrain_map_package_rules(row, terrain_pairs):
                               f'{terrain_map_package["path"]!r} {terrain_map_package["packageVersion"]}/{terrain_map_package["licensee"]}')
 
 
-def require_census_row_rules(row, map_pairs, terrain_pairs):
+def require_census_row_rules(row, reviewed_reader_pairs, terrain_pairs):
     if not (isinstance(row, dict) and tuple(sorted(row)) == tuple(sorted(CENSUS_ROW_FIELDS))):
         raise TileCensusError(f'tile census row must hold exactly {", ".join(CENSUS_ROW_FIELDS)}: {row!r}')
     if row['kind'] not in (TILE_KIND, NON_TILE_KIND) or row['status'] not in (ELIGIBLE_STATUS, GAP_STATUS):
@@ -73,7 +82,7 @@ def require_census_row_rules(row, map_pairs, terrain_pairs):
     allowed_terrain_gates = TILE_TERRAIN_HEIGHT_GATES if row['kind'] == TILE_KIND else (GATE_NOT_APPLICABLE,)
     if row['mapReaderGate'] not in (GATE_PASS, GATE_FAIL) or row['terrainHeightGate'] not in allowed_terrain_gates:
         raise TileCensusError(f'tile census row {row["key"]} has gates {row["mapReaderGate"]!r}/{row["terrainHeightGate"]!r} outside its kind')
-    if (row['mapReaderGate'] == GATE_PASS) != ((row['packageVersion'], row['licensee']) in map_pairs):
+    if (row['mapReaderGate'] == GATE_PASS) != ((row['packageVersion'], row['licensee']) in reviewed_map_pairs(reviewed_reader_pairs, row['key'])):
         raise TileCensusError(f'tile census row {row["key"]} map gate {row["mapReaderGate"]} does not fit its map package '
                               f'{row["packageVersion"]}/{row["licensee"]} and the reviewed map reader pairs')
     require_terrain_map_package_rules(row, terrain_pairs)
@@ -91,12 +100,12 @@ def validate_tile_census(census):
     if not (isinstance(census['referenceTreeLockSha256'], str) and SHA256_TEXT_PATTERN.fullmatch(census['referenceTreeLockSha256'])):
         raise TileCensusError(f'tile census referenceTreeLockSha256 must be 64 lowercase hex characters: {census["referenceTreeLockSha256"]!r}')
     require_reviewed_reader_pairs(census['reviewedReaderPairs'])
-    map_pairs, terrain_pairs = reviewed_pair_sets(census['reviewedReaderPairs'])
+    terrain_pairs = {tuple(pair) for pair in census['reviewedReaderPairs'][G16_HEIGHTMAP_READER]}
     rows = census['maps']
     if not isinstance(rows, list):
         raise TileCensusError('tile census maps must be a list')
     for row in rows:
-        require_census_row_rules(row, map_pairs, terrain_pairs)
+        require_census_row_rules(row, census['reviewedReaderPairs'], terrain_pairs)
     kind_counts = Counter(row['kind'] for row in rows)
     if (kind_counts[TILE_KIND], kind_counts[NON_TILE_KIND]) != (EXPECTED_TILE_MAP_COUNT, EXPECTED_NON_TILE_MAP_COUNT):
         raise TileCensusError(f'tile census lists {kind_counts[TILE_KIND]} tiles and {kind_counts[NON_TILE_KIND]} non-tile maps, '

@@ -28,12 +28,12 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, BatchPreflightRe
 from world.raw_map_step import (RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, SOURCE_DEPENDENCIES_PRODUCT_NAME, raw_map_recipe,
                                 read_tile_map_lock_record)
 from world.reader_cross_check_rows import (build_map_into_temporary_directory, canonical_json_sha256, declared_terrain_map_reference,
-                                           our_actor_property_projection, our_terrain_sector_projection, read_cross_check_rows,
-                                           reader_cross_check_row)
+                                           map_actor_reader_fixture, our_actor_property_projection, our_terrain_sector_projection,
+                                           read_cross_check_rows, reader_cross_check_row)
 from world.world_lane_names import WORLD_LANE_NAME
 from world.reader_licensee_layouts import (BASELINE_LICENSEE, G16_HEIGHTMAP_READER, MAP_ACTOR_READER, MAP_READERS, RAW_MAP_READER,
-                                           READER_LICENSEE_LAYOUTS, REVIEWED_PACKAGE_VERSION, TERRAIN_INFO_READER,
-                                           require_reviewed_reader_layout, reviewed_reader_pairs)
+                                           READER_LICENSEE_LAYOUTS, REVIEWED_PACKAGE_VERSION, RM18_SKYLEVEL_DECODE_SHA256, SHARED_SKY_READERS,
+                                           TERRAIN_INFO_READER, reader_fixture_path, require_reviewed_reader_layout, reviewed_reader_pairs)
 from world.terrain_height_texture import read_g16
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 from world_reader_fixture_packages import (g16_heightmap_package_bytes, map_package_bytes, read_world_reader_fixture,
@@ -63,7 +63,7 @@ def package_summary(licensee):
 
 
 def reviewed_licensees(reader):
-    return {licensee for _, licensee in reviewed_reader_pairs(reader)}
+    return {licensee for version, licensee in reviewed_reader_pairs(reader) if version == REVIEWED_PACKAGE_VERSION}
 
 
 def layout_completeness_problems(layouts, rows):
@@ -123,6 +123,21 @@ class ReaderGateTests(unittest.TestCase):
             require_reviewed_reader_layout('g16-heightmap', {'version': 118, 'licenseeVersion': 28})
         with self.assertRaisesRegex(ValueError, 'unknown world reader'):
             require_reviewed_reader_layout('static-mesh', package_summary(28))
+
+    def test_the_shared_sky_package_layout_is_reviewed_for_the_map_actor_and_level_model_readers_only(self):
+        for reader in READER_LICENSEE_LAYOUTS:
+            with self.subTest(reader=reader):
+                if reader in SHARED_SKY_READERS:
+                    record = require_reviewed_reader_layout(reader, {'version': 118, 'licenseeVersion': 0})
+                    self.assertEqual(record['crossCheck'], {'tile': 'skylevel'})
+                    self.assertIn(RM18_SKYLEVEL_DECODE_SHA256, [entry['sha256'] for entry in record['evidence']])
+                    self.assertEqual(record['differencesFrom123_28'][0],
+                                     'plain UnrealPackage 118/0 tables read by UnrealPackage118, not the Lineage2Ver 123 container')
+                else:
+                    with self.assertRaisesRegex(FormatError, '-version-unsupported:118$'):
+                        require_reviewed_reader_layout(reader, {'version': 118, 'licenseeVersion': 0})
+        with self.assertRaisesRegex(FormatError, '^map-licensee-unsupported:118/6$'):
+            require_reviewed_reader_layout(MAP_ACTOR_READER, {'version': 118, 'licenseeVersion': 6})
 
     def test_reviewed_pairs_are_sorted_and_always_include_the_baseline(self):
         for reader in READER_LICENSEE_LAYOUTS:
@@ -360,7 +375,13 @@ class RealClientCrossCheckTests(unittest.TestCase):
     def test_every_recorded_cross_check_row_reproduces_exactly_on_its_tile(self):
         for row in read_cross_check_rows(ROOT):
             with self.subTest(reader=row['reader'], licensee=row['licensee'], tile=row['tile']):
-                self.assertEqual(reader_cross_check_row(REAL_CLIENT_ROOT, row['reader'], row['licensee'], row['tile']), row)
+                self.assertEqual(reader_cross_check_row(REAL_CLIENT_ROOT, row['reader'], row['version'], row['licensee'], row['tile']), row)
+
+    def test_the_shared_sky_map_actor_fixture_reproduces_exactly_and_holds_the_cross_checked_decode(self):
+        fixture = json.loads((ROOT / reader_fixture_path(MAP_ACTOR_READER, 118, 0)).read_text(encoding='utf-8'))
+        row = next(row for row in read_cross_check_rows(ROOT) if (row['reader'], row['version'], row['licensee']) == (MAP_ACTOR_READER, 118, 0))
+        self.assertEqual(map_actor_reader_fixture(REAL_CLIENT_ROOT, 118, 0, 'skylevel'), fixture)
+        self.assertEqual(fixture['actorPropertiesSha256'], row['crossCheckDecodeSha256'])
 
     def test_build_map_completes_for_every_heightmap_cross_check_tile_and_decodes_its_height(self):
         for row in read_cross_check_rows(ROOT):

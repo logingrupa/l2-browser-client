@@ -4,7 +4,7 @@ from native_catalog.ue2 import FormatError
 from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 from world.bsp_reader_binding import PackageAdapter, reviewed_reader
 from world.level_model_reference import read_level_model_reference
-from world.reader_licensee_layouts import LEVEL_MODEL_READER, require_reviewed_reader_layout
+from world.reader_licensee_layouts import LEVEL_MODEL_READER, require_reviewed_reader_layout, reviewed_level_tail_bytes
 
 INDEX_NONE = -1
 LEAF_HULL_BOUND_WORDS = 6
@@ -83,6 +83,17 @@ def read_level_model_without_layout_gate(package):
     return LevelModel(package, adapter, reader, export, binding, model, checks)
 
 
+def require_unverified_level_tail_length(layout, binding, filename):
+    if 'unverifiedLevelTail' not in layout:
+        return
+    expected = reviewed_level_tail_bytes(layout)
+    if binding['remainingTailBytes'] != expected:
+        raise FormatError(f'{filename} Level tail after the Model reference is {binding["remainingTailBytes"]} bytes, not the reviewed '
+                          f'{expected}; {layout["unverifiedLevelTail"]}')
+
+
 def read_level_model(package):
-    reviewed_level_model_layout(package.summary, package.filename)
-    return read_level_model_without_layout_gate(package)
+    layout = reviewed_level_model_layout(package.summary, package.filename)
+    level = read_level_model_without_layout_gate(package)
+    require_unverified_level_tail_length(layout, level.binding, package.filename)
+    return level

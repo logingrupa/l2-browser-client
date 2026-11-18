@@ -1,0 +1,20 @@
+{
+ "packageVersion": 118,
+ "licenseeVersion": 0,
+ "tile": "skylevel",
+ "package": "maps/skylevel.unr",
+ "lockSha256": "5ecfe78912a21f15783b78aee1b9d9542781ef11bb8a8c813868959f5157152f",
+ "actorCount": 37,
+ "actorPropertiesSha256": "6d4d463db6d36297955094338599378b86662383bb2cfd9391378c917225d063",
+ "skyZoneActors": [
+  {
+   "exportIndex": 13,
+   "object": "skylevel.SkyZoneInfo0",
+   "location": [
+    324.68359375,
+    264435.34375,
+    24536.03125
+   ]
+  }
+ ]
+}

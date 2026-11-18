@@ -181,6 +181,25 @@
  },
  {
   "reader": "level-model",
+  "version": 118,
+  "licensee": 0,
+  "tile": "skylevel",
+  "package": "maps/skylevel.unr",
+  "lockSha256": "5ecfe78912a21f15783b78aee1b9d9542781ef11bb8a8c813868959f5157152f",
+  "ourDecodeSha256": "1a2249d66bfb01c65dfc475f621096ed172c06ec8f89c42f0758915fb22f2161",
+  "crossCheckDecodeSha256": "1a2249d66bfb01c65dfc475f621096ed172c06ec8f89c42f0758915fb22f2161",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true,
+  "refusalReason": null
+ },
+ {
+  "reader": "level-model",
   "version": 123,
   "licensee": 18,
   "tile": "17_18",
@@ -330,6 +349,24 @@
   },
   "equal": true,
   "refusalReason": null
+ },
+ {
+  "reader": "map-actor",
+  "version": 118,
+  "licensee": 0,
+  "tile": "skylevel",
+  "package": "maps/skylevel.unr",
+  "lockSha256": "5ecfe78912a21f15783b78aee1b9d9542781ef11bb8a8c813868959f5157152f",
+  "ourDecodeSha256": "6d4d463db6d36297955094338599378b86662383bb2cfd9391378c917225d063",
+  "crossCheckDecodeSha256": "6d4d463db6d36297955094338599378b86662383bb2cfd9391378c917225d063",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
  },
  {
   "reader": "map-actor",

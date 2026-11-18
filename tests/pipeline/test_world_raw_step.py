@@ -32,7 +32,7 @@ MESH_PACKAGE_PATH = 'staticmeshes/SyntheticMeshes.usx'
 UNIT_STEP_FOLDER = Path('artifacts/lane-store/world/work/tile__20_21/raw')
 NON_TILE_MAP_NAME = 'Lobby'
 NON_TILE_MAP_PATH = 'maps/Lobby.unr'
-NON_TILE_GAP_MAP_NAME = 'skylevel'
+NON_TILE_GAP_MAP_NAME = 'Auto0'
 NON_TILE_GAP_REASON = 'map-version-unsupported:118'
 NON_TILE_UNIT_STEP_FOLDER = Path('artifacts/lane-store/world/work/map__Lobby/raw')
 SYNTHETIC_CENSUS_LOCK_SHA256 = '0' * 64
@@ -262,10 +262,15 @@ class NonTileRawStepTests(SyntheticTileTestCase):
         with patch('world.raw_map_step.build_map', side_effect=AssertionError('client read for a census gap')) as build:
             row = run_raw_map_step(self.project_root, self.client / 'absent-client', NON_TILE_GAP_MAP_NAME)
         build.assert_not_called()
-        self.assertEqual(row, {'key': 'map:skylevel', 'part': 'world', 'step': 'raw', 'status': 'gap', 'reason': NON_TILE_GAP_REASON,
-                               'sourceIdentity': {'path': 'maps/skylevel.unr', 'sha256': '3' * 64},
+        self.assertEqual(row, {'key': 'map:Auto0', 'part': 'world', 'step': 'raw', 'status': 'gap', 'reason': NON_TILE_GAP_REASON,
+                               'sourceIdentity': {'path': 'maps/Auto0.unr', 'sha256': '3' * 64},
                                'evidence': 'docs/parts/world/tile-census.json'})
         self.assertFalse((self.project_root / 'artifacts/lane-store/world/work').exists())
+
+    def test_the_shared_sky_map_is_refused_naming_the_shared_sky_step_without_touching_the_client(self):
+        self.write_client(two_actors_sharing_one_mesh())
+        with patch('world.raw_map_step.build_map', side_effect=AssertionError('client read')),                 self.assertRaisesRegex(RawMapStepError, '^skylevel is converted by the shared-sky step, not the raw step$'):
+            self.run_step('skylevel')
 
     def test_a_name_that_is_not_a_non_tile_census_map_is_refused_naming_it(self):
         self.write_client(two_actors_sharing_one_mesh())

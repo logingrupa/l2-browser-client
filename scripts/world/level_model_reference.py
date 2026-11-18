@@ -1,7 +1,7 @@
 import hashlib
 
 from native_catalog.ue2 import FormatError
-from world.reader_licensee_layouts import REVIEWED_PACKAGE_VERSION
+from world.reader_licensee_layouts import LEVEL_MODEL_READER, reviewed_reader_versions
 
 LEVEL_CLASS = 'engine.level'
 MODEL_CLASS = 'engine.model'
@@ -68,8 +68,8 @@ def skip_level_url(reader, raw):
 
 
 def read_level_model_reference(adapter, reader_module, rules):
-    if adapter.file_version != REVIEWED_PACKAGE_VERSION:
-        raise FormatError(f'unsupported serialized Level layout (requires package version {REVIEWED_PACKAGE_VERSION})')
+    if adapter.file_version not in reviewed_reader_versions(LEVEL_MODEL_READER):
+        raise FormatError(f'unsupported serialized Level layout (requires a package version of {reviewed_reader_versions(LEVEL_MODEL_READER)})')
     level = serialized_level_export(adapter, reader_module)
     start = level.serial_offset
     raw = adapter.data[start:start + level.serial_size]

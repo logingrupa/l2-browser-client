@@ -1,0 +1,96 @@
+{
+ "packageVersion": 118,
+ "licenseeVersion": 0,
+ "tile": "skylevel",
+ "package": "maps/skylevel.unr",
+ "lockSha256": "5ecfe78912a21f15783b78aee1b9d9542781ef11bb8a8c813868959f5157152f",
+ "levelModel": "skylevel.Model29",
+ "exportBytes": 1763218,
+ "exportSha256": "8155896a8d829f2c5988ab4489858f0ceea375bda3e5c6a81dd79d2fab0623a1",
+ "levelBinding": {
+  "levelSHA256": "4b9282c0f5dff79c30c28a5581ab20b674a522e3896b69c6ffa3230c3fa661c7",
+  "decodedPrefixSHA256": "6346561e8085310723e9de7559d605d2bbfec6a3a908062976581efac2dd1582",
+  "decodedPrefixBytes": 78,
+  "remainingTailBytes": 22,
+  "remainingTailSHA256": "9d019fe8676cbd016014d1ff4357781833ca12737fa6d5caaa3afc0cc5b75325"
+ },
+ "spans": {
+  "properties": {
+   "bytes": 1,
+   "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+  },
+  "primitive": {
+   "bytes": 41,
+   "sha256": "9e1736c43d19118e6ce4302118af337109491ecc52757dfb949bad6a7940b0c2"
+  },
+  "vectors": {
+   "bytes": 37310,
+   "sha256": "736c20625a0e6e3ae74df785d271889e3667f1052ef339b5201daf37936e60d7"
+  },
+  "points": {
+   "bytes": 87818,
+   "sha256": "4180d083c587c50ae6cd56749e282b2b07094bea2851de07bb35ba4a252a5f42"
+  },
+  "nodes": {
+   "bytes": 452268,
+   "sha256": "b7d2e420a0284159712bc8f8c6a0c8462045cd39f81c9e5f8d796be10b758f37"
+  },
+  "surfs": {
+   "bytes": 48602,
+   "sha256": "a4a4d4e7432b4fed234852d0c9bf185303e089545477dcb59e6fac4ab9efdf70"
+  },
+  "verts": {
+   "bytes": 202405,
+   "sha256": "0d2ae1ba12feb053726e8cdd4108c48fe5cddcb4ca15695018095a0436768522"
+  },
+  "zones_and_polys": {
+   "bytes": 51,
+   "sha256": "dd1796e7bdda365c4fccf5adaef63cfaa87b69c41769b58584cb0cb4dbb08f58"
+  },
+  "bounds": {
+   "bytes": 48002,
+   "sha256": "730a268e690844da06dd1f49b1f3952911b3ea775a338b7a10c45046ca10fdfd"
+  },
+  "leaf_hulls": {
+   "bytes": 241,
+   "sha256": "7f1a78fd87e59b3c51b265bef686fbebd78b32d309a1968ded086ef35338b018"
+  },
+  "leaves": {
+   "bytes": 28316,
+   "sha256": "be40db41708a66e1423d67be28c99ec52e4fe4116a9b6fc68e1b0796dcc2f7d4"
+  },
+  "lights": {
+   "bytes": 1,
+   "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+  },
+  "root_outside_and_linked": {
+   "bytes": 8,
+   "sha256": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc"
+  },
+  "undecoded_tail": {
+   "bytes": 858154,
+   "sha256": "2c64c0f1ba8bb9f884a699d2ed6f50ff4eb77ac16da89bf56fa33063380ab80e"
+  }
+ },
+ "counts": {
+  "object": "skylevel.Model29",
+  "nodes": 4970,
+  "surfaces": 1372,
+  "points": 7318,
+  "vertices": 54666,
+  "leaves": 2574,
+  "tailBytes": 858154
+ },
+ "countsSha256": "1a2249d66bfb01c65dfc475f621096ed172c06ec8f89c42f0758915fb22f2161",
+ "checks": {
+  "root0ReachableNodes": 4970,
+  "unreachableNodes": 0,
+  "activeVertexSlots": 21450,
+  "unusedVertexSlots": 33216,
+  "unusedOutOfRangePointSlots": 14476,
+  "nodeFlagHistogram": {
+   "0": 10,
+   "1": 4960
+  }
+ }
+}

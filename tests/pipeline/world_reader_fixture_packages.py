@@ -4,6 +4,7 @@ import struct
 
 from native_assets_lib.lineage_material_prefix import NO_MATERIAL_PREFIX, RESERVED_INT32_MATERIAL_PREFIX, SHADER_BLOCK_MATERIAL_PREFIX
 from world.map_actor_properties import HAS_STACK
+from world.reader_licensee_layouts import REVIEWED_PACKAGE_VERSION
 from ue2_package_fixture import compact, package_bytes, tag
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,7 +37,7 @@ def read_world_reader_fixture(name):
 
 
 def world_reader_fixture_names(stem):
-    return sorted(path.name for path in WORLD_READER_FIXTURE_ROOT.glob(f'{stem}-*.json'))
+    return sorted(path.name for path in WORLD_READER_FIXTURE_ROOT.glob(f'{stem}-{REVIEWED_PACKAGE_VERSION}-*.json'))
 
 
 def with_licensee(data, licensee):

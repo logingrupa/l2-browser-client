@@ -111,7 +111,7 @@
       "map": "maps/ship_position.unr",
       "mapReaderGate": "fail",
       "packageVersion": 118,
-      "reason": "map-version-unsupported:118",
+      "reason": "map-licensee-unsupported:118/6",
       "status": "gap",
       "terrainHeightGate": "not-applicable",
       "terrainMapPackage": null,
@@ -122,10 +122,10 @@
       "kind": "non-tile",
       "licensee": 0,
       "map": "maps/skylevel.unr",
-      "mapReaderGate": "fail",
+      "mapReaderGate": "pass",
       "packageVersion": 118,
-      "reason": "map-version-unsupported:118",
-      "status": "gap",
+      "reason": null,
+      "status": "eligible",
       "terrainHeightGate": "not-applicable",
       "terrainMapPackage": null,
       "wrapper": "UnrealPackage"
@@ -3082,7 +3082,49 @@
         28
       ]
     ],
+    "level-model": [
+      [
+        118,
+        0
+      ],
+      [
+        123,
+        18
+      ],
+      [
+        123,
+        19
+      ],
+      [
+        123,
+        20
+      ],
+      [
+        123,
+        23
+      ],
+      [
+        123,
+        25
+      ],
+      [
+        123,
+        28
+      ],
+      [
+        123,
+        30
+      ],
+      [
+        123,
+        31
+      ]
+    ],
     "map-actor": [
+      [
+        118,
+        0
+      ],
       [
         123,
         16

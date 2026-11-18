@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import NamedTuple
 
 from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts
-from native_catalog.ue2 import FormatError, Package
+from native_assets_lib.texture_package_118 import read_unreal_package
+from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.store_paths import lane_work_root
 from native_store.tile_manifest_validation import CHUNK_SECTOR_SPAN
@@ -158,12 +159,16 @@ def read_raw_terrain_record(raw_products):
     return terrains[0]
 
 
-def read_locked_map_package(client, tile_id, lock_record):
-    path = require_lock_equal_client_path(Path(client).resolve(), tile_map_path(tile_id))
-    package = Package(path.read_bytes(), path.name)
+def read_locked_map_package_by_path(client, map_path, lock_record):
+    path = require_lock_equal_client_path(Path(client).resolve(), map_path)
+    package = read_unreal_package(path.read_bytes(), path.name)
     if package.source_hash != lock_record['eSha256']:
-        raise RawMapStepError(f'{tile_map_path(tile_id)} read bytes differ from its lock eSha256')
+        raise RawMapStepError(f'{map_path} read bytes differ from its lock eSha256')
     return package
+
+
+def read_locked_map_package(client, tile_id, lock_record):
+    return read_locked_map_package_by_path(client, tile_map_path(tile_id), lock_record)
 
 
 def player_start_class_defaults(client, project_root, actors):
