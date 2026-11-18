@@ -317,6 +317,20 @@ class RealClientSharedSkyTests(unittest.TestCase):
             payload = (bundle_folder / name).read_bytes()
             self.assertEqual(manifest['files'][name], {'bytes': len(payload), 'sha256': hashlib.sha256(payload).hexdigest()})
 
+    def test_every_material_file_the_step_writes_is_pinned_from_the_catalog_and_sealed_in_its_receipt(self):
+        from native_store.catalog_writer import read_store_catalog
+        from native_store.native_material_program_pins import NATIVE_MATERIALS_FOLDER
+        from native_store.pinned_store_verification import verify_pinned_store_files
+        catalog, _ = read_store_catalog(self.store_root)
+        pinned = {verified.relative for verified in verify_pinned_store_files(self.store_root, catalog, 1).values()}
+        written = {path.relative_to(self.store_root).as_posix() for path in (self.store_root / NATIVE_MATERIALS_FOLDER).rglob('*') if path.is_file()}
+        self.assertTrue(written)
+        self.assertEqual(sorted(written - pinned), [])
+        for material in self.snapshot['materials']:
+            self.assertIn(f'{material["program"]["directory"]}/program.json', pinned)
+        sealed = {output['path'] for output in shared_sky_ledger(self.scratch).sealed_receipt(SHARED_SKY_UNIT_KEY)['outputs']}
+        self.assertEqual(sorted(f'{self.store_root.name}/{relative}' for relative in written if f'{self.store_root.name}/{relative}' not in sealed), [])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -263,7 +263,7 @@ def tile_store_files(tile_id, source_identity, chunk_plan, terrain_records, terr
         files[chunk_path] = chunk_payload
         chunk_manifest_records.append({'chunkId': chunk_plan_entry['chunkId'], **pinned_manifest_entry(chunk_path, chunk_payload)})
     surface_materials = None
-    material_files = unique_native_material_files(tile_id, [] if bsp is None else [bsp['materialFiles']])
+    material_files = unique_native_material_files(f'tile {tile_id}', [] if bsp is None else [bsp['materialFiles']])
     if material_files:
         listing_path, listing_payload = surface_materials_listing(tile_id, material_files)
         files[listing_path] = listing_payload

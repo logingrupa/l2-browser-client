@@ -31,6 +31,7 @@ from world.level_zones import read_level_zones
 from world.light_actors import reference_client_class_chains
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_map_inputs
 from world.map_actor_properties import actor_properties, decode_property
+from world.native_material_listings import publish_native_material_listing, shared_sky_materials_listing, unique_native_material_files
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_map_lock_record, unit_step_row
 from world.shared_sky_map import SHARED_SKY_CENSUS_KEY, SHARED_SKY_MAP_NAME, SHARED_SKY_MAP_PATH, SHARED_SKY_STEP_NAME
 from world.sky_geometry import SKY_COORDINATE_RULE, SKY_UV_RULE, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
@@ -80,9 +81,16 @@ SHARED_SKY_LIMITATIONS = ['Frozen authored sky source state; no native visible-p
                           'recoloring or generated mipmaps.']
 
 
+class SharedSkyMaterialListing(NamedTuple):
+    relative_path: str
+    payload: bytes
+    material_files: list
+
+
 class SharedSkyConversion(NamedTuple):
     files: dict | None
     counts: dict | None
+    material_listing: SharedSkyMaterialListing | None
     package_paths: list
 
 
@@ -154,13 +162,24 @@ def shared_sky_snapshot(level, selection, location, actor_properties_record, par
             'limitations': SHARED_SKY_LIMITATIONS}
 
 
-def shared_sky_bundle_files(snapshot, texture_files):
+def shared_sky_material_listing(material_files_by_path):
+    material_files = unique_native_material_files(SHARED_SKY_MAP_PATH, [material_files_by_path.values()])
+    relative_path, payload = shared_sky_materials_listing(SHARED_SKY_MAP_NAME, material_files)
+    return SharedSkyMaterialListing(relative_path, payload, material_files)
+
+
+def material_listing_pin(material_listing):
+    return {'manifest': '/l2/' + material_listing.relative_path, 'manifestSha256': sha256_hex(material_listing.payload),
+            'manifestBytes': len(material_listing.payload)}
+
+
+def shared_sky_bundle_files(snapshot, texture_files, material_listing):
     files = dict(texture_files)
     files[SHARED_SKY_SNAPSHOT_NAME] = json_bytes(snapshot)
     files[SHARED_SKY_GLB_NAME] = build_sky_glb(snapshot, files)
     counts = sky_counts(snapshot['parts'])
     files[BUNDLE_MANIFEST_NAME] = json_bytes({'schemaVersion': 1, 'kind': SHARED_SKY_BUNDLE_KIND, 'id': snapshot['id'], 'map': snapshot['map'],
-                                           'source': snapshot['source'], 'counts': counts,
+                                           'source': snapshot['source'], 'counts': counts, 'materials': material_listing_pin(material_listing),
                                            'files': {name: {'bytes': len(data), 'sha256': sha256_hex(data)} for name, data in sorted(files.items())},
                                            'limitations': SHARED_SKY_LIMITATIONS})
     return files, counts
@@ -187,7 +206,7 @@ def convert_shared_sky(project_root, client, package, level, selection, map_sha2
     location, actor_properties_record = sky_actor_location(package, selection.actor)
     if location is None:
         gaps.add(GAP_STATUS, SKY_LOCATION_UNRESOLVED_REASON, selection.actor['object'])
-        return SharedSkyConversion(None, None, [])
+        return SharedSkyConversion(None, None, None, [])
     conversion = SkyRootConversion(client, lane_store_root(project_root, WORLD_LANE_NAME), lane_work_root(project_root, WORLD_LANE_NAME), gaps)
     material_of_surface = surface_material_identities(package, level.model, conversion.class_work_root, conversion.class_scripts)
     flags = load_bsp_poly_flags()
@@ -195,11 +214,20 @@ def convert_shared_sky(project_root, client, package, level, selection, map_sha2
              if (root := conversion.convert(identity)) is not None]
     package_paths = sorted(conversion.packages.packages)
     if not roots:
-        return SharedSkyConversion(None, None, package_paths)
+        return SharedSkyConversion(None, None, None, package_paths)
     parts = build_sky_zone_parts(package, material_of_surface, level.model, selection.zone_index, flags, roots)
     snapshot = shared_sky_snapshot(level, selection, location, actor_properties_record, parts, conversion.materials, map_sha256)
-    files, counts = shared_sky_bundle_files(snapshot, conversion.texture_files)
-    return SharedSkyConversion(files, counts, package_paths)
+    material_listing = shared_sky_material_listing(conversion.material_files)
+    files, counts = shared_sky_bundle_files(snapshot, conversion.texture_files, material_listing)
+    return SharedSkyConversion(files, counts, material_listing, package_paths)
+
+
+def publish_shared_sky_files(store_root, converted):
+    listing = converted.material_listing
+    _, material_records = publish_native_material_listing(store_root, listing.relative_path, listing.payload, listing.material_files)
+    material_outputs = [{**record, 'path': (store_root / record['path']).relative_to(store_root.parent).as_posix()} for record in material_records]
+    manifest_record, bundle_outputs = write_tile_resource_bundle(store_root, SKIES_CATALOG_SLICE, converted.files)
+    return manifest_record, [*material_outputs, *bundle_outputs]
 
 
 def write_shared_sky_catalog_record(store_root, manifest_record):
@@ -231,7 +259,7 @@ def run_shared_sky_step(project_root, client_root):
         return unit_step_row(SHARED_SKY_CENSUS_KEY, SHARED_SKY_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except ValueError as error:
         return unit_step_row(SHARED_SKY_CENSUS_KEY, SHARED_SKY_STEP_NAME, FAILED_STATUS, conversion_failure_reason(error), source_identity, step_evidence)
-    converted = SharedSkyConversion(None, None, [])
+    converted = SharedSkyConversion(None, None, None, [])
     if selection is not None:
         converted = convert_shared_sky(project_root, client, package, level, selection, lock_record['eSha256'], gaps)
     inputs = locked_input_records(sorted({SHARED_SKY_MAP_PATH, *converted.package_paths}))
@@ -240,14 +268,14 @@ def run_shared_sky_step(project_root, client_root):
     products_directory = ledger.begin(SHARED_SKY_UNIT_KEY, fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
     store_root = lane_store_root(project_root, WORLD_LANE_NAME)
-    manifest_record, bundle_outputs = (None, []) if converted.files is None else write_tile_resource_bundle(store_root, SKIES_CATALOG_SLICE, converted.files)
+    manifest_record, store_outputs = (None, []) if converted.files is None else publish_shared_sky_files(store_root, converted)
     catalog_record = None if manifest_record is None else write_shared_sky_catalog_record(store_root, manifest_record)
     product = {'unitKey': SHARED_SKY_UNIT_KEY, 'skyZone': None if selection is None else selection.zone_index, 'manifest': manifest_record,
                'catalogRecord': catalog_record, 'counts': converted.counts, 'gapRows': gap_rows}
     product_payload = json_bytes(product)
     product_path = products_directory / SHARED_SKY_PRODUCT_NAME
     product_path.write_bytes(product_payload)
-    outputs = [*bundle_outputs, {'path': product_path.relative_to(ledger.lane_folder).as_posix(), 'sha256': sha256_hex(product_payload),
+    outputs = [*store_outputs, {'path': product_path.relative_to(ledger.lane_folder).as_posix(), 'sha256': sha256_hex(product_payload),
                                  'bytes': len(product_payload)}]
     ledger.seal(SHARED_SKY_UNIT_KEY, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': gap_rows})
     return shared_sky_summary_row(gap_rows, receipt_evidence)

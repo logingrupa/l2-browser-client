@@ -100,7 +100,7 @@ def run_terrain_material_step(project_root, client_root, tile_id):
     products_directory = ledger.begin(unit_key, fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
     store_root = lane_store_root(project_root, WORLD_LANE_NAME)
-    material_files = unique_native_material_files(tile_id, [outcome.store_outputs for outcome in outcomes.values()])
+    material_files = unique_native_material_files(f'tile {tile_id}', [outcome.store_outputs for outcome in outcomes.values()])
     relative_path, payload = terrain_materials_listing(tile_id, [listed_terrain_layer(layer, outcomes_by_identity) for layer in layers], material_files)
     listing, store_records = publish_native_material_listing(store_root, relative_path, payload, material_files)
     product = {'tileId': tile_id, 'listing': listing, 'layerCount': len(layers), 'gapRows': gap_rows}

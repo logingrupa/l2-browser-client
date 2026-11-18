@@ -86,7 +86,7 @@ def listed_static_mesh_materials(outcomes):
 
 
 def write_static_mesh_materials_listing(store_root, tile_id, outcomes):
-    material_files = unique_native_material_files(tile_id, [outcome.store_outputs for outcome in outcomes.values()])
+    material_files = unique_native_material_files(f'tile {tile_id}', [outcome.store_outputs for outcome in outcomes.values()])
     relative_path, payload = static_mesh_materials_listing(tile_id, listed_static_mesh_materials(outcomes), material_files)
     return publish_native_material_listing(store_root, relative_path, payload, material_files)
 
