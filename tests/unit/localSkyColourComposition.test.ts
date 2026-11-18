@@ -5,7 +5,7 @@ import { environmentColour, skyLayerColour } from "../../src/environment/model/n
 import type { RgbBytes } from "../../src/environment/model/sampleNativeTimeTables";
 import type { SkyEnvironmentSection } from "../../src/environment/parseNativeTimeTables";
 import { FOG_CONSTANTS } from "../../src/materials/ue2/model/constants/fogConstants";
-import { evaluateLocalFogList, type WeightedFogInfo } from "../../src/materials/ue2/model/fog";
+import { evaluateLocalFogList, fogInfoHourPair, type WeightedFogInfo } from "../../src/materials/ue2/model/fog";
 import { environmentFogBaseline } from "../../src/scene/world/cameraEnvironment";
 import { convertedEnvironmentFogRanges, decodedFogWorkedCaseRecords, fogWorkedCaseTileRecords } from "../support/fogWorkedCaseFixture";
 import { dayNightTimeTables } from "../support/worldTimeOfDayFixture";
@@ -21,7 +21,9 @@ interface LocalSkyOverrideActor {
   readonly exportIndex: number;
   readonly referencePoint: readonly [number, number, number];
   readonly hour: number;
+  readonly selectedTimes: readonly [number, number];
   readonly nativeSpatialWeight: number;
+  readonly nativeHourWeight: number;
   readonly runningRGB: SkyColourSet;
 }
 
@@ -68,6 +70,31 @@ describe("local L2FogInfo sky colours before fog (Engine 0x1065e940, RM-21)", ()
     const retained = retainedAt20_21();
     retained.forEach((_, index) => expect(composedSet(retained.slice(0, index + 1))).toEqual(composedSet([], localSkyOverride.actors[index]!.runningRGB)));
     expect(composedSet(retained)).toEqual(skySections.map(({ pick }) => pick(localSkyOverride.finalRGB)));
+  });
+
+  it("selects the keys at 7 and 19 with the native hour weight from the f32 hour (0x10445320 reads f32(env.double[0x134]))", () => {
+    const [first] = retainedAt20_21();
+    localSkyOverride.actors.forEach(actor => expect(fogInfoHourPair(first!.fogInfo.colours, actor.hour)).toMatchObject({
+      first: { time: actor.selectedTimes[0] }, second: { time: actor.selectedTimes[1] }, weight: actor.nativeHourWeight }));
+  });
+
+  it("weights an hour past 24 from the original hour while it searches the pair with the normalised hour", () => {
+    const [first] = retainedAt20_21();
+    const pastMidnight = 24 + hour;
+    expect(fogInfoHourPair(first!.fogInfo.colours, pastMidnight)).toMatchObject({ first: { time: 7 }, second: { time: 19 },
+      weight: Math.fround((Math.fround(pastMidnight) - 7) / 12) });
+  });
+
+  it("with no hour pair lerps the scalar sky toward black and keeps the haze and cloud table colours (empty arrays)", () => {
+    const [first] = retainedAt20_21();
+    const keysAfterMidnight = first!.fogInfo.colours.slice(1);
+    const hourBeforeFirstKey = keysAfterMidnight[0]!.time / 2;
+    expect(keysAfterMidnight[0]!.time).toBeGreaterThan(0);
+    expect(fogInfoHourPair(keysAfterMidnight, hourBeforeFirstKey)).toBeNull();
+    const unpairedFogInfo: WeightedFogInfo = { fogInfo: { ...first!.fogInfo, colours: keysAfterMidnight }, weight: 0.5 };
+    const base = localSkyOverride.baselineRGB;
+    expect(skySections.map(({ section, pick }) => composeLocalSkyColour(pick(base), section, [unpairedFogInfo], hourBeforeFirstKey)))
+      .toEqual([[33, 62, 88], base.HazeRingColor[0], ...base.CloudColor]);
   });
 
   it("gives the same colours with 99 and 89 in either order", () => {

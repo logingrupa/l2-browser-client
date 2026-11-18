@@ -1,20 +1,24 @@
-import { fogInfoMemberAtHour, interpolateFogColourBytes, type FogInfoColourMember, type WeightedFogInfo } from "../../materials/ue2/model/fog";
+import {
+  fogInfoMemberAtHour, fogInfoScalarMemberAtHour, interpolateFogColourBytes, type FogColourBytes, type FogInfoColourKey, type WeightedFogInfo,
+} from "../../materials/ue2/model/fog";
 import type { SkyEnvironmentSection } from "../parseNativeTimeTables";
 import type { RgbBytes } from "./sampleNativeTimeTables";
 
-const fogInfoMemberBySkySection: Readonly<Record<SkyEnvironmentSection, FogInfoColourMember>> = {
-  SkyBoxColor: key => key.skyColourBytes,
-  HazeringColor: key => key.hazeRingColourBytes[0],
-  CloudColor1: key => key.cloudColourBytes[0],
-  CloudColor2: key => key.cloudColourBytes[1],
-  CloudColor3: key => key.cloudColourBytes[2],
+type FogInfoSkyColourReader = (colours: readonly FogInfoColourKey[], hour: number) => FogColourBytes | null;
+
+const fogInfoSkyColourReaderBySection: Readonly<Record<SkyEnvironmentSection, FogInfoSkyColourReader>> = {
+  SkyBoxColor: (colours, hour) => fogInfoScalarMemberAtHour(colours, hour, key => key.skyColourBytes),
+  HazeringColor: (colours, hour) => fogInfoMemberAtHour(colours, hour, key => key.hazeRingColourBytes[0]),
+  CloudColor1: (colours, hour) => fogInfoMemberAtHour(colours, hour, key => key.cloudColourBytes[0]),
+  CloudColor2: (colours, hour) => fogInfoMemberAtHour(colours, hour, key => key.cloudColourBytes[1]),
+  CloudColor3: (colours, hour) => fogInfoMemberAtHour(colours, hour, key => key.cloudColourBytes[2]),
 };
 
 export function composeLocalSkyColour(tableColour: RgbBytes, section: SkyEnvironmentSection, fogInfos: readonly WeightedFogInfo[], hour: number): RgbBytes {
-  const member = fogInfoMemberBySkySection[section];
+  const readFogInfoSkyColour = fogInfoSkyColourReaderBySection[section];
   let colour = tableColour;
   for (const { fogInfo, weight } of fogInfos) {
-    const target = fogInfoMemberAtHour(fogInfo.colours, hour, member);
+    const target = readFogInfoSkyColour(fogInfo.colours, hour);
     if (target !== null) colour = interpolateFogColourBytes(colour, target, Math.fround(weight));
   }
   return colour;

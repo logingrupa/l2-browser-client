@@ -53,7 +53,7 @@ export interface FogInfoColourKey {
   readonly hazeRingColourBytes: readonly FogColourBytes[];
 }
 
-export type FogInfoColourMember = (key: FogInfoColourKey) => FogColourBytes | undefined;
+type FogInfoColourMember =(key: FogInfoColourKey) => FogColourBytes | undefined;
 
 export interface FogSourcePosition {
   readonly x: number;
@@ -149,13 +149,14 @@ interface FogInfoHourPair {
   readonly weight: number;
 }
 
-function fogInfoHourPair(colours: readonly FogInfoColourKey[], hour: number): FogInfoHourPair | null {
-  const normalisedHour = ((hour % hoursPerDay) + hoursPerDay) % hoursPerDay;
+export function fogInfoHourPair(colours: readonly FogInfoColourKey[], hour: number): FogInfoHourPair | null {
+  const nativeHour = Math.fround(hour);
+  const normalisedHour = ((nativeHour % hoursPerDay) + hoursPerDay) % hoursPerDay;
   for (let index = 0; index < colours.length; index++) {
     const first = colours[index]!, second = colours[(index + 1) % colours.length]!;
     const secondTime = index + 1 === colours.length ? second.time + hoursPerDay : second.time;
     if (first.time <= normalisedHour && normalisedHour <= secondTime) {
-      return { first, second, weight: Math.fround((normalisedHour - first.time) / (secondTime - first.time)) };
+      return { first, second, weight: Math.fround((nativeHour - first.time) / (secondTime - first.time)) };
     }
   }
   return null;
@@ -163,13 +164,17 @@ function fogInfoHourPair(colours: readonly FogInfoColourKey[], hour: number): Fo
 
 export function fogInfoMemberAtHour(colours: readonly FogInfoColourKey[], hour: number, member: FogInfoColourMember): FogColourBytes | null {
   const pair = fogInfoHourPair(colours, hour);
-  if (pair === null) return unmatchedHourColour;
+  if (pair === null) return null;
   const from = member(pair.first), to = member(pair.second);
   return from === undefined || to === undefined ? null : interpolateFogColourBytes(from, to, pair.weight);
 }
 
+export function fogInfoScalarMemberAtHour(colours: readonly FogInfoColourKey[], hour: number, member: (key: FogInfoColourKey) => FogColourBytes): FogColourBytes {
+  return fogInfoMemberAtHour(colours, hour, member) ?? unmatchedHourColour;
+}
+
 export function fogInfoColourAtHour(colours: readonly FogInfoColourKey[], hour: number): FogColourBytes {
-  return fogInfoMemberAtHour(colours, hour, key => key.fogColourBytes) ?? unmatchedHourColour;
+  return fogInfoScalarMemberAtHour(colours, hour, key => key.fogColourBytes);
 }
 
 export function fogInfoWeight(affectRange: FogRangeBounds, distance: number, colourCount: number): number {
