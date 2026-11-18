@@ -58,8 +58,9 @@ class ZoneLocateTests(unittest.TestCase):
         self.assertEqual(zones_for_box(model, (50.0, 10.0, 25.0), (5.0, 5.0, 5.0)), (1 << 1) | (1 << 2))
         self.assertEqual(zones_for_box(model, (25.0, 10.0, 25.0), (5.0, 5.0, 5.0)), 1 << 1)
 
-    def test_a_zero_extent_box_on_a_plane_collects_no_leaf(self):
-        self.assertEqual(leaves_for_box(room_model(), (50.0, 10.0, 25.0), (0.0, 0.0, 0.0)), ())
+    def test_a_box_that_only_touches_a_plane_reaches_both_sides_as_native_box_leaves_does(self):
+        self.assertEqual(leaves_for_box(room_model(), (50.0, 10.0, 25.0), (0.0, 0.0, 0.0)), (0, 1))
+        self.assertEqual(leaves_for_box(room_model(), (45.0, 10.0, 25.0), (5.0, 5.0, 5.0)), (0, 1))
 
 
 class PointCheckTests(unittest.TestCase):

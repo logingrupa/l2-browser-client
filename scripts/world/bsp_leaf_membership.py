@@ -45,7 +45,7 @@ def leaves_for_box(model, center, half_extent):
         node = model.nodes[pending.pop()]
         distance = plane_dot(node.plane, center)
         extent = sum(abs(node.plane[axis] * half_extent[axis]) for axis in range(3))
-        for side, child, reaches in ((BACK_SIDE, node.i_back, distance < extent), (FRONT_SIDE, node.i_front, -distance < extent)):
+        for side, child, reaches in ((BACK_SIDE, node.i_back, distance <= extent), (FRONT_SIDE, node.i_front, -distance <= extent)):
             if not reaches:
                 continue
             if child != INDEX_NONE:
