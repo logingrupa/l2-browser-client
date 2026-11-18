@@ -34,14 +34,14 @@ ZONE_IMPORTS = [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'ZoneInf
 ZONE_INFO_CLASS_IMPORT = -2
 SKY_ZONE_INFO_CLASS_IMPORT = -3
 LEVEL_INFO_CLASS_IMPORT = -4
-PROPERTY_NAMES = ['bSunAffect', 'DistanceFogColor', 'Color', 'DistanceFogEnd']
+PROPERTY_NAMES = ['bSunAffect', 'DistanceFogColor', 'Color', 'DistanceFogEnd', 'bTerrainZone']
 ZONE_INFO = 'Engine.ZoneInfo'
 SKY_ZONE_INFO = 'Engine.SkyZoneInfo'
 LEVEL_INFO = 'Engine.LevelInfo'
 ZONE_DEFAULTS = {
     'bSunAffect': (True, 'class-default', ZONE_INFO), 'AmbientVector': (None, 'ue-zero', ZONE_INFO), 'AmbientBrightness': (None, 'ue-zero', ZONE_INFO),
     'AmbientHue': (None, 'ue-zero', ZONE_INFO), 'AmbientSaturation': (255, 'authored', ZONE_INFO), 'bDistanceFog': (None, 'ue-zero', ZONE_INFO),
-    'DistanceFogColor': ({'A': 0, 'B': 128, 'G': 128, 'R': 128}, 'class-default', ZONE_INFO), 'DistanceFogStart': (3000.0, 'class-default', ZONE_INFO),
+    'bTerrainZone': (None, 'ue-zero', ZONE_INFO), 'DistanceFogColor': ({'A': 0, 'B': 128, 'G': 128, 'R': 128}, 'class-default', ZONE_INFO), 'DistanceFogStart': (3000.0, 'class-default', ZONE_INFO),
     'DistanceFogEnd': (8000.0, 'class-default', ZONE_INFO)}
 CLASS_DEFAULTS = SyntheticActorClassDefaults({ZONE_INFO: ZONE_DEFAULTS, SKY_ZONE_INFO: ZONE_DEFAULTS, LEVEL_INFO: ZONE_DEFAULTS})
 ZONE_CLASS_CHAIN_NAMES = {ZONE_INFO: (ZONE_INFO,), SKY_ZONE_INFO: (SKY_ZONE_INFO, ZONE_INFO), LEVEL_INFO: (LEVEL_INFO, ZONE_INFO)}
@@ -66,7 +66,7 @@ def bool_tag(names, name, value):
 
 
 def indoor_zone_body(offset, names):
-    sun = bool_tag(names, 'bSunAffect', False)
+    sun = bool_tag(names, 'bSunAffect', False) + bool_tag(names, 'bTerrainZone', True)
     fog_color = tag(names, 'DistanceFogColor', STRUCT_PROPERTY_TYPE, bytes([10, 20, 30, 40]), 'Color')
     fog_end = tag(names, 'DistanceFogEnd', FLOAT_PROPERTY_TYPE, struct.pack('<f', 12000.0))
     return sun + fog_color + fog_end + compact(names['None'])
@@ -105,6 +105,13 @@ class LevelZoneTableTests(unittest.TestCase):
                          {'field': 'DistanceFogStart', 'value': 3000.0, 'provenance': 'class-default', 'declaringClass': ZONE_INFO})
         self.assertEqual(self.field(indoor, 'AmbientBrightness').provenance, 'ue-zero')
         self.assertEqual(self.field(indoor, 'AmbientSaturation').provenance, 'class-default')
+
+    def test_the_zone_fog_fields_carry_the_terrain_zone_flag_that_routes_the_empty_fog_list(self):
+        indoor, sky = self.zones[1], self.zones[2]
+        self.assertEqual([field['field'] for field in indoor.to_record()['distanceFog']],
+                         ['bDistanceFog', 'bTerrainZone', 'DistanceFogColor', 'DistanceFogStart', 'DistanceFogEnd'])
+        self.assertEqual((self.field(indoor, 'bTerrainZone').value, self.field(indoor, 'bTerrainZone').provenance), (True, AUTHORED_PROVENANCE))
+        self.assertEqual((self.field(sky, 'bTerrainZone').value, self.field(sky, 'bTerrainZone').provenance), (None, 'ue-zero'))
 
     def test_sun_resolution_sets_the_outdoor_class_and_zone_zero_is_always_outdoor(self):
         self.assertEqual(outdoor_zone_indices(self.zones), frozenset({0, 2}))

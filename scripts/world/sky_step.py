@@ -46,7 +46,6 @@ SKY_SNAPSHOT_KIND = 'native-sky-source-snapshot'
 SKY_STORE_FOLDER = 'skies'
 SKY_ZONE_ROTATION_UNPORTED_REASON = 'sky-zone-rotation-unported'
 SKY_ZONE_ROTATION_UNRESOLVED_REASON = 'sky-zone-rotation-unresolved'
-SKY_ZONE_DISTANCE_FOG_UNPORTED_REASON = 'sky-zone-distance-fog-unported'
 SKY_ZONE_DISTANCE_FOG_UNRESOLVED_REASON = 'sky-zone-distance-fog-unresolved'
 ZERO_ROTATION = {'Pitch': 0, 'Yaw': 0, 'Roll': 0}
 DISTANCE_FOG_FIELD = 'bDistanceFog'
@@ -264,8 +263,6 @@ def unported_sky_zone_reasons(package, sky_actor, sky_zone, class_defaults):
     distance_fog = next(field for field in sky_zone.distance_fog if field.field == DISTANCE_FOG_FIELD)
     if distance_fog.provenance == UNRESOLVED_PROVENANCE:
         reasons.append(SKY_ZONE_DISTANCE_FOG_UNRESOLVED_REASON)
-    elif distance_fog.value is True:
-        reasons.append(SKY_ZONE_DISTANCE_FOG_UNPORTED_REASON)
     return reasons
 
 

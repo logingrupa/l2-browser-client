@@ -7,7 +7,7 @@ OUTDOOR_ZONE_INDEX = 0
 NO_ZONE_ACTOR_REFERENCE = 0
 SUN_AFFECT_FIELD = 'bSunAffect'
 AMBIENT_FIELDS = ('AmbientVector', 'AmbientBrightness', 'AmbientHue', 'AmbientSaturation')
-DISTANCE_FOG_FIELDS = ('bDistanceFog', 'DistanceFogColor', 'DistanceFogStart', 'DistanceFogEnd')
+ZONE_FOG_FIELDS = ('bDistanceFog', 'bTerrainZone', 'DistanceFogColor', 'DistanceFogStart', 'DistanceFogEnd')
 SKY_ZONE_CLASS = 'Engine.SkyZoneInfo'
 ZONE_CLASS_OUTDOOR_BIT = 1
 ZONE_CLASS_SKY_BIT = 2
@@ -55,12 +55,12 @@ def read_level_zone(package, zone_index, zone, class_defaults, class_chains, lev
     level_info_fallback = actor_reference == NO_ZONE_ACTOR_REFERENCE and level_info is not None
     export = level_info if level_info_fallback else zone_actor_export(package, actor_reference)
     if export is None:
-        fields = [unresolved_actor_field(field) for field in (SUN_AFFECT_FIELD, *AMBIENT_FIELDS, *DISTANCE_FOG_FIELDS)]
+        fields = [unresolved_actor_field(field) for field in (SUN_AFFECT_FIELD, *AMBIENT_FIELDS, *ZONE_FOG_FIELDS)]
         actor, actor_class, class_resolved = None, None, False
     else:
         serialized_values, actor, actor_class = serialized_actor_values(package, export), export['object'], export['classObject']
         fields = [resolved_actor_field(field, serialized_values, actor_class, class_defaults)
-                  for field in (SUN_AFFECT_FIELD, *AMBIENT_FIELDS, *DISTANCE_FOG_FIELDS)]
+                  for field in (SUN_AFFECT_FIELD, *AMBIENT_FIELDS, *ZONE_FOG_FIELDS)]
         class_resolved = class_chains.chain(actor_class) is not None
     sun_affect, ambient, distance_fog = fields[0], tuple(fields[1:1 + len(AMBIENT_FIELDS)]), tuple(fields[1 + len(AMBIENT_FIELDS):])
     return LevelZone(zone_index, actor, actor_class, connectivity, visibility, sun_affect, ambient, distance_fog,

@@ -170,7 +170,7 @@ class SkyStepRecordTests(unittest.TestCase):
         self.assertIn('sky', load_tile_manifest_vocabulary(ROOT).resource_kinds)
         patterns = load_gap_reason_patterns(ROOT)
         for reason in ('sky-zone-detail-mode-unresolved', 'sky-zone-class-unresolved:Engine.Foo', 'sky-zone-detail-field-unresolved:Map.SkyZoneInfo0.bHighDetail',
-                       'sky-zone-actor-zone-count:0', 'sky-zone-rotation-unported', 'sky-zone-rotation-unresolved', 'sky-zone-distance-fog-unported',
+                       'sky-zone-actor-zone-count:0', 'sky-zone-rotation-unported', 'sky-zone-rotation-unresolved',
                        'sky-zone-distance-fog-unresolved', 'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):
             self.assertTrue(is_listed_reason(reason, patterns), reason)
 
