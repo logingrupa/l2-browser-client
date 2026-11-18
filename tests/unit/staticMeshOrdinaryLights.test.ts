@@ -49,7 +49,8 @@ function stagedLocalToWorld(fixture: OrdinaryIntegratedFixture): NativeLocalToWo
 }
 
 function stagedInstanceRgb(fixture: OrdinaryIntegratedFixture): number[][] {
-  const { list, streams } = stagedOrdinarySubsetOf(fixture);
+  const hourlyEntries = fixture.hourlyEntries.length === 0 ? [{ light: pillarCase.hourlyEntries[0]!.light, maskHex: "00" }] : fixture.hourlyEntries;
+  const { list, streams } = stagedOrdinarySubsetOf(fixture, hourlyEntries);
   const ordinary = resolveStaticMeshOrdinaryTerm(list, recordsOf(fixture), environmentAt(fixture));
   if (ordinary.status !== "resolved") throw new Error(ordinary.reason);
   const [x, y, z] = fixture.sunDirection;
