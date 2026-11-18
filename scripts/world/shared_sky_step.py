@@ -59,7 +59,6 @@ SKIES_CATALOG_SLICE = 'skies'
 SKIES_CATALOG_CAPACITY = 1
 SHARED_SKY_RECORD_ID = SHARED_SKY_MAP_NAME
 PASS_STATUS = 'pass'
-RAW_MAP_PRODUCT_PATH = 'raw/map.unwrapped.bin'
 ZERO_ROTATION = {'Pitch': 0, 'Yaw': 0, 'Roll': 0}
 SKY_ZONE_ROTATION_UNPORTED_REASON = 'sky-zone-rotation-unported'
 SKY_ZONE_ROTATION_UNRESOLVED_REASON = 'sky-zone-rotation-unresolved'
@@ -125,7 +124,7 @@ def shared_sky_summary_row(gap_rows, evidence):
 
 def sky_actor_location(package, sky_actor):
     tags, _, _, _ = actor_properties(package, sky_actor)
-    properties = [decode_property(package, tag, RAW_MAP_PRODUCT_PATH) for tag in tags]
+    properties = [decode_property(package, tag, SHARED_SKY_MAP_PATH) for tag in tags]
     locations = [prop for prop in properties if prop['name'] == 'Location']
     if len(locations) > 1:
         raise FormatError(f'{sky_actor["object"]} serializes Location {len(locations)} times')

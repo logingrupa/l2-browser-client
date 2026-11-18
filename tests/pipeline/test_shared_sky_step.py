@@ -286,6 +286,10 @@ class RealClientSharedSkyTests(unittest.TestCase):
         self.assertFalse(sky_zone['serializesRotation'])
         self.assertEqual((self.snapshot['sourceSkyZoneRotation']['provenance'], self.snapshot['sourceSkyZoneRotation']['value']), ('ue-zero', None))
 
+    def test_every_sky_actor_property_payload_names_the_skylevel_map(self):
+        self.assertTrue(self.snapshot['skyActorProperties'])
+        self.assertEqual({prop['payload']['path'] for prop in self.snapshot['skyActorProperties']}, {'maps/skylevel.unr'})
+
     def test_the_rm21_pixel_node_keeps_its_surface_and_native_points(self):
         pixel_node = SHARED_SKY_FIXTURES['pixelNode']
         node_range = next(node_range for part in self.snapshot['parts'] for node_range in part['nodeRanges']
