@@ -1,4 +1,5 @@
 from collections import namedtuple
+import faulthandler
 import json
 import os
 from pathlib import Path
@@ -100,6 +101,12 @@ def end_this_process_once_the_first_manifest_is_sealed(project_root):
     os._exit(WORKER_DEATH_EXIT_CODE)
 
 
+def fault_this_process_once_the_first_manifest_is_sealed(project_root):
+    seal_path = synthetic_step_ledger(project_root, 'manifest').unit_step_directory(f'tile:{SEPARATE_TILE_IDS[0]}') / SEAL_RECORD_NAME
+    wait_at_the_gate_until(seal_path.exists, seal_path)
+    faulthandler._sigsegv()
+
+
 class HeldLockRecordingConverter:
     def __init__(self, output):
         self.output = output
@@ -151,6 +158,8 @@ TILE_BATCH_SCENARIOS_BY_NAME = {
         refusals=(PreflightRefusal(SECOND_TILE_CHUNKS_CALL, wait_for_the_chunks_call_of_the_third_tile),)),
     'worker-dies': TileBatchScenario(SEPARATE_TILE_IDS, 2,
                                      actions_before_a_step={SECOND_TILE_CHUNKS_CALL: end_this_process_once_the_first_manifest_is_sealed}),
+    'worker-faults': TileBatchScenario(SEPARATE_TILE_IDS, 2,
+                                       actions_before_a_step={SECOND_TILE_CHUNKS_CALL: fault_this_process_once_the_first_manifest_is_sealed}),
     'costliest-tiles-last': TileBatchScenario(
         FOUR_SEPARATE_TILE_IDS, 4, expected_costs=ascending_expected_costs(FOUR_SEPARATE_TILE_IDS),
         actions_before_a_step={(tile_id, 'chunks'): wait_in_a_pool_worker_for_the_chunks_call_of(other_tile_id)

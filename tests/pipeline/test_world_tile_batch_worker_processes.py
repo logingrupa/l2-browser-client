@@ -14,7 +14,7 @@ from native_store.gap_rows import read_gap_rows
 from native_store.interprocess_lock import STORE_LOCK_KEY_PREFIX, lane_lock_file_path, lane_lock_folder, lock_file_path
 from native_store.store_paths import lane_gap_rows_folder, lane_store_root, lane_work_root
 from support.tile_step_worker_runs import (FOUR_SEPARATE_TILE_IDS, RAW_FAILED_ONCE_MESSAGE, SEPARATE_TILE_IDS, SYNTHETIC_FLOOR_REFUSAL_MESSAGE,
-                                           TWO_COSTLIEST_OF_FOUR_TILE_IDS)
+                                           TWO_COSTLIEST_OF_FOUR_TILE_IDS, WORKER_DEATH_EXIT_CODE)
 from test_convert_tile_batch import SYNTHETIC_STEP_NAMES
 from world.tile_step_workers import BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, WORKER_DIED_MESSAGE
 
@@ -37,11 +37,16 @@ CHUNKS_FAILED_ROW = ('failed', 'decode-failed:ValueError:synthetic decode failur
 CLOCK_AND_FREE_BYTE_FIELDS = ('rigaTime', 'freeBytes')
 STEPS_SEALED_BEFORE_THE_STOP = ['raw', 'chunks']
 TWO_CHEAPEST_OF_FOUR_TILE_IDS = FOUR_SEPARATE_TILE_IDS[:2]
+WORKER_EXIT_CODES_PREFIX = f'{WORKER_DIED_MESSAGE}; worker exit codes: '
+WINDOWS_ABORT_EXIT_CODE = 3
+FAULT_DUMP_HEADER = 'Fatal Python error: Segmentation fault'
+FAULTING_STEP_FUNCTION_LINE = 'in fault_this_process_once_the_first_manifest_is_sealed'
 
 
 class ScenarioRun(NamedTuple):
     project_root: Path
     stdout: str
+    stderr: str
     report: dict
 
 
@@ -52,7 +57,7 @@ def scenario_run(temporary_root, scenario_name, worker_count):
                                capture_output=True, text=True, check=False, timeout=TILE_BATCH_TIMEOUT_SECONDS)
     if completed.returncode != 0:
         raise AssertionError(completed.stderr)
-    return ScenarioRun(project_root, completed.stdout, json.loads(completed.stdout))
+    return ScenarioRun(project_root, completed.stdout, completed.stderr, json.loads(completed.stdout))
 
 
 def gap_row_file_names(project_root):
@@ -185,16 +190,27 @@ class TwoWorkerStopTests(TileBatchWorkerProcessTestCase):
             self.assertEqual(called_steps_of_tile(run.report, tile_id), sorted(STEPS_SEALED_BEFORE_THE_STOP))
         self.assertEqual([record['step'] for record in summary['preflights'] if record['tile'] == THIRD_TILE_ID], STEPS_SEALED_BEFORE_THE_STOP)
 
+    def assert_worker_died_stop_names_the_exit_code(self, summary, worker_exit_code):
+        stop = summary['stop']
+        self.assertEqual((summary['exitCode'], summary['attemptedTiles'], stop['exit_code'], stop['tile_id'], stop['step']),
+                         (BATCH_EXIT_ERROR, [FIRST_TILE_ID], BATCH_EXIT_ERROR, SECOND_TILE_ID, None))
+        self.assertTrue(stop['message'].startswith(WORKER_EXIT_CODES_PREFIX), stop['message'])
+        self.assertIn(f'=0x{worker_exit_code:08X}', stop['message'])
+
     def test_a_worker_that_dies_ends_the_batch_with_exit_code_one_after_the_rows_of_the_finished_tiles_are_written(self):
         run = scenario_run(self.temporary_root(), 'worker-dies', 2)
         summary = run.report['summary']
-        self.assertEqual((summary['exitCode'], summary['attemptedTiles'], summary['stop']),
-                         (BATCH_EXIT_ERROR, [FIRST_TILE_ID],
-                          {'exit_code': BATCH_EXIT_ERROR, 'tile_id': SECOND_TILE_ID, 'step': None, 'message': WORKER_DIED_MESSAGE}))
+        self.assert_worker_died_stop_names_the_exit_code(summary, WORKER_DEATH_EXIT_CODE)
         self.assertEqual(BATCH_EXIT_ERROR, 1)
         self.assertEqual(tile_step_rows(run.project_root, FIRST_TILE_ID), [PASS_ROW] * len(SYNTHETIC_STEP_NAMES))
         self.assertEqual(tile_step_rows(run.project_root, SECOND_TILE_ID), [PASS_ROW, BATCH_PENDING_ROW, BATCH_PENDING_ROW, BATCH_PENDING_ROW])
         self.assertEqual(tile_step_rows(run.project_root, THIRD_TILE_ID), [BATCH_PENDING_ROW] * len(SYNTHETIC_STEP_NAMES))
+
+    def test_a_worker_that_faults_prints_its_python_stack_to_stderr_and_the_stop_names_its_exit_code(self):
+        run = scenario_run(self.temporary_root(), 'worker-faults', 2)
+        self.assert_worker_died_stop_names_the_exit_code(run.report['summary'], WINDOWS_ABORT_EXIT_CODE)
+        self.assertIn(FAULT_DUMP_HEADER, run.stderr)
+        self.assertIn(FAULTING_STEP_FUNCTION_LINE, run.stderr)
 
 
 class LocksUnderTheLaneLockTests(TileBatchWorkerProcessTestCase):

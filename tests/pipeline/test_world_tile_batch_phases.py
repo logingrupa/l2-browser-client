@@ -6,7 +6,9 @@ import io
 import json
 import multiprocessing
 from pathlib import Path
+import signal
 import sys
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -50,11 +52,20 @@ class RawFailingOnceSteps(LedgerBackedSteps):
             self.failing.discard((tile_id, step))
 
 
+ACCESS_VIOLATION_EXIT_CODE = 0xC0000005
+CRASHED_WORKER_PROCESS_ID = 4101
+POOL_ENDED_WORKER_PROCESS_ID = 4102
+WORKER_DIED_STOP_MESSAGE = (f'{WORKER_DIED_MESSAGE}; worker exit codes: {CRASHED_WORKER_PROCESS_ID}=0xC0000005, '
+                            f'{POOL_ENDED_WORKER_PROCESS_ID}=ended by the broken pool')
+
+
 class PoolBrokenAtTheSecondSubmit:
     first_outcome = TileStepsOutcome(True, {}, None, [])
 
     def __init__(self, **pool_arguments):
         self.submitted_tasks = []
+        self._processes = {POOL_ENDED_WORKER_PROCESS_ID: SimpleNamespace(exitcode=-signal.SIGTERM),
+                           CRASHED_WORKER_PROCESS_ID: SimpleNamespace(exitcode=ACCESS_VIOLATION_EXIT_CODE)}
 
     def submit(self, function, task):
         if self.submitted_tasks:
@@ -319,7 +330,7 @@ class TileStepsPhaseTests(TileBatchPhaseTestCase):
             outcomes = list(workers.outcomes(tasks))
             workers.close()
         self.assertEqual(outcomes, [PoolBrokenAtTheSecondSubmit.first_outcome,
-                                    *(TileStepsOutcome(False, {}, TileBatchStop(BATCH_EXIT_ERROR, task.tile_id, None, WORKER_DIED_MESSAGE), [])
+                                    *(TileStepsOutcome(False, {}, TileBatchStop(BATCH_EXIT_ERROR, task.tile_id, None, WORKER_DIED_STOP_MESSAGE), [])
                                       for task in tasks[1:])])
 
 

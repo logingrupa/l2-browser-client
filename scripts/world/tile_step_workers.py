@@ -1,8 +1,10 @@
 from collections import namedtuple
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
-import contextlib
+import faulthandler
 import multiprocessing
+import signal
+import sys
 from typing import NamedTuple
 
 from native_store.interprocess_lock import hold_lane_in_use_part_until_process_end
@@ -22,6 +24,8 @@ NO_STOPPED_POSITION = 2 ** 62
 SIGNED_64_BIT_INTEGER_TYPE_CODE = 'q'
 WORKER_DIED_MESSAGE = ('a tile step worker process died and the batch does not restart it: the shared converter folders may hold a '
                        'half-published request and UModel child processes of the ended workers may still run')
+POOL_TERMINATED_WORKER_EXIT_CODE = -signal.SIGTERM
+UNSIGNED_32_BIT_MASK = 0xFFFFFFFF
 TileStepWorker = namedtuple('TileStepWorker', 'run first_stopped_position')
 tile_step_worker = None
 
@@ -112,6 +116,7 @@ def ordered_tile_steps_outcome(tile_step_run, first_stopped_position, task):
 
 def initialize_tile_step_worker(run_factory, run_factory_arguments, first_stopped_position):
     global tile_step_worker
+    faulthandler.enable(file=sys.__stderr__, all_threads=True)
     tile_step_worker = TileStepWorker(run_factory(*run_factory_arguments), first_stopped_position)
     hold_lane_in_use_part_until_process_end(lane_work_root(tile_step_worker.run.project_root, WORLD_LANE_NAME))
 
@@ -120,15 +125,23 @@ def worker_tile_steps_outcome(task):
     return ordered_tile_steps_outcome(tile_step_worker.run, tile_step_worker.first_stopped_position, task)
 
 
-def worker_died_outcome(task):
-    return TileStepsOutcome(False, {}, TileBatchStop(BATCH_EXIT_ERROR, task.tile_id, None, WORKER_DIED_MESSAGE), [])
+def worker_exit_code_text(exit_code):
+    if exit_code is None:
+        return 'still running'
+    if exit_code == POOL_TERMINATED_WORKER_EXIT_CODE:
+        return 'ended by the broken pool'
+    return f'0x{exit_code & UNSIGNED_32_BIT_MASK:08X}'
 
 
-def future_outcome(future, task):
-    try:
-        return future.result()
-    except BrokenProcessPool:
-        return worker_died_outcome(task)
+def last_line_of_pool_cause(broken_pool_error):
+    cause_lines = [] if broken_pool_error.__cause__ is None else str(broken_pool_error.__cause__).strip().splitlines()
+    return cause_lines[-1].strip() if cause_lines else None
+
+
+def worker_died_stop_message(worker_exit_codes, pool_cause):
+    exit_code_texts = ', '.join(f'{process_id}={worker_exit_code_text(exit_code)}' for process_id, exit_code in sorted(worker_exit_codes.items()))
+    pool_cause_text = '' if pool_cause is None else f'; pool cause: {pool_cause}'
+    return f'{WORKER_DIED_MESSAGE}; worker exit codes: {exit_code_texts or "none recorded"}{pool_cause_text}'
 
 
 class TileStepWorkers:
@@ -139,22 +152,37 @@ class TileStepWorkers:
             max_workers=worker_count, initializer=initialize_tile_step_worker,
             initargs=(run_factory, run_factory_arguments, self.first_stopped_position))
 
+    def worker_exit_codes(self):
+        return {process_id: process.exitcode for process_id, process in (self.executor._processes or {}).items()}
+
+    def worker_died_outcome(self, task, broken_pool_error):
+        message = worker_died_stop_message(self.worker_exit_codes(), last_line_of_pool_cause(broken_pool_error))
+        return TileStepsOutcome(False, {}, TileBatchStop(BATCH_EXIT_ERROR, task.tile_id, None, message), [])
+
+    def future_outcome(self, future, task):
+        try:
+            return future.result()
+        except BrokenProcessPool as broken_pool_error:
+            return self.worker_died_outcome(task, broken_pool_error)
+
     def coordinator_outcome(self, task):
         return ordered_tile_steps_outcome(self.coordinator_run, self.first_stopped_position, task)
 
     def futures_submitted_until_the_pool_breaks(self, tasks):
         futures_by_position = {}
-        with contextlib.suppress(BrokenProcessPool):
-            for task in sorted(tasks, key=lambda task: task.expected_cost, reverse=True):
+        for task in sorted(tasks, key=lambda task: task.expected_cost, reverse=True):
+            try:
                 futures_by_position[task.position] = self.executor.submit(worker_tile_steps_outcome, task)
-        return futures_by_position
+            except BrokenProcessPool as broken_pool_error:
+                return futures_by_position, broken_pool_error
+        return futures_by_position, None
 
     def outcomes(self, tasks):
         if self.executor is None:
             return (self.coordinator_outcome(task) for task in tasks)
-        futures_by_position = self.futures_submitted_until_the_pool_breaks(tasks)
-        return (future_outcome(futures_by_position[task.position], task) if task.position in futures_by_position else worker_died_outcome(task)
-                for task in tasks)
+        futures_by_position, submit_refusal = self.futures_submitted_until_the_pool_breaks(tasks)
+        return (self.future_outcome(futures_by_position[task.position], task) if task.position in futures_by_position
+                else self.worker_died_outcome(task, submit_refusal) for task in tasks)
 
     def close(self):
         if self.executor is not None:

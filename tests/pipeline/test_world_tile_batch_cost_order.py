@@ -13,11 +13,11 @@ from reference_client_guard import REFERENCE_CLIENT_LOCK_FILE_FIELDS
 from reference_client_lock_fixture import use_reference_client_lock
 from test_convert_tile_batch import (SYNTHETIC_STEP_NAMES, LedgerBackedSteps, RecordingPreflight, TileBatchTestCase, synthetic_seal_checks,
                                      synthetic_source_identity)
-from test_world_tile_batch_phases import PoolBrokenAtTheSecondSubmit
+from test_world_tile_batch_phases import WORKER_DIED_STOP_MESSAGE, PoolBrokenAtTheSecondSubmit
 from world import tile_step_workers
 from world.convert_tile_batch import run_tile_batch
 from world.raw_map_step import RawMapStepError, locked_tile_map_bytes, tile_map_path
-from world.tile_step_workers import (BATCH_EXIT_DONE, BATCH_EXIT_ERROR, WORKER_DIED_MESSAGE, TileBatchStop, TileStepRun, TileStepsOutcome,
+from world.tile_step_workers import (BATCH_EXIT_DONE, BATCH_EXIT_ERROR, TileBatchStop, TileStepRun, TileStepsOutcome,
                                      TileStepsTask, TileStepWorkers)
 
 FIRST_TILE_ID, SECOND_TILE_ID, THIRD_TILE_ID = TileBatchTestCase.eligible_tile_ids
@@ -95,7 +95,7 @@ class PoolSubmissionOrderTests(unittest.TestCase):
         tasks = tasks_with_expected_costs((1, 2, 3, 4))
         submitted_positions, outcomes = self.submitted_positions_and_outcomes(tasks, PoolBrokenAtTheSecondSubmit)
         self.assertEqual(submitted_positions, [3])
-        self.assertEqual(outcomes, [*(TileStepsOutcome(False, {}, TileBatchStop(BATCH_EXIT_ERROR, task.tile_id, None, WORKER_DIED_MESSAGE), [])
+        self.assertEqual(outcomes, [*(TileStepsOutcome(False, {}, TileBatchStop(BATCH_EXIT_ERROR, task.tile_id, None, WORKER_DIED_STOP_MESSAGE), [])
                                       for task in tasks[:3]), PoolBrokenAtTheSecondSubmit.first_outcome])
 
 
