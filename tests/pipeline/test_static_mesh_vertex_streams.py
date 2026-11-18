@@ -1,16 +1,19 @@
+from collections import Counter
+import hashlib
 import json
 from pathlib import Path
 import struct
 import sys
+from typing import NamedTuple
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
-from native_catalog.ue2 import Package
+from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from world.gltf_builder import GltfBuilder
-from world.static_mesh_vertex_streams import (COLOUR_SELECTOR_UNRESOLVED_REASON, COLOUR_STREAM_JOIN_MISMATCH_REASON,
+from world.static_mesh_vertex_streams import (COLOUR_SELECTOR_UNRESOLVED_REASON, COLOUR_STREAM_JOIN_MISMATCH_REASON, REVIEWED_COLOUR_STREAM_LAYOUTS,
                                               read_static_mesh_vertex_streams, static_mesh_vertex_stream_outcome, static_mesh_export)
 from ue2_package_fixture import compact, package_bytes
 
@@ -30,24 +33,52 @@ SECTIONS = ((0, 1), (3, 0), (3, 2))
 INDICES = (2, 0, 2, 0, 1, 2, 1, 0, 1)
 
 
+REFERENCE_PACKAGE_COLOURS_PATH = ROOT / 'tests/fixtures/environment/static-mesh-colour-stream-layouts.json'
+
+
+class SyntheticTail(NamedTuple):
+    uv_channel_count: int = 1
+    collision_triangles_end_shift: int = 0
+    extra_bytes: bytes = b''
+
+
 def section_bytes(first_index, triangle_count):
     return struct.pack('<IHHHHH', 0, first_index, 0, 2, triangle_count, triangle_count)
 
 
-def static_mesh_body(positions, uvs, primary=PRIMARY_COLOURS, alternate=ALTERNATE_COLOURS):
+def declared_end_array(start, rows, count, end_shift=0):
+    array = compact(count) + rows
+    return struct.pack('<i', start + 4 + len(array) + end_shift) + array
+
+
+def lazy_licensee_tail(start, tail):
+    wireframe = compact(2) + struct.pack('<2H', 0, 1) + struct.pack('<i', 7) + compact(0)
+    collision_triangle = bytes(64) + compact(0) + compact(1) + compact(2) + compact(0)
+    collision_triangles = declared_end_array(start + len(wireframe), collision_triangle, 1, tail.collision_triangles_end_shift)
+    collision_node = compact(0) + compact(0) + compact(-1) + compact(-1) + bytes(25)
+    collision_nodes = declared_end_array(start + len(wireframe) + len(collision_triangles), collision_node, 1)
+    level_of_detail = struct.pack('<i', 0) + compact(0) + compact(0) + struct.pack('<ffiff', 0.0, 0.0, 0, 1.0, 1.0) + bytes(16)
+    authored_triangle = bytes(36) + struct.pack('<i', tail.uv_channel_count) + bytes(24 * tail.uv_channel_count) + struct.pack('<3i', -1, -1, -1) + struct.pack('<2i', 0, 2)
+    head = wireframe + collision_triangles + collision_nodes + level_of_detail
+    authored_triangles = declared_end_array(start + len(head), authored_triangle, 1)
+    return head + authored_triangles + struct.pack('<i', 8) + compact(0) + struct.pack('<i', 0) + tail.extra_bytes
+
+
+def static_mesh_body(positions, uvs, tail):
     def body(offset, names):
         vertex_count = len(positions)
         vertices = b''.join(struct.pack('<6f', *position, *normal) for position, normal in zip(positions, SYNTHETIC_NORMALS))
-        return (compact(names['None']) + bytes(25 + 16) + compact(len(SECTIONS)) + b''.join(section_bytes(*section) for section in SECTIONS)
-                + bytes(25) + compact(vertex_count) + vertices + struct.pack('<i', 1) + compact(vertex_count) + primary + struct.pack('<i', 3)
-                + compact(vertex_count) + alternate + struct.pack('<i', 4) + compact(1) + compact(vertex_count)
+        head = (compact(names['None']) + bytes(25 + 16) + compact(len(SECTIONS)) + b''.join(section_bytes(*section) for section in SECTIONS)
+                + bytes(25) + compact(vertex_count) + vertices + struct.pack('<i', 1) + compact(vertex_count) + PRIMARY_COLOURS + struct.pack('<i', 3)
+                + compact(vertex_count) + ALTERNATE_COLOURS + struct.pack('<i', 4) + compact(1) + compact(vertex_count)
                 + b''.join(struct.pack('<2f', *uv) for uv in uvs) + struct.pack('<2i', 0, 5) + compact(len(INDICES))
                 + struct.pack(f'<{len(INDICES)}H', *INDICES) + struct.pack('<i', 6))
+        return head + lazy_licensee_tail(offset + len(head), tail)
     return body
 
 
-def synthetic_static_mesh_package(positions=SYNTHETIC_POSITIONS, uvs=SYNTHETIC_UVS):
-    exports = [{'name': 'Rock', 'class': -2, 'body': static_mesh_body(positions, uvs)}]
+def synthetic_static_mesh_package(positions=SYNTHETIC_POSITIONS, uvs=SYNTHETIC_UVS, tail=SyntheticTail()):
+    exports = [{'name': 'Rock', 'class': -2, 'body': static_mesh_body(positions, uvs, tail)}]
     return Package(package_bytes([], [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'StaticMesh')], exports), 'Synthetic_S.usx')
 
 
@@ -119,8 +150,31 @@ class StaticMeshVertexStreamTests(unittest.TestCase):
     def test_an_unreviewed_layout_is_a_named_gap_without_reading_the_package(self):
         def refuse(relative):
             raise AssertionError(f'read {relative}')
-        outcome = static_mesh_vertex_stream_outcome((123, 28), refuse, {'package': PACKAGE_RECORD['path'], 'object': 'Synthetic_S.Rock'}, b'')
-        self.assertEqual(outcome, (None, 'static-mesh-colour-stream-layout-unreviewed:123/28'))
+        outcome = static_mesh_vertex_stream_outcome((123, 0), refuse, {'package': PACKAGE_RECORD['path'], 'object': 'Synthetic_S.Rock'}, b'')
+        self.assertEqual(outcome, (None, 'static-mesh-colour-stream-layout-unreviewed:123/0'))
+
+    def test_an_export_with_bytes_after_its_last_field_is_refused(self):
+        package = synthetic_static_mesh_package(tail=SyntheticTail(extra_bytes=b'\0'))
+        with self.assertRaisesRegex(FormatError, 'static mesh Synthetic_S.Rock leaves 1 bytes after its last field'):
+            read_static_mesh_vertex_streams(package, static_mesh_export(package, 'Synthetic_S.Rock'))
+
+    def test_a_lazy_array_that_ends_away_from_its_declared_end_is_refused(self):
+        package = synthetic_static_mesh_package(tail=SyntheticTail(collision_triangles_end_shift=1))
+        with self.assertRaisesRegex(FormatError, 'static mesh Synthetic_S.Rock collision triangles end at \\d+, not at their declared end \\d+'):
+            read_static_mesh_vertex_streams(package, static_mesh_export(package, 'Synthetic_S.Rock'))
+
+    def test_an_authored_triangle_whose_uv_channels_differ_from_the_uv_streams_is_refused(self):
+        package = synthetic_static_mesh_package(tail=SyntheticTail(uv_channel_count=2))
+        with self.assertRaisesRegex(FormatError, 'static mesh Synthetic_S.Rock authored triangle holds 2 UV channels for 1 UV streams'):
+            read_static_mesh_vertex_streams(package, static_mesh_export(package, 'Synthetic_S.Rock'))
+
+    def test_a_package_of_an_unreviewed_layout_is_refused_by_the_reader(self):
+        data = bytearray(package_bytes([], [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'StaticMesh')],
+                                       [{'name': 'Rock', 'class': -2, 'body': static_mesh_body(SYNTHETIC_POSITIONS, SYNTHETIC_UVS, SyntheticTail())}]))
+        struct.pack_into('<H', data, 6, 0)
+        package = Package(bytes(data), 'Synthetic_S.usx')
+        with self.assertRaisesRegex(FormatError, 'Synthetic_S.usx holds the unreviewed static mesh layout 123/0'):
+            read_static_mesh_vertex_streams(package, static_mesh_export(package, 'Synthetic_S.Rock'))
 
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')
@@ -149,6 +203,26 @@ class ReferenceClientVertexStreamTests(unittest.TestCase):
         package = Package(path.read_bytes(), path.name)
         streams = read_static_mesh_vertex_streams(package, static_mesh_export(package, pillar['meshObject']))
         self.assertEqual([component for normal in streams.normals for component in normal], pillar['nativeNormals'])
+
+    def test_every_static_mesh_of_one_package_per_reviewed_layout_reads_to_its_export_end_with_its_measured_colours(self):
+        measured = json.loads(REFERENCE_PACKAGE_COLOURS_PATH.read_text(encoding='utf-8'))['packages']
+        self.assertEqual({(row['packageVersion'], row['licensee']) for row in measured}, set(REVIEWED_COLOUR_STREAM_LAYOUTS))
+        for row in measured:
+            with self.subTest(package=row['package']):
+                path = REFERENCE_CLIENT / row['package']
+                data = path.read_bytes()
+                self.assertEqual(hashlib.sha256(data).hexdigest(), row['sha256'])
+                package = Package(data, path.name)
+                self.assertEqual((package.summary['version'], package.summary['licenseeVersion']), (row['packageVersion'], row['licensee']))
+                primary, alternate, vertices = Counter(), Counter(), 0
+                meshes = [export for export in package.exports if export['className'] == 'StaticMesh']
+                for export in meshes:
+                    streams = read_static_mesh_vertex_streams(package, export)
+                    vertices += len(streams.positions)
+                    primary.update(streams.primary_colours[offset:offset + 4].hex() for offset in range(0, len(streams.primary_colours), 4))
+                    alternate.update(streams.alternate_colours[offset:offset + 4].hex() for offset in range(0, len(streams.alternate_colours), 4))
+                self.assertEqual((len(meshes), vertices), (row['staticMeshCount'], row['vertexCount']))
+                self.assertEqual((dict(primary), dict(alternate)), (row['primaryBgraCounts'], row['alternateBgraCounts']))
 
     def test_every_rm19_integrated_mesh_keeps_the_source_unit_positions_and_normals_the_native_rebuild_read(self):
         for fixture in json.loads(RM19_FIXTURES_PATH.read_text(encoding='utf-8'))['integrated']:

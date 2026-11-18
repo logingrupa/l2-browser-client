@@ -212,7 +212,7 @@ class StaticMeshOutcomeTests(unittest.TestCase):
 
     def test_a_reviewed_layout_converts_once_per_mesh_with_the_model_request_and_a_failure_is_a_failed_outcome(self):
         requests = [mesh_request('Rock_S', 'Rock'), mesh_request('Rock_S', 'Broken'), mesh_request('Bad_S', 'Rock')]
-        outcomes = self.outcomes({'staticmeshes/Rock_S.usx': {'packageVersion': 123, 'licensee': 28},
+        outcomes = self.outcomes({'staticmeshes/Rock_S.usx': {'packageVersion': 123, 'licensee': 0},
                                   'staticmeshes/Bad_S.usx': {'error': 'header too short'}}, requests)
         self.assertEqual(len(RecordingConverter.instances), 1)
         converter = RecordingConverter.instances[0]
@@ -220,7 +220,7 @@ class StaticMeshOutcomeTests(unittest.TestCase):
                                               {'kind': 'model', 'package': 'staticmeshes/Rock_S.usx', 'object': 'Rock_S.Broken'}])
         self.assertEqual(converter.output, lane_work_root(self.project_root, 'world') / 'static-mesh-converter')
         self.assertIsInstance(outcomes['Rock_S.Rock'], ConvertedStaticMesh)
-        self.assertEqual(outcomes['Rock_S.Rock'].model_record['vertexStreams'], {'gapReason': 'static-mesh-colour-stream-layout-unreviewed:123/28'})
+        self.assertEqual(outcomes['Rock_S.Rock'].model_record['vertexStreams'], {'gapReason': 'static-mesh-colour-stream-layout-unreviewed:123/0'})
         self.assertEqual(outcomes['Rock_S.Broken'], ('failed', 'decode-failed:ValueError:UModel cannot safely select this duplicate leaf name'))
         self.assertEqual(outcomes['Bad_S.Rock'], ('failed', 'decode-failed:header too short'))
 

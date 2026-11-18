@@ -7,7 +7,18 @@ from native_catalog.ue2 import FormatError
 from world.terrain_coordinates import f32
 from world.error_detail import first_line_of_error
 
-REVIEWED_COLOUR_STREAM_LAYOUTS = frozenset({(123, 12)})
+
+class StaticMeshTailLayout(NamedTuple):
+    lazy_collision_arrays: bool
+    level_of_detail_trailing_integers: int
+
+
+REVIEWED_COLOUR_STREAM_LAYOUTS = {
+    (123, 12): StaticMeshTailLayout(lazy_collision_arrays=False, level_of_detail_trailing_integers=0),
+    (123, 14): StaticMeshTailLayout(lazy_collision_arrays=False, level_of_detail_trailing_integers=3),
+    (123, 16): StaticMeshTailLayout(lazy_collision_arrays=False, level_of_detail_trailing_integers=4),
+    **{(123, licensee): StaticMeshTailLayout(lazy_collision_arrays=True, level_of_detail_trailing_integers=4) for licensee in (18, 19, 20, 22, 23, 25, 28, 30, 31)},
+}
 PRIMITIVE_BOUNDS_BYTES = 25 + 16
 STATIC_MESH_SECTION_FORMAT = '<IHHHHH'
 STATIC_MESH_BOUNDING_BOX_BYTES = 25
@@ -16,6 +27,15 @@ COLOUR_BYTES = 4
 UV_FORMAT = '<2f'
 INDEX_FORMAT = '<H'
 VERTICES_PER_TRIANGLE = 3
+COLLISION_TRIANGLE_PLANES_BYTES = 4 * 16
+COLLISION_TRIANGLE_INDEX_COUNT = 4
+COLLISION_NODE_INDEX_COUNT = 4
+LEVEL_OF_DETAIL_REFERENCE_COUNT = 2
+LEVEL_OF_DETAIL_FIELDS_FORMAT = '<2fi2f'
+AUTHORED_TRIANGLE_POSITIONS_BYTES = VERTICES_PER_TRIANGLE * 3 * 4
+AUTHORED_TRIANGLE_UV_CHANNEL_BYTES = VERTICES_PER_TRIANGLE * 2 * 4
+AUTHORED_TRIANGLE_TRAILING_FORMAT = '<5i'
+INTEGER_BYTES = 4
 MAXIMUM_STREAM_ELEMENTS = 4_000_000
 MAXIMUM_SECTIONS = 4096
 MAXIMUM_UV_STREAMS = 8
@@ -105,8 +125,90 @@ def read_uv_streams(reader, vertex_count, label):
     return streams
 
 
+def reviewed_tail_layout(package):
+    layout = (package.summary['version'], package.summary['licenseeVersion'])
+    if layout not in REVIEWED_COLOUR_STREAM_LAYOUTS:
+        raise FormatError(f'{package.filename} holds the unreviewed static mesh layout {layout[0]}/{layout[1]}')
+    return REVIEWED_COLOUR_STREAM_LAYOUTS[layout]
+
+
+def skip_compact_indices(reader, count):
+    for _ in range(count):
+        reader.compact()
+
+
+def skip_object_references(reader, count):
+    skip_compact_indices(reader, count)
+
+
+def declared_array_end(reader, is_lazy):
+    return reader.number('i') if is_lazy else None
+
+
+def require_declared_array_end(reader, array_end, label):
+    if array_end is not None and array_end != reader.position:
+        raise FormatError(f'{label} end at {reader.position}, not at their declared end {array_end}')
+
+
+def skip_wireframe_index_buffer(reader, label):
+    reader.take(struct.calcsize(INDEX_FORMAT) * counted(reader, f'{label} wireframe index buffer'))
+    reader.number('i')
+
+
+def skip_collision_triangles(reader, tail_layout, label):
+    array_end = declared_array_end(reader, tail_layout.lazy_collision_arrays)
+    for _ in range(counted(reader, f'{label} collision triangles')):
+        reader.take(COLLISION_TRIANGLE_PLANES_BYTES)
+        skip_compact_indices(reader, COLLISION_TRIANGLE_INDEX_COUNT)
+    require_declared_array_end(reader, array_end, f'{label} collision triangles')
+
+
+def skip_collision_nodes(reader, tail_layout, label):
+    array_end = declared_array_end(reader, tail_layout.lazy_collision_arrays)
+    for _ in range(counted(reader, f'{label} collision nodes')):
+        skip_compact_indices(reader, COLLISION_NODE_INDEX_COUNT)
+        reader.take(STATIC_MESH_BOUNDING_BOX_BYTES)
+    require_declared_array_end(reader, array_end, f'{label} collision nodes')
+
+
+def skip_level_of_detail_fields(reader, tail_layout):
+    reader.number('i')
+    skip_object_references(reader, LEVEL_OF_DETAIL_REFERENCE_COUNT)
+    reader.take(struct.calcsize(LEVEL_OF_DETAIL_FIELDS_FORMAT) + INTEGER_BYTES * tail_layout.level_of_detail_trailing_integers)
+
+
+def skip_authored_triangles(reader, uv_stream_count, label):
+    array_end = declared_array_end(reader, True)
+    for _ in range(counted(reader, f'{label} authored triangles')):
+        reader.take(AUTHORED_TRIANGLE_POSITIONS_BYTES)
+        uv_channel_count = reader.number('i')
+        if uv_channel_count != uv_stream_count:
+            raise FormatError(f'{label} authored triangle holds {uv_channel_count} UV channels for {uv_stream_count} UV streams')
+        reader.take(AUTHORED_TRIANGLE_UV_CHANNEL_BYTES * uv_channel_count + struct.calcsize(AUTHORED_TRIANGLE_TRAILING_FORMAT))
+    require_declared_array_end(reader, array_end, f'{label} authored triangles')
+
+
+def skip_internal_version_and_mesh_properties(reader):
+    reader.number('i')
+    skip_object_references(reader, 1)
+    reader.number('i')
+
+
+def skip_static_mesh_tail(reader, tail_layout, uv_stream_count, label):
+    skip_wireframe_index_buffer(reader, label)
+    skip_object_references(reader, 1)
+    skip_collision_triangles(reader, tail_layout, label)
+    skip_collision_nodes(reader, tail_layout, label)
+    skip_level_of_detail_fields(reader, tail_layout)
+    skip_authored_triangles(reader, uv_stream_count, label)
+    skip_internal_version_and_mesh_properties(reader)
+    if reader.position != reader.end:
+        raise FormatError(f'{label} leaves {reader.end - reader.position} bytes after its last field')
+
+
 def read_static_mesh_vertex_streams(package, export):
     label = f'static mesh {export["object"]}'
+    tail_layout = reviewed_tail_layout(package)
     _, reader = package.properties(export)
     reader.take(PRIMITIVE_BOUNDS_BYTES)
     sections = read_sections(reader, label)
@@ -118,6 +220,8 @@ def read_static_mesh_vertex_streams(package, export):
     alternate_colours, alternate_revision = read_colour_stream(reader, vertex_count, f'{label} alternate colour stream')
     uv_streams = read_uv_streams(reader, vertex_count, label)
     indices = tuple(index for (index,) in unpacked_rows(reader, INDEX_FORMAT, counted(reader, f'{label} index buffer')))
+    reader.number('i')
+    skip_static_mesh_tail(reader, tail_layout, len(uv_streams), label)
     return StaticMeshVertexStreams(sections, tuple(vertex[:3] for vertex in vertices), tuple(vertex[3:6] for vertex in vertices), primary_colours, primary_revision, alternate_colours,
                                    alternate_revision, uv_streams[0], indices)
 
