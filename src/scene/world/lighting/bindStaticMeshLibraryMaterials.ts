@@ -106,7 +106,7 @@ interface BoundStaticMeshChunk {
   readonly unlitPlacementReasons: readonly string[];
 }
 
-export const staticMeshRebuildTriggerUnresolvedReason = "static-mesh-hourly-rebuild-trigger-unresolved";
+const staticMeshRebuildTriggerUnresolvedReason = "static-mesh-hourly-rebuild-trigger-unresolved";
 
 const gltfPrimitivePointerPattern = /^\/meshes\/(\d+)\/primitives\/(\d+)$/;
 const byteMaximum = 255;

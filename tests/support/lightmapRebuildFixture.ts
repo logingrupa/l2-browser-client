@@ -56,7 +56,7 @@ export function rebuiltTileLightingArrays(lightFields: Readonly<Record<string, u
   return [...mismatchedTextureZero.slice(0, recordsIndex), ...lightmapRebuildArrays(), ...mismatchedTextureZero.slice(recordsIndex)];
 }
 
-export function lightmapRebuildArrays(): TypedPayloadFixtureArray[] {
+function lightmapRebuildArrays(): TypedPayloadFixtureArray[] {
   return [
     { name: "LMTX.rebuildInputs", type: "uint8", values: [1, 0] },
     { name: "LMRC.rectangle", type: "int32", values: [0, 0, 4, 2, 4, 4, 2, 2] },

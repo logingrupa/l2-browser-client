@@ -6,7 +6,7 @@ const pageRevision = 3;
 const pageMipEdges = [8, 4] as const;
 const dxt1BytesOfEdge = (edge: number) => (edge / 4) * (edge / 4) * 8;
 
-export function solidDxt1Blocks(edge: number, rgb565: number): number[] {
+function solidDxt1Blocks(edge: number, rgb565: number): number[] {
   const block = [rgb565 & 0xff, rgb565 >> 8, rgb565 & 0xff, rgb565 >> 8, 0, 0, 0, 0];
   return Array.from({ length: dxt1BytesOfEdge(edge) / 8 }, () => block).flat();
 }
@@ -22,7 +22,7 @@ export function fieldRecord(field: string, value: unknown, provenance = "authore
 const fogInfoField = (field: string, value: unknown, provenance = "authored") => ({ declaringClass: "Engine.L2FogInfo", field, provenance, value });
 const fogColourKey = (time: number, red: number, green: number, blue: number) => ({ Time: time, FogColor: { R: red, G: green, B: blue, A: 0 } });
 
-export const fogInfo9236FogColourKeys = [fogColourKey(0, 70, 83, 83), fogColourKey(5, 70, 83, 83), fogColourKey(6, 107, 114, 97), fogColourKey(7, 107, 114, 97),
+const fogInfo9236FogColourKeys = [fogColourKey(0, 70, 83, 83), fogColourKey(5, 70, 83, 83), fogColourKey(6, 107, 114, 97), fogColourKey(7, 107, 114, 97),
   fogColourKey(19, 107, 114, 97), fogColourKey(20, 107, 114, 97), fogColourKey(23, 116, 112, 95)];
 
 export function fogInfo9236Record() {

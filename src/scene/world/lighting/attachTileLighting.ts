@@ -64,7 +64,7 @@ export interface AttachedTileLighting {
 }
 
 const lightingResourceKind = "lighting";
-export const lightingResourceAbsentReason = "lighting-resource-absent";
+const lightingResourceAbsentReason = "lighting-resource-absent";
 const payloadInvalidReasonPrefix = "lighting-payload-invalid:";
 const millisecondsPerSecond = 1000;
 
