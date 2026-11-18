@@ -30,7 +30,8 @@ describe("camera fog transition restart gates (0x1065f3a3 local list, 0x1065f5f8
     const transition = createCameraFogTransition(1);
     expect(bytesOf(transition.advance(local(), 0).fog)).toEqual([107, 114, 97]);
     expect(transition.inspection()).toMatchObject({ route: "local-list", lastRestart: "FogSpeed", previousLocal: true,
-      state: { remaining: 1, duration: 1 }, initialState: { status: "unresolved", reason: "fog-transition-initial-state-unresolved" } });
+      state: { remaining: 1, duration: 1 }, initialState: { status: "unresolved", reason: "fog-transition-initial-state-unresolved" },
+      scope: { status: "unresolved", reason: "fog-transition-per-tile-not-per-scene" } });
     const changed = transition.advance(local(changedLocalTarget), 0.25);
     expect(transition.inspection().state).toMatchObject({ remaining: 0.75, oldColourBgra: [97, 114, 107, 0] });
     expect(bytesOf(changed.fog)).toEqual([87, 98, 122]);

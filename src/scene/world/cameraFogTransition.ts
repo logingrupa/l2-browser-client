@@ -15,6 +15,7 @@ export interface CameraFogTransitionInspection {
   readonly previousTerrainZone: boolean;
   readonly lastRestart: FogTransitionRestartDuration | null;
   readonly initialState: { readonly status: "unresolved"; readonly reason: typeof fogTransitionInitialStateUnresolvedReason };
+  readonly scope: { readonly status: "unresolved"; readonly reason: typeof fogTransitionPerTileReason };
 }
 
 export interface CameraFogTransition {
@@ -22,7 +23,8 @@ export interface CameraFogTransition {
   inspection(): CameraFogTransitionInspection;
 }
 
-export const fogTransitionInitialStateUnresolvedReason = "fog-transition-initial-state-unresolved";
+const fogTransitionInitialStateUnresolvedReason = "fog-transition-initial-state-unresolved";
+const fogTransitionPerTileReason = "fog-transition-per-tile-not-per-scene";
 
 const byteMaximum = 255;
 const undrawnFogAlpha = 0;
@@ -94,6 +96,6 @@ export function createCameraFogTransition(fogSpeedSeconds: number): CameraFogTra
       return { ...environment, fog, skyFog: { ...environment.skyFog, fog }, gaps: gap === null ? environment.gaps : [...environment.gaps, gap] };
     },
     inspection: () => ({ state, route, fogSpeedSeconds, previousLocal, previousTerrainZone, lastRestart,
-      initialState: { status: "unresolved", reason: fogTransitionInitialStateUnresolvedReason } }),
+      initialState: { status: "unresolved", reason: fogTransitionInitialStateUnresolvedReason }, scope: { status: "unresolved", reason: fogTransitionPerTileReason } }),
   };
 }
