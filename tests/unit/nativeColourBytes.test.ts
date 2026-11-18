@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fColorFromPlane, saturatingAddBgra } from "../../src/environment/model/nativeColourBytes";
-import { floorToInt32, lowByte, truncateToInt32 } from "../../src/environment/model/x87IntegerConversion";
+import { floorToInt32, lowByte, truncateToInt32, truncateToInt64LowDword } from "../../src/environment/model/x87IntegerConversion";
 
 describe("x87 integer conversion (FISTP under chop, _ftol2, appFloor)", () => {
   it("truncates toward zero inside the int32 range", () => {
@@ -15,6 +15,14 @@ describe("x87 integer conversion (FISTP under chop, _ftol2, appFloor)", () => {
 
   it("keeps the low byte the way mov al stores it", () => {
     expect([-16, 256 + 7, 255].map(lowByte)).toEqual([240, 7, 255]);
+  });
+
+  it("keeps the unsigned low dword of a chopped fistp qword", () => {
+    expect([2.9, -2.9, -1, 2 ** 32 + 5, -(2 ** 32) - 1].map(truncateToInt64LowDword)).toEqual([2, 0xfffffffe, 0xffffffff, 5, 0xffffffff]);
+  });
+
+  it("gives the int64 indefinite low dword 0 for NaN and values past int64", () => {
+    expect([Number.NaN, 2 ** 63, -(2 ** 64), Number.NEGATIVE_INFINITY].map(truncateToInt64LowDword)).toEqual([0, 0, 0, 0]);
   });
 });
 

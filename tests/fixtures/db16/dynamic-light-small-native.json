@@ -1,0 +1,220 @@
+{
+ "schemaVersion": 1,
+ "kind": "db17-ambient-and-light-type-7-native-fixtures",
+ "source": {
+  "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/ordinary-lightmap-db17/misc/native-small-fixtures.json",
+  "sha256": "1572e3645c52e3324ccb92ea4f50e374c3dd21c87c6fad043f0f0298d4f7d603",
+  "method": "Original Engine/Core instructions under Unicorn CW0x027f. Type7 uses native-generated sine table and independent scalar cross-check. No client launch."
+ },
+ "ambientFixtures": [
+  {
+   "function": "FColor(FGetHSV(140,80,70)*0.5)",
+   "hsvPlane": [
+    0.1339803785085678,
+    0.23742109537124634,
+    0.3236217200756073,
+    1.0
+   ],
+   "resultBGRA": [
+    41,
+    30,
+    17,
+    127
+   ]
+  }
+ ],
+ "lightType7Fixtures": [
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 32,
+    "LightPhase": 0,
+    "levelTimeSeconds": 0
+   },
+   "angleTrunc": 0,
+   "sinIndex": 0,
+   "sinValue": 0.0,
+   "outputF32": 0.8999999761581421
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 32,
+    "LightPhase": 0,
+    "levelTimeSeconds": 1
+   },
+   "angleTrunc": 71680,
+   "sinIndex": 1536,
+   "sinValue": 0.5555702447891235,
+   "outputF32": 0.9500012993812561
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 32,
+    "LightPhase": 0,
+    "levelTimeSeconds": 10
+   },
+   "angleTrunc": 716800,
+   "sinIndex": 15360,
+   "sinValue": -0.3826834261417389,
+   "outputF32": 0.8655584454536438
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 32,
+    "LightPhase": 0,
+    "levelTimeSeconds": 969.7531127929688
+   },
+   "angleTrunc": 69511903,
+   "sinIndex": 10935,
+   "sinValue": -0.868380606174469,
+   "outputF32": 0.8218457102775574
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 30,
+    "LightPhase": 0,
+    "levelTimeSeconds": 0
+   },
+   "angleTrunc": 0,
+   "sinIndex": 0,
+   "sinValue": 0.0,
+   "outputF32": 0.8999999761581421
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 30,
+    "LightPhase": 0,
+    "levelTimeSeconds": 1
+   },
+   "angleTrunc": 76458,
+   "sinIndex": 2730,
+   "sinValue": 0.865897536277771,
+   "outputF32": 0.9779307842254639
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 30,
+    "LightPhase": 0,
+    "levelTimeSeconds": 10
+   },
+   "angleTrunc": 764586,
+   "sinIndex": 10922,
+   "sinValue": -0.865897536277771,
+   "outputF32": 0.8220691680908203
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 30,
+    "LightPhase": 0,
+    "levelTimeSeconds": 969.7531127929688
+   },
+   "angleTrunc": 74146030,
+   "sinIndex": 6203,
+   "sinValue": 0.6909279823303223,
+   "outputF32": 0.9621834754943848
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 0,
+    "LightPhase": 0,
+    "levelTimeSeconds": 0
+   },
+   "angleTrunc": 0,
+   "sinIndex": 0,
+   "sinValue": 0.0,
+   "outputF32": 0.8999999761581421
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 0,
+    "LightPhase": 0,
+    "levelTimeSeconds": 1
+   },
+   "angleTrunc": 2293760,
+   "sinIndex": 0,
+   "sinValue": 0.0,
+   "outputF32": 0.8999999761581421
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 0,
+    "LightPhase": 0,
+    "levelTimeSeconds": 10
+   },
+   "angleTrunc": 22937600,
+   "sinIndex": 0,
+   "sinValue": 0.0,
+   "outputF32": 0.8999999761581421
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 0,
+    "LightPhase": 0,
+    "levelTimeSeconds": 969.7531127929688
+   },
+   "angleTrunc": 2224380900,
+   "sinIndex": 5881,
+   "sinValue": 0.7747106552124023,
+   "outputF32": 0.9697239398956299
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 32,
+    "LightPhase": 64,
+    "levelTimeSeconds": 0
+   },
+   "angleTrunc": 16384,
+   "sinIndex": 4096,
+   "sinValue": 1.0,
+   "outputF32": 0.9900000095367432
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 32,
+    "LightPhase": 64,
+    "levelTimeSeconds": 1
+   },
+   "angleTrunc": 88064,
+   "sinIndex": 5632,
+   "sinValue": 0.8314695954322815,
+   "outputF32": 0.9748322367668152
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 32,
+    "LightPhase": 64,
+    "levelTimeSeconds": 10
+   },
+   "angleTrunc": 733184,
+   "sinIndex": 3072,
+   "sinValue": 0.9238795042037964,
+   "outputF32": 0.9831491112709045
+  },
+  {
+   "input": {
+    "controlWord": "0x027f",
+    "LightPeriod": 32,
+    "LightPhase": 64,
+    "levelTimeSeconds": 969.7531127929688
+   },
+   "angleTrunc": 69528287,
+   "sinIndex": 15031,
+   "sinValue": -0.4958983063697815,
+   "outputF32": 0.8553691506385803
+  }
+ ]
+}

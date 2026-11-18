@@ -1,0 +1,45 @@
+{
+ "schemaVersion": 1,
+ "kind": "db17-lighting-table-dump-hashes",
+ "source": {
+  "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/ordinary-lightmap-db17/numeric/lighting-tables-cw027f.bin",
+  "sha256": "4e93a698c38d02b8c509ffdd36cf2e88cafcfe1dc94efc676604225b5be5fe6c",
+  "method": "Complete original Engine initializer0x10670de0 and native Core math helpers executed in Unicorn; ECX0x10db70f8,CW0x027f,no game launch."
+ },
+ "controlWord": "0x027f",
+ "layout": "8 tables from 0x10db20f8: powMinusOneExponent, powMinusHalfExponent, powMinusOneMantissa, powMinusHalfMantissa, fastSqrtOdd, fastSqrtEven, attenuation, shadowFilter (numeric/tables-cw027f.json); only the four tables the runtime reads are hashed",
+ "ranges": [
+  {
+   "table": "powMinusHalfExponent",
+   "virtualAddress": "0x10db28f8",
+   "entries": 512,
+   "byteStart": 2048,
+   "byteEnd": 4096,
+   "sha256": "4ad886980554ce4b36317ac23baa55237a1a0397d4dbcb771949b97699d8ad87"
+  },
+  {
+   "table": "powMinusHalfMantissa",
+   "virtualAddress": "0x10db40f8",
+   "entries": 1024,
+   "byteStart": 8192,
+   "byteEnd": 12288,
+   "sha256": "92bc09118a6a0b0aa8348dfc92874f88974ee2586c47de0dbdbe2e11ca43b2b0"
+  },
+  {
+   "table": "attenuation",
+   "virtualAddress": "0x10db70f8",
+   "entries": 4096,
+   "byteStart": 20480,
+   "byteEnd": 36864,
+   "sha256": "280d30ef8a8d008c0980f07e2c636bcec3e5a89e426f26c7a8b491805af9feff"
+  },
+  {
+   "table": "shadowFilter",
+   "virtualAddress": "0x10dbb0f8",
+   "entries": 512,
+   "byteStart": 36864,
+   "byteEnd": 38912,
+   "sha256": "94b6cfc2b853abafafb86fef9403f7c2e2ba552d1e992d25456cd4e5fd4e2ca0"
+  }
+ ]
+}

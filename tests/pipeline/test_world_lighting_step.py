@@ -105,7 +105,8 @@ class BspLightmapPayloadTests(unittest.TestCase):
     def test_each_record_reads_its_texture_index_zone_level_and_revision_from_its_own_bytes(self):
         package, model, _ = three_surface_lightmaps()
         lightmaps = read_bsp_lightmaps(package, model)
-        self.assertEqual([(record.texture_index, record.surface, record.zone_index, record.tag, record.revision) for record in lightmaps.records],
+        self.assertEqual([(record.texture_index, record.surface, record.zone_index, record.level_reference, record.revision)
+                          for record in lightmaps.records],
                          [(0, surface, 0, 5, 0) for surface in range(3)])
 
     def test_a_record_that_names_another_texture_than_the_page_listing_it_is_refused(self):
@@ -170,7 +171,8 @@ class LightingActorTests(unittest.TestCase):
         self.assertEqual((water_volumes, unresolved_classes), ((), ()))
         self.assertEqual(field_rows(lights[0]), [('LightType', 1, 'class-default'), ('LightEffect', None, 'ue-zero'),
                                                  ('LightBrightness', 56.0, 'authored'), ('Location', None, 'ue-zero'),
-                                                 ('Rotation', None, 'ue-zero'), ('bDynamicLight', None, 'ue-zero'), ('bDirectional', None, 'ue-zero')])
+                                                 ('Rotation', None, 'ue-zero'), ('bDynamicLight', None, 'ue-zero'), ('bDirectional', None, 'ue-zero'),
+                                                 ('bSunAffect', None, 'ue-zero'), ('bDeleteMe', None, 'ue-zero')])
         self.assertEqual(field_rows(fog_infos[0]), [('AffectRange', None, 'ue-zero'), ('FogRange1', None, 'ue-zero'), ('Location', None, 'ue-zero')])
         self.assertEqual(field_rows(level_infos[0]), [('Brightness', 1.0, 'class-default')])
         self.assertEqual(lights[0].to_record()['fields'][2], {'field': 'LightBrightness', 'value': 56.0, 'provenance': 'authored',
@@ -242,7 +244,7 @@ class LightingActorTests(unittest.TestCase):
 class LightingRegistrationTests(unittest.TestCase):
     def test_the_step_kind_and_reasons_are_registered(self):
         self.assertIn(LIGHTING_STEP_NAME, TILE_STEP_NAMES)
-        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 6)
+        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 7)
         self.assertIn('lighting', load_tile_manifest_vocabulary().resource_kinds)
         patterns = load_gap_reason_patterns()
         for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large',
@@ -282,7 +284,7 @@ class RealClientLightmapTests(unittest.TestCase):
         records = lightmaps.records
         self.assertEqual(len(records), expected['recordCount'])
         self.assertEqual({'textureIndex': [record.texture_index for record in records], 'surface': [record.surface for record in records],
-                          'zoneIndex': [record.zone_index for record in records], 'level': [record.tag for record in records],
+                          'zoneIndex': [record.zone_index for record in records], 'level': [record.level_reference for record in records],
                           'revision': [record.revision for record in records]}, expected['records'])
         self.assertEqual([len(texture.pages) for texture in lightmaps.textures], expected['groupCounts'])
         self.assertEqual({(child['format'], child['width'], child['height']) for child in expected['atlasChildren']}, {(DXT1_FORMAT_ID, 512, 512)})

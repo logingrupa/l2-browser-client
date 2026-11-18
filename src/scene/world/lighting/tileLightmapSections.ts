@@ -1,7 +1,7 @@
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
-import { bspCompressedLightmapGate } from "../../../environment/model/bspLightmapSelection";
 import { sunAffected, sunAffectUnresolved } from "./decodeHourlyLightingInputs";
 import { lightmapTextureNone, type TileLightingModel, type TileLightmapNodeRange } from "./decodeTileLighting";
+import type { LightmapTextureSourceLookup } from "./rebuiltLightmapStore";
 
 export interface LightmapSectionChunk {
   readonly chunkId: string;
@@ -39,24 +39,34 @@ function placeRangeCoordinates(range: TileLightmapNodeRange, indices: ArrayLike<
   return null;
 }
 
-function compressedPagesGap(model: TileLightingModel, texture: number): string | null {
-  const staged = model.hourly.pageRevisions;
-  if (staged.status === "unstaged") return staged.reason;
-  for (let page = model.texturePageStart[texture]!; page < model.texturePageStart[texture + 1]!; page += 1) {
-    const gate = bspCompressedLightmapGate(staged.value.revision[page]!, staged.value.compressedRevision[page]!);
-    if (gate.status === "unresolved") return gate.reason;
+function textureSourceGap(textureSource: LightmapTextureSourceLookup, texture: number): string | null {
+  const source = textureSource(texture);
+  switch (source.source) {
+    case "gap": return source.reason;
+    case "compressed": case "rebuilt": return null;
+    case "rebuild-not-requested": case "rebuild-pending": throw new RangeError(`Lightmap texture ${texture} was planned while its rebuild is ${source.source}.`);
   }
-  return null;
 }
 
-function planSection(chunk: LightmapSectionChunk, primitive: number, rangeIndexByNode: ReadonlyMap<string, number>, model: TileLightingModel): LightmapSectionPlan {
+function sectionLightmapTexture(section: NativeBspSection, model: TileLightingModel): number | null {
+  if (section.unlit || section.lightmap === null || section.lightmap === lightmapTextureNone || section.lightmap >= model.textureCount) return null;
+  return section.lightmap;
+}
+
+export function sectionLightmapTextures(model: TileLightingModel, sections: readonly NativeBspSection[]): number[] {
+  const textures = sections.map(section => sectionLightmapTexture(section, model)).filter((texture): texture is number => texture !== null);
+  return [...new Set(textures)];
+}
+
+function planSection(chunk: LightmapSectionChunk, primitive: number, rangeIndexByNode: ReadonlyMap<string, number>, model: TileLightingModel,
+  textureSource: LightmapTextureSourceLookup): LightmapSectionPlan {
   const section = chunk.sections[primitive]!, chunkId = chunk.chunkId;
   if (section.unlit) return { kind: "unlit", chunkId, primitive, reason: "section-unlit" };
   if (section.lightmap === null || section.lightmap === lightmapTextureNone) return { kind: "unlit", chunkId, primitive, reason: "section-without-lightmap" };
   if (section.lightmap >= model.textureCount) return { kind: "gap", chunkId, primitive, reason: `lighting-section-texture-invalid:${section.lightmap}` };
   const nodeRangeSunAffect = model.hourly.nodeRangeSunAffect;
   if (nodeRangeSunAffect.status === "unstaged") return { kind: "gap", chunkId, primitive, reason: nodeRangeSunAffect.reason };
-  const pagesGap = compressedPagesGap(model, section.lightmap);
+  const pagesGap = textureSourceGap(textureSource, section.lightmap);
   if (pagesGap !== null) return { kind: "gap", chunkId, primitive, reason: pagesGap };
   const vertexCount = chunk.primitiveVertexCount(primitive), indices = chunk.primitiveIndices(primitive);
   const coordinates = new Float32Array(vertexCount * coordinateComponents), sunAffectedNodes: number[] = [];
@@ -82,7 +92,7 @@ function planSection(chunk: LightmapSectionChunk, primitive: number, rangeIndexB
     sunAffectedNodes, lightmapCoordinates: coordinates };
 }
 
-export function planLightmapSections(model: TileLightingModel, chunks: readonly LightmapSectionChunk[]): LightmapSectionPlan[] {
+export function planLightmapSections(model: TileLightingModel, chunks: readonly LightmapSectionChunk[], textureSource: LightmapTextureSourceLookup): LightmapSectionPlan[] {
   const rangeIndexByNode = new Map(model.nodeRanges.map((range, rangeIndex) => [rangeKey(range.chunk, range.node), rangeIndex]));
-  return chunks.flatMap(chunk => chunk.sections.map((_, primitive) => planSection(chunk, primitive, rangeIndexByNode, model)));
+  return chunks.flatMap(chunk => chunk.sections.map((_, primitive) => planSection(chunk, primitive, rangeIndexByNode, model, textureSource)));
 }

@@ -1,0 +1,836 @@
+{
+ "schemaVersion": 1,
+ "kind": "db17-light-attenuation-native-fixtures",
+ "source": {
+  "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/ordinary-lightmap-db17/numeric/attenuation-native-fixtures.json",
+  "sha256": "4a2dade48cd05af619df8c50d823f8389ba3d6d66d2fdf1f9b424d74aa1407d5",
+  "method": "Complete original0x10671890 under CW027f. Only transient allocations/frees are replaced with synthetic buffers. Native memcpy, radius math, GetViewRotation, FRotator::Vector, table lookups and numeric conversion execute unchanged."
+ },
+ "fixtures": [
+  {
+   "label": "point",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 0,
+    "radius": 128,
+    "position": [
+     0,
+     0,
+     32
+    ],
+    "normal": [
+     0,
+     0,
+     -1
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    215,
+    168,
+    107,
+    54,
+    0,
+    27,
+    134,
+    212
+   ]
+  },
+  {
+   "label": "small-radius",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 0,
+    "radius": 0.5,
+    "position": [
+     0,
+     0,
+     0.1
+    ],
+    "normal": [
+     0,
+     0,
+     -1
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    14,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "large-radius",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 0,
+    "radius": 1048576,
+    "position": [
+     0,
+     0,
+     32
+    ],
+    "normal": [
+     0,
+     0,
+     -1
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "large-radius-proportional",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 0,
+    "radius": 4096,
+    "position": [
+     0,
+     0,
+     1024
+    ],
+    "normal": [
+     0,
+     0,
+     -1
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    215,
+    169,
+    108,
+    54,
+    0,
+    27,
+    135,
+    214
+   ]
+  },
+  {
+   "label": "spot8-forward",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 8,
+    "radius": 128,
+    "position": [
+     -32,
+     0,
+     0
+    ],
+    "normal": [
+     1,
+     0,
+     0
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    210,
+    158,
+    97,
+    46,
+    0,
+    25,
+    121,
+    184
+   ]
+  },
+  {
+   "label": "spot8-rotated",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 8,
+    "radius": 128,
+    "position": [
+     0,
+     -32,
+     0
+    ],
+    "normal": [
+     0,
+     1,
+     0
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     16384,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    210,
+    164,
+    104,
+    51,
+    0,
+    25,
+    124,
+    195
+   ]
+  },
+  {
+   "label": "spot12-forward",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 12,
+    "radius": 128,
+    "position": [
+     -32,
+     0,
+     0
+    ],
+    "normal": [
+     1,
+     0,
+     0
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    210,
+    158,
+    97,
+    46,
+    0,
+    25,
+    121,
+    184
+   ]
+  },
+  {
+   "label": "spot12-reverse",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 12,
+    "radius": 128,
+    "position": [
+     32,
+     0,
+     0
+    ],
+    "normal": [
+     1,
+     0,
+     0
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "sun-positive",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 19,
+    "radius": 128,
+    "position": [
+     0,
+     0,
+     32
+    ],
+    "normal": [
+     0,
+     0,
+     -1
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    255,
+    200,
+    128,
+    64,
+    0,
+    32,
+    160,
+    254
+   ]
+  },
+  {
+   "label": "sun-backface",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 19,
+    "radius": 128,
+    "position": [
+     0,
+     0,
+     32
+    ],
+    "normal": [
+     0,
+     0,
+     1
+    ],
+    "polyFlags": "0x0",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "sun-two-sided",
+   "controlWord": "0x027f",
+   "input": {
+    "effect": 19,
+    "radius": 128,
+    "position": [
+     0,
+     0,
+     32
+    ],
+    "normal": [
+     0,
+     0,
+     1
+    ],
+    "polyFlags": "0x100",
+    "rotation": [
+     0,
+     0,
+     0
+    ],
+    "cone": 128,
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "uStep": [
+     1,
+     0,
+     0
+    ],
+    "vStep": [
+     0,
+     1,
+     0
+    ],
+    "rect": [
+     0,
+     0,
+     3,
+     1
+    ],
+    "dimensions": [
+     4,
+     2
+    ],
+    "shadowBytes": [
+     255,
+     200,
+     128,
+     64,
+     0,
+     32,
+     160,
+     254
+    ]
+   },
+   "output": [
+    255,
+    200,
+    128,
+    64,
+    0,
+    32,
+    160,
+    254
+   ]
+  }
+ ]
+}

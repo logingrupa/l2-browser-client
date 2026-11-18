@@ -67,5 +67,5 @@ export function hourlyEnvironmentAt(hour: number, blend: NativeEnvironmentBlend 
   return { hour,
     terrainAmbient: environmentColour(tables, blend, "TerrainAmbient", hour), terrainLight: environmentLightPlane(tables, blend, "HSVTerrainLight", hour),
     staticMeshAmbient: environmentColour(tables, blend, "StaticMeshAmbient", hour), staticMeshLight: environmentLightPlane(tables, blend, "HSVStaticMeshLight", hour),
-    actorAmbient: environmentColour(tables, blend, "ActorAmbient", hour), bspAmbient: environmentColour(tables, blend, "BSPAmbient", hour) };
+    actorAmbient: environmentColour(tables, blend, "ActorAmbient", hour) };
 }

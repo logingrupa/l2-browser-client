@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { bspLightmapRebuildAmbient } from "../../src/environment/model/bspLightmapSelection";
 import { actorAmbientLight } from "../../src/environment/model/meshLightingTerms";
 import { environmentColour, environmentLightPlane, environmentScale } from "../../src/environment/model/nativeEnvironmentColours";
 import type { NativeEnvironmentBlend } from "../../src/environment/model/nativeEnvironmentManager";
@@ -52,9 +51,6 @@ function modelValueFor(row: DayNightFixtureRow): number | readonly number[] {
   if (consumer === "ActorAmbient half-intensity consumer branch") {
     return resolvedValue(actorAmbientLight(resolvedValue(environmentColour(tables, settledBlend(environmentType), "ActorAmbient", hour)), harnessActorSunAffect)).slice(0, 3);
   }
-  if (consumer === "BSPAmbient half-intensity consumer branch") {
-    return bspLightmapRebuildAmbient(resolvedValue(environmentColour(tables, settledBlend(environmentType), "BSPAmbient", hour)));
-  }
   if (consumer === "SunAngles" || consumer === "MoonAngles") {
     const angles = (consumer === "SunAngles" ? sunAngles : moonAngles)(hour, harnessCelestialPhiDegrees);
     return [angles.theta, angles.phi, angles.zeroedThirdOutput];
@@ -62,14 +58,20 @@ function modelValueFor(row: DayNightFixtureRow): number | readonly number[] {
   throw new Error(`Fixture consumer ${consumer} has no model mapping.`);
 }
 
+const timedBuilderConsumer = "BSPAmbient half-intensity consumer branch";
 const scaleRows = fixtureRows.filter(row => isMember(scaleSections, row.consumer));
-const valueRows = fixtureRows.filter(row => !isMember(scaleSections, row.consumer));
+const timedBuilderRows = fixtureRows.filter(row => row.consumer === timedBuilderConsumer);
+const valueRows = fixtureRows.filter(row => !isMember(scaleSections, row.consumer) && row.consumer !== timedBuilderConsumer);
 
 describe("DB-4 day/night fixtures through the native environment model", () => {
   it("covers all 336 fixture rows, 21 consumers by 4 types by 4 hours", () => {
     expect(fixtureRows).toHaveLength(336);
     expect(new Set(fixtureRows.map(row => row.consumer)).size).toBe(21);
-    expect(scaleRows.length + valueRows.length).toBe(336);
+    expect(scaleRows.length + timedBuilderRows.length + valueRows.length).toBe(336);
+  });
+
+  it("leaves the 16 BSPAmbient half-intensity rows unmodelled: that consumer is the timed compression builder 0x10675bc0, off the game path (DB-16)", () => {
+    expect(timedBuilderRows).toHaveLength(16);
   });
 
   it.each(valueRows.map(row => [`${row.consumer} type ${row.environmentType} hour ${row.hour}`, row] as const))("reproduces %s bit for bit", (_, row) => {

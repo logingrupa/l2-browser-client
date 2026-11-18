@@ -1,0 +1,334 @@
+{
+ "schemaVersion": 1,
+ "kind": "db17-light-radius-rotation-native-fixtures",
+ "source": {
+  "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/ordinary-lightmap-db17/radius-rotation/native-fixtures.json",
+  "sha256": "5fb9f9053ccce675d129b52a037a38a732c2bdd209ee02e3b0f579e8831d5219",
+  "method": "Original Engine/Core x86 instructions executed in Unicorn. Core relocated to0x20000000, original Engine Core imports resolved, native FGlobalMath initialized. Synthetic actor has a non-Pawn class with no superclasses. No game launch."
+ },
+ "controlWord": "0x027f",
+ "sineTable": {
+  "source": {
+   "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/ordinary-lightmap-db17/radius-rotation/gmath-sin-cw027f.bin",
+   "sha256": "9893d14bd21e5c4194832659571b30363ddfb08d468ed662a4b6d5ae172262dc",
+   "method": "native FGlobalMath constructor 0x1014d330 output under CW 0x027f"
+  },
+  "runtimeVirtualAddress": "0x1023ffd4",
+  "entries": 16384,
+  "sha256": "9893d14bd21e5c4194832659571b30363ddfb08d468ed662a4b6d5ae172262dc"
+ },
+ "radiusFixtures": [
+  {
+   "map": "20_10",
+   "lightRadius": 5.0,
+   "result": 150.0,
+   "resultBits": "0x43160000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 6.0,
+   "result": 175.0,
+   "resultBits": "0x432f0000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 7.0,
+   "result": 200.0,
+   "resultBits": "0x43480000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 8.0,
+   "result": 225.0,
+   "resultBits": "0x43610000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 10.0,
+   "result": 275.0,
+   "resultBits": "0x43898000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 12.0,
+   "result": 325.0,
+   "resultBits": "0x43a28000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 15.0,
+   "result": 400.0,
+   "resultBits": "0x43c80000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 20.0,
+   "result": 525.0,
+   "resultBits": "0x44034000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 25.0,
+   "result": 650.0,
+   "resultBits": "0x44228000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 30.0,
+   "result": 775.0,
+   "resultBits": "0x4441c000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 40.0,
+   "result": 1025.0,
+   "resultBits": "0x44802000"
+  },
+  {
+   "map": "20_10",
+   "lightRadius": 50.0,
+   "result": 1275.0,
+   "resultBits": "0x449f6000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 8.0,
+   "result": 225.0,
+   "resultBits": "0x43610000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 10.0,
+   "result": 275.0,
+   "resultBits": "0x43898000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 12.0,
+   "result": 325.0,
+   "resultBits": "0x43a28000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 15.0,
+   "result": 400.0,
+   "resultBits": "0x43c80000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 17.0,
+   "result": 450.0,
+   "resultBits": "0x43e10000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 20.0,
+   "result": 525.0,
+   "resultBits": "0x44034000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 25.0,
+   "result": 650.0,
+   "resultBits": "0x44228000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 30.0,
+   "result": 775.0,
+   "resultBits": "0x4441c000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 32.0,
+   "result": 825.0,
+   "resultBits": "0x444e4000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 35.0,
+   "result": 900.0,
+   "resultBits": "0x44610000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 40.0,
+   "result": 1025.0,
+   "resultBits": "0x44802000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 50.0,
+   "result": 1275.0,
+   "resultBits": "0x449f6000"
+  },
+  {
+   "map": "20_20",
+   "lightRadius": 64.0,
+   "result": 1625.0,
+   "resultBits": "0x44cb2000"
+  }
+ ],
+ "rotationFixtures": [
+  {
+   "object": "20_10.Light3252",
+   "effect": 12,
+   "rotation": [
+    -17904,
+    -278240,
+    0
+   ],
+   "returnedRotation": [
+    -17904,
+    -278240,
+    0
+   ],
+   "vector": [
+    -0.00400905916467309,
+    0.1451575607061386,
+    -0.9894004464149475
+   ],
+   "vectorBytesHex": "6d5e83bb2fa4143e59497dbf"
+  },
+  {
+   "object": "20_10.Light2576",
+   "effect": 12,
+   "rotation": [
+    -17904,
+    -261976,
+    0
+   ],
+   "returnedRotation": [
+    -17904,
+    -261976,
+    0
+   ],
+   "vector": [
+    -0.14519408345222473,
+    -0.0023388140834867954,
+    -0.9894004464149475
+   ],
+   "vectorBytesHex": "c2ad14beca4619bb59497dbf"
+  },
+  {
+   "object": "20_10.Light659",
+   "effect": 8,
+   "rotation": [
+    18976,
+    -131384,
+    0
+   ],
+   "returnedRotation": [
+    18976,
+    -131384,
+    0
+   ],
+   "vector": [
+    -0.2458450198173523,
+    0.007356064394116402,
+    0.9692812561988831
+   ],
+   "vectorBytesHex": "ccbe7bbe240bf13bd122783f"
+  },
+  {
+   "object": "20_10.Light660",
+   "effect": 8,
+   "rotation": [
+    18976,
+    -162944,
+    0
+   ],
+   "returnedRotation": [
+    18976,
+    -162944,
+    0
+   ],
+   "vector": [
+    0.24504812061786652,
+    0.021102281287312508,
+    0.9692812561988831
+   ],
+   "vectorBytesHex": "e5ed7a3eb1deac3cd122783f"
+  },
+  {
+   "object": "20_10.Light364",
+   "effect": 12,
+   "rotation": [
+    -17704,
+    -81504,
+    0
+   ],
+   "returnedRotation": [
+    -17704,
+    -81504,
+    0
+   ],
+   "vector": [
+    -0.005032596178352833,
+    0.12611550092697144,
+    -0.9920027852058411
+   ],
+   "vectorBytesHex": "7ae8a4bb6c24013ee5f37dbf"
+  },
+  {
+   "object": "20_10.Light121",
+   "effect": 12,
+   "rotation": [
+    -17704,
+    -81128,
+    0
+   ],
+   "returnedRotation": [
+    -17704,
+    -81128,
+    0
+   ],
+   "vector": [
+    -0.00957462377846241,
+    0.12585218250751495,
+    -0.9920027852058411
+   ],
+   "vectorBytesHex": "e2de1cbc65df003ee5f37dbf"
+  },
+  {
+   "object": "20_10.Light2189",
+   "effect": 12,
+   "rotation": [
+    -17904,
+    -229136,
+    0
+   ],
+   "returnedRotation": [
+    -17904,
+    -229136,
+    0
+   ],
+   "vector": [
+    0.14517447352409363,
+    0.0033410126343369484,
+    -0.9894004464149475
+   ],
+   "vectorBytesHex": "9ea8143ee4f45a3b59497dbf"
+  },
+  {
+   "object": "20_10.Light1662",
+   "effect": 8,
+   "rotation": [
+    18976,
+    -48256,
+    0
+   ],
+   "returnedRotation": [
+    18976,
+    -48256,
+    0
+   ],
+   "vector": [
+    0.021102281287312508,
+    -0.24504812061786652,
+    0.9692812561988831
+   ],
+   "vectorBytesHex": "b1deac3ce5ed7abed122783f"
+  }
+ ]
+}

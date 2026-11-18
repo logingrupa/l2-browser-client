@@ -1,0 +1,389 @@
+{
+ "schemaVersion": 1,
+ "kind": "db17-timed-light-switch-native-fixtures",
+ "source": {
+  "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/ordinary-lightmap-db17/time-sun/time-native-fixtures.json",
+  "sha256": "0a4a90052c54403e02f7578acc1c1ef1bad273bfd8c0efdf6e3f71f6a7766a27",
+  "method": "Original client instructions in Unicorn. Synthetic Light with on=19/off=8; direct helper call bypasses bTimeLight caller gate. All x87 operations use control word 0x027f. No game launch."
+ },
+ "fixtures": [
+  {
+   "scenario": "independent boundary",
+   "inputHour": 0.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 7.999000072479248,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 8.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -32.0,
+    "LightPrevTime": 32.0
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 18.999000549316406,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -42.999000549316406,
+    "LightPrevTime": 42.999000549316406
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 19.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 23.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 0.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 8.0,
+    "LightPrevTime": 24.0
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 7.999000072479248,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 0.00099945068359375,
+    "LightPrevTime": 31.999000549316406
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 8.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -32.0,
+    "LightPrevTime": 32.0
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 18.999000549316406,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -42.999000549316406,
+    "LightPrevTime": 42.999000549316406
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 19.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   }
+  },
+  {
+   "scenario": "independent boundary",
+   "inputHour": 23.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 9.0,
+    "LightPrevTime": 23.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 18.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": 0.0,
+    "LightPrevTime": 0.0
+   },
+   "after": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -42.0,
+    "LightPrevTime": 42.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 19.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -42.0,
+    "LightPrevTime": 42.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 20.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 23.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 0.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 7.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 8.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   },
+   "after": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -13.0,
+    "LightPrevTime": 32.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 9.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -13.0,
+    "LightPrevTime": 32.0
+   },
+   "after": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -14.0,
+    "LightPrevTime": 33.0
+   }
+  },
+  {
+   "scenario": "sequential ticks",
+   "inputHour": 19.0,
+   "on": 19.0,
+   "off": 8.0,
+   "before": {
+    "LightType": 6,
+    "flags5c": "0x0",
+    "LightLifeTime": -14.0,
+    "LightPrevTime": 33.0
+   },
+   "after": {
+    "LightType": 1,
+    "flags5c": "0x24",
+    "LightLifeTime": 13.0,
+    "LightPrevTime": 19.0
+   }
+  }
+ ]
+}

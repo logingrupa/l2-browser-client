@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 26,
+  "listVersion": 27,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -42,6 +42,7 @@
     "music-format-unsupported:<channels>/<rate>",
     "music-derivative-encoder-unpinned",
     "lighting-lightmap-index-invalid:<index>",
+    "bsp-rebuild-shadow-light-unlisted:<reference>",
     "lighting-payload-too-large",
     "lighting-water-volume-unlinked:<class>",
     "lighting-class-chain-unresolved:<class>",

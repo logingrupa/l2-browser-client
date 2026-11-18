@@ -1,8 +1,9 @@
 import { readTypedPayload, type TypedPayload } from "../../../shared/typedPayload";
 import { decodeHourlyLightingInputs, type HourlyLightingInputs } from "./decodeHourlyLightingInputs";
-import { dxt1ByteCount } from "./lightmapPages";
+import { requireLightmapRebuildInputsMatchModel } from "./decodeLightmapRebuildInputs";
+import { dxt1ByteCount, pageRangeHasRebuiltPage } from "./lightmapPages";
 import { TileLightingDecodeError } from "./tileLightingDecodeError";
-import { decodeTileLightingRecords, type TileLightingRecords } from "./tileLightingRecords";
+import { decodeTileLightingRecords, readTileLightingRecordsDocument, type TileLightingRecords } from "./tileLightingRecords";
 
 export interface TileLightmapPage {
   readonly texture: number;
@@ -104,6 +105,15 @@ function decodeNodeRanges(payload: TypedPayload, textureCount: number): TileLigh
   });
 }
 
+function requireRebuildInputsMatchPages(hourly: HourlyLightingInputs, texturePageStart: Uint32Array, pages: readonly TileLightmapPage[]): void {
+  const { lightmapRebuild, pageRevisions } = hourly;
+  if (lightmapRebuild.status === "unstaged") return;
+  requireLighting(pageRevisions.status === "staged", "the payload lists lightmap rebuild inputs without page revisions.");
+  const textureFirstPages = Array.from(texturePageStart.subarray(0, -1));
+  requireLightmapRebuildInputsMatchModel(lightmapRebuild.value, { textureEdges: textureFirstPages.map(page => pages[page]!.edge),
+    textureHasMismatchedPage: textureFirstPages.map((firstPage, texture) => pageRangeHasRebuiltPage(pageRevisions.value, firstPage, texturePageStart[texture + 1]!)) });
+}
+
 export function decodeTileLighting(assetJson: unknown, payloadBytes: Uint8Array): TileLightingModel {
   const payload = readTypedPayload(assetJson, payloadBytes);
   requireLighting(payload.units === "source", `the payload units are ${String(payload.units)}, not source.`);
@@ -113,6 +123,8 @@ export function decodeTileLighting(assetJson: unknown, payloadBytes: Uint8Array)
   requireLighting(payload.uint32("LMTX.recordStart").length === textureCount + 1, "LMTX.recordStart and LMTX.pageStart disagree on the texture count.");
   requireTextureIndices("LMSC.lightmapTexture", payload.int32("LMSC.lightmapTexture"), textureCount, true);
   const pages = decodePages(payload, textureCount, texturePageStart);
-  return { sourceSha256: payload.sourceSha256, textureCount, texturePageStart, pages, nodeRanges: decodeNodeRanges(payload, textureCount),
-    records: decodeTileLightingRecords(payload.uint8("RECS.canonicalJson")), hourly: decodeHourlyLightingInputs(payload) };
+  const recordsDocument = readTileLightingRecordsDocument(payload.uint8("RECS.canonicalJson"));
+  const records = decodeTileLightingRecords(recordsDocument), hourly = decodeHourlyLightingInputs(payload, recordsDocument);
+  requireRebuildInputsMatchPages(hourly, texturePageStart, pages);
+  return { sourceSha256: payload.sourceSha256, textureCount, texturePageStart, pages, nodeRanges: decodeNodeRanges(payload, textureCount), records, hourly };
 }

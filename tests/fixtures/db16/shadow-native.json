@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "kind": "db16-shadow-filter-and-lighting-table-native-fixtures",
+  "source": {
+    "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/bsp-lightmap-cache-db16/rebuild/shadow-native-fixtures.json",
+    "sha256": "862091424af0744197819a719b2f3968abcc2df6951ea6504060989d124e422f",
+    "method": "Unicorn native table construction and packed shadow expansion. Allocation wrappers use a synthetic buffer with identical zero/full initialization. No game launch."
+  },
+  "filterFixtures": [
+    {
+      "function": "0x10671600",
+      "input": {
+        "maskHex": "000000",
+        "width": 8,
+        "height": 3
+      },
+      "label": "all-dark",
+      "outputRows": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "function": "0x10671600",
+      "input": {
+        "maskHex": "ffffff",
+        "width": 8,
+        "height": 3
+      },
+      "label": "all-lit",
+      "outputRows": [
+        [
+          254,
+          254,
+          254,
+          254,
+          254,
+          254,
+          254,
+          254
+        ],
+        [
+          254,
+          254,
+          254,
+          254,
+          254,
+          254,
+          254,
+          254
+        ],
+        [
+          254,
+          254,
+          254,
+          254,
+          254,
+          254,
+          254,
+          254
+        ]
+      ]
+    },
+    {
+      "function": "0x10671600",
+      "input": {
+        "maskHex": "001800",
+        "width": 8,
+        "height": 3
+      },
+      "label": "middle",
+      "outputRows": [
+        [
+          0,
+          0,
+          19,
+          51,
+          51,
+          19,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          31,
+          82,
+          82,
+          31,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          19,
+          51,
+          51,
+          19,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "function": "0x10671600",
+      "input": {
+        "maskHex": "010101",
+        "width": 8,
+        "height": 3
+      },
+      "label": "edge",
+      "outputRows": [
+        [
+          184,
+          69,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          184,
+          69,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          184,
+          69,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  ],
+  "tableFixtures": [
+    {
+      "function": "0x10670de0 table generation blocks",
+      "controlWord": "0x37f",
+      "attenuationFirst8": [
+        63.95361328125,
+        45.18952178955078,
+        36.87069320678711,
+        31.908203125,
+        28.51929473876953,
+        26.01599884033203,
+        24.06912612915039,
+        22.498741149902344
+      ],
+      "shadowTable127": [
+        1179010630,
+        1920103026,
+        1179010630,
+        0
+      ],
+      "tableSha256": "a0ad5f046b67bd10b3f723753eb91bbf5a01ce098e627fdd101a8743b8a926c2"
+    },
+    {
+      "function": "0x10670de0 table generation blocks",
+      "controlWord": "0x7f",
+      "attenuationFirst8": [
+        63.95361328125,
+        45.18952178955078,
+        36.87069320678711,
+        31.908203125,
+        28.51929473876953,
+        26.01599884033203,
+        24.06912612915039,
+        22.498741149902344
+      ],
+      "shadowTable127": [
+        1179010630,
+        1920103026,
+        1179010630,
+        0
+      ],
+      "tableSha256": "74d3a415eda004ca187bfdd6e5ad536e8fa8af3b916fee818704f55cd3ab6421"
+    }
+  ]
+}

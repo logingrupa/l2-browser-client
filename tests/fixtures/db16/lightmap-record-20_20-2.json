@@ -1,0 +1,117 @@
+{
+ "source": {
+  "path": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/bsp-lightmap-cache-db16/packages/20_20-lightmap-data.json",
+  "sha256": "3e180804e73ec55019b735089af708a798b7e3c3ba0688f54b7780fa4cbc8579",
+  "selection": "lightmaps[2]: replay.decodedBytesHex, shadows[] with bitsHex = decoded bytes at dataByteOffset - replay.byteOffset, tail.arrays[0].count"
+ },
+ "mapSource": {
+  "file": "C:\\Lineage2-client\\maps\\20_20.unr",
+  "fileSha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
+  "sizeBytes": 11131253
+ },
+ "recordIndex": 2,
+ "surfaceCount": 2334,
+ "decodedRecordBytesHex": "00730505100008080000000000000000000080bf0000000000000000abaa2a3c00000000000000000c00c03c000000000000000000000000d2c4c44262af4bc4000000000000803fe8ee7a4689c39847d92d83c50000000000000000a0aa2a42000000000000c04200000000041706010007017f3e0800000006000000010000000000000002000000070000000700000074010600000f0f07000400000006000000010000000000000002000000030000000700000023050f0f007e3c080000000500000001000000000000000300000007000000070000005b02040e380000080000000400000001000000000000000400000007000000070000000305000000",
+ "record": {
+  "textureIndex": 0,
+  "surface": 371,
+  "zone": 5,
+  "rectangle": [
+   16,
+   0,
+   8,
+   8
+  ],
+  "projection": [
+   0.0,
+   0.0,
+   -1.0,
+   0.0,
+   0.0,
+   0.010416666977107525,
+   0.0,
+   0.0,
+   0.02343752235174179,
+   0.0,
+   0.0,
+   0.0,
+   98.38441467285156,
+   -814.7403564453125,
+   0.0,
+   1.0,
+   16059.7265625,
+   78215.0703125,
+   -4197.73095703125,
+   0.0,
+   0.0,
+   42.6666259765625,
+   0.0,
+   96.0,
+   0.0
+  ],
+  "levelReference": 3,
+  "revision": 5
+ },
+ "shadows": [
+  {
+   "object": 23,
+   "objectName": "20_20.Light243",
+   "size": 6,
+   "fields": [
+    8,
+    6,
+    1,
+    0,
+    2,
+    7,
+    7
+   ],
+   "bitsHex": "010007017f3e"
+  },
+  {
+   "object": 116,
+   "objectName": "20_20.Light75",
+   "size": 6,
+   "fields": [
+    4,
+    6,
+    1,
+    0,
+    2,
+    3,
+    7
+   ],
+   "bitsHex": "00000f0f0700"
+  },
+  {
+   "object": 35,
+   "objectName": "20_20.Light111",
+   "size": 5,
+   "fields": [
+    8,
+    5,
+    1,
+    0,
+    3,
+    7,
+    7
+   ],
+   "bitsHex": "0f0f007e3c"
+  },
+  {
+   "object": 155,
+   "objectName": "20_20.Light244",
+   "size": 4,
+   "fields": [
+    8,
+    4,
+    1,
+    0,
+    4,
+    7,
+    7
+   ],
+   "bitsHex": "0e380000"
+  }
+ ]
+}

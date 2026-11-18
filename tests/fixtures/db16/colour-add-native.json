@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "db16-saturating-colour-add-native-fixtures",
+  "source": {
+    "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/hourly-lighting-db7/bsp/native-fixtures.json",
+    "sha256": "788df102d566be90fe7e9cec51cea6ea273b594cb62360f59e1cf1e101506dfb",
+    "method": "Unicorn executes original Engine code blocks with synthetic memory and x87 CW 0x037f. Selector runs original _ftol2; no game or live device."
+  },
+  "fixtures": [
+    {
+      "function": "0x103316e0",
+      "inputBytes": [
+        250,
+        20,
+        100,
+        0
+      ],
+      "addBytes": [
+        20,
+        1,
+        200,
+        255
+      ],
+      "resultBytes": [
+        255,
+        21,
+        255,
+        255
+      ]
+    },
+    {
+      "function": "0x103316e0",
+      "inputBytes": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addBytes": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "resultBytes": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ]
+}

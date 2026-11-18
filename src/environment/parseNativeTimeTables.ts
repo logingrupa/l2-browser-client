@@ -19,6 +19,7 @@ export interface NativeTimeTablesExport {
   readonly tables: NativeEnvironmentTables;
   readonly skyBindings: readonly SkyEnvironmentBinding[];
   readonly fogRanges: EnvironmentFogRanges;
+  readonly slopeSunAngle: number;
 }
 
 export type NativeTimeTablesParse =
@@ -85,6 +86,11 @@ function readSetup(setup: JsonRecord): NativeEnvironmentSetup {
   return { isClock, timeRatio: requireSafeInteger(settingValue(values.TimeRatio, "setup TimeRatio"), "setup TimeRatio"),
     startTimeHours: requireFiniteNumber(settingValue(values.StartTime, "setup StartTime"), "setup StartTime"),
     shadowTickHours: requireFiniteNumber(settingValue(values.ShadowTick, "setup ShadowTick"), "setup ShadowTick") };
+}
+
+function readSlopeSunAngle(setup: JsonRecord): number {
+  const values = requireRecord(setup.values, "setup values");
+  return requireFiniteNumber(settingValue(values.SlopeSunAngle, "setup SlopeSunAngle"), "setup SlopeSunAngle");
 }
 
 function bindingObjectName(setting: unknown, label: string): string {
@@ -184,5 +190,5 @@ export function parseNativeTimeTables(document: unknown): NativeTimeTablesParse 
   if (unresolved.length > 0) return { status: "incomplete", unresolved: unresolved as string[] };
   const setup = requireRecord(root.setup, "setup");
   return { status: "complete", timeTables: { setup: readSetup(setup), tables: readEnvironmentTables(requireList(root.environmentTypes, "environmentTypes")),
-    skyBindings: readSkyBindings(setup), fogRanges: readFogRanges(setup) } };
+    skyBindings: readSkyBindings(setup), fogRanges: readFogRanges(setup), slopeSunAngle: readSlopeSunAngle(setup) } };
 }

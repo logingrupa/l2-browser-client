@@ -1,0 +1,515 @@
+{
+  "schemaVersion": 1,
+  "kind": "db16-lightmap-ambient-native-fixtures",
+  "source": {
+    "ambient": {
+      "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/bsp-lightmap-cache-db16/rebuild/ambient-native-fixtures.json",
+      "sha256": "d661c77a08179403d20d757781613973d61d7da4192b9c0a642c4942ec3cae24",
+      "method": "Unicorn original machine instructions, native Core imports resolved; no game launch."
+    },
+    "first16": {
+      "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/bsp-lightmap-cache-rebuild.json",
+      "sha256": "599d44b894d4a7c12f301f52940bac0146ebdc4a095e4dce097dded1639070e0",
+      "paths": [
+        "packageData.first16Inputs",
+        "rebuild.rebuild.first16StaticFixture"
+      ]
+    }
+  },
+  "fixtures": [
+    {
+      "function": "FColor(FGetHSV(0,255,brightness)*0.5)",
+      "input": {
+        "hue": 0,
+        "saturation": 255,
+        "brightness": 0,
+        "controlWord": "0x037f"
+      },
+      "hsvPlane": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "halfPlane": [
+        0.0,
+        0.0,
+        0.0,
+        0.5
+      ],
+      "resultBGRA": [
+        0,
+        0,
+        0,
+        127
+      ]
+    },
+    {
+      "function": "FColor(FGetHSV(0,255,brightness)*0.5)",
+      "input": {
+        "hue": 0,
+        "saturation": 255,
+        "brightness": 40,
+        "controlWord": "0x037f"
+      },
+      "hsvPlane": [
+        0.32118257880210876,
+        0.32118257880210876,
+        0.32118257880210876,
+        1.0
+      ],
+      "halfPlane": [
+        0.16059128940105438,
+        0.16059128940105438,
+        0.16059128940105438,
+        0.5
+      ],
+      "resultBGRA": [
+        40,
+        40,
+        40,
+        127
+      ]
+    },
+    {
+      "function": "FColor(FGetHSV(0,255,brightness)*0.5)",
+      "input": {
+        "hue": 0,
+        "saturation": 255,
+        "brightness": 64,
+        "controlWord": "0x037f"
+      },
+      "hsvPlane": [
+        0.408052921295166,
+        0.408052921295166,
+        0.408052921295166,
+        1.0
+      ],
+      "halfPlane": [
+        0.204026460647583,
+        0.204026460647583,
+        0.204026460647583,
+        0.5
+      ],
+      "resultBGRA": [
+        52,
+        52,
+        52,
+        127
+      ]
+    },
+    {
+      "function": "FColor(FGetHSV(0,255,brightness)*0.5)",
+      "input": {
+        "hue": 0,
+        "saturation": 255,
+        "brightness": 128,
+        "controlWord": "0x037f"
+      },
+      "hsvPlane": [
+        0.5798917412757874,
+        0.5798917412757874,
+        0.5798917412757874,
+        1.0
+      ],
+      "halfPlane": [
+        0.2899458706378937,
+        0.2899458706378937,
+        0.2899458706378937,
+        0.5
+      ],
+      "resultBGRA": [
+        73,
+        73,
+        73,
+        127
+      ]
+    },
+    {
+      "function": "FColor(FGetHSV(0,255,brightness)*0.5)",
+      "input": {
+        "hue": 0,
+        "saturation": 255,
+        "brightness": 255,
+        "controlWord": "0x037f"
+      },
+      "hsvPlane": [
+        0.8213098049163818,
+        0.8213098049163818,
+        0.8213098049163818,
+        1.0
+      ],
+      "halfPlane": [
+        0.4106549024581909,
+        0.4106549024581909,
+        0.4106549024581909,
+        0.5
+      ],
+      "resultBGRA": [
+        104,
+        104,
+        104,
+        127
+      ]
+    },
+    {
+      "function": "0x10675390 ambient fill and row copy block 0x10675545..0x10675705",
+      "input": {
+        "controlWord": "0x37f",
+        "zone": {
+          "AmbientHue": 0,
+          "AmbientSaturation": 255,
+          "AmbientBrightness": 40
+        },
+        "lightmaps": [
+          {
+            "offsetX": 0,
+            "width": 8,
+            "height": 16
+          },
+          {
+            "offsetX": 8,
+            "width": 8,
+            "height": 16
+          }
+        ],
+        "shadowCount": 0,
+        "destinationPitchBytes": 2048
+      },
+      "resultFirst16BGRA": [
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ]
+      ],
+      "resultBytesHex": "2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f"
+    },
+    {
+      "function": "0x10675390 ambient fill and row copy block 0x10675545..0x10675705",
+      "input": {
+        "controlWord": "0x7f",
+        "zone": {
+          "AmbientHue": 0,
+          "AmbientSaturation": 255,
+          "AmbientBrightness": 40
+        },
+        "lightmaps": [
+          {
+            "offsetX": 0,
+            "width": 8,
+            "height": 16
+          },
+          {
+            "offsetX": 8,
+            "width": 8,
+            "height": 16
+          }
+        ],
+        "shadowCount": 0,
+        "destinationPitchBytes": 2048
+      },
+      "resultFirst16BGRA": [
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ],
+        [
+          40,
+          40,
+          40,
+          127
+        ]
+      ],
+      "resultBytesHex": "2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f2828287f"
+    }
+  ],
+  "first16": {
+    "map": "20_20",
+    "zoneActor": "20_20.ZoneInfo23",
+    "lightmapIndices": [
+      0,
+      1
+    ],
+    "zone": {
+      "AmbientHue": 0,
+      "AmbientSaturation": 255,
+      "AmbientBrightness": 40
+    },
+    "resultFirst16BGRA": [
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ]
+    ]
+  }
+}

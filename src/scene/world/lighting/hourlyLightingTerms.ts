@@ -1,4 +1,3 @@
-import { bspLightmapRebuildAmbient } from "../../../environment/model/bspLightmapSelection";
 import { HOURLY_LIGHTING_CONSTANTS } from "../../../environment/model/hourlyLightingEngineConstants";
 import { actorAmbientLight, staticMeshAmbientLight, type AmbientLight } from "../../../environment/model/meshLightingTerms";
 import type { RgbaBytes } from "../../../environment/model/nativeColourBytes";
@@ -34,7 +33,7 @@ export interface HourlyLightingTerms {
     readonly serializedInstanceColour: "serialized instance colours are cache data, not the runtime result";
   };
   readonly actor: { readonly drawState: NativeDrawLightingState; readonly ambient: HourlyAmbientInspection };
-  readonly bsp: { readonly drawState: NativeDrawLightingState; readonly rebuildAmbient: EnvironmentResult<RgbBytes>; readonly rebuildAmbientBound: false };
+  readonly bsp: { readonly drawState: NativeDrawLightingState };
   readonly terrainDrawState: NativeDrawLightingState;
   readonly dynamicLights: { readonly applied: false; readonly reasons: readonly ["d3d-device-live-state", "ma-temporal-light-types"] };
   readonly device: {
@@ -72,7 +71,6 @@ function staticMeshAmbient(environment: HourlyEnvironmentLighting, levelOfDetail
 }
 
 export function hourlyLightingTerms(environment: HourlyEnvironmentLighting): HourlyLightingTerms {
-  const { bspAmbient } = environment;
   return {
     hour: environment.hour,
     staticMesh: {
@@ -86,8 +84,7 @@ export function hourlyLightingTerms(environment: HourlyEnvironmentLighting): Hou
     },
     actor: { drawState: nativeDrawLightingStates.actor,
       ambient: ambientInspection(environment.actorAmbient, sunAffectedActorCondition, hourlyAmbient => actorAmbientLight(hourlyAmbient, true)) },
-    bsp: { drawState: nativeDrawLightingStates.bsp, rebuildAmbientBound: false,
-      rebuildAmbient: bspAmbient.status === "resolved" ? { status: "resolved", value: bspLightmapRebuildAmbient(bspAmbient.value) } : bspAmbient },
+    bsp: { drawState: nativeDrawLightingStates.bsp },
     terrainDrawState: nativeDrawLightingStates.terrain,
     dynamicLights: { applied: false, reasons: ["d3d-device-live-state", "ma-temporal-light-types"] },
     device: {

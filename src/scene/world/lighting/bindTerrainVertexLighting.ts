@@ -11,7 +11,8 @@ import {
 } from "../../../environment/model/terrainVertexLighting";
 import type { HourlyEnvironmentLighting } from "../worldTimeOfDay";
 import { terrainLightingUnportedReason } from "./bindTerrainLayerMaterials";
-import type { StagedLightingInput, TerrainIntensityMaps, TerrainLightMaskSummary } from "./decodeHourlyLightingInputs";
+import type { TerrainIntensityMaps, TerrainLightMaskSummary } from "./decodeHourlyLightingInputs";
+import type { StagedLightingInput } from "./stagedLightingInput";
 import { terrainVertexSampleIndices } from "./terrainVertexSampleIndices";
 
 export interface TerrainVertexLightingProbe {

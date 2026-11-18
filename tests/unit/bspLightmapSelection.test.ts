@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bspCompressedLightmapGate, bspLightmapRebuildAmbient, bspLightmapSlot } from "../../src/environment/model/bspLightmapSelection";
+import { bspLightmapPageSource, bspLightmapSlot } from "../../src/environment/model/bspLightmapSelection";
 
 describe("BSP lightmap slot (draw sections 0x10668ac0 and 0x10669de0)", () => {
   it("selects trunc(float32(hour) * N / 24) % N for a sun-affected section, 0/2/4/6 at 0/6/12/18 for an 8-child atlas", () => {
@@ -25,14 +25,10 @@ describe("BSP lightmap slot (draw sections 0x10668ac0 and 0x10669de0)", () => {
   });
 });
 
-describe("compressed lightmap path (bsp-compressed-choice)", () => {
-  it("takes the compressed child only while the page revision equals its compressed revision", () => {
-    expect(bspCompressedLightmapGate(2, 2)).toEqual({ status: "compressed" });
-    expect(bspCompressedLightmapGate(3, 2)).toEqual({ status: "unresolved", reason: "bsp-live-cache-state" });
-  });
-
-  it("keeps BSPAmbient * 0.5 as the rebuild start only", () => {
-    expect(bspLightmapRebuildAmbient([64, 88, 111])).toEqual([32, 44, 55]);
-    expect(bspLightmapRebuildAmbient([255, 1, 0])).toEqual([127, 0, 0]);
+describe("lightmap child source (DB-16 REV-SAME-MISMATCH-PATH, UseCompressedLightmaps=True)", () => {
+  it("takes the compressed child on equal revisions and the rebuilt composite on any difference", () => {
+    expect(bspLightmapPageSource(6641, 6641)).toBe("compressed-child");
+    expect([[211740, 6986], [211395, 6641], [5428, 5410], [18, 36]].map(([revision, compressed]) => bspLightmapPageSource(revision!, compressed!)))
+      .toEqual(["rebuilt-composite", "rebuilt-composite", "rebuilt-composite", "rebuilt-composite"]);
   });
 });

@@ -45,6 +45,7 @@ describe("decodeHourlyLightingInputs", () => {
       terrainIntensityMaps: { status: "unstaged", reason: "hourly-lighting-input-unstaged:TINT.time" },
       terrainLightMasks: { status: "unstaged", reason: "hourly-lighting-input-unstaged:TSEC.exportIndex" },
       staticMeshLightLists: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.actorExportIndex" },
+      lightmapRebuild: { status: "unstaged", reason: "hourly-lighting-input-unstaged:LMTX.rebuildInputs" },
     });
   });
 

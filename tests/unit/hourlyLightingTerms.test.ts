@@ -16,19 +16,18 @@ function rowAt(hour: number, predicate: (row: HourlyLightingFixtureRow) => boole
 const ambientOf = (row: HourlyLightingFixtureRow) => [...fixtureNumbers(row.output, "ambientRGB"), fixtureNumber(row.output, "alpha")];
 
 describe("hourlyLightingTerms", () => {
-  it.each(fixtureHours)("reproduces the DB-7 static mesh, actor and BSP rebuild ambient rows at hour %s", hour => {
+  it.each(fixtureHours)("reproduces the DB-7 static mesh and actor ambient rows at hour %s", hour => {
     const terms = hourlyLightingTerms(hourlyEnvironmentAt(hour));
     expect(terms.staticMesh.ambient).toMatchObject({ status: "resolved",
       value: ambientOf(rowAt(hour, row => row.surfaceType === "staticMesh" && row.status === "conditional-input-fixture")) });
     expect(terms.staticMesh.levelOfDetailSunTermAmbient).toMatchObject({ status: "resolved",
       value: ambientOf(rowAt(hour, row => row.surfaceType === "staticMesh" && row.status === "synthetic-arithmetic-fixture")) });
     expect(terms.actor.ambient).toMatchObject({ status: "resolved", value: ambientOf(rowAt(hour, row => row.surfaceType === "actor")) });
-    expect(terms.bsp.rebuildAmbient).toEqual({ status: "resolved", value: fixtureNumbers(rowAt(hour, row => row.surfaceType === "BSP").output, "rebuildAmbientRGB") });
   });
 
   it("keeps BSP ambient out of the draw and names every device fact and DB-7 item it cannot claim", () => {
     const terms = hourlyLightingTerms(hourlyEnvironmentAt(12));
-    expect(terms.bsp).toMatchObject({ rebuildAmbientBound: false, drawState: { deviceLighting: false, ambientSource: "baked-into-compressed-lightmap" } });
+    expect(terms.bsp).toEqual({ drawState: expect.objectContaining({ deviceLighting: false, ambientSource: "baked-into-compressed-lightmap" }) });
     expect(terms.terrainDrawState).toMatchObject({ deviceLighting: false, colourVertex: true, ambientSource: "baked-into-vertex-colour" });
     expect(terms.staticMesh.colour0).toMatchObject({ bound: false, reason: "ma-final-static-vertex" });
     expect(terms.staticMesh.colour1).toMatchObject({ bound: false, reasons: ["static-mesh-colour-selector-unresolved", "d3d-device-live-state"] });
@@ -46,6 +45,5 @@ describe("hourlyLightingTerms", () => {
     const terms = hourlyLightingTerms(hourlyEnvironmentAt(12, { oldType: 0, targetType: 3, weight: 0.5 }));
     expect(terms.actor.ambient).toMatchObject({ status: "unresolved", reason: "env-color-transition-unresolved" });
     expect(terms.staticMesh.levelOfDetailSunTermAmbient).toMatchObject({ status: "unresolved", reason: "env-color-transition-unresolved" });
-    expect(terms.bsp.rebuildAmbient).toEqual({ status: "unresolved", reason: "env-color-transition-unresolved" });
   });
 });
