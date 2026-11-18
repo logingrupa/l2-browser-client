@@ -75,7 +75,7 @@ export interface StaticMeshLibrarySettings {
   readonly lightLists: StagedLightingInput<ReadonlyMap<number, StaticMeshLightList>>;
   readonly ordinaryLightRecords: StaticMeshOrdinaryLightRecords;
   readonly hourlyLighting: () => StaticMeshHourlyLightingFrame;
-  readonly loadVertexStreams: (file: string, sha256: string, bytes: number, signal: AbortSignal) => Promise<StaticMeshVertexStreams>;
+  readonly loadVertexStreams: (resource: string, sha256: string, bytes: number, signal: AbortSignal) => Promise<StaticMeshVertexStreams>;
 }
 
 export interface StaticMeshLibraryBinding {
@@ -180,10 +180,10 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
     }
     return pending;
   };
-  const vertexStreamsFor = (file: string, sha256: string, bytes: number) => {
+  const vertexStreamsFor = (resource: string, sha256: string, bytes: number) => {
     let pending = pendingStreams.get(sha256);
     if (!pending) {
-      pending = settings.loadVertexStreams(file, sha256, bytes, lifetime.signal);
+      pending = settings.loadVertexStreams(resource, sha256, bytes, lifetime.signal);
       pendingStreams.set(sha256, pending);
       pending.catch(() => { if (pendingStreams.get(sha256) === pending) pendingStreams.delete(sha256); });
     }
@@ -227,7 +227,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
     if (ordinaryReason !== null) return { reason: ordinaryReason };
     const pin = surfaces.placement.vertexStreams;
     if (pin.status !== "pinned") return { reason: pin.reason };
-    const streams = await vertexStreamsFor(pin.file, pin.sha256, pin.bytes);
+    const streams = await vertexStreamsFor(pin.resource, pin.sha256, pin.bytes);
     const streamsReason = staticMeshVertexStreamsReason(join.list, streams);
     if (streamsReason !== null) return { reason: streamsReason };
     const meshVertices = new Map<Mesh, Uint32Array>();

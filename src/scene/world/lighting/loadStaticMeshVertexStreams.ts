@@ -66,7 +66,7 @@ export function authoredColourStreamsWhite(streams: StaticMeshVertexStreams): bo
   return streams.primaryColours.every(byte => byte === opaqueWhiteByte) && streams.alternateColours.every(byte => byte === opaqueWhiteByte);
 }
 
-export async function loadStaticMeshVertexStreams(file: string, sha256: string, bytes: number, signal: AbortSignal): Promise<StaticMeshVertexStreams> {
-  const payload = await fetchVerifiedNativeResource(file, sha256, signal, bytes);
+export async function loadStaticMeshVertexStreams(resource: string, sha256: string, bytes: number, signal: AbortSignal): Promise<StaticMeshVertexStreams> {
+  const payload = await fetchVerifiedNativeResource(resource, sha256, signal, bytes);
   return parseStaticMeshVertexStreams(JSON.parse(new TextDecoder().decode(payload)));
 }

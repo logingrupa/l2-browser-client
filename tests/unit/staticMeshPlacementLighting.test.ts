@@ -116,7 +116,7 @@ function pillarBinding(list: StaticMeshLightList, fixture: StaticMeshLightingFix
 
 function pillarPlacement(fields: Partial<NativeTileChunkPlacement> = {}) {
   return { sourceActor: "20_21.StaticMeshActor2067", exportIndex: pillar.actorExportIndex,
-    fields: { matrix: sceneMatrixOf(fixtures[0]!.matrix), vertexStreams: { status: "pinned", file: `/l2/static-mesh-vertex-streams/${sidecarSha256}/vertex-streams.json`,
+    fields: { matrix: sceneMatrixOf(fixtures[0]!.matrix), vertexStreams: { status: "pinned", resource: `/l2/static-mesh-vertex-streams/${sidecarSha256}/vertex-streams.json`,
       sha256: sidecarSha256, bytes: 4096 }, ...fields } as Partial<NativeTileChunkPlacement> };
 }
 

@@ -27,7 +27,7 @@ export interface NativeTileChunkTerrain {
 }
 
 export type NativeStaticMeshVertexStreamsPin =
-  | { readonly status: "pinned"; readonly file: string; readonly sha256: string; readonly bytes: number }
+  | { readonly status: "pinned"; readonly resource: string; readonly sha256: string; readonly bytes: number }
   | { readonly status: "gap"; readonly reason: string };
 
 export interface NativeTileChunkPlacement {
@@ -83,7 +83,7 @@ const sectorRangeFields = ["firstColumn", "lastColumn", "firstRow", "lastRow"] a
 const terrainFields = ["resource", "sha256", "maskUvRule"];
 const modelFields = ["id", "archive", "archiveSha256", "placements"];
 const vertexStreamModelFields = ["id", "archive", "archiveSha256", "vertexStreams", "placements"];
-const vertexStreamsPinFields = ["file", "sha256", "bytes"];
+const vertexStreamsPinFields = ["resource", "sha256", "bytes"];
 const vertexStreamsGapFields = ["gapReason"];
 export const staticMeshVertexStreamsUnstagedReason = "static-mesh-vertex-streams-unstaged";
 const unstagedVertexStreams: NativeStaticMeshVertexStreamsPin = { status: "gap", reason: staticMeshVertexStreamsUnstagedReason };
@@ -180,12 +180,12 @@ function parseVertexStreamsPin(value: unknown, label: string): NativeStaticMeshV
     if (typeof value.gapReason !== "string" || !value.gapReason) throw new Error(`${label} has a vertex streams gap without a reason.`);
     return { status: "gap", reason: value.gapReason };
   }
-  if (!hasExactKeys(value, vertexStreamsPinFields) || typeof value.file !== "string" || typeof value.sha256 !== "string" ||
-    !nativeTileSha256Pattern.test(value.sha256) || vertexStreamsResourcePattern.exec(value.file)?.[1] !== value.sha256 ||
+  if (!hasExactKeys(value, vertexStreamsPinFields) || typeof value.resource !== "string" || typeof value.sha256 !== "string" ||
+    !nativeTileSha256Pattern.test(value.sha256) || vertexStreamsResourcePattern.exec(value.resource)?.[1] !== value.sha256 ||
     !Number.isSafeInteger(value.bytes) || (value.bytes as number) < 1) {
     throw new Error(`${label} vertex streams must be /l2/static-mesh-vertex-streams/<its sha256>/vertex-streams.json with its byte count.`);
   }
-  return { status: "pinned", file: value.file, sha256: value.sha256, bytes: value.bytes as number };
+  return { status: "pinned", resource: value.resource, sha256: value.sha256, bytes: value.bytes as number };
 }
 
 function parseChunkPlacement(value: unknown, modelIds: ReadonlySet<string>, parentModelId: string, placementIds: Set<string>,
