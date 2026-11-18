@@ -40,6 +40,7 @@ CONVERTER_SOURCE_MODULES = ('native_assets',)
 SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1]
 MAX_ARCHIVE = 128 * 1024 * 1024
 MAX_PAYLOAD = 96 * 1024 * 1024
+CLASS_NAMES_RESOLVED_BY_FULL_OBJECT_PATH = ('Sound', 'Texture')
 DIAGNOSTIC_MAGENTA_BASE_COLOUR = [1, 0, 1, 1]
 UNSUPPORTED_DIAGNOSTIC_RUNTIME_STATUS = 'unsupported-diagnostic'
 
@@ -221,7 +222,7 @@ class Converter:
         if len(matches) != 1:
             raise ValueError(f'Object missing or ambiguous: {name} ({class_name})')
         selected = matches[0]
-        if selected['className'] != 'Sound':
+        if selected['className'] not in CLASS_NAMES_RESOLVED_BY_FULL_OBJECT_PATH:
             require_unique_umodel_leaf_name(package, selected)
         return selected
 
@@ -249,9 +250,10 @@ class Converter:
         return log
 
     def exported(self, work, item, suffixes):
-        matches = [path for path in (work / 'export').rglob('*') if path.is_file() and path.stem == item['name'] and path.suffix.lower() in suffixes]
+        object_path = (work / 'export').joinpath(*item['object'].split('.'))
+        matches = [path for path in (object_path.with_name(object_path.name + suffix) for suffix in suffixes) if path.is_file()]
         if len(matches) != 1:
-            raise ValueError(f'Expected exactly one exported payload for {item["object"]}: {matches}')
+            raise ValueError(f'Expected exactly one exported payload for {item["object"]}: {object_path} holds {matches}')
         return matches[0]
 
     def texture_png(self, work, package_path, item, native_source):
