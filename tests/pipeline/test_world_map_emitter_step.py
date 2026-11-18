@@ -200,17 +200,17 @@ class MapEmitterUnitConfigTests(unittest.TestCase):
 
 
 class MapEmitterMembershipTests(unittest.TestCase):
-    def test_the_visibility_resource_lists_each_emitter_placement_with_its_leaf_and_zone_membership(self):
+    def test_the_visibility_resource_lists_each_emitter_placement_with_its_leaf_and_zone_membership_and_one_on_a_plane_touches_both_sides(self):
         product = {'placements': [{'id': f'interlude:{TILE_ID}.Emitter7', 'exportIndex': 3, 'origin': [25.0, 10.0, 25.0]},
                                   {'id': f'interlude:{TILE_ID}.Emitter2', 'exportIndex': 4, 'origin': [50.0, 10.0, 25.0]}]}
         members = map_emitter_members(room_model(), product, frozenset({2}))
         self.assertEqual([(member.kind, member.leaves, member.zone_set) for member in members],
-                         [(MAP_EMITTER_MEMBER_KIND, (0,), 1 << 1), (MAP_EMITTER_MEMBER_KIND, (), 0)])
+                         [(MAP_EMITTER_MEMBER_KIND, (0,), 1 << 1), (MAP_EMITTER_MEMBER_KIND, (0, 1), (1 << 1) | (1 << 2))])
         node_ranges = [{'chunk': 0, 'node': 0, 'primitive': 0, 'firstIndex': 0, 'indexCount': 6}]
         arrays, _, counts = tile_visibility_payload(room_model(), ROOM_ZONES, RULES, node_ranges, members)
         by_name = {array.name: array for array in arrays}
         self.assertEqual((counts['members'], by_name['MEMB.kind'].values, by_name['MEMB.leafStart'].values, by_name['MEMB.leaves'].values),
-                         (2, (1, 1), (0, 1, 1), (0,)))
+                         (2, (1, 1), (0, 1, 3), (0, 0, 1)))
 
 
 if __name__ == '__main__':
