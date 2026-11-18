@@ -1,17 +1,17 @@
 import type { ReferenceConstantRow } from "../../../../shared/referenceConstant";
 import type { BlendFactor, BlendFactorPair } from "./blendFactorTypes";
-import { combinerStageSemanticsReplay, materialNotes } from "./materialNotes";
+import { combinerStageSemanticsReplay, materialNotes, sharedSkyPassesReplay } from "./materialNotes";
 
 const pair = (source: BlendFactor, destination: BlendFactor): BlendFactorPair => ({ source, destination });
 
-export interface NamedBlendPair {
+export interface NamedBlendPair<Pair extends BlendFactorPair | null = BlendFactorPair | null> {
   readonly name: string;
-  readonly pair: BlendFactorPair | null;
+  readonly pair: Pair;
 }
 
-const named = (name: string, factors: BlendFactorPair | null): NamedBlendPair => ({ name, pair: factors });
+const named = <Pair extends BlendFactorPair | null>(name: string, factors: Pair): NamedBlendPair<Pair> => ({ name, pair: factors });
 
-const finalBlendPairs: readonly NamedBlendPair[] = [
+const finalBlendPairs: readonly NamedBlendPair<BlendFactorPair>[] = [
   named("FB_Overwrite", pair("one", "zero")),
   named("FB_Modulate", pair("destination-colour", "source-colour")),
   named("FB_AlphaBlend", pair("source-alpha", "inverse-source-alpha")),
@@ -20,7 +20,7 @@ const finalBlendPairs: readonly NamedBlendPair[] = [
   named("FB_Darken", pair("zero", "inverse-source-colour")),
   named("FB_Brighten", pair("source-alpha", "one")),
   named("FB_Invisible", pair("zero", "one")),
-  named("FB_Add", null),
+  named("FB_Add", pair("one", "one")),
 ];
 
 const outputBlendingReferencePairs: readonly NamedBlendPair[] = [
@@ -52,9 +52,9 @@ export const BLEND_CONSTANTS = {
   finalBlendPairs: {
     id: "blend.fb-pairs",
     value: finalBlendPairs,
-    provenance: `${materialNotes} blend.fb-pairs; lineage2js/src/assets/unreal/un-material.ts:399-412; lineage2js/src/materials/mesh-static-material/mesh-static-material.ts:310-378; FB_Add pair unknown and rendered as material-feature-unported:FrameBufferBlending`,
-    status: "unconfirmed",
-    interludeEvidence: null,
+    provenance: `${sharedSkyPassesReplay}: the FinalBlend framebuffer branch 0x1000f4e2 of 0x1000f4a0 writes D3DRS_SRCBLEND and D3DRS_DESTBLEND for FrameBufferBlending 0 to 8 as ONE/ZERO, DESTCOLOR/SRCCOLOR, SRCALPHA/INVSRCALPHA, ONE/INVSRCALPHA, ONE/INVSRCCOLOR, ZERO/INVSRCCOLOR, SRCALPHA/ONE, ZERO/ONE and ONE/ONE, so FB_Add is ONE/ONE`,
+    status: "confirmed-interlude",
+    interludeEvidence: "D3DDrv.dll 05622dde FinalBlend pass builder 0x1000f4a0, branch 0x1000f4e2",
     runtimeDefault: finalBlendPairs,
   },
   enumOrdinals: {

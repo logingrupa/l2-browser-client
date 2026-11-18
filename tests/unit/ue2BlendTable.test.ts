@@ -35,12 +35,12 @@ describe("FinalBlend rows", () => {
     [5, "zero", "inverse-source-colour", "black", false],
     [6, "source-alpha", "one", "black", false],
     [7, "zero", "one", "black", false],
+    [8, "one", "one", "fog-colour", false],
   ])("FrameBufferBlending %i maps to %s, %s with fog family %s", (ordinal, source, destination, fogFamily, depthWrite) => {
     expect(blendFactorsForMaterial(finalBlend(ordinal))).toMatchObject({ status: "resolved", pair: { source, destination }, fogFamily, depthWrite, colourWrite: ordinal !== 7 });
   });
 
-  it("keeps FB_Add a named diagnostic until its factors are confirmed", () => {
-    expect(blendFactorsForMaterial(finalBlend(8))).toEqual({ status: "diagnostic", sourceNode: "Synthetic.FinalBlend", reason: "material-feature-unported:FrameBufferBlending" });
+  it("names a FrameBufferBlending ordinal past FB_Add as unknown", () => {
     expect(blendFactorsForMaterial(finalBlend(9))).toMatchObject({ status: "diagnostic", reason: "material-blend-ordinal-unknown:FrameBufferBlending=9" });
   });
 
@@ -107,7 +107,8 @@ describe("material constants rows", () => {
 
   it("keep every other reference factor unconfirmed and cite NATIVE_FLAMES for the Interlude OB_Brighten and OB_Translucent pairs", () => {
     const blendRows = Object.values(MATERIAL_CONSTANT_TABLES.blend);
-    const rowsWithOwnStatus = new Set(["blend.ob-brighten-translucent", "blend.enum-ordinals", "blend.non-blending-root", "blend.ptds-pairs", "blend.ob-normal-opacity"]);
+    const rowsWithOwnStatus = new Set(["blend.ob-brighten-translucent", "blend.enum-ordinals", "blend.non-blending-root", "blend.ptds-pairs", "blend.ob-normal-opacity",
+      "blend.fb-pairs"]);
     for (const row of blendRows.filter(row => !rowsWithOwnStatus.has(row.id))) {
       expect(row.status).toBe("unconfirmed");
     }

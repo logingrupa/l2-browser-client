@@ -1,16 +1,16 @@
 import type { ReferenceConstantRow } from "../../../../shared/referenceConstant";
 import type { FogFamily } from "./blendFactorTypes";
-import { materialNotes } from "./materialNotes";
+import { materialNotes, sharedSkyPassesReplay } from "./materialNotes";
 
 const fogAnswer = "Q12 replay-verified l2foginfo-runtime.json 77cffb57...c465 (Engine.dll, D3DDrv.dll, Engine.u, Env.int, 20_21.unr lock-equal)";
 const skyFogDepthAnswer = "RM-18 replay-verified sky-fog-depth.json 2078c337...0492 (Engine.dll, Core.dll, D3DDrv.dll, skylevel.unr lock-equal)";
 const fogScopeAnswer = "RM-4 replay-verified fog-draw-scope.json b93571c0...c2ee4 (Engine.dll, Core.dll, D3DDrv.dll, Engine.u, Env.int, 15_22.unr, 20_21.unr lock-equal)";
 
 const materialFogFamilies = {
-  finalBlend: ["fog-colour", "neutral-grey", "fog-colour", "black", "black", "black", "black", "black", null],
-  outputBlending: ["fog-colour", "fog-colour", "neutral-grey", "black", "black", "black", "black"],
+  finalBlend: ["fog-colour", "neutral-grey", "fog-colour", "black", "black", "black", "black", "black", "fog-colour"],
+  outputBlending: ["fog-colour", "fog-colour", "neutral-grey", "black", "fog-colour", "black", "black"],
   nonBlendingRoot: "fog-colour",
-} as const satisfies { finalBlend: readonly (FogFamily | null)[]; outputBlending: readonly FogFamily[]; nonBlendingRoot: FogFamily };
+} as const satisfies { finalBlend: readonly FogFamily[]; outputBlending: readonly FogFamily[]; nonBlendingRoot: FogFamily };
 
 const particleFogFamilies: readonly FogFamily[] = ["none", "none", "fog-colour", "black", "black", "fog-colour", "black"];
 
@@ -18,9 +18,9 @@ const fogConstantRows = {
   materialFamilies: {
     id: "fog.targets",
     value: materialFogFamilies,
-    provenance: `${materialNotes} fog.targets: both Modulates fog toward 127/255, AlphaModulate, both Translucents, both Brightens, Darken and Invisible toward black, other world modes and terrain toward the fog colour; lineage2js/src/materials/shader-chunks/l2_fog_fragment.glsl:8-16; mesh-static-material.ts:206-214`,
-    status: "unconfirmed",
-    interludeEvidence: null,
+    provenance: `${sharedSkyPassesReplay}: with GL2Shader 0, view fog on and pass +0x2c set, DrawPrimitive 0x100263a0 replaces the level fog colour by the pass colour at +0x30. The Shader branch 0x1000c7f7 of 0x1000ae10 sets no override for OutputBlending 0 (with or without Opacity), 1 and 4, grey 127 for 2 and black for 3, 5 and 6; the FinalBlend branch 0x1000f4e2 of 0x1000f4a0 sets no override for FrameBufferBlending 0, 2 and 8, grey 127 for 1 and black for 3 to 7. No override keeps the level fog colour. The live 20_21 capture shows 107,114,97 on the background, haze and alpha cloud draws and 0,0,0 on the ONE/ONE cloud and star draws. The nonBlendingRoot entry (bare Texture and other roots without a blend) is not covered by RM-21 and keeps the level fog colour as before`,
+    status: "confirmed-interlude",
+    interludeEvidence: "D3DDrv.dll 05622dde 0x1000ae10 (branch 0x1000c7f7), 0x1000f4a0 (branch 0x1000f4e2), fog override gate 0x100263a0",
     runtimeDefault: materialFogFamilies,
   },
   particleFamilies: {
@@ -34,9 +34,9 @@ const fogConstantRows = {
   neutralGreyByte: {
     id: "fog.neutral-grey",
     value: 127,
-    provenance: `${materialNotes} Blend table and fog family: Modulate fogs toward 127/255, neutral under 2 * src * dst`,
-    status: "unconfirmed",
-    interludeEvidence: null,
+    provenance: `${sharedSkyPassesReplay}: OutputBlending 2 and FrameBufferBlending 1 override the pass fog colour with BGRA 127,127,127,0, so the source fogs toward 127/255 before 2 * src * dst; the neutral byte is 127, not 128`,
+    status: "confirmed-interlude",
+    interludeEvidence: "D3DDrv.dll 05622dde 0x1000ae10 (branch 0x1000c7f7), 0x1000f4a0 (branch 0x1000f4e2)",
     runtimeDefault: 127,
   },
   factor: {

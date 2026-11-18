@@ -114,7 +114,7 @@ describe("skeletal slot materials through the UE2 material library", () => {
     expect(plan.blend).toMatchObject({ status: "resolved", source: "final-blend", modeName: "FB_AlphaBlend", alphaTest: true, alphaReference: 5, twoSided: true,
       pair: BLEND_CONSTANTS.finalBlendPairs.runtimeDefault[2]!.pair });
     expect(plan.blend.constantIds).toEqual(expect.arrayContaining([BLEND_CONSTANTS.finalBlendPairs.id, BLEND_CONSTANTS.depthWriteRule.id]));
-    expect([BLEND_CONSTANTS.finalBlendPairs.status, BLEND_CONSTANTS.depthWriteRule.status]).toEqual(["unconfirmed", "unconfirmed"]);
+    expect([BLEND_CONSTANTS.finalBlendPairs.status, BLEND_CONSTANTS.depthWriteRule.status]).toEqual(["confirmed-interlude", "unconfirmed"]);
     binding.dispose();
   });
 

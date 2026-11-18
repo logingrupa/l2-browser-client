@@ -59,7 +59,7 @@ function diagnostic(sourceNode: string, reason: string): UnresolvedMaterialBlend
   return { status: "diagnostic", sourceNode, reason };
 }
 
-function tableEntry(table: readonly NamedBlendPair[], ordinal: number): NamedBlendPair | undefined {
+function tableEntry<Entry extends NamedBlendPair>(table: readonly Entry[], ordinal: number): Entry | undefined {
   return table[ordinal];
 }
 
@@ -72,7 +72,6 @@ function finalBlendState(node: MaterialProgramNode, twoSidedFromModifiers: boole
   const entry = tableEntry(BLEND_CONSTANTS.finalBlendPairs.runtimeDefault, ordinal);
   const fogFamily = FOG_CONSTANTS.materialFamilies.runtimeDefault.finalBlend[ordinal];
   if (!entry || fogFamily === undefined) return diagnostic(node.id, `material-blend-ordinal-unknown:FrameBufferBlending=${ordinal}`);
-  if (entry.pair === null || fogFamily === null) return diagnostic(node.id, "material-feature-unported:FrameBufferBlending");
   const ruleDepthWrite = ordinal === 0;
   return {
     status: "resolved", source: "final-blend", sourceNode: node.id, modeName: entry.name, pair: entry.pair, colourWrite: writesColour(entry.pair),
