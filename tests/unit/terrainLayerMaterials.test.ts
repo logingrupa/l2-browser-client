@@ -111,7 +111,7 @@ const textureRootProgram = (root: string) => programOf(root, [swatchTextureNode(
 
 function loaded(materialId: string, program: ReturnType<typeof programOf>, value: number): LoadedNativeMaterial {
   const parsedProgram = parseMaterialProgram(JSON.parse(JSON.stringify(program)));
-  return { materialId, program: parsedProgram, plan: compileMaterialStagePlan(parsedProgram), texturePixels: new Map([[textureImage.sha256, grey(4, value)]]) };
+  return { materialId, program: parsedProgram, plan: compileMaterialStagePlan(parsedProgram), texturePixels: new Map([[textureImage.sha256, grey(4, value)]]), textureMipChains: new Map() };
 }
 
 const uvRows = (index: number, texture: string, alphaMap: string, offset = 0): TerrainLayerUvRows =>

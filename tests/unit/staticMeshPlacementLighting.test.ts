@@ -90,7 +90,7 @@ function pillarMesh(scene: Scene, name: string, vertexCount = pillar.vertexCount
 function loadedProgram(materialId: string): LoadedNativeMaterial {
   const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
   return { materialId, program, plan: compileMaterialStagePlan(program),
-    texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+    texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
 }
 
 type VertexStreamsLoader = ReturnType<typeof vi.fn<() => Promise<StaticMeshVertexStreams>>>;

@@ -27,7 +27,7 @@ afterEach(() => { releases.splice(0).reverse().forEach(release => release()); })
 
 function loadedProgram(materialId: string, program: FixtureProgram): LoadedNativeMaterial {
   const parsedProgram = parseMaterialProgram(JSON.parse(JSON.stringify(program)));
-  return { materialId, program: parsedProgram, plan: compileMaterialStagePlan(parsedProgram), texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+  return { materialId, program: parsedProgram, plan: compileMaterialStagePlan(parsedProgram), texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
 }
 
 const joins: Readonly<Record<string, ActorSlotProgramJoin>> = {

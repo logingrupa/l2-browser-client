@@ -49,7 +49,7 @@ function swatchMaterial(): LoadedNativeMaterial {
   const swatchImage = textureImageFor(swatchTexturePng());
   const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
   return { materialId: "ef".repeat(32), program, plan: compileMaterialStagePlan(program),
-    texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+    texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
 }
 
 function boundChunk(scene: Scene, materialId: string): TileLightingBspChunk {

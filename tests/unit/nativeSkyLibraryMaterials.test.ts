@@ -76,7 +76,7 @@ describe("sky surfaces bound through the UE2 library", () => {
     const program = parseMaterialProgram(JSON.parse(JSON.stringify(colourModifierRoot === null ? syntheticUnportedProgram()
       : syntheticSkyColourModifierProgram(colourModifierRoot, whiteChipImage, "ce9600ff"))));
     return { materialId, program, plan: compileMaterialStagePlan(program),
-      texturePixels: new Map([[whiteChipImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+      texturePixels: new Map([[whiteChipImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
   });
   const bind = (meshes: readonly Mesh[], listing: NativeSkyMaterialsListing | null, overrides: Partial<NativeSkyLibrarySettings> = {}) =>
     bindNativeSkyLibraryMaterials({ scene, meshes, listing, sessionSeed: 1, materialUniforms: null, environmentColours: null, loadProgram,

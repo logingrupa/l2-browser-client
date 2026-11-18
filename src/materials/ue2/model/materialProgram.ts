@@ -1,3 +1,5 @@
+import { readTextureMipChainPin, type TextureMipChainPin } from "./textureMipChain";
+
 export const TEXTURE_COORDINATE_MODIFIER_CLASSES = [
   "Engine.TexPanner", "Engine.TexRotator", "Engine.TexOscillator", "Engine.TexOscillatorTriggered", "Engine.TexScaler", "Engine.TexEnvMap", "Engine.TexCoordSource",
 ] as const;
@@ -38,7 +40,7 @@ export interface MaterialProgramField {
   readonly value: MaterialFieldValue;
 }
 
-export interface MaterialTextureImage { readonly path: string; readonly sha256: string; readonly bytes: number }
+export interface MaterialTextureImage { readonly path: string; readonly sha256: string; readonly bytes: number; readonly mips?: TextureMipChainPin }
 
 export interface MaterialProgramNode {
   readonly id: string;
@@ -137,7 +139,8 @@ function readTextureImage(value: unknown, label: string): MaterialTextureImage |
   requireProgram(typeof record.sha256 === "string" && sha256Pattern.test(record.sha256), `${label}.sha256 is not a SHA-256 texture reference.`);
   requireProgram(Number.isSafeInteger(record.bytes) && (record.bytes as number) > 0 && (record.bytes as number) <= maximumTextureImageBytes,
     `${label}.bytes must be a positive size up to ${maximumTextureImageBytes}.`);
-  return { path, sha256: record.sha256, bytes: record.bytes as number };
+  const image = { path, sha256: record.sha256, bytes: record.bytes as number };
+  return record.mips === undefined ? image : { ...image, mips: readTextureMipChainPin(record.mips, `${label}.mips`) };
 }
 
 function readProgramNode(value: unknown, index: number): MaterialProgramNode {

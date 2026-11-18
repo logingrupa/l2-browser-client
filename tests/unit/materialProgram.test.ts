@@ -27,7 +27,7 @@ function parsed(program: FixtureProgram) {
 function loadedMaterial(program: FixtureProgram): LoadedNativeMaterial {
   const parsedProgram = parsed(program);
   const pixels = { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) };
-  return { materialId: "ab".repeat(32), program: parsedProgram, plan: compileMaterialStagePlan(parsedProgram), texturePixels: new Map([[swatchImage.sha256, pixels]]) };
+  return { materialId: "ab".repeat(32), program: parsedProgram, plan: compileMaterialStagePlan(parsedProgram), texturePixels: new Map([[swatchImage.sha256, pixels]]), textureMipChains: new Map() };
 }
 
 function nullScene(): Scene {

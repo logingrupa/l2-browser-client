@@ -42,7 +42,7 @@ const listedSkyBackground = { mapReference: "L2_Skies.Shaders.SkybackgroundColor
 function loadedSkyBackgroundProgram(materialId: string): LoadedNativeMaterial {
   const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSkyColourModifierProgram(skyBackgroundRoot, whiteChipImage, skyBackgroundColourBgraHex))));
   return { materialId, program, plan: compileMaterialStagePlan(program),
-    texturePixels: new Map([[whiteChipImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+    texturePixels: new Map([[whiteChipImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
 }
 
 function tileSkyStore(tileSky: TileSky, materialRoots: number, listedMaterials: readonly unknown[] = []) {

@@ -2,13 +2,26 @@ import { nativeResourceUrl } from "../../../assets/native/nativeResourceUrl";
 import { sha256 } from "../../../assets/package/readAssetPackage";
 import { decodeNativeStorePng, type NativeStorePngPixels } from "../../../assets/native/decodeNativeStorePng";
 import { parseMaterialProgram, type MaterialProgram, type MaterialTextureImage } from "../model/materialProgram";
-import { compileMaterialStagePlan, type MaterialStagePlan } from "../model/stagePlan";
+import { compileMaterialStagePlan, type MaterialStagePlan, type MaterialTextureSize } from "../model/stagePlan";
+import type { TextureMipChainFormat, TextureMipChainPin } from "../model/textureMipChain";
+
+export interface LoadedTextureMipLevel {
+  readonly width: number;
+  readonly height: number;
+  readonly data: Uint8Array<ArrayBuffer>;
+}
+
+export interface LoadedTextureMipChain {
+  readonly format: TextureMipChainFormat;
+  readonly levels: readonly LoadedTextureMipLevel[];
+}
 
 export interface LoadedNativeMaterial {
   readonly materialId: string;
   readonly program: MaterialProgram;
   readonly plan: MaterialStagePlan;
   readonly texturePixels: ReadonlyMap<string, NativeStorePngPixels>;
+  readonly textureMipChains: ReadonlyMap<string, LoadedTextureMipChain>;
 }
 
 export class NativeMaterialLoadError extends Error {
@@ -38,11 +51,26 @@ async function loadTextureImage(image: MaterialTextureImage, signal: AbortSignal
   return decodeNativeStorePng(bytes, signal);
 }
 
+async function loadTextureMipChain(chain: TextureMipChainPin, frameNode: string, size: MaterialTextureSize, signal: AbortSignal): Promise<LoadedTextureMipChain> {
+  const [firstLevel] = chain.levels;
+  if (firstLevel?.width !== size.width || firstLevel.height !== size.height) {
+    throw new NativeMaterialLoadError(`Native texture ${frameNode} mip chain starts at ${firstLevel?.width} x ${firstLevel?.height}, not its Engine.Texture USize x VSize ${size.width} x ${size.height}.`);
+  }
+  const levels: LoadedTextureMipLevel[] = [];
+  for (const level of chain.levels) {
+    const data = await fetchPinnedBytes(level.path, level.sha256, level.bytes, signal);
+    if (data.length !== level.bytes) throw new NativeMaterialLoadError(`Native texture mip level ${level.path} holds ${data.length} bytes, not ${level.bytes}.`);
+    levels.push({ width: level.width, height: level.height, data });
+  }
+  return { format: chain.format, levels };
+}
+
 export async function loadNativeMaterial(materialId: string, signal: AbortSignal): Promise<LoadedNativeMaterial> {
   const programBytes = await fetchPinnedBytes(nativeMaterialProgramPath(materialId), materialId, maximumProgramBytes, signal);
   const program = parseMaterialProgram(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(programBytes)));
   const plan = compileMaterialStagePlan(program);
   const texturePixels = new Map<string, NativeStorePngPixels>();
+  const textureMipChains = new Map<string, LoadedTextureMipChain>();
   if (plan.status === "compiled") {
     for (const sampler of plan.samplers) {
       for (const [frameIndex, image] of sampler.frameImages.entries()) {
@@ -52,9 +80,12 @@ export async function loadNativeMaterial(materialId: string, signal: AbortSignal
           throw new NativeMaterialLoadError(`Native texture ${sampler.frameNodes[frameIndex]} decodes to ${pixels.width} x ${pixels.height}, not its Engine.Texture USize x VSize ${size.width} x ${size.height}.`);
         }
         texturePixels.set(image.sha256, pixels);
+        if (image.mips && !textureMipChains.has(image.sha256)) {
+          textureMipChains.set(image.sha256, await loadTextureMipChain(image.mips, sampler.frameNodes[frameIndex]!, size, signal));
+        }
       }
     }
   }
   signal.throwIfAborted();
-  return { materialId, program, plan, texturePixels };
+  return { materialId, program, plan, texturePixels, textureMipChains };
 }

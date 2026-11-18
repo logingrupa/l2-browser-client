@@ -38,7 +38,7 @@ function nativeMaterialVertexSource(scene: Scene): string {
   const swatchImage = textureImageFor(swatchTexturePng());
   const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
   const pixels = { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) };
-  const loaded = { materialId: "ab".repeat(32), program, plan: compileMaterialStagePlan(program), texturePixels: new Map([[swatchImage.sha256, pixels]]) };
+  const loaded = { materialId: "ab".repeat(32), program, plan: compileMaterialStagePlan(program), texturePixels: new Map([[swatchImage.sha256, pixels]]), textureMipChains: new Map() };
   return vertexSourceOf(createNativeMaterial(scene, loaded, { sessionSeed: 1, lighting: "unlit" }).material);
 }
 

@@ -18,7 +18,7 @@ const scenes: Scene[] = [];
 function swatchMaterial(): LoadedNativeMaterial {
   const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
   return { materialId: "cd".repeat(32), program, plan: compileMaterialStagePlan(program),
-    texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+    texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
 }
 
 function nullScene(): Scene {

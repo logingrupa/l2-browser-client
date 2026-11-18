@@ -152,7 +152,7 @@ describe("bindTileLighting", () => {
     const swatchImage = textureImageFor(swatchTexturePng());
     const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
     const loaded: LoadedNativeMaterial = { materialId: "ef".repeat(32), program, plan: compileMaterialStagePlan(program),
-      texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+      texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
     const meshes = sections.map((section, primitive) => {
       const mesh = new Mesh(section.material, scene);
       const positions = Array.from({ length: primitiveVertexCounts[primitive]! * 3 }, (_, index) => index);
@@ -207,7 +207,7 @@ describe("bindTileLighting", () => {
   it("takes D3DTOP_MODULATE for a ColorModifier root and the MODULATE2X image default with the live device gap otherwise", () => {
     const swatchImage = textureImageFor(swatchTexturePng());
     const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(swatchImage))));
-    const loaded: LoadedNativeMaterial = { materialId: "ef".repeat(32), program, plan: compileMaterialStagePlan(program), texturePixels: new Map() };
+    const loaded: LoadedNativeMaterial = { materialId: "ef".repeat(32), program, plan: compileMaterialStagePlan(program), texturePixels: new Map(), textureMipChains: new Map() };
     const colourModifierRoot: LoadedNativeMaterial = { ...loaded, program: { ...program,
       nodes: program.nodes.map(node => node.id === program.root ? { ...node, class: "Engine.ColorModifier" } : node) } };
     expect(lightmapColourOperationOf(colourModifierRoot)).toEqual({ operation: "modulate", opcode: 4 });

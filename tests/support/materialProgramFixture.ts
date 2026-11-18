@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { deflateSync } from "node:zlib";
+import type { TextureMipChainPin } from "../../src/materials/ue2/model/textureMipChain";
 
 export type FixtureFieldValue = null | boolean | number | string | { readonly [member: string]: FixtureFieldValue } | readonly FixtureFieldValue[];
 
@@ -12,7 +13,7 @@ export interface FixtureProgramField {
   value: FixtureFieldValue;
 }
 
-export interface FixtureTextureImage { path: string; sha256: string; bytes: number }
+export interface FixtureTextureImage { path: string; sha256: string; bytes: number; mips?: TextureMipChainPin }
 
 export interface FixtureProgramNode {
   id: string;

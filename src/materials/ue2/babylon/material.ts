@@ -3,9 +3,7 @@ import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Material } from "@babylonjs/core/Materials/material";
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
-import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/core/Shaders/ShadersInclude/bonesDeclaration";
 import "@babylonjs/core/Shaders/ShadersInclude/bonesVertex";
@@ -24,6 +22,7 @@ import {
   samplerUniformName, staticMeshAmbientUniformName, textureCoordinateRowUName, textureCoordinateRowVName,
 } from "./fragmentChain";
 import type { LoadedNativeMaterial } from "./loadNativeMaterial";
+import { createSamplerTextures } from "./samplerTextures";
 
 export { particleFragmentChain, type ParticleFragmentChain } from "./particleFragmentChain";
 export { selectTextureFrame } from "../model/textureFrames";
@@ -153,20 +152,6 @@ function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, li
   };
 }
 
-function createSamplerTextures(scene: Scene, loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan): RawTexture[][] {
-  return plan.samplers.map(sampler => sampler.frameImages.map((image, frameIndex) => {
-    const pixels = loaded.texturePixels.get(image.sha256);
-    if (!pixels) throw new Error(`UE2 material: texture ${image.path} was not loaded.`);
-    const texture = RawTexture.CreateRGBATexture(pixels.rgba, pixels.width, pixels.height, scene, false, false, Texture.BILINEAR_SAMPLINGMODE);
-    texture.name = `UE2 texture: ${sampler.frameNodes[frameIndex]}`;
-    texture.gammaSpace = false;
-    texture.hasAlpha = true;
-    texture.wrapU = sampler.clampU ? Texture.CLAMP_ADDRESSMODE : Texture.WRAP_ADDRESSMODE;
-    texture.wrapV = sampler.clampV ? Texture.CLAMP_ADDRESSMODE : Texture.WRAP_ADDRESSMODE;
-    return texture;
-  }));
-}
-
 function applyBlendState(material: ShaderMaterial, blend: ResolvedMaterialBlend, babylonBlend: BabylonBlendState): void {
   material.alphaMode = babylonBlend.alphaMode;
   material.disableColorWrite = !babylonBlend.colourWrite;
@@ -179,7 +164,7 @@ function applyBlendState(material: ShaderMaterial, blend: ResolvedMaterialBlend,
   material.backFaceCulling = !blend.twoSided;
 }
 
-function bindFrame(material: ShaderMaterial, textures: readonly RawTexture[][], frame: MaterialFrameState): void {
+function bindFrame(material: ShaderMaterial, textures: readonly (readonly BaseTexture[])[], frame: MaterialFrameState): void {
   textures.forEach((frames, samplerIndex) => {
     const matrix = frame.samplerMatrices[samplerIndex]!;
     material.setTexture(samplerUniformName(samplerIndex), frames[frame.samplerFrameIndices[samplerIndex]!]!);
@@ -195,7 +180,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
   const initialFrame = evaluateMaterialFrame(loaded.program, plan, 0, jitterStream);
   if (initialFrame.status === "unported") return createDiagnosticMaterial(scene, loaded, lighting, [initialFrame.reason], null);
   const chain = buildFragmentChain(plan, lighting);
-  const textures = createSamplerTextures(scene, loaded, plan);
+  const { textures, gapReasons: textureGapReasons } = createSamplerTextures(scene, loaded, plan);
   const material = new ShaderMaterial(`UE2 material: ${plan.root}`, scene, { vertexSource: vertexSourceFor(scene, lighting), fragmentSource: chain.fragmentSource }, {
     attributes: vertexAttributesFor(lighting), uniforms: [...vertexStageUniformsFor(lighting), ...chain.uniforms], samplers: [...chain.samplers],
     needAlphaBlending: babylonBlend.alphaMode !== Constants.ALPHA_DISABLE, needAlphaTesting: plan.blend.alphaTest,
@@ -235,7 +220,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
       material.setColor4(staticMeshAmbientUniformName, new Color4(ambientRgb[0], ambientRgb[1], ambientRgb[2], 1));
     },
     inspect: () => ({
-      materialId: loaded.materialId, root: plan.root, status: "compiled", lighting, lightmapBound, reasons: [], unportedClass: null,
+      materialId: loaded.materialId, root: plan.root, status: "compiled", lighting, lightmapBound, reasons: [...textureGapReasons], unportedClass: null,
       blend: { ...blendRecord, babylonAlphaMode: babylonBlend.alphaModeName }, samplerCount: plan.samplers.length, colourSourceCount: plan.colourSources.length,
       uniforms: lastUniforms, frame: lastFrame,
     }),
