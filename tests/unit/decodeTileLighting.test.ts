@@ -67,8 +67,7 @@ describe("decodeTileLighting", () => {
       { zoneIndex: 1, unresolvedReason: null, fog: { distanceFog: true, terrainZone: false,
         fog: { colourBytes: [95, 112, 116], startSourceUnits: 100, endSourceUnits: 20000 } } },
       { zoneIndex: 2, unresolvedReason: null, fog: { distanceFog: false, terrainZone: false, fog: null } },
-      { zoneIndex: 3, unresolvedReason: null, fog: { distanceFog: true, terrainZone: true,
-        fog: { colourBytes: [95, 112, 116], startSourceUnits: 100, endSourceUnits: 20000 } } },
+      { zoneIndex: 3, unresolvedReason: null, fog: { distanceFog: true, terrainZone: true, fog: null } },
     ]);
     expect(model.records.waterVolumeCount).toBe(1);
     expect(model.records.fogInfos.map(fogInfo => [fogInfo.exportIndex, fogInfo.unresolvedReason, fogInfo.record?.fogRanges.length])).toEqual([[9236, null, 5]]);

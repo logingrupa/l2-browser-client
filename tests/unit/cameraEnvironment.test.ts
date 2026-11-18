@@ -51,10 +51,25 @@ describe("computeCameraEnvironment", () => {
     distanceFogEnd.value = 100;
     const payload = tileLightingPayload(tileLightingArrays(document));
     const flatRecords = decodeTileLighting(payload.assetRecord, payload.payloadBytes).records;
-    expect(flatRecords.zones[1]).toEqual({ zoneIndex: 1, fog: null, unresolvedReason: "lighting-zone-fog-range-not-increasing:1:100:100" });
+    expect(flatRecords.zones[1]).toEqual({ zoneIndex: 1, fog: { distanceFog: true, terrainZone: false, fog: null },
+      unresolvedReason: "lighting-zone-fog-range-not-increasing:1:100:100" });
     const environment = computeCameraEnvironment(sources({ records: flatRecords }));
-    expect(environment.fog).toEqual(FOG_DISABLED);
+    expect(environment.fog).toEqual(FOG_UNRESOLVED);
     expect(environment.gaps).toContain("lighting-zone-fog-range-not-increasing:1:100:100");
+  });
+
+  it("routes a terrain zone to the haze preset even when its unused DistanceFog fields are unresolved or do not increase", () => {
+    const document = tileLightingRecordsDocument();
+    const terrainZoneFields = document.zones[3]!.distanceFog;
+    terrainZoneFields.find(record => record.field === "DistanceFogEnd")!.value = 100;
+    const colour = terrainZoneFields.find(record => record.field === "DistanceFogColor")!;
+    colour.provenance = "unresolved";
+    colour.value = null;
+    const payload = tileLightingPayload(tileLightingArrays(document));
+    const terrainRecords = decodeTileLighting(payload.assetRecord, payload.payloadBytes).records;
+    expect(terrainRecords.zones[3]).toEqual({ zoneIndex: 3, unresolvedReason: null, fog: { distanceFog: true, terrainZone: true, fog: null } });
+    expect(computeCameraEnvironment(sources({ frame: frameInZone(3), records: terrainRecords })).fog)
+      .toMatchObject({ source: "terrain-zone-environment", startSourceUnits: 8192, endSourceUnits: 20480 });
   });
 
   it("finds the physics volume around the camera through volumesContaining and names the missing water flag", () => {

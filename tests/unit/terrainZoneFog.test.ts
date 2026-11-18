@@ -19,19 +19,23 @@ function environmentOf(records = decodedFogWorkedCaseRecords(tileRecords), envir
     fogEnvironment: environment, skySceneRoute: null });
 }
 
-function withTerrainFlag(provenance: string, value: unknown) {
+function withTerrainFlagRecords(provenance: string, value: unknown) {
   const changed = fogWorkedCaseTileRecords("15_22");
   const zone = changed.zones.find(record => record.zoneIndex === zoneInfo0)!;
   zone.distanceFog = zone.distanceFog.map(field => field.field === "bTerrainZone" ? { ...field, provenance, value } : field);
-  return decodedFogWorkedCaseRecords(changed);
+  return changed;
 }
+
+const withTerrainFlag = (provenance: string, value: unknown) => decodedFogWorkedCaseRecords(withTerrainFlagRecords(provenance, value));
 
 describe("15_22 terrain zone fog, the RM-1 enabled call", () => {
   it("reads ZoneInfo0 from the converter zone records with bTerrainZone, bDistanceFog and DistanceFogEnd 15000 and no L2FogInfo", () => {
     const records = decodedFogWorkedCaseRecords(tileRecords);
     expect(records.fogInfos).toEqual([]);
     expect(records.zones.find(zone => zone.zoneIndex === zoneInfo0)).toEqual({ zoneIndex: zoneInfo0, unresolvedReason: null,
-      fog: { distanceFog: true, terrainZone: true, fog: { colourBytes: [128, 128, 128], startSourceUnits: 3000, endSourceUnits: 15000 } } });
+      fog: { distanceFog: true, terrainZone: true, fog: null } });
+    expect(decodedFogWorkedCaseRecords(withTerrainFlagRecords("authored", false)).zones.find(zone => zone.zoneIndex === zoneInfo0)!.fog)
+      .toEqual({ distanceFog: true, terrainZone: false, fog: { colourBytes: [128, 128, 128], startSourceUnits: 3000, endSourceUnits: 15000 } });
   });
 
   it("takes the timeenv0 HazeringColor at hour 12.078453 over the Env.int FogRange5 preset at CR 8: 188,203,224 at 8192 to 20480", () => {

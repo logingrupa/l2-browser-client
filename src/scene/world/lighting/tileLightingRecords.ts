@@ -23,7 +23,8 @@ interface FieldRecord {
 const recordsKind = "native-tile-lighting-records";
 const recordsSchemaVersion = 1;
 const unresolvedProvenance = "unresolved";
-const zoneFogFields = ["bDistanceFog", "DistanceFogColor", "DistanceFogStart", "DistanceFogEnd"] as const;
+const distanceFogEnableField = "bDistanceFog";
+const distanceFogRangeFields = ["DistanceFogColor", "DistanceFogStart", "DistanceFogEnd"] as const;
 const terrainZoneField = "bTerrainZone";
 const fogColourChannels = ["R", "G", "B"] as const;
 
@@ -58,14 +59,20 @@ function readZone(value: unknown, position: number): TileLightingZone {
   requireRecords(isRecord(value) && Number.isSafeInteger(value.zoneIndex) && Array.isArray(value.distanceFog), `${label} has no zoneIndex and distanceFog list.`);
   const zoneIndex = value.zoneIndex as number;
   const fields = new Map((value.distanceFog as unknown[]).map((entry, index) => readFieldRecord(entry, `${label}.distanceFog[${index}]`)).map(entry => [entry.field, entry]));
-  const unresolvedField = zoneFogFields.find(field => fields.get(field) === undefined || fields.get(field)!.provenance === unresolvedProvenance);
-  if (unresolvedField !== undefined) return { zoneIndex, fog: null, unresolvedReason: `lighting-zone-fog-unresolved:${zoneIndex}:${unresolvedField}` };
-  const enabled = fields.get("bDistanceFog")!.value, start = fields.get("DistanceFogStart")!.value, end = fields.get("DistanceFogEnd")!.value;
+  const isUnresolved = (field: string) => fields.get(field) === undefined || fields.get(field)!.provenance === unresolvedProvenance;
+  const unresolvedReason = (field: string) => `lighting-zone-fog-unresolved:${zoneIndex}:${field}`;
+  if (isUnresolved(distanceFogEnableField)) return { zoneIndex, fog: null, unresolvedReason: unresolvedReason(distanceFogEnableField) };
+  const enabled = fields.get(distanceFogEnableField)!.value;
   requireRecords(typeof enabled === "boolean" || enabled === null, `${label} bDistanceFog is not a boolean.`);
   const terrainZone = readTerrainZone(fields.get(terrainZoneField), label);
   if (enabled !== true) return { zoneIndex, fog: { distanceFog: false, terrainZone, fog: null }, unresolvedReason: null };
+  if (terrainZone !== false) return { zoneIndex, fog: { distanceFog: true, terrainZone, fog: null }, unresolvedReason: null };
+  const zoneWithoutRange = (reason: string): TileLightingZone => ({ zoneIndex, fog: { distanceFog: true, terrainZone, fog: null }, unresolvedReason: reason });
+  const unresolvedRangeField = distanceFogRangeFields.find(isUnresolved);
+  if (unresolvedRangeField !== undefined) return zoneWithoutRange(unresolvedReason(unresolvedRangeField));
+  const start = fields.get("DistanceFogStart")!.value, end = fields.get("DistanceFogEnd")!.value;
   requireRecords(typeof start === "number" && typeof end === "number" && Number.isFinite(start) && Number.isFinite(end), `${label} fog range is not two numbers.`);
-  if (end <= start) return { zoneIndex, fog: null, unresolvedReason: `lighting-zone-fog-range-not-increasing:${zoneIndex}:${start}:${end}` };
+  if (end <= start) return zoneWithoutRange(`lighting-zone-fog-range-not-increasing:${zoneIndex}:${start}:${end}`);
   return { zoneIndex, unresolvedReason: null, fog: { distanceFog: true, terrainZone,
     fog: { colourBytes: readFogColourBytes(fields.get("DistanceFogColor")!.value, label), startSourceUnits: start, endSourceUnits: end } } };
 }
