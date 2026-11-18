@@ -77,14 +77,14 @@ describe("decodeTileLighting", () => {
 
   it("refuses page counts that disagree with the page arrays", () => {
     expect(() => decoded(replaceArray(tileLightingArrays(), "LMPG.slot", [0, 1, 2, 3, 4, 5, 6, 7]))).toThrow(/LMPG.slot holds 8 values; the counts need 9/);
-    expect(() => decoded(replaceArray(tileLightingArrays(), "LMTX.pageStart", [0, 8, 10]))).toThrow(/LMTX.pageStart must run from 0 to 9/);
+    expect(() => decoded(replaceArray(tileLightingArrays(), "LMTX.pageStart", [0, 8, 10]))).toThrow(/LMTX.pageStart must hold 3 starts from 0 to 9/);
     expect(() => decoded(replaceArray(tileLightingArrays(), "LMPG.slotCount", [8, 8, 8, 8, 8, 8, 8, 4, 1]))).toThrow(/page 7 is slot 7 of 4/);
     const mipEdge = tileLightingArrays().find(array => array.name === "LMPG.mipEdge")!.values.map((edge, index) => index === 0 ? 16 : edge);
     expect(() => decoded(replaceArray(tileLightingArrays(), "LMPG.mipEdge", mipEdge))).toThrow(/page 0 mip 0 DXT1 bytes holds 32 values; the counts need 128/);
   });
 
   it("refuses lightmap coordinate counts that disagree with the node ranges", () => {
-    expect(() => decoded(replaceArray(tileLightingArrays(), "LMNR.uvStart", [0, 4, 7, 8]))).toThrow(/LMNR.uvStart must run from 0 to 7/);
+    expect(() => decoded(replaceArray(tileLightingArrays(), "LMNR.uvStart", [0, 4, 7, 8]))).toThrow(/LMNR.uvStart must hold 4 starts from 0 to 7/);
     expect(() => decoded(replaceArray(tileLightingArrays(), "LMNR.uvStart", [0, 4, 4, 7]))).toThrow(/node 11 has lightmap texture 1 and 0 lightmap coordinates/);
     expect(() => decoded(replaceArray(tileLightingArrays(), "LMNR.texture", [0, 2, -1]))).toThrow(/LMNR.texture\[1\] = 2 is not a lightmap texture of the 2/);
   });
