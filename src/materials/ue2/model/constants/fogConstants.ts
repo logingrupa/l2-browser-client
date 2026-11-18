@@ -105,7 +105,7 @@ const fogConstantRows = {
   localListRetention: {
     id: "fog.local-list-retention",
     value: "distance <= AffectRange.Max or distance < TextureDistance",
-    provenance: `${fogScopeAnswer}: retention 0x106560f0 keeps an actor when d <= AffectRange.Max (+0x3c0) or d < [+0x3ec] (0x10652540); the weight is unchanged. Reading +0x3ec as TextureDistance is not re-derived`,
+    provenance: `${fogScopeAnswer}: retention 0x106560f0 keeps an actor when d <= AffectRange.Max (+0x3c0) or d < [+0x3ec] (0x10652540); the weight is unchanged. RM-4 does not say which position the retention distance is measured from; the runtime measures it from the fade reference pawn, as the weight is. Reading +0x3ec as TextureDistance is not re-derived`,
     status: "confirmed-interlude",
     interludeEvidence: "Engine.dll 0x106560f0",
     runtimeDefault: "distance <= AffectRange.Max or distance < TextureDistance",
