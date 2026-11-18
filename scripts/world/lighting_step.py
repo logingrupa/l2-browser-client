@@ -11,7 +11,6 @@ from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_lightmaps import read_bsp_lightmaps
-from world.bsp_node_sun_affect import level_info_sun_affect
 from world.bsp_step import sealed_bsp_chunks
 from world.bsp_visibility_step import tile_node_ranges
 from world.collision_step import sealed_collision
@@ -149,10 +148,9 @@ def tile_lighting_payload(package, unit, class_defaults):
     level = read_level_model(package)
     model = level.model
     class_chains = reference_client_class_chains(class_defaults)
-    zones = read_level_zones(package, model, class_defaults, class_chains)
+    zones = read_level_zones(package, level, class_defaults, class_chains)
     lightmaps = read_bsp_lightmaps(package, model)
-    bsp_arrays, reasons, bsp_counts = bsp_lightmap_arrays(package, lightmaps, model, tile_node_ranges(unit.bsp, unit.chunk_plan), zones,
-                                                          level_info_sun_affect(package, level, class_defaults, class_chains))
+    bsp_arrays, reasons, bsp_counts = bsp_lightmap_arrays(package, lightmaps, model, tile_node_ranges(unit.bsp, unit.chunk_plan), zones)
     actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))
     lighting_actors = read_lighting_actors(package, model, actors, class_chains)
     light_lists = read_static_mesh_light_lists(package, actors)

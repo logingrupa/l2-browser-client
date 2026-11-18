@@ -28,7 +28,7 @@ def room_model(wall_flags=NOT_CSG_NODE_FLAG, render_bound=INDEX_NONE):
 
 def room_zone(zone_index, outdoor=False, sky=False, unresolved=False):
     field = ActorField('bSunAffect', outdoor, 'authored', 'Engine.ZoneInfo')
-    return LevelZone(zone_index, None, None, ALL_ZONES, ALL_ZONES, field, (), (), outdoor, sky, unresolved)
+    return LevelZone(zone_index, None, None, ALL_ZONES, ALL_ZONES, field, (), (), outdoor, sky, unresolved, False)
 
 
 ROOM_ZONES = (room_zone(0, outdoor=True), room_zone(1), room_zone(2, sky=True))

@@ -194,7 +194,7 @@ def run_bsp_step(project_root, client_root, tile_id):
         level = read_level_model(package)
         rectangles = chunk_rectangles(chunk_plan, native_terrain(package))
         class_defaults = ClassDefaults(class_work_root, class_scripts)
-        zones = read_level_zones(package, level.model, class_defaults, reference_client_class_chains(class_defaults))
+        zones = read_level_zones(package, level, class_defaults, reference_client_class_chains(class_defaults))
         lightmap_textures = lightmap_texture_of_record(read_bsp_lightmaps(package, level.model), level.model)
         identities = surface_material_identities(package, level.model, class_work_root, class_scripts)
     except LevelModelLayoutError as error:

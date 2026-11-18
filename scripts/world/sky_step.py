@@ -304,7 +304,7 @@ def run_sky_step(project_root, client_root, tile_id):
     try:
         level = read_level_model(package)
         class_chains = reference_client_class_chains(class_defaults)
-        zones = read_level_zones(package, level.model, class_defaults, class_chains)
+        zones = read_level_zones(package, level, class_defaults, class_chains)
         selection = select_sky_zone(package, level, zones, class_defaults, class_chains)
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, SKY_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)

@@ -77,12 +77,11 @@ def lightmap_node(light_map, section, vertex_offset, vertex_count, front_zone=0)
                            i_zone=(0, front_zone))
 
 
-def lightmap_zone(sun_affect, unresolved=False, actor='Map.ZoneInfo0'):
-    return SimpleNamespace(actor=actor, sun_affect=SimpleNamespace(value=sun_affect), unresolved=unresolved)
+def lightmap_zone(sun_affect, unresolved=False):
+    return SimpleNamespace(sun_affect=SimpleNamespace(value=sun_affect), unresolved=unresolved)
 
 
-def lightmap_model_and_package(tail, nodes, surface_count, zone_actor_references=(1, 1, 1)):
+def lightmap_model_and_package(tail, nodes, surface_count):
     model = SimpleNamespace(export=SimpleNamespace(serial_offset=0, serial_size=len(tail)), lightmap_tail=len(tail), nodes=list(nodes),
-                            surfs=[SimpleNamespace() for _ in range(surface_count)],
-                            zones=[(reference, 0, 0, 0) for reference in zone_actor_references])
+                            surfs=[SimpleNamespace() for _ in range(surface_count)])
     return model, SimpleNamespace(data=tail, summary={'version': REVIEWED_PACKAGE_VERSION})

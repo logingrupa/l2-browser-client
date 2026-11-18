@@ -141,9 +141,9 @@ def lighting_records_array(records):
     return array('RECS.canonicalJson', 'uint8', canonical_json_bytes(records))
 
 
-def bsp_lightmap_arrays(package, lightmaps, model, node_ranges, zones, level_info_value):
+def bsp_lightmap_arrays(package, lightmaps, model, node_ranges, zones):
     ranges, reasons = lightmap_node_ranges(package, lightmaps, model, node_ranges)
-    range_sun_affect = node_range_sun_affect(model, zones, node_ranges, level_info_value)
+    range_sun_affect = node_range_sun_affect(model, zones, node_ranges)
     arrays = [*render_section_arrays(lightmaps), *lightmap_texture_arrays(lightmaps), *lightmap_record_arrays(lightmaps),
               *lightmap_page_arrays(lightmaps), *lightmap_node_range_arrays(ranges, range_sun_affect)]
     counts = {'renderSections': len(lightmaps.sections), 'records': len(lightmaps.records), 'textures': len(lightmaps.textures),

@@ -217,7 +217,7 @@ class RealClientSkyTests(unittest.TestCase):
         class_work_root = link_world_class_default_cache(lane_work_root(scratch_project_root, 'world'))
         class_defaults = ClassDefaults(class_work_root, ReferenceClientClassScripts(REFERENCE_CLIENT))
         class_chains = reference_client_class_chains(class_defaults)
-        zones = read_level_zones(package, level.model, class_defaults, class_chains)
+        zones = read_level_zones(package, level, class_defaults, class_chains)
         selection = select_sky_zone(package, level, zones, class_defaults, class_chains)
         gaps = TileStepGapRows(tile_id, SKY_STEP_NAME, {'path': f'maps/{tile_id}.unr', 'sha256': lock_record['eSha256']}, EVIDENCE)
         converted = convert_tile_sky(scratch_project_root, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, selection.zone_index, selection.actor, gaps)
