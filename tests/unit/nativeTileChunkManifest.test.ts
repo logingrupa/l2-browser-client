@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseNativeTileChunkManifest } from "../../src/scene/world/nativeTileChunkManifest";
+import { parseNativeTileChunkManifest, staticMeshVertexStreamsUnstagedReason } from "../../src/scene/world/nativeTileChunkManifest";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import { decodeJsonDocument, fixtureTileId, readFixtureTileFiles } from "../support/nativeTileFixtureStore";
 
@@ -74,8 +74,21 @@ describe("native tile chunk manifest models", () => {
 
   it("accepts a model record with a source placement and keeps its matrix and identity", () => {
     const chunk = parseNativeTileChunkManifest(withModel([chunkPlacement()]));
-    expect(chunk.models).toEqual([{ id: modelId, archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256,
-      placements: [{ ...chunkPlacement(), matrix: identityMatrix }] }]);
+    const vertexStreams = { status: "gap", reason: staticMeshVertexStreamsUnstagedReason };
+    expect(chunk.models).toEqual([{ id: modelId, archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256, vertexStreams,
+      placements: [{ ...chunkPlacement(), matrix: identityMatrix, vertexStreams }] }]);
+  });
+
+  it("pins each model's vertex stream sidecar onto its placements and keeps a converter gap as the reason", () => {
+    const sidecarSha256 = "c".repeat(64);
+    const pinned = { file: `/l2/static-mesh-vertex-streams/${sidecarSha256}/vertex-streams.json`, sha256: sidecarSha256, bytes: 2048 };
+    expect(parseNativeTileChunkManifest(withModel([chunkPlacement()], { vertexStreams: pinned })).models[0]!.placements[0]!.vertexStreams)
+      .toEqual({ status: "pinned", ...pinned });
+    expect(parseNativeTileChunkManifest(withModel([chunkPlacement()], { vertexStreams: { gapReason: "static-mesh-colour-stream-join-mismatch" } }))
+      .models[0]!.placements[0]!.vertexStreams).toEqual({ status: "gap", reason: "static-mesh-colour-stream-join-mismatch" });
+    expect(() => parseNativeTileChunkManifest(withModel([chunkPlacement()], { vertexStreams: { ...pinned, file: `/l2/${sidecarSha256}/vertex-streams.json` } })))
+      .toThrow(/vertex streams must be \/l2\/static-mesh-vertex-streams/);
+    expect(() => parseNativeTileChunkManifest(withModel([chunkPlacement()], { vertexStreams: { gapReason: "" } }))).toThrow(/vertex streams gap without a reason/);
   });
 
   it.each<[string, () => Document, RegExp]>([

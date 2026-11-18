@@ -13,21 +13,22 @@ import { createRandomStream, deriveStreamSeed, type RandomStream } from "../../.
 import type { ResolvedMaterialBlend } from "../model/blendTable";
 import { DIAGNOSTIC_CONSTANTS } from "../model/constants/diagnosticConstants";
 import { FOG_DISABLED, type FogState } from "../model/fog";
-import { isLightmapLighting, type MaterialLighting } from "../model/lighting";
+import { isLightmapLighting, isVertexLighting, type MaterialLighting } from "../model/lighting";
 import { colorModifierColourSourceIndices, evaluateMaterialFrame, withColourSourceRgb, type ColourUnitsRgb, type MaterialFrameState } from "../model/materialFrame";
 import type { CompiledMaterialStagePlan } from "../model/stagePlan";
 import { babylonBlendStateForPair, blendFactorPairKey, type BabylonBlendState } from "./blendState";
 import { bindFogUniforms } from "./fogUniforms";
 import { forwardViewDepthExpression } from "./fogViewDepth";
 import {
-  buildFragmentChain, colourSourceUniformName, lightmapCoordinatesVaryingName, lightmapSamplerName, samplerUniformName, textureCoordinateRowUName,
-  textureCoordinateRowVName,
+  buildFragmentChain, colourSourceUniformName, instanceColourAttributeName, lightmapCoordinatesVaryingName, lightmapSamplerName, litDiffuseVaryingName,
+  samplerUniformName, staticMeshAmbientUniformName, textureCoordinateRowUName, textureCoordinateRowVName,
 } from "./fragmentChain";
 import type { LoadedNativeMaterial } from "./loadNativeMaterial";
 
 export { particleFragmentChain, type ParticleFragmentChain } from "./particleFragmentChain";
 export { selectTextureFrame } from "../model/textureFrames";
-export type { LightmapLighting, MaterialLighting } from "../model/lighting";
+export type { LightmapLighting, MaterialLighting, VertexLighting } from "../model/lighting";
+export { instanceColourAttributeName } from "./fragmentChain";
 export { evaluateFogState, FOG_DISABLED, type CameraZoneFogRecord, type FogInputs, type FogRangeRecord, type FogState } from "../model/fog";
 export { loadNativeMaterial, type LoadedNativeMaterial } from "./loadNativeMaterial";
 
@@ -67,6 +68,7 @@ export interface NativeMaterial {
   update(uniforms: NativeMaterialUniforms): void;
   overrideColourSourceRgb(colorModifierNode: string, rgb: ColourUnitsRgb): void;
   setLightmap(lightmap: BaseTexture): void;
+  setStaticMeshAmbient(ambientRgb: readonly [number, number, number]): void;
   inspect(): NativeMaterialInspection;
   dispose(): void;
 }
@@ -75,12 +77,13 @@ const lightmapCoordinatesAttribute = "uv2";
 const vertexStageUniforms = ["world", "view", "viewProjection"];
 
 function vertexSourceFor(scene: Scene, lighting: MaterialLighting): string {
-  const lightmapped = isLightmapLighting(lighting);
+  const lightmapped = isLightmapLighting(lighting), vertexLit = isVertexLighting(lighting);
   return [
     "precision highp float;",
     "attribute vec3 position;",
     "attribute vec2 uv;",
     ...(lightmapped ? [`attribute vec2 ${lightmapCoordinatesAttribute};`, `varying vec2 ${lightmapCoordinatesVaryingName};`] : []),
+    ...(vertexLit ? [`attribute vec4 ${instanceColourAttributeName};`, `uniform vec4 ${staticMeshAmbientUniformName};`, `varying vec3 ${litDiffuseVaryingName};`] : []),
     "#include<bonesDeclaration>",
     "uniform mat4 world;",
     "uniform mat4 view;",
@@ -93,6 +96,7 @@ function vertexSourceFor(scene: Scene, lighting: MaterialLighting): string {
     "  vec4 ue2WorldPosition = finalWorld * vec4(position, 1.0);",
     "  ue2TextureCoordinates = uv;",
     ...(lightmapped ? [`  ${lightmapCoordinatesVaryingName} = ${lightmapCoordinatesAttribute};`] : []),
+    ...(vertexLit ? [`  ${litDiffuseVaryingName} = clamp(${instanceColourAttributeName}.rgb + ${staticMeshAmbientUniformName}.rgb, 0.0, 1.0);`] : []),
     `  ue2ViewDepth = ${forwardViewDepthExpression(scene, "view * ue2WorldPosition")};`,
     "  gl_Position = viewProjection * ue2WorldPosition;",
     "}",
@@ -100,7 +104,12 @@ function vertexSourceFor(scene: Scene, lighting: MaterialLighting): string {
 }
 
 function vertexAttributesFor(lighting: MaterialLighting): string[] {
-  return isLightmapLighting(lighting) ? ["position", "uv", lightmapCoordinatesAttribute] : ["position", "uv"];
+  if (isLightmapLighting(lighting)) return ["position", "uv", lightmapCoordinatesAttribute];
+  return isVertexLighting(lighting) ? ["position", "uv", instanceColourAttributeName] : ["position", "uv"];
+}
+
+function vertexStageUniformsFor(lighting: MaterialLighting): string[] {
+  return isVertexLighting(lighting) ? [...vertexStageUniforms, staticMeshAmbientUniformName] : vertexStageUniforms;
 }
 
 const diagnosticColourUniform = "ue2DiagnosticColour";
@@ -137,6 +146,7 @@ function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, li
       throw new Error(`UE2 diagnostic material ${diagnostic.root} has no ColorModifier colour source ${colorModifierNode}.`);
     },
     setLightmap: () => {},
+    setStaticMeshAmbient: () => {},
     inspect: () => ({ materialId: loaded.materialId, root: diagnostic.root, status: "diagnostic", lighting, lightmapBound: false, reasons: [...diagnostic.reasons],
       unportedClass: diagnostic.unportedClass, blend: null, samplerCount: 0, colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
     dispose: () => material.dispose(true, false),
@@ -187,7 +197,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
   const chain = buildFragmentChain(plan, lighting);
   const textures = createSamplerTextures(scene, loaded, plan);
   const material = new ShaderMaterial(`UE2 material: ${plan.root}`, scene, { vertexSource: vertexSourceFor(scene, lighting), fragmentSource: chain.fragmentSource }, {
-    attributes: vertexAttributesFor(lighting), uniforms: [...vertexStageUniforms, ...chain.uniforms], samplers: [...chain.samplers],
+    attributes: vertexAttributesFor(lighting), uniforms: [...vertexStageUniformsFor(lighting), ...chain.uniforms], samplers: [...chain.samplers],
     needAlphaBlending: babylonBlend.alphaMode !== Constants.ALPHA_DISABLE, needAlphaTesting: plan.blend.alphaTest,
   });
   material.doNotSerialize = true;
@@ -219,6 +229,10 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
       if (!isLightmapLighting(lighting)) throw new Error(`UE2 material ${plan.root} was built ${lighting} and takes no lightmap.`);
       material.setTexture(lightmapSamplerName, lightmap);
       lightmapBound = true;
+    },
+    setStaticMeshAmbient: ambientRgb => {
+      if (!isVertexLighting(lighting)) throw new Error(`UE2 material ${plan.root} was built ${lighting} and takes no static mesh ambient.`);
+      material.setColor4(staticMeshAmbientUniformName, new Color4(ambientRgb[0], ambientRgb[1], ambientRgb[2], 1));
     },
     inspect: () => ({
       materialId: loaded.materialId, root: plan.root, status: "compiled", lighting, lightmapBound, reasons: [], unportedClass: null,

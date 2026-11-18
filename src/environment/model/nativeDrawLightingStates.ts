@@ -50,7 +50,7 @@ export const hourlyLightingUnresolvedItems = [
   { id: "bsp-shadow-slot-origin", surface: "bsp", reason: "how shadow record +0x34 is built after load is not traced" },
   { id: "bsp-final-filtered-rgb", surface: "bsp", reason: "the filtered texel and framebuffer colour need live sampler and device state" },
   { id: "bsp-live-cache-state", surface: "bsp", reason: "loaded revisions, the compressed texture option and cache invalidation were not observed live" },
-  { id: "ma-final-static-vertex", surface: "staticMesh", reason: "the final CPU colour or shader-lit colour needs SampleIntensity, the sun direction and the shader composition" },
+  { id: "ma-final-static-vertex", surface: "staticMesh", reason: "placements outside the sun-only set (ordinary light mask bits, no hourly entries, sunAffect not 1, non-uniform scale, no vertex stream sidecar) draw unlit; their ordinary light effects and ambient fallback are not reduced to formulas" },
   { id: "ma-live-actor-fixture", surface: "actor", reason: "20_21 has no Pawn export, so no runtime skeletal actor fixes its lights and normals" },
   { id: "ma-scalar-field-name", surface: "actor", reason: "DB-7 left the light actor +0xe0 +0x5b0 multiplier unnamed; DB-8 verified-zone-binding.md names it Level (+0xe0) LevelInfo.Brightness (+0x5b0)" },
   { id: "ma-temporal-light-types", surface: "actor", reason: "the temporal light factor of each authored light type is the native switch result, not portable pseudocode" },

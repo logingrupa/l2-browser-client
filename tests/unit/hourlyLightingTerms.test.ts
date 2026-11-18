@@ -30,8 +30,8 @@ describe("hourlyLightingTerms", () => {
     const terms = hourlyLightingTerms(hourlyEnvironmentAt(12));
     expect(terms.bsp).toMatchObject({ rebuildAmbientBound: false, drawState: { deviceLighting: false, ambientSource: "baked-into-compressed-lightmap" } });
     expect(terms.terrainDrawState).toMatchObject({ deviceLighting: false, colourVertex: true, ambientSource: "baked-into-vertex-colour" });
-    expect(terms.staticMesh.colour0).toMatchObject({ bound: false, reason: "ma-final-static-vertex" });
-    expect(terms.staticMesh.colour1).toMatchObject({ bound: false, reasons: ["static-mesh-colour-selector-unresolved", "d3d-device-live-state"] });
+    expect(terms.staticMesh.colour0).toMatchObject({ drawn: "per-placement-instance-colour", ineligibleReason: "ma-final-static-vertex" });
+    expect(terms.staticMesh.colour1).toMatchObject({ drawn: "white", reasons: ["static-mesh-colour-selector-unresolved", "d3d-device-live-state"] });
     expect(terms.dynamicLights).toEqual({ applied: false, reasons: ["d3d-device-live-state", "ma-temporal-light-types"] });
     expect(terms.device.modulationOperation).toMatchObject({ imageDefaultOpcode: 5, status: "unresolved", reason: "d3d-device-live-state" });
     for (const fact of [terms.device.gl2Shader, terms.device.materialSourceBit, terms.device.lightList, terms.device.seamlessTerrainAmbient]) {

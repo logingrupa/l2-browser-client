@@ -7,7 +7,8 @@ import type { NativeTimeTablesExport, SkyEnvironmentBinding } from "../../src/en
 import { provideWorldTimeOfDay, startWorldTimeOfDay, type RunningWorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
 import { readDayNightLoadedTables } from "./dayNightFixtures";
 
-export const shippedEnvironmentSetup: NativeEnvironmentSetup = { isClock: true, timeRatio: 6, startTimeHours: 12, shadowTickHours: Math.fround(0.1) };
+export const shippedEnvironmentSetup: NativeEnvironmentSetup = { isClock: true, timeRatio: 6, startTimeHours: 12, shadowTickHours: Math.fround(0.1),
+  slopeSunAngleDegrees: 30 };
 
 export const shippedSkyBindings: readonly SkyEnvironmentBinding[] = [
   { setupKey: "SKYBOX", objectName: "SkybackgroundColor", section: "SkyBoxColor" },
@@ -60,7 +61,7 @@ export function timeTablesDocument(tables: NativeEnvironmentTables = readDayNigh
     schemaVersion: 2, kind: "native-environment-time-tables", rules: { path: "recipes/world/environment-native-rules.json", canonicalSha256: "c".repeat(64) },
     setup: { file: "Env.int", section: "EnvSetup",
       values: { IsClock: setting("IsClock", setup.isClock), TimeRatio: setting("TimeRatio", setup.timeRatio), StartTime: setting("StartTime", setup.startTimeHours),
-        ShadowTick: setting("ShadowTick", setup.shadowTickHours), SlopeSunAngle: setting("SlopeSunAngle", 30), TimeEnvFileNum: setting("TimeEnvFileNum", tables.size) },
+        ShadowTick: setting("ShadowTick", setup.shadowTickHours), SlopeSunAngle: setting("SlopeSunAngle", setup.slopeSunAngleDegrees), TimeEnvFileNum: setting("TimeEnvFileNum", tables.size) },
       bindings: { SKYBOX: setting("SKYBOX", "SkybackgroundColor"), HAZERING: setting("HAZERING", "HazeRing_Final"), NumCloudColor: setting("NumCloudColor", 3),
         CLOUD: ["Cloud_Final", "StarField_Final01", "StarField_Final02"].map((objectName, index) => ({ index: index + 1, ...setting(`CLOUD${index + 1}`, objectName) })) },
       timeEnvironmentFiles: [...tables.keys()].map((environmentType, index) => ({ index, ...setting(`TimeEnvFileName${index}`, `timeenv${environmentType}.int`) })),

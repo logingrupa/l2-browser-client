@@ -26,6 +26,10 @@ export interface NativeTileChunkTerrain {
   readonly maskUvRule: "extrapolated";
 }
 
+export type NativeStaticMeshVertexStreamsPin =
+  | { readonly status: "pinned"; readonly file: string; readonly sha256: string; readonly bytes: number }
+  | { readonly status: "gap"; readonly reason: string };
+
 export interface NativeTileChunkPlacement {
   readonly id: string;
   readonly modelId: string;
@@ -35,12 +39,14 @@ export interface NativeTileChunkPlacement {
   readonly matrix: readonly number[];
   readonly materialOverrides: readonly [];
   readonly collision: Readonly<Record<string, unknown>>;
+  readonly vertexStreams: NativeStaticMeshVertexStreamsPin;
 }
 
 export interface NativeTileChunkModel {
   readonly id: string;
   readonly archive: string;
   readonly archiveSha256: string;
+  readonly vertexStreams: NativeStaticMeshVertexStreamsPin;
   readonly placements: readonly NativeTileChunkPlacement[];
 }
 
@@ -67,6 +73,7 @@ const stepNamePattern = /^[a-z][a-z0-9-]{0,63}$/;
 const qualifiedObjectPattern = /^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/;
 const chunkTerrainResourcePattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-terrain\/terrain\.glb$/;
 const modelArchivePattern = /^\/l2\/([a-f0-9]{64})\/asset\.l2asset$/;
+const vertexStreamsResourcePattern = /^\/l2\/static-mesh-vertex-streams\/([a-f0-9]{64})\/vertex-streams\.json$/;
 const chunkCollisionResourcePattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-collision\/asset\.json$/;
 const componentResourceFields = ["resource", "sha256"];
 const gapStatuses: readonly NativeTileGapStatus[] = ["pass", "gap", "pending", "failed"];
@@ -75,6 +82,11 @@ const chunkManifestFields = ["kind", "schemaVersion", "tileId", "chunkId", "sect
 const sectorRangeFields = ["firstColumn", "lastColumn", "firstRow", "lastRow"] as const;
 const terrainFields = ["resource", "sha256", "maskUvRule"];
 const modelFields = ["id", "archive", "archiveSha256", "placements"];
+const vertexStreamModelFields = ["id", "archive", "archiveSha256", "vertexStreams", "placements"];
+const vertexStreamsPinFields = ["file", "sha256", "bytes"];
+const vertexStreamsGapFields = ["gapReason"];
+export const staticMeshVertexStreamsUnstagedReason = "static-mesh-vertex-streams-unstaged";
+const unstagedVertexStreams: NativeStaticMeshVertexStreamsPin = { status: "gap", reason: staticMeshVertexStreamsUnstagedReason };
 const placementFields = ["id", "modelId", "sourceActor", "exportIndex", "sourceMesh", "matrix", "materialOverrides", "collision"];
 const chunkSectorSpan = 4;
 const maximumChunkModels = 1024;
@@ -162,7 +174,22 @@ export function isAffinePlacementMatrix(value: unknown): value is readonly numbe
     Math.abs(upperLeftDeterminant(value)) >= minimumPlacementDeterminant;
 }
 
-function parseChunkPlacement(value: unknown, modelIds: ReadonlySet<string>, parentModelId: string, placementIds: Set<string>, label: string): NativeTileChunkPlacement {
+function parseVertexStreamsPin(value: unknown, label: string): NativeStaticMeshVertexStreamsPin {
+  if (value === undefined) return unstagedVertexStreams;
+  if (hasExactKeys(value, vertexStreamsGapFields)) {
+    if (typeof value.gapReason !== "string" || !value.gapReason) throw new Error(`${label} has a vertex streams gap without a reason.`);
+    return { status: "gap", reason: value.gapReason };
+  }
+  if (!hasExactKeys(value, vertexStreamsPinFields) || typeof value.file !== "string" || typeof value.sha256 !== "string" ||
+    !nativeTileSha256Pattern.test(value.sha256) || vertexStreamsResourcePattern.exec(value.file)?.[1] !== value.sha256 ||
+    !Number.isSafeInteger(value.bytes) || (value.bytes as number) < 1) {
+    throw new Error(`${label} vertex streams must be /l2/static-mesh-vertex-streams/<its sha256>/vertex-streams.json with its byte count.`);
+  }
+  return { status: "pinned", file: value.file, sha256: value.sha256, bytes: value.bytes as number };
+}
+
+function parseChunkPlacement(value: unknown, modelIds: ReadonlySet<string>, parentModelId: string, placementIds: Set<string>,
+  vertexStreams: NativeStaticMeshVertexStreamsPin, label: string): NativeTileChunkPlacement {
   if (!hasExactKeys(value, placementFields) || typeof value.id !== "string" || !value.id || placementIds.has(value.id) ||
     typeof value.modelId !== "string" || !modelIds.has(value.modelId) || value.modelId !== parentModelId || !isQualifiedObjectName(value.sourceActor) ||
     !Number.isSafeInteger(value.exportIndex) || (value.exportIndex as number) < 1 || typeof value.sourceMesh !== "string" || !value.sourceMesh ||
@@ -172,14 +199,14 @@ function parseChunkPlacement(value: unknown, modelIds: ReadonlySet<string>, pare
   }
   placementIds.add(value.id);
   return { id: value.id, modelId: value.modelId, sourceActor: value.sourceActor, exportIndex: value.exportIndex as number,
-    sourceMesh: value.sourceMesh, matrix: value.matrix, materialOverrides: [], collision: value.collision };
+    sourceMesh: value.sourceMesh, matrix: value.matrix, materialOverrides: [], collision: value.collision, vertexStreams };
 }
 
 function parseChunkModels(value: unknown, label: string): readonly NativeTileChunkModel[] {
   if (!Array.isArray(value) || value.length > maximumChunkModels) throw new Error(`${label} models must be a list of at most ${maximumChunkModels}.`);
   const modelIds = new Set<string>();
   for (const model of value) {
-    if (!hasExactKeys(model, modelFields) || typeof model.id !== "string" || !model.id || modelIds.has(model.id) ||
+    if (!(hasExactKeys(model, modelFields) || hasExactKeys(model, vertexStreamModelFields)) || typeof model.id !== "string" || !model.id || modelIds.has(model.id) ||
       typeof model.archive !== "string" || typeof model.archiveSha256 !== "string" || !nativeTileSha256Pattern.test(model.archiveSha256) ||
       modelArchivePattern.exec(model.archive)?.[1] !== model.archiveSha256 || !Array.isArray(model.placements) || !model.placements.length) {
       throw new Error(`${label} has an invalid model.`);
@@ -187,8 +214,11 @@ function parseChunkModels(value: unknown, label: string): readonly NativeTileChu
     modelIds.add(model.id);
   }
   const placementIds = new Set<string>();
-  const models = value.map(model => ({ id: model.id as string, archive: model.archive as string, archiveSha256: model.archiveSha256 as string,
-    placements: (model.placements as unknown[]).map(placement => parseChunkPlacement(placement, modelIds, model.id as string, placementIds, label)) }));
+  const models = value.map(model => {
+    const vertexStreams = parseVertexStreamsPin(model.vertexStreams, `${label} model ${String(model.id)}`);
+    return { id: model.id as string, archive: model.archive as string, archiveSha256: model.archiveSha256 as string, vertexStreams,
+      placements: (model.placements as unknown[]).map(placement => parseChunkPlacement(placement, modelIds, model.id as string, placementIds, vertexStreams, label)) };
+  });
   if (placementIds.size > maximumChunkPlacements) throw new Error(`${label} lists more than ${maximumChunkPlacements} placements.`);
   return models;
 }

@@ -107,8 +107,12 @@ function meshAndDeviceReadings(lighting: TileLightingRuntimeInspection): Record<
         : `${staticMeshVisibilityProbeActor} vertex 0 ${probe.vertexZeroVisibility} (entries ${probe.entryBlend.index} > ${probe.entryBlend.nextIndex} at ${probe.entryBlend.weight})`;
       return nativeReading(`${visibility.placements.length} of ${visibility.placementCount} placements hourly; ${probeText}`);
     },
-    "lighting.staticMesh.colour0": () => unverifiedReading(`unbound (${terms().staticMesh.colour0.reason})`),
-    "lighting.staticMesh.colour1": () => unverifiedReading(`unbound (${terms().staticMesh.colour1.reasons.join(", ")})`),
+    "lighting.staticMesh.colour0": () => {
+      const lit = lighting.staticMeshSlots.lighting;
+      const unlit = Object.entries(lit.unlitPlacementReasons).map(([reason, count]) => `${reason} ${count}`).join(", ") || "none";
+      return unverifiedReading(`${lit.litPlacements} placements (${lit.litMeshes} meshes) drawn with the hourly instance colour; unlit: ${unlit}`);
+    },
+    "lighting.staticMesh.colour1": () => unverifiedReading(`${terms().staticMesh.colour1.drawn} (${terms().staticMesh.colour1.reasons.join(", ")})`),
     "lighting.staticMesh.instanceColour": () => unverifiedReading(terms().staticMesh.serializedInstanceColour),
     "lighting.actor.ambient": () => ambientText(terms().actor.ambient),
     "lighting.dynamicLights": () => unverifiedReading(`not applied (${terms().dynamicLights.reasons.join(", ")})`),

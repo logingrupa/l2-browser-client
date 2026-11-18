@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
 import {
-  probeColumn, probeRow, readConverterExpectations, staticMeshLightListArrays, terrainIntensityArrays, terrainLightMaskArrays, terrainMapEdge,
+  probeColumn, probeRow, readConverterExpectations, staticMeshLightListArrays, staticMeshSunAffectArray, terrainIntensityArrays, terrainLightMaskArrays,
+  terrainMapEdge,
 } from "../support/hourlyLightingInputsFixture";
+import { maskBytes, readStaticMeshLightingFixtures } from "../support/staticMeshLightingFixtures";
 import { readHourlyLightingFixtures } from "../support/hourlyLightingFixtures";
 import { replaceArray, tileLightingArrays, tileLightingPayload } from "../support/tileLightingFixture";
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
@@ -30,6 +32,19 @@ describe("decodeHourlyLightingInputs", () => {
     const list = hourly.staticMeshLightLists.value.get(instance.actorExportIndex)!;
     expect(list).toMatchObject({ instanceExportIndex: instance.instanceExportIndex, vertexCount: mesh.vertexCount });
     expect(list.hourlyMasks.map(mask => mask.visibility[0]! & 1)).toEqual(context.staticHourlyVertex0Bits);
+    expect(list.ordinaryLightVertexMask).toEqual(new Uint8Array(4));
+    expect(list.sunAffect).toEqual({ status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.sunAffect" });
+  });
+
+  it("ORs the ordinary light masks of a list into one vertex mask and reads SMLL.sunAffect when staged", () => {
+    const hourly = decodedHourly([...restagedArrays(), staticMeshSunAffectArray]);
+    if (hourly.staticMeshLightLists.status !== "staged") throw new Error("static mesh light lists not staged");
+    const { pillar } = readStaticMeshLightingFixtures();
+    const list = hourly.staticMeshLightLists.value.get(pillar.actorExportIndex)!;
+    expect(list.ordinaryLightVertexMask).toEqual(maskBytes(pillar.ordinaryMasks[0]!.maskHex));
+    expect(list.sunAffect).toEqual({ status: "staged", value: 1 });
+    expect(hourly.staticMeshLightLists.value.get(readConverterExpectations().staticMesh.instance.actorExportIndex)!.sunAffect)
+      .toEqual({ status: "staged", value: -1 });
   });
 
   it("counts a terrain light that covers at least one vertex", () => {
@@ -55,7 +70,13 @@ describe("decodeHourlyLightingInputs", () => {
     ["page revisions that miss a page", replaceArray(restagedArrays(), "LMPG.revision", [3]), /LMPG.revision and LMPG.compressedRevision hold 1 and 9/],
     ["map times that do not ascend", replaceArray(restagedArrays(), "TINT.time", [1.5, 1.5, 7.5, 10.5, 13.5, 16.5, 19.5, 22.5]), /TINT.time must ascend/],
     ["intensity samples that are not whole maps", replaceArray(restagedArrays(), "TINT.width", [256]), /TINT.intensity holds/],
-    ["a static mesh mask shorter than its vertices", replaceArray(restagedArrays(), "SMLL.colorCount", [33]), /covers 32 of 33 vertices/],
+    ["a static mesh mask shorter than its vertices", replaceArray(restagedArrays(), "SMLL.colorCount", [33, 36]), /covers 32 of 33 vertices/],
+    ["an ordinary light mask shorter than its vertices", replaceArray(restagedArrays(), "SMSC.bitStart", [0, 4, 10]),
+      /ordinary light mask 0 covers 32 of 36 vertices/],
+    ["a sun affect value outside -1, 0 and 1 on a light list", [...restagedArrays(), { ...staticMeshSunAffectArray, values: [1, 3] }],
+      /SMLL.sunAffect\[1\] = 3 is not -1, 0 or 1/],
+    ["a sun affect count that differs from the light lists", [...restagedArrays(), { ...staticMeshSunAffectArray, values: [1] }],
+      /SMLL.sunAffect holds 1 values for 2 static mesh light lists/],
   ])("refuses %s", (_, arrays, message) => {
     expect(() => decodedHourly(arrays)).toThrow(message);
   });

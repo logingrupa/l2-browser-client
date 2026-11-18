@@ -4,6 +4,7 @@ import type { NativeEnvironmentBlend } from "../../src/environment/model/nativeE
 import type { HourlyEnvironmentLighting } from "../../src/scene/world/worldTimeOfDay";
 import { readDayNightLoadedTables } from "./dayNightFixtures";
 import { readHourlyLightingFixtures } from "./hourlyLightingFixtures";
+import { readStaticMeshLightingFixtures } from "./staticMeshLightingFixtures";
 import type { TypedPayloadFixtureArray } from "./typedPayloadFixture";
 
 interface ConverterExpectations {
@@ -50,17 +51,25 @@ export function terrainLightMaskArrays(maskBytes: readonly number[]): TypedPaylo
 
 export function staticMeshLightListArrays(): TypedPayloadFixtureArray[] {
   const { mesh, instance } = readConverterExpectations().staticMesh;
-  const masks = instance.environmentLights.map(entry => hexBytes(entry.maskHex));
+  const { pillar } = readStaticMeshLightingFixtures();
+  const hourlyMasks = [instance.environmentLights, pillar.hourlyMasks].map(entries => entries.map(entry => hexBytes(entry.maskHex)));
+  const ordinaryMasks = pillar.ordinaryMasks.map(entry => hexBytes(entry.maskHex));
   return [
-    { name: "SMLL.actorExportIndex", type: "int32", values: [instance.actorExportIndex] },
-    { name: "SMLL.instanceExportIndex", type: "int32", values: [instance.instanceExportIndex] },
-    { name: "SMLL.colorCount", type: "uint32", values: [mesh.vertexCount] },
-    { name: "SMLL.environmentStart", type: "uint32", values: [0, masks.length] },
-    { name: "SMEN.light", type: "int32", values: instance.environmentLights.map(entry => entry.light) },
-    { name: "SMEN.bitStart", type: "uint32", values: prefixStarts(masks.map(mask => mask.length)) },
-    { name: "SMEN.bits", type: "uint8", values: masks.flat() },
+    { name: "SMLL.actorExportIndex", type: "int32", values: [instance.actorExportIndex, pillar.actorExportIndex] },
+    { name: "SMLL.instanceExportIndex", type: "int32", values: [instance.instanceExportIndex, pillar.instanceExportIndex] },
+    { name: "SMLL.colorCount", type: "uint32", values: [mesh.vertexCount, pillar.vertexCount] },
+    { name: "SMLL.sceneStart", type: "uint32", values: [0, 0, ordinaryMasks.length] },
+    { name: "SMLL.environmentStart", type: "uint32", values: prefixStarts(hourlyMasks.map(masks => masks.length)) },
+    { name: "SMSC.light", type: "int32", values: pillar.ordinaryMasks.map(entry => entry.light) },
+    { name: "SMSC.bitStart", type: "uint32", values: prefixStarts(ordinaryMasks.map(mask => mask.length)) },
+    { name: "SMSC.bits", type: "uint8", values: ordinaryMasks.flat() },
+    { name: "SMEN.light", type: "int32", values: [...instance.environmentLights, ...pillar.hourlyMasks].map(entry => entry.light) },
+    { name: "SMEN.bitStart", type: "uint32", values: prefixStarts(hourlyMasks.flat().map(mask => mask.length)) },
+    { name: "SMEN.bits", type: "uint8", values: hourlyMasks.flat().flat() },
   ];
 }
+
+export const staticMeshSunAffectArray: TypedPayloadFixtureArray = { name: "SMLL.sunAffect", type: "int32", values: [-1, 1] };
 
 export function hourlyEnvironmentAt(hour: number, blend: NativeEnvironmentBlend = settledBlend): HourlyEnvironmentLighting {
   const tables = readDayNightLoadedTables();

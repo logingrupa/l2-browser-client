@@ -9,6 +9,7 @@ import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifes
 import { readConverterExpectations } from "../support/hourlyLightingInputsFixture";
 import { fixtureNumber, fixtureNumbers, readHourlyLightingFixtures } from "../support/hourlyLightingFixtures";
 import { provideDayNightTimeOfDay } from "../support/worldTimeOfDayFixture";
+import { staticMeshPlacementSurfacesFixture } from "../support/staticMeshPlacementFixture";
 
 vi.mock("../../src/scene/world/lighting/loadTileLighting", async () => {
   const { decodeTileLighting } = await import("../../src/scene/world/lighting/decodeTileLighting");
@@ -50,8 +51,8 @@ describe("hourly lighting developer variables", () => {
     const timeOfDay = provideDayNightTimeOfDay(scene);
     const attached = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
     const { instance } = readConverterExpectations().staticMesh;
-    await attached.addChunk({ chunkId: "chunk-0-0", bspChunk: null, staticMeshes: [], terrainMeshes: [keyedTerrainMesh(scene)],
-      staticMeshPlacements: [{ sourceActor: staticMeshVisibilityProbeActor, exportIndex: instance.actorExportIndex }] });
+    await attached.addChunk({ chunkId: "chunk-0-0", bspChunk: null, terrainMeshes: [keyedTerrainMesh(scene)],
+      staticMeshPlacements: [staticMeshPlacementSurfacesFixture(staticMeshVisibilityProbeActor, instance.actorExportIndex)] });
     const variables = hourlyLightingVariables(() => attached.inspection());
     const byName = (name: string) => {
       const found = variables.find(entry => entry.name === name);

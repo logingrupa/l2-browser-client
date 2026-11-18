@@ -13,10 +13,15 @@ interface StaticMeshSlot {
   readonly reasons: readonly string[];
   readonly meshes: number;
 }
+interface StaticMeshPlacementLighting {
+  readonly litPlacements: number;
+  readonly litMeshes: number;
+  readonly unlitPlacementReasons: Record<string, number>;
+  readonly rebuildTrigger: { readonly status: string; readonly reason: string };
+}
 interface StaticMeshSlotsInspection {
   readonly gap: string | null;
-  readonly lighting: string;
-  readonly lightingReasons: readonly string[];
+  readonly lighting: StaticMeshPlacementLighting;
   readonly meshCount: number;
   readonly statusCounts: Record<string, number>;
   readonly slots: readonly StaticMeshSlot[];
@@ -92,8 +97,10 @@ test.describe("desktop", () => {
     expect(lighting.gap).toBeNull();
     const slots = lighting.staticMeshSlots!;
     expect(slots.gap).toBeNull();
-    expect(slots.lighting).toBe("unlit");
-    expect(slots.lightingReasons).toEqual(["ma-final-static-vertex"]);
+    expect(slots.lighting.rebuildTrigger).toEqual({ status: "unresolved", reason: "static-mesh-hourly-rebuild-trigger-unresolved" });
+    const unlitPlacements = Object.values(slots.lighting.unlitPlacementReasons).reduce((sum, count) => sum + count, 0);
+    expect(slots.lighting.litPlacements + unlitPlacements, "every placement is lit or names why it is not").toBeGreaterThan(0);
+    for (const reason of Object.keys(slots.lighting.unlitPlacementReasons)) expect(reason).toMatch(/^[a-z0-9][a-z0-9:._-]+$/);
     expect(Object.values(slots.statusCounts).reduce((sum, count) => sum + count, 0)).toBe(slots.meshCount);
     expect(slots.slots.reduce((sum, slot) => sum + slot.meshes, 0)).toBe(slots.meshCount);
     expect(slots.statusCounts["library-compiled"], "a 20_21 static mesh slot draws through the UE2 material library").toBeGreaterThan(0);

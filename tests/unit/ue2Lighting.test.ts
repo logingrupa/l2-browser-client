@@ -3,7 +3,9 @@ import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import { Scene } from "@babylonjs/core/scene";
 import { afterEach, describe, expect, it } from "vitest";
 import { createNativeMaterial } from "../../src/materials/ue2/babylon/material";
-import { buildFragmentChain, lightmapCoordinatesVaryingName, lightmapSamplerName } from "../../src/materials/ue2/babylon/fragmentChain";
+import {
+  buildFragmentChain, instanceColourAttributeName, lightmapCoordinatesVaryingName, lightmapSamplerName, litDiffuseVaryingName, staticMeshAmbientUniformName,
+} from "../../src/materials/ue2/babylon/fragmentChain";
 import type { LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { LIGHTING_CONSTANTS } from "../../src/materials/ue2/model/constants/lightingConstants";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
@@ -56,5 +58,28 @@ describe("lightmap colour operation", () => {
     expect(lightmapped.inspect().lightmapBound).toBe(true);
     const unlit = createNativeMaterial(scene, swatchMaterial(), { sessionSeed: 1, lighting: "unlit" });
     expect(() => unlit.setLightmap(RawTexture.CreateRGBATexture(new Uint8Array(16), 2, 2, scene))).toThrow(/takes no lightmap/);
+  });
+});
+
+describe("vertex-modulate2x static mesh lighting", () => {
+  it("doubles the material colour by the Gouraud lit diffuse inside the clamp, before the fog mix", () => {
+    const plan = swatchMaterial().plan as CompiledMaterialStagePlan;
+    const chain = buildFragmentChain(plan, "vertex-modulate2x");
+    expect(chain.samplers).not.toContain(lightmapSamplerName);
+    expect(chain.fragmentSource).toContain(`varying vec3 ${litDiffuseVaryingName};`);
+    const output = chain.fragmentSource.split("\n").find(line => line.includes("gl_FragColor"))!;
+    expect(output).toMatch(new RegExp(String.raw`mix\(clamp\(ue2Value\d+\.rgb \* 2\.0 \* ${litDiffuseVaryingName}, 0\.0, 1\.0\), ue2FogColour\.rgb, ue2FogFactor\)`));
+  });
+
+  it("clamps the instance colour attribute plus the ambient uniform per vertex and takes the ambient only on a vertex-lit material", () => {
+    const scene = nullScene();
+    const lit = createNativeMaterial(scene, swatchMaterial(), { sessionSeed: 1, lighting: "vertex-modulate2x" });
+    expect((lit.material.shaderPath as { vertexSource: string }).vertexSource).toContain(
+      `${litDiffuseVaryingName} = clamp(${instanceColourAttributeName}.rgb + ${staticMeshAmbientUniformName}.rgb, 0.0, 1.0);`);
+    expect(lit.material.options.attributes).toContain(instanceColourAttributeName);
+    lit.setStaticMeshAmbient([60 / 255, 60 / 255, 60 / 255]);
+    const unlit = createNativeMaterial(scene, swatchMaterial(), { sessionSeed: 1, lighting: "unlit" });
+    expect(unlit.material.options.attributes).not.toContain(instanceColourAttributeName);
+    expect(() => unlit.setStaticMeshAmbient([0, 0, 0])).toThrow(/takes no static mesh ambient/);
   });
 });

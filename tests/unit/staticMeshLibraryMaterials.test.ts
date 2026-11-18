@@ -8,7 +8,11 @@ import type { LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadN
 import { FOG_DISABLED } from "../../src/materials/ue2/babylon/material";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
-import { bindStaticMeshLibraryMaterials, staticMeshFinalVertexColourReason } from "../../src/scene/world/lighting/bindStaticMeshLibraryMaterials";
+import {
+  bindStaticMeshLibraryMaterials, type StaticMeshHourlyLightingFrame, type StaticMeshLibrarySettings,
+} from "../../src/scene/world/lighting/bindStaticMeshLibraryMaterials";
+import type { StaticMeshMaterialsLoad } from "../../src/scene/world/staticMeshLibraryMaterials";
+import { staticMeshPlacementSurfacesFixture } from "../support/staticMeshPlacementFixture";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import { readNativeSourceReference } from "../../src/scene/world/nativeSourceReference";
 import {
@@ -116,6 +120,15 @@ function slotMeshes(sourceObjects: readonly (string | null)[]) {
 }
 
 const materialUniforms = () => ({ levelSeconds: 0, hour: 12, environmentType: 0, fog: FOG_DISABLED });
+const unresolvedHourlyLighting = (): StaticMeshHourlyLightingFrame => ({ status: "unresolved", reason: "env-color-transition-unresolved" });
+
+function librarySettings(f: ReturnType<typeof slotMeshes>, load: StaticMeshMaterialsLoad, fields: Partial<StaticMeshLibrarySettings> = {}): StaticMeshLibrarySettings {
+  return { scene: f.scene, load, sessionSeed: 3, uniforms: materialUniforms, loadProgram: f.loadProgram,
+    lightLists: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.actorExportIndex" }, hourlyLighting: unresolvedHourlyLighting,
+    loadVertexStreams: () => Promise.reject(new Error("no vertex streams in this test")), ...fields };
+}
+
+const onePlacementPerMesh = (meshes: readonly Mesh[]) => meshes.map((mesh, index) => staticMeshPlacementSurfacesFixture(`20_21.StaticMeshActor${index}`, index + 1, [mesh]));
 
 describe("static mesh slots through the UE2 material library", () => {
   const parsed = parseStaticMeshMaterialsListing(listing([portedEntry, unportedEntry, diagnosticEntry]), tileId);
@@ -123,16 +136,16 @@ describe("static mesh slots through the UE2 material library", () => {
   it("draws a ported slot through one shared library material and keeps the texture material of every other slot with its reasons", async () => {
     const f = slotMeshes([portedEntry.sourceObject, portedEntry.sourceObject.toUpperCase(), unportedEntry.sourceObject, diagnosticEntry.sourceObject, null]);
     const textureMaterials = f.meshes.map(mesh => mesh.material);
-    const binding = bindStaticMeshLibraryMaterials({ scene: f.scene, load: { listing: parsed, gap: null }, sessionSeed: 3, uniforms: materialUniforms,
-      loadProgram: f.loadProgram });
-    await binding.addChunk("chunk-0-0", f.meshes);
+    const binding = bindStaticMeshLibraryMaterials(librarySettings(f, { listing: parsed, gap: null }));
+    await binding.addChunk("chunk-0-0", onePlacementPerMesh(f.meshes));
     expect(f.meshes[0]!.material).toBe(f.meshes[1]!.material);
     expect(f.meshes[0]!.material?.name).toBe("UE2 material: SyntheticSwatch.SwatchFinalBlend");
     expect(f.meshes.slice(2).map(mesh => mesh.material)).toEqual(textureMaterials.slice(2));
     expect(f.loadProgram.mock.calls.map(([materialId]) => materialId).sort()).toEqual([portedProgramSha256, diagnosticProgramSha256]);
     const inspection = binding.inspection();
-    expect(inspection).toMatchObject({ gap: null, lighting: "unlit", lightingReasons: [staticMeshFinalVertexColourReason], meshCount: 5,
-      statusCounts: { "library-compiled": 2, "library-diagnostic": 1, "program-gap": 2 } });
+    expect(inspection).toMatchObject({ gap: null, meshCount: 5, statusCounts: { "library-compiled": 2, "library-diagnostic": 1, "program-gap": 2 },
+      lighting: { litPlacements: 0, unlitPlacementReasons: { "hourly-lighting-input-unstaged:SMLL.actorExportIndex": 5 },
+        rebuildTrigger: { status: "unresolved", reason: "static-mesh-hourly-rebuild-trigger-unresolved" } } });
     expect(inspection.slots).toEqual([
       { sourceObject: null, status: "program-gap", programMaterialId: null, reasons: [staticMeshSlotMaterialNoneReason], meshes: 1 },
       { sourceObject: portedEntry.sourceObject, status: "library-compiled", programMaterialId: portedProgramSha256, reasons: [], meshes: 2 },
@@ -145,12 +158,11 @@ describe("static mesh slots through the UE2 material library", () => {
 
   it("joins a returning chunk from the remembered slot material and loads no program twice", async () => {
     const f = slotMeshes([portedEntry.sourceObject]);
-    const binding = bindStaticMeshLibraryMaterials({ scene: f.scene, load: { listing: parsed, gap: null }, sessionSeed: 3, uniforms: materialUniforms,
-      loadProgram: f.loadProgram });
-    await binding.addChunk("chunk-0-0", f.meshes);
+    const binding = bindStaticMeshLibraryMaterials(librarySettings(f, { listing: parsed, gap: null }));
+    await binding.addChunk("chunk-0-0", onePlacementPerMesh(f.meshes));
     binding.removeChunk("chunk-0-0");
     expect(binding.inspection().meshCount).toBe(0);
-    await binding.addChunk("chunk-0-0", f.meshes);
+    await binding.addChunk("chunk-0-0", onePlacementPerMesh(f.meshes));
     expect(binding.inspection().statusCounts["library-compiled"]).toBe(1);
     expect(f.loadProgram).toHaveBeenCalledTimes(1);
     binding.dispose();
@@ -159,9 +171,8 @@ describe("static mesh slots through the UE2 material library", () => {
   it("keeps every texture material and names the listing gap when the tile pins no static mesh materials", async () => {
     const f = slotMeshes([portedEntry.sourceObject, null]);
     const textureMaterials = f.meshes.map(mesh => mesh.material);
-    const binding = bindStaticMeshLibraryMaterials({ scene: f.scene, load: { listing: null, gap: staticMeshMaterialsResourceAbsentReason }, sessionSeed: 3,
-      uniforms: materialUniforms, loadProgram: f.loadProgram });
-    await binding.addChunk("chunk-0-0", f.meshes);
+    const binding = bindStaticMeshLibraryMaterials(librarySettings(f, { listing: null, gap: staticMeshMaterialsResourceAbsentReason }));
+    await binding.addChunk("chunk-0-0", onePlacementPerMesh(f.meshes));
     expect(f.meshes.map(mesh => mesh.material)).toEqual(textureMaterials);
     expect(binding.inspection()).toMatchObject({ gap: staticMeshMaterialsResourceAbsentReason, meshCount: 2,
       statusCounts: { "library-compiled": 0, "library-diagnostic": 0, "program-gap": 2 } });
@@ -173,8 +184,8 @@ describe("static mesh slots through the UE2 material library", () => {
     const f = slotMeshes([portedEntry.sourceObject]);
     const observersBefore = f.scene.onBeforeRenderObservable.observers.length;
     const uniforms = vi.fn(materialUniforms);
-    const binding = bindStaticMeshLibraryMaterials({ scene: f.scene, load: { listing: parsed, gap: null }, sessionSeed: 3, uniforms, loadProgram: f.loadProgram });
-    await binding.addChunk("chunk-0-0", f.meshes);
+    const binding = bindStaticMeshLibraryMaterials(librarySettings(f, { listing: parsed, gap: null }, { uniforms }));
+    await binding.addChunk("chunk-0-0", onePlacementPerMesh(f.meshes));
     f.scene.onBeforeRenderObservable.notifyObservers(f.scene);
     expect(uniforms).toHaveBeenCalled();
     binding.dispose();

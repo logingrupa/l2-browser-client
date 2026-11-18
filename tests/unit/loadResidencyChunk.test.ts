@@ -10,7 +10,7 @@ import { decodeNativeTileBspTree, decodeNativeTileCollisionCell } from "../../sr
 import { loadChunkCollisionCell } from "../../src/scene/world/movement/loadCollisionCells";
 import { loadChunkBsp, loadChunkTerrain, loadTileModelTemplate, type LoadedChunkTerrain } from "../../src/scene/world/nativeTileChunkContents";
 import { collisionCellTerrainFootprint } from "../../src/scene/world/nativeTileChunkFootprints";
-import type { NativeTileChunkManifest, NativeTileChunkModel } from "../../src/scene/world/nativeTileChunkManifest";
+import { staticMeshVertexStreamsUnstagedReason, type NativeTileChunkManifest, type NativeTileChunkModel } from "../../src/scene/world/nativeTileChunkManifest";
 import type { ResidencyChunk } from "../../src/scene/world/nativeTileChunkResidency";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import type { ResidencyTile } from "../../src/scene/world/nativeTileResidencyTiles";
@@ -37,9 +37,10 @@ const decodeCell = (arrays: Parameters<typeof readCollisionFixturePayload>[0]): 
   decodeNativeTileCollisionCell(readCollisionFixturePayload(arrays), { cellId, tileId });
 
 function chunkModel(archiveSha256: string): NativeTileChunkModel {
-  return { id: "interlude:Fixture_S.Rock", archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256,
+  const vertexStreams = { status: "gap", reason: staticMeshVertexStreamsUnstagedReason } as const;
+  return { id: "interlude:Fixture_S.Rock", archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256, vertexStreams,
     placements: [{ id: "interlude:00_00.StaticMeshActor1", modelId: "interlude:Fixture_S.Rock", sourceActor: "StaticMeshActor1", exportIndex: 1,
-      sourceMesh: "Fixture_S.Rock", matrix: identityMatrix, materialOverrides: [], collision: {} }] };
+      sourceMesh: "Fixture_S.Rock", matrix: identityMatrix, materialOverrides: [], collision: {}, vertexStreams }] };
 }
 
 function chunkManifest(overrides: Partial<NativeTileChunkManifest> = {}): NativeTileChunkManifest {

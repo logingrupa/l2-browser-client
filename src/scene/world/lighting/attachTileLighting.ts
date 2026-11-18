@@ -1,6 +1,7 @@
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { drawNativeSessionSeed } from "../../../assets/native/nativeSessionSeed";
+import { nativeSunLightDirection } from "../../../environment/model/nativeSunLightDirection";
 import { loadNativeMaterial, type NativeMaterialUniforms } from "../../../materials/ue2/babylon/material";
 import { FOG_CONSTANTS } from "../../../materials/ue2/model/constants/fogConstants";
 import { createPresentationClock } from "../../../shared/presentationClock";
@@ -11,14 +12,15 @@ import { fogReferencePawnFor, type FogReferencePawn } from "../fogReferencePawn"
 import type { NativeTileManifest } from "../nativeTileManifest";
 import { loadStaticMeshMaterialsListing } from "../staticMeshLibraryMaterials";
 import { loadTerrainMaterialsListing } from "../terrainLayerMaterials";
-import { bindStaticMeshLibraryMaterials, type StaticMeshLibraryBinding, type StaticMeshLibraryInspection } from "./bindStaticMeshLibraryMaterials";
+import {
+  bindStaticMeshLibraryMaterials, type StaticMeshHourlyLightingFrame, type StaticMeshLibraryBinding, type StaticMeshLibraryInspection, type StaticMeshPlacementSurfaces,
+} from "./bindStaticMeshLibraryMaterials";
 import { bindTerrainLayerMaterials, type TerrainLayerInspection } from "./bindTerrainLayerMaterials";
 import { bindTerrainVertexLighting, type TerrainVertexLightingInspection } from "./bindTerrainVertexLighting";
 import { bindTileLighting, type TileLightingBinding, type TileLightingBspChunk, type TileLightingInspection } from "./bindTileLighting";
-import { hourlyLightingTerms, type HourlyLightingTerms } from "./hourlyLightingTerms";
-import {
-  bindStaticMeshHourlyVisibility, type StaticMeshHourlyPlacement, type StaticMeshHourlyVisibilityInspection,
-} from "./staticMeshHourlyVisibility";
+import { hourlyLightingTerms, staticMeshInstanceAmbient, type HourlyLightingTerms } from "./hourlyLightingTerms";
+import { loadStaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
+import { bindStaticMeshHourlyVisibility, type StaticMeshHourlyVisibilityInspection } from "./staticMeshHourlyVisibility";
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
 import type { TileLightingVisibility } from "./tileLightingVisibility";
@@ -44,8 +46,7 @@ export interface TileLightingRuntimeInspection extends TileLightingInspection {
 export interface TileLightingChunkSurfaces {
   readonly chunkId: string;
   readonly bspChunk: TileLightingBspChunk | null;
-  readonly staticMeshes: readonly AbstractMesh[];
-  readonly staticMeshPlacements: readonly StaticMeshHourlyPlacement[];
+  readonly staticMeshPlacements: readonly StaticMeshPlacementSurfaces[];
   readonly terrainMeshes: readonly AbstractMesh[];
 }
 
@@ -98,12 +99,22 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   const terrainVertexLighting = bindTerrainVertexLighting(model.hourly.terrainIntensityMaps, model.hourly.terrainLightMasks);
   const staticMeshVisibility = bindStaticMeshHourlyVisibility(model.hourly.staticMeshLightLists);
   const hourlyEnvironment = () => timeOfDay.hourlyEnvironmentLighting();
+  const staticMeshHourlyLighting = (): StaticMeshHourlyLightingFrame => {
+    const environment = hourlyEnvironment(), ambient = staticMeshInstanceAmbient(environment);
+    if (ambient.status !== "resolved") return { status: "unresolved", reason: ambient.reason };
+    if (environment.staticMeshLight.status !== "resolved") return { status: "unresolved", reason: environment.staticMeshLight.reason };
+    const { dayPart, celestialPhiDegrees, slopeSunAngleDegrees } = timeOfDay.manager.snapshot();
+    const sun = nativeSunLightDirection({ hour: environment.hour, dayPart, phiDegrees: celestialPhiDegrees, slopeSunAngleDegrees });
+    return { status: "resolved", ambient: ambient.value, sun: { hour: environment.hour, lightDirection: sun.direction, staticSunPlane: environment.staticMeshLight.value } };
+  };
   const referencePawn = fogReferencePawnFor(scene);
   let cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay, referencePawn);
   const advance = scene.onBeforeRenderObservable.add(() => {
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
     cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay, referencePawn);
-    terrainVertexLighting.update(timeOfDay.manager.snapshot().lightingDirty, hourlyEnvironment);
+    const { lightingDirty } = timeOfDay.manager.snapshot();
+    terrainVertexLighting.update(lightingDirty, hourlyEnvironment);
+    staticMeshBinding.update(lightingDirty);
   });
   const sessionSeed = drawNativeSessionSeed();
   const materialUniforms = (): NativeMaterialUniforms => {
@@ -114,7 +125,8 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
   const binding = bindTileLighting({ scene, model, sessionSeed, environment: () => timeOfDay.sample(),
     levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, visibility, loadProgram: loadNativeMaterial });
   const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
-    uniforms: materialUniforms, loadProgram: loadNativeMaterial });
+    uniforms: materialUniforms, loadProgram: loadNativeMaterial, lightLists: model.hourly.staticMeshLightLists, hourlyLighting: staticMeshHourlyLighting,
+    loadVertexStreams: loadStaticMeshVertexStreams });
   const terrainLayerBinding = bindTerrainLayerMaterials({ scene, load: terrainMaterials, fog: () => cameraEnvironment.fog, loadProgram: loadNativeMaterial });
   const hourlyInspection = (): HourlyLightingInspection => {
     const environment = hourlyEnvironment();
@@ -124,10 +136,11 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     skyMaterialUniforms, cameraFog: () => cameraEnvironment, binding,
     async addChunk(surfaces) {
       if (surfaces.bspChunk !== null) await binding.addChunk(surfaces.bspChunk);
-      await staticMeshBinding.addChunk(surfaces.chunkId, surfaces.staticMeshes);
+      await staticMeshBinding.addChunk(surfaces.chunkId, surfaces.staticMeshPlacements);
       await terrainLayerBinding.addChunk(surfaces.chunkId, surfaces.terrainMeshes);
       terrainVertexLighting.addChunk(surfaces.chunkId, surfaces.terrainMeshes, hourlyEnvironment);
-      staticMeshVisibility.addChunk(surfaces.chunkId, surfaces.staticMeshPlacements);
+      staticMeshVisibility.addChunk(surfaces.chunkId, surfaces.staticMeshPlacements.map(({ placement }) => ({ sourceActor: placement.sourceActor,
+        exportIndex: placement.exportIndex })));
     },
     removeChunk(chunkId) {
       terrainLayerBinding.removeChunk(chunkId);

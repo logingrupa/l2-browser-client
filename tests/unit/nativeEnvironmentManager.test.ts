@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createNativeEnvironmentManager, type ChangeEnvironmentRequest, type NativeEnvironmentSetup } from "../../src/environment/model/nativeEnvironmentManager";
 
-const shippedSetup: NativeEnvironmentSetup = { isClock: true, timeRatio: 6, startTimeHours: 12, shadowTickHours: 0.1 };
+const shippedSetup: NativeEnvironmentSetup = { isClock: true, timeRatio: 6, startTimeHours: 12, shadowTickHours: 0.1, slopeSunAngleDegrees: 30 };
 const redSkyDelayHours = 0.0020000000949949026;
 const ssqDelayHours = 0.019999999552965164;
 

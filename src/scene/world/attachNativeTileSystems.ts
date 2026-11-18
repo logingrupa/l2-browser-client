@@ -2,6 +2,7 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { attachTileVisibility, type AttachedTileVisibility } from "./bspVisibility/attachTileVisibility";
 import { attachTileLighting, type AttachedTileLighting, type TileLightingChunkSurfaces } from "./lighting/attachTileLighting";
+import type { StaticMeshPlacementSurfaces } from "./lighting/bindStaticMeshLibraryMaterials";
 import type { NativeTileBspChunk } from "./loadNativeTileChunks";
 import { loadNativeTileMovers, type NativeTileMovers } from "./loadNativeTileMovers";
 import type { NativeModelInstance } from "./nativeModelPlacements";
@@ -37,8 +38,8 @@ export interface AttachedNativeTileSystems {
 const disposedDuringLoading = () => new Error("Native tile was disposed during loading.");
 const moverResourceInvalidReasonPrefix = "movers-invalid:";
 
-function staticMeshesOf(instances: readonly NativeModelInstance<NativeTileChunkPlacement>[]): AbstractMesh[] {
-  return instances.flatMap(instance => instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0));
+function staticMeshPlacementsOf(instances: readonly NativeModelInstance<NativeTileChunkPlacement>[]): StaticMeshPlacementSurfaces[] {
+  return instances.map(instance => ({ placement: instance.source, meshes: instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0) }));
 }
 
 export async function attachNativeTileSystems(scene: Scene, manifest: NativeTileManifest, contents: NativeTileSystemsContents, signal: AbortSignal,
@@ -72,8 +73,7 @@ export async function attachNativeTileSystems(scene: Scene, manifest: NativeTile
     const bindingsByChunkId = new Map<string, object>();
     const lightingSurfacesOf = (contents: NativeTileChunkSystemContents): TileLightingChunkSurfaces => ({ chunkId: contents.chunkId,
       bspChunk: contents.bspChunk === null ? null : { ...contents.bspChunk, chunkOrdinal: chunkOrdinalById.get(contents.chunkId)! },
-      staticMeshes: staticMeshesOf(contents.instances), terrainMeshes: contents.terrainMeshes,
-      staticMeshPlacements: contents.instances.map(({ source }) => ({ sourceActor: source.sourceActor, exportIndex: source.exportIndex })) });
+      staticMeshPlacements: staticMeshPlacementsOf(contents.instances), terrainMeshes: contents.terrainMeshes });
     const addChunk = async (contents: NativeTileChunkSystemContents) => {
       if (bindingsByChunkId.has(contents.chunkId)) return;
       const chunkBinding = {};

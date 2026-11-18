@@ -10,6 +10,7 @@ export interface NativeEnvironmentBlend {
 
 export interface NativeEnvironmentSetup extends NativeTimeClockSetup {
   readonly shadowTickHours: number;
+  readonly slopeSunAngleDegrees: number;
 }
 
 export interface NativeEnvironmentManagerSettings {
@@ -48,6 +49,7 @@ export interface NativeEnvironmentSnapshot extends NativeEnvironmentBlend {
   readonly oldWeight: number;
   readonly remainingRevertSeconds: number;
   readonly celestialPhiDegrees: number;
+  readonly slopeSunAngleDegrees: number;
 }
 
 export interface NativeEnvironmentManager {
@@ -100,7 +102,7 @@ export function redSkyChangeRequest(timeoutSeconds: number): ChangeEnvironmentRe
 export function createNativeEnvironmentManager(settings: NativeEnvironmentManagerSettings): NativeEnvironmentManager {
   const { setup, loadedEnvironmentTypes, readRealSeconds } = settings;
   const clock = createNativeTimeClock(setup, readRealSeconds);
-  const shadowTickHours = Math.fround(setup.shadowTickHours);
+  const shadowTickHours = Math.fround(setup.shadowTickHours), slopeSunAngleDegrees = Math.fround(setup.slopeSunAngleDegrees);
   let dayPart: DayPart = 0;
   let lastLightingHour = 0;
   let lightingDirty = false;
@@ -187,7 +189,7 @@ export function createNativeEnvironmentManager(settings: NativeEnvironmentManage
     snapshot: () => ({
       clock: clock.snapshot(), frozen: frozenGate, dayPart, shadowTickHours, lastLightingHour, lightingDirty, oldType, targetType, weight,
       persistentOldType, persistentTargetType, transitionStart, transitionEnd, transitionPeak, targetWeight, oldWeight, remainingRevertSeconds,
-      celestialPhiDegrees: celestialPhiDegrees.value,
+      celestialPhiDegrees: celestialPhiDegrees.value, slopeSunAngleDegrees,
     }),
   };
 }

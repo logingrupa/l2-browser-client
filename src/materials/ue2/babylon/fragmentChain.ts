@@ -1,6 +1,6 @@
 import { COMBINER_CONSTANTS } from "../model/constants/combinerConstants";
 import { LIGHTING_CONSTANTS } from "../model/constants/lightingConstants";
-import { isLightmapLighting, type MaterialLighting } from "../model/lighting";
+import { isLightmapLighting, isVertexLighting, type MaterialLighting } from "../model/lighting";
 import type { ColourExpression, CompiledMaterialStagePlan } from "../model/stagePlan";
 
 export interface FragmentChainSource {
@@ -25,6 +25,9 @@ export function foggedColourExpression(colour: string, alpha: string, fogFactor:
 }
 export const lightmapSamplerName = "ue2Lightmap";
 export const lightmapCoordinatesVaryingName = "ue2LightmapCoordinates";
+export const instanceColourAttributeName = "ue2InstanceColour";
+export const staticMeshAmbientUniformName = "ue2StaticMeshAmbient";
+export const litDiffuseVaryingName = "ue2LitDiffuse";
 
 const maskChannelSwizzle = { red: "r", green: "g", blue: "b", alpha: "a" } as const;
 const glslFloat = (value: number) => (Number.isInteger(value) ? `${value}.0` : `${value}`);
@@ -148,6 +151,7 @@ const lightmapOperationScale = {
 } as const;
 
 function litColour(result: string, lighting: MaterialLighting): string {
+  if (isVertexLighting(lighting)) return `${result}.rgb * ${glslFloat(LIGHTING_CONSTANTS.lightmapModulate2xScale.runtimeDefault)} * ${litDiffuseVaryingName}`;
   if (!isLightmapLighting(lighting)) return `${result}.rgb`;
   return `${result}.rgb * ${glslFloat(lightmapOperationScale[lighting])} * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`;
 }
@@ -216,6 +220,7 @@ export function buildFragmentChain(plan: CompiledMaterialStagePlan, lighting: Ma
     "varying vec2 ue2TextureCoordinates;",
     "varying float ue2ViewDepth;",
     ...(isLightmapLighting(lighting) ? [`varying vec2 ${lightmapCoordinatesVaryingName};`] : []),
+    ...(isVertexLighting(lighting) ? [`varying vec3 ${litDiffuseVaryingName};`] : []),
     ...samplers.map(name => `uniform sampler2D ${name};`),
     ...coordinateRows.map(name => `uniform vec3 ${name};`),
     ...colourUniforms.map(name => `uniform vec4 ${name};`),

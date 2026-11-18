@@ -32,6 +32,8 @@ export interface StaticMeshLightList {
   readonly actorExportIndex: number;
   readonly instanceExportIndex: number;
   readonly vertexCount: number;
+  readonly sunAffect: StagedLightingInput<number>;
+  readonly ordinaryLightVertexMask: Uint8Array;
   readonly hourlyMasks: readonly StaticMeshHourlyMask[];
 }
 
@@ -104,14 +106,35 @@ function decodeTerrainLightMasks(payload: TypedPayload): TerrainLightMaskSummary
   return { sectorCount, lightCount, lightsCoveringAVertex };
 }
 
+function decodeStaticMeshSunAffect(payload: TypedPayload, listCount: number): (list: number) => StagedLightingInput<number> {
+  const name = "SMLL.sunAffect";
+  if (!payload.names().includes(name)) {
+    const unstaged: StagedLightingInput<number> = { status: "unstaged", reason: `${hourlyLightingInputUnstagedPrefix}${name}` };
+    return () => unstaged;
+  }
+  const sunAffect = payload.int32(name);
+  requireInput(sunAffect.length === listCount, `${name} holds ${sunAffect.length} values for ${listCount} static mesh light lists.`);
+  const outside = sunAffect.findIndex(value => !sunAffectValues.has(value));
+  requireInput(outside === -1, `${name}[${outside}] = ${sunAffect[outside]} is not -1, 0 or 1.`);
+  return list => ({ status: "staged", value: sunAffect[list]! });
+}
+
+function vertexMaskBytes(vertexCount: number): number {
+  return Math.ceil(vertexCount / bitsPerByte);
+}
+
 function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, StaticMeshLightList> {
   const actorExportIndex = payload.int32("SMLL.actorExportIndex"), instanceExportIndex = payload.int32("SMLL.instanceExportIndex");
-  const colourCount = payload.uint32("SMLL.colorCount"), environmentStart = payload.uint32("SMLL.environmentStart");
+  const colourCount = payload.uint32("SMLL.colorCount"), environmentStart = payload.uint32("SMLL.environmentStart"), sceneStart = payload.uint32("SMLL.sceneStart");
   const light = payload.int32("SMEN.light"), bitStart = payload.uint32("SMEN.bitStart"), bits = payload.uint8("SMEN.bits");
+  const sceneLight = payload.int32("SMSC.light"), sceneBitStart = payload.uint32("SMSC.bitStart"), sceneBits = payload.uint8("SMSC.bits");
   const listCount = actorExportIndex.length;
   requireInput(instanceExportIndex.length === listCount && colourCount.length === listCount, "SMLL arrays disagree on the light list count.");
   requirePrefixStarts("SMLL.environmentStart", environmentStart, listCount, light.length);
   requirePrefixStarts("SMEN.bitStart", bitStart, light.length, bits.length);
+  requirePrefixStarts("SMLL.sceneStart", sceneStart, listCount, sceneLight.length);
+  requirePrefixStarts("SMSC.bitStart", sceneBitStart, sceneLight.length, sceneBits.length);
+  const sunAffectOf = decodeStaticMeshSunAffect(payload, listCount);
   const lists = new Map<number, StaticMeshLightList>();
   for (let list = 0; list < listCount; list += 1) {
     const vertexCount = colourCount[list]!, actor = actorExportIndex[list]!;
@@ -121,7 +144,15 @@ function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, 
       requireInput(visibility.length * bitsPerByte >= vertexCount, `static mesh actor ${actor} hourly mask ${offset} covers ${visibility.length * bitsPerByte} of ${vertexCount} vertices.`);
       return { light: light[entry]!, visibility };
     });
-    lists.set(actor, { actorExportIndex: actor, instanceExportIndex: instanceExportIndex[list]!, vertexCount, hourlyMasks });
+    const ordinaryLightVertexMask = new Uint8Array(vertexMaskBytes(vertexCount));
+    for (let entry = sceneStart[list]!; entry < sceneStart[list + 1]!; entry += 1) {
+      const visibility = sceneBits.subarray(sceneBitStart[entry]!, sceneBitStart[entry + 1]!);
+      requireInput(visibility.length * bitsPerByte >= vertexCount,
+        `static mesh actor ${actor} ordinary light mask ${entry - sceneStart[list]!} covers ${visibility.length * bitsPerByte} of ${vertexCount} vertices.`);
+      ordinaryLightVertexMask.forEach((byte, index) => { ordinaryLightVertexMask[index] = byte | visibility[index]!; });
+    }
+    lists.set(actor, { actorExportIndex: actor, instanceExportIndex: instanceExportIndex[list]!, vertexCount, sunAffect: sunAffectOf(list),
+      ordinaryLightVertexMask, hourlyMasks });
   }
   return lists;
 }
@@ -134,6 +165,6 @@ export function decodeHourlyLightingInputs(payload: TypedPayload): HourlyLightin
     terrainLightMasks: stagedWhenListed(payload, ["TSEC.exportIndex", "TSEC.lightStart", "TLIT.light", "TLIT.bitStart", "TLIT.bits"],
       () => decodeTerrainLightMasks(payload)),
     staticMeshLightLists: stagedWhenListed(payload, ["SMLL.actorExportIndex", "SMLL.instanceExportIndex", "SMLL.colorCount", "SMLL.environmentStart",
-      "SMEN.light", "SMEN.bitStart", "SMEN.bits"], () => decodeStaticMeshLightLists(payload)),
+      "SMLL.sceneStart", "SMEN.light", "SMEN.bitStart", "SMEN.bits", "SMSC.light", "SMSC.bitStart", "SMSC.bits"], () => decodeStaticMeshLightLists(payload)),
   };
 }

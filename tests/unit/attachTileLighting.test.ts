@@ -19,6 +19,7 @@ import { provideWorldTimeOfDay } from "../../src/scene/world/worldTimeOfDay";
 import { sourcePositionToWorld } from "../../src/world/sourceFrame";
 import { frameInZone } from "../support/fogWorkedCaseFixture";
 import { provideDayNightTimeOfDay } from "../support/worldTimeOfDayFixture";
+import { staticMeshPlacementSurfacesFixture } from "../support/staticMeshPlacementFixture";
 
 vi.mock("../../src/scene/world/lighting/loadTileLighting", async () => {
   const { tileLightingModel } = await import("../support/tileLightingFixture");
@@ -69,7 +70,7 @@ describe("attachTileLighting", () => {
     const terrainMesh = new Mesh("terrain-mesh", scene);
     const observersBefore = scene.onBeforeRenderObservable.observers.length;
     const attached = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
-    await attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshes: [], staticMeshPlacements: [], terrainMeshes: [terrainMesh] });
+    await attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshPlacements: [], terrainMeshes: [terrainMesh] });
     expect(terrainMesh.material).toBeNull();
     const inspection = attached.inspection() as TileLightingRuntimeInspection;
     expect(inspection.terrainLayers)
@@ -122,7 +123,7 @@ describe("attachTileLighting", () => {
     const attached = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(0);
     const staticMesh = new Mesh("late static mesh", scene);
-    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], staticMeshPlacements: [], terrainMeshes: [] });
+    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshPlacements: [staticMeshPlacementSurfacesFixture("20_21.StaticMeshActor0", 1, [staticMesh])], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
     expect((attached.inspection() as TileLightingRuntimeInspection).environment).toEqual(timeOfDay.sample());
     expect(attached.skyMaterialUniforms!()).toMatchObject({ hour: 12, environmentType: 0, fog: FOG_DISABLED });
@@ -131,7 +132,7 @@ describe("attachTileLighting", () => {
     attached.removeChunk(lateChunkId);
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(0);
     expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots.meshCount).toBe(0);
-    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], staticMeshPlacements: [], terrainMeshes: [] });
+    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshPlacements: [staticMeshPlacementSurfacesFixture("20_21.StaticMeshActor0", 1, [staticMesh])], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
     attached.dispose();
     scene.dispose();
@@ -145,8 +146,8 @@ describe("attachTileLighting", () => {
     const ambientBefore = scene.ambientColor.asArray();
     const attached = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
     const staticMesh = new Mesh("late static mesh", scene);
-    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh],
-      staticMeshPlacements: [{ sourceActor: "20_21.StaticMeshActor1905", exportIndex: 7706 }], terrainMeshes: [] });
+    await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshPlacements: [staticMeshPlacementSurfacesFixture("20_21.StaticMeshActor1905", 7706, [staticMesh])],
+      terrainMeshes: [] });
     scene.onBeforeRenderObservable.notifyObservers(scene);
     const { hourly } = attached.inspection() as TileLightingRuntimeInspection;
     expect(hourly.terrain).toMatchObject({ gap: "hourly-lighting-input-unstaged:TINT.time", rebuildCount: 0 });

@@ -84,7 +84,8 @@ function readSetup(setup: JsonRecord): NativeEnvironmentSetup {
   requireTimeTables(typeof isClock === "boolean", "setup IsClock is not a boolean.");
   return { isClock, timeRatio: requireSafeInteger(settingValue(values.TimeRatio, "setup TimeRatio"), "setup TimeRatio"),
     startTimeHours: requireFiniteNumber(settingValue(values.StartTime, "setup StartTime"), "setup StartTime"),
-    shadowTickHours: requireFiniteNumber(settingValue(values.ShadowTick, "setup ShadowTick"), "setup ShadowTick") };
+    shadowTickHours: requireFiniteNumber(settingValue(values.ShadowTick, "setup ShadowTick"), "setup ShadowTick"),
+    slopeSunAngleDegrees: requireFiniteNumber(settingValue(values.SlopeSunAngle, "setup SlopeSunAngle"), "setup SlopeSunAngle") };
 }
 
 function bindingObjectName(setting: unknown, label: string): string {
