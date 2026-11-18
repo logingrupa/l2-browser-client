@@ -113,4 +113,12 @@ describe("sky scene fog", () => {
     expect(computeCameraEnvironment(sources({ referencePawnSourcePosition: null })).retainedFogInfos)
       .toEqual({ status: "unresolved", reason: cameraEnvironmentGaps.fogInfoReferencePawnAbsent });
   });
+
+  it("hands the sky colour writer an unresolved list naming the gap when an L2FogInfo record is unresolved, instead of dropping it", () => {
+    const unresolvedReason = "lighting-fog-info-unresolved:9237:FogRange3";
+    const withUnresolved = { ...records, fogInfos: [...records.fogInfos, { exportIndex: 9237, record: null, unresolvedReason }] };
+    const environment = computeCameraEnvironment(sources({ records: withUnresolved, referencePawnSourcePosition: fogInfoLocation }));
+    expect(environment.retainedFogInfos).toEqual({ status: "unresolved", reason: unresolvedReason });
+    expect(environment.gaps).toContain(unresolvedReason);
+  });
 });

@@ -103,7 +103,8 @@ function zoneFog(zoneIndex: number, records: TileLightingRecords, gaps: string[]
 function localFogList(sources: CameraEnvironmentSources, gaps: string[]): EvaluatedLocalFogList {
   const { records: { fogInfos }, referencePawnSourcePosition, fogEnvironment } = sources;
   if (fogInfos.length === 0) return { list: { status: "empty" }, retainedFogInfos: { status: "listed", hour: fogEnvironment.hour, fogInfos: [] } };
-  for (const fogInfo of fogInfos) if (fogInfo.unresolvedReason !== null) gaps.push(fogInfo.unresolvedReason);
+  const unresolvedReasons = fogInfos.flatMap(fogInfo => fogInfo.unresolvedReason === null ? [] : [fogInfo.unresolvedReason]);
+  gaps.push(...unresolvedReasons);
   if (referencePawnSourcePosition === null) {
     gaps.push(cameraEnvironmentGaps.fogInfoReferencePawnAbsent);
     return { list: { status: "unresolved" }, retainedFogInfos: { status: "unresolved", reason: cameraEnvironmentGaps.fogInfoReferencePawnAbsent } };
@@ -114,7 +115,10 @@ function localFogList(sources: CameraEnvironmentSources, gaps: string[]): Evalua
     { hour: fogEnvironment.hour, terrainClipRange, referencePosition: referencePawnSourcePosition });
   if (evaluation.retentionDistanceDecides) gaps.push(cameraEnvironmentGaps.fogInfoRetentionDistanceUnresolved);
   if (evaluation.orderCanChangeResult) gaps.push(cameraEnvironmentGaps.fogInfoListOrderAssumed);
-  return { list: evaluation.list, retainedFogInfos: { status: "listed", hour: fogEnvironment.hour, fogInfos: evaluation.retained } };
+  const [firstUnresolvedReason] = unresolvedReasons;
+  const retainedFogInfos: RetainedFogInfoList = firstUnresolvedReason === undefined
+    ? { status: "listed", hour: fogEnvironment.hour, fogInfos: evaluation.retained } : { status: "unresolved", reason: firstUnresolvedReason };
+  return { list: evaluation.list, retainedFogInfos };
 }
 
 function terrainZoneEnvironment(fogEnvironment: FogEnvironment, gaps: string[]): TerrainZoneEnvironmentFog {
