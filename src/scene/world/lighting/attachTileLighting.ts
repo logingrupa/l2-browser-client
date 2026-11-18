@@ -145,7 +145,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     rebuildEnvironment: () => rebuildLightEnvironment(timeOfDay, presentationClock.levelSeconds), composeRebuiltLightmap: rebuiltLightmapComposer.compose });
   const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
     uniforms: materialUniforms, loadProgram: loadNativeMaterial, lightLists: model.hourly.staticMeshLightLists,
-    ordinaryLightRecords: staticMeshOrdinaryLightRecords(model.hourly.lightActors), hourlyLighting: staticMeshHourlyLighting,
+    actorAmbients: model.hourly.staticMeshActorAmbients, ordinaryLightRecords: staticMeshOrdinaryLightRecords(model.hourly.lightActors), hourlyLighting: staticMeshHourlyLighting,
     loadVertexStreams: loadStaticMeshVertexStreams });
   const terrainLayerBinding = bindTerrainLayerMaterials({ scene, load: terrainMaterials, fog: () => cameraEnvironment.fog, loadProgram: loadNativeMaterial });
   const hourlyInspection = (): HourlyLightingInspection => {

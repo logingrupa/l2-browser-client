@@ -49,11 +49,13 @@ export interface HourlyLightingTerms {
   readonly unresolvedItems: readonly HourlyLightingUnresolvedItem[];
 }
 
-const staticMeshInstanceColourCondition = "inferred from the D3D9 fixed-function contract (RM-10), not GPU output: COLOR0 of each lit placement is its RM-19 ordinary CPU colour with the RM-10 hourly CPU colour saturating-added: hourly entries present, SMLL.sunAffect 1, every ordinary light whose mask sets a bit resolved (not LightType 7, effect 0 or 12, no time-varying colour), the staged ScaleGlow and LocalToWorld, a vertex stream sidecar with source positions whose vertex count equals the light list, uniform scale; the shader adds the instance ambient and clamps per vertex, then MODULATE2X";
+const staticMeshInstanceColourCondition = "inferred from the D3D9 fixed-function contract (RM-10), not GPU output: COLOR0 of each lit placement is its RM-19 ordinary CPU colour, with the RM-10 hourly CPU colour saturating-added when the actor touches a sun-affected zone and has hourly entries (RM-20), and zero without a static mesh instance: every ordinary light whose mask sets a bit resolved (not LightType 7, effect 0 or 12, no time-varying colour), the staged ScaleGlow and LocalToWorld, a vertex stream sidecar with source positions whose vertex count equals the light list, uniform scale; the shader adds the placement ambient and clamps per vertex, then MODULATE2X";
 const staticMeshAuthoredColourCondition = "both authored colour streams are white on every lit placement, so COLOR1 is 1 whatever the selector, device+0x4244 bit 0x02 or mesh+0x188 choose";
-const sunAffectedActorCondition = "an actor with bSunAffect (actor +0x13c bit 0); other actors are static-mesh-unhourly-ambient-unresolved or actor-unhourly-ambient-unresolved";
+const sunAffectedActorCondition = "an actor with bSunAffect (actor +0x13c bit 0, set by UpdateRenderData when a touched zone is sun-affected); other static mesh actors draw FColor(max touched-zone AmbientVector + AmbientGlow / 255) >> 1 (RM-20) and other actors are actor-unhourly-ambient-unresolved";
 const { staticMeshSunTermLevelOfDetail } = HOURLY_LIGHTING_CONSTANTS;
 const deviceLiveState = (evidence: string): UnresolvedDeviceFact => ({ status: "unresolved", reason: "d3d-device-live-state", evidence });
+
+const resolvedAmbient = (value: RgbaBytes): AmbientLight<never> => ({ status: "resolved", value });
 
 function ambientInspection<Reason extends string>(environment: EnvironmentResult<RgbBytes>, condition: string,
   light: (hourlyAmbient: RgbBytes) => AmbientLight<Reason>): HourlyAmbientInspection {
@@ -70,8 +72,8 @@ function staticMeshAmbient(environment: HourlyEnvironmentLighting, levelOfDetail
     return { status: "unresolved", reason: environment.staticMeshLight.reason, condition };
   }
   const staticSunPlane = levelOfDetailSunTerm && environment.staticMeshLight.status === "resolved" ? environment.staticMeshLight.value : zeroPlane;
-  return ambientInspection(environment.staticMeshAmbient, condition, hourlyAmbient => staticMeshAmbientLight({ hourlyAmbient, actorSunAffect: true,
-    selectedLevelOfDetail: levelOfDetailSunTerm ? staticMeshSunTermLevelOfDetail.value : 0, hasStaticMeshInstance: !levelOfDetailSunTerm, staticSunPlane }));
+  return ambientInspection(environment.staticMeshAmbient, condition, hourlyAmbient => resolvedAmbient(staticMeshAmbientLight({ hourlyAmbient,
+    selectedLevelOfDetail: levelOfDetailSunTerm ? staticMeshSunTermLevelOfDetail.value : 0, hasStaticMeshInstance: !levelOfDetailSunTerm, staticSunPlane })));
 }
 
 export function staticMeshInstanceAmbient(environment: HourlyEnvironmentLighting): HourlyAmbientInspection {

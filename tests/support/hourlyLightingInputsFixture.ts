@@ -69,7 +69,24 @@ export function staticMeshLightListArrays(): TypedPayloadFixtureArray[] {
   ];
 }
 
-export const staticMeshSunAffectArray: TypedPayloadFixtureArray = { name: "SMLL.sunAffect", type: "int32", values: [-1, 1] };
+export interface StaticMeshAmbientZoneRow {
+  readonly actorExportIndex: number;
+  readonly zones: readonly number[];
+  readonly resolved?: boolean;
+  readonly ambientGlow?: number;
+  readonly unlit?: boolean;
+}
+
+export function staticMeshAmbientZoneArrays(rows: readonly StaticMeshAmbientZoneRow[]): TypedPayloadFixtureArray[] {
+  return [
+    { name: "SMAZ.actorExportIndex", type: "int32", values: rows.map(row => row.actorExportIndex) },
+    { name: "SMAZ.resolved", type: "int32", values: rows.map(row => row.resolved === false ? 0 : 1) },
+    { name: "SMAZ.ambientGlow", type: "int32", values: rows.map(row => row.ambientGlow ?? 0) },
+    { name: "SMAZ.unlit", type: "int32", values: rows.map(row => row.unlit === true ? 1 : 0) },
+    { name: "SMAZ.zoneStart", type: "uint32", values: prefixStarts(rows.map(row => row.zones.length)) },
+    { name: "SMAZ.zone", type: "int32", values: rows.flatMap(row => row.zones) },
+  ];
+}
 
 export function staticMeshOrdinaryInputArrays(): TypedPayloadFixtureArray[] {
   const { fixtures } = readStaticMeshLightingFixtures();

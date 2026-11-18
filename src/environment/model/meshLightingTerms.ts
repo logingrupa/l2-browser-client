@@ -1,5 +1,5 @@
 import { HOURLY_LIGHTING_CONSTANTS } from "./hourlyLightingEngineConstants";
-import type { RgbaBytes } from "./nativeColourBytes";
+import { fColorFromPlane, type BgraBytes, type RgbaBytes } from "./nativeColourBytes";
 import type { NativePlane } from "./nativePlane";
 import type { RgbBytes } from "./sampleNativeTimeTables";
 import { lowByte, truncateToInt32 } from "./x87IntegerConversion";
@@ -10,7 +10,6 @@ export type AmbientLight<Reason extends string> =
 
 export interface StaticMeshAmbientInputs {
   readonly hourlyAmbient: RgbBytes;
-  readonly actorSunAffect: boolean;
   readonly selectedLevelOfDetail: number;
   readonly hasStaticMeshInstance: boolean;
   readonly staticSunPlane: NativePlane;
@@ -28,12 +27,22 @@ function sunTermChannel(halvedChannel: number, sunChannel: number): number {
   return Math.min(byteMaximum, lowByte(truncateToInt32(sunChannel * staticMeshSunTermScale.value)) + halvedChannel);
 }
 
-export function staticMeshAmbientLight(inputs: StaticMeshAmbientInputs): AmbientLight<"static-mesh-unhourly-ambient-unresolved"> {
-  if (!inputs.actorSunAffect) return { status: "unresolved", reason: "static-mesh-unhourly-ambient-unresolved" };
+export function staticMeshAmbientLight(inputs: StaticMeshAmbientInputs): RgbaBytes {
   const halved = halvedAmbient(inputs.hourlyAmbient);
-  if (inputs.hasStaticMeshInstance || inputs.selectedLevelOfDetail !== staticMeshSunTermLevelOfDetail.value) return { status: "resolved", value: halved };
+  if (inputs.hasStaticMeshInstance || inputs.selectedLevelOfDetail !== staticMeshSunTermLevelOfDetail.value) return halved;
   const plane = inputs.staticSunPlane;
-  return { status: "resolved", value: [sunTermChannel(halved[0], plane[0]), sunTermChannel(halved[1], plane[1]), sunTermChannel(halved[2], plane[2]), opaqueAlpha] };
+  return [sunTermChannel(halved[0], plane[0]), sunTermChannel(halved[1], plane[1]), sunTermChannel(halved[2], plane[2]), opaqueAlpha];
+}
+
+export function staticMeshRenderDataAmbient(touchedZoneAmbientVectors: readonly NativePlane[], ambientGlow: number): BgraBytes {
+  const glow = Math.fround(ambientGlow / byteMaximum);
+  const maximum = [0, 0, 0];
+  for (const vector of touchedZoneAmbientVectors) for (let channel = 0; channel < maximum.length; channel += 1) maximum[channel] = Math.max(maximum[channel]!, vector[channel]!);
+  return fColorFromPlane([Math.fround(maximum[0]! + glow), Math.fround(maximum[1]! + glow), Math.fround(maximum[2]! + glow), 0]);
+}
+
+export function staticMeshRenderDataAmbientLight(renderDataAmbient: BgraBytes): RgbaBytes {
+  return halvedAmbient([renderDataAmbient[2], renderDataAmbient[1], renderDataAmbient[0]]);
 }
 
 export function actorAmbientLight(hourlyAmbient: RgbBytes, actorSunAffect: boolean): AmbientLight<"actor-unhourly-ambient-unresolved"> {

@@ -125,6 +125,7 @@ const unresolvedHourlyLighting = (): StaticMeshHourlyLightingFrame => ({ status:
 function librarySettings(f: ReturnType<typeof slotMeshes>, load: StaticMeshMaterialsLoad, fields: Partial<StaticMeshLibrarySettings> = {}): StaticMeshLibrarySettings {
   return { scene: f.scene, load, sessionSeed: 3, uniforms: materialUniforms, loadProgram: f.loadProgram,
     lightLists: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.actorExportIndex" },
+    actorAmbients: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMAZ.actorExportIndex" },
     ordinaryLightRecords: { lightsByExportIndex: new Map(), levelInfos: [] }, hourlyLighting: unresolvedHourlyLighting,
     loadVertexStreams: () => Promise.reject(new Error("no vertex streams in this test")), ...fields };
 }
@@ -145,7 +146,7 @@ describe("static mesh slots through the UE2 material library", () => {
     expect(f.loadProgram.mock.calls.map(([materialId]) => materialId).sort()).toEqual([portedProgramSha256, diagnosticProgramSha256]);
     const inspection = binding.inspection();
     expect(inspection).toMatchObject({ gap: null, meshCount: 5, statusCounts: { "library-compiled": 2, "library-diagnostic": 1, "program-gap": 2 },
-      lighting: { litPlacements: 0, unlitPlacementReasons: { "hourly-lighting-input-unstaged:SMLL.actorExportIndex": 5 },
+      lighting: { litPlacements: 0, unlitPlacementReasons: { "hourly-lighting-input-unstaged:SMAZ.actorExportIndex": 5 },
         rebuildTrigger: { status: "unresolved", reason: "static-mesh-hourly-rebuild-trigger-unresolved" } } });
     expect(inspection.slots).toEqual([
       { sourceObject: null, status: "program-gap", programMaterialId: null, reasons: [staticMeshSlotMaterialNoneReason], meshes: 1 },

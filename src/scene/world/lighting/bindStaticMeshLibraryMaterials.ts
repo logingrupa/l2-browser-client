@@ -4,7 +4,6 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
 import type { RgbaBytes } from "../../../environment/model/nativeColourBytes";
 import { staticMeshDrawnComposition } from "../../../environment/model/nativeDrawLightingStates";
-import type { NativeLocalToWorld } from "../../../environment/model/staticMeshLocalToWorld";
 import {
   createNativeMaterial, type LoadedNativeMaterial, type MaterialLighting, type NativeMaterial, type NativeMaterialUniforms,
 } from "../../../materials/ue2/babylon/material";
@@ -12,14 +11,15 @@ import { readNativeSourceReference } from "../nativeSourceReference";
 import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
 import { joinStaticMeshSlot, type StaticMeshMaterialsLoad } from "../staticMeshLibraryMaterials";
 import type { StaticMeshLightList } from "./decodeHourlyLightingInputs";
+import type { StaticMeshActorAmbientResult } from "./decodeStaticMeshActorAmbients";
 import type { StagedLightingInput } from "./stagedLightingInput";
 import type { StaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
 import type { RebuildLightEnvironment } from "./rebuildShadowLights";
 import { createStaticMeshInstanceColourGeometry, type StaticMeshInstanceColourGeometry } from "./staticMeshInstanceColourGeometry";
 import { resolveStaticMeshOrdinaryTerm, type StaticMeshOrdinaryLightRecords } from "./staticMeshOrdinaryLights";
 import {
-  staticMeshLightingReasons, staticMeshPlacementInstanceColours, staticMeshPlacementLightingJoin, staticMeshVertexStreamsReason,
-  type StaticMeshPlacementOrdinaryTerm, type StaticMeshSunFrame,
+  staticMeshAbsentInstanceColours, staticMeshLightingReasons, staticMeshPlacementInstanceColours, staticMeshPlacementLightingJoin, staticMeshVertexStreamsReason,
+  type StaticMeshPlacementAmbient, type StaticMeshPlacementInstance, type StaticMeshPlacementOrdinaryTerm, type StaticMeshSunFrame,
 } from "./staticMeshPlacementLighting";
 
 export type StaticMeshSlotStatus = "library-compiled" | "library-diagnostic" | "program-gap";
@@ -48,6 +48,9 @@ export interface StaticMeshPlacementLightingInspection {
 export interface StaticMeshLitPlacementProbe {
   readonly sourceActor: string;
   readonly exportIndex: number;
+  readonly hasInstance: boolean;
+  readonly ambientSource: StaticMeshPlacementAmbient["source"];
+  readonly ambient: RgbaBytes | null;
   readonly vertexZeroRgb: readonly [number, number, number];
 }
 
@@ -75,6 +78,7 @@ export interface StaticMeshLibrarySettings {
   readonly uniforms: () => NativeMaterialUniforms;
   readonly loadProgram: (materialId: string, signal: AbortSignal) => Promise<LoadedNativeMaterial>;
   readonly lightLists: StagedLightingInput<ReadonlyMap<number, StaticMeshLightList>>;
+  readonly actorAmbients: StagedLightingInput<ReadonlyMap<number, StaticMeshActorAmbientResult>>;
   readonly ordinaryLightRecords: StaticMeshOrdinaryLightRecords;
   readonly hourlyLighting: () => StaticMeshHourlyLightingFrame;
   readonly loadVertexStreams: (resource: string, sha256: string, bytes: number, signal: AbortSignal) => Promise<StaticMeshVertexStreams>;
@@ -96,12 +100,17 @@ interface BoundStaticMeshSlot {
   readonly reasons: readonly string[];
 }
 
+interface LitStaticMeshInstance {
+  readonly instance: StaticMeshPlacementInstance;
+  readonly ordinary: StaticMeshPlacementOrdinaryTerm;
+}
+
 interface LitStaticMeshPlacement {
   readonly placement: NativeTileChunkPlacement;
-  readonly list: StaticMeshLightList;
+  readonly lit: LitStaticMeshInstance | null;
+  readonly runtimeSunAffect: boolean;
+  readonly ambient: StaticMeshPlacementAmbient;
   readonly streams: StaticMeshVertexStreams;
-  readonly localToWorld: NativeLocalToWorld;
-  readonly ordinary: StaticMeshPlacementOrdinaryTerm;
   readonly geometries: readonly StaticMeshInstanceColourGeometry[];
   vertexZeroRgb: readonly [number, number, number];
 }
@@ -116,6 +125,13 @@ const staticMeshRebuildTriggerUnresolvedReason = "static-mesh-hourly-rebuild-tri
 
 const gltfPrimitivePointerPattern = /^\/meshes\/(\d+)\/primitives\/(\d+)$/;
 const byteMaximum = 255;
+
+const normalisedAmbient = (ambient: RgbaBytes): readonly [number, number, number] => [ambient[0] / byteMaximum, ambient[1] / byteMaximum, ambient[2] / byteMaximum];
+
+function materialKey(programMaterialId: string, lighting: MaterialLighting, ambient: StaticMeshPlacementAmbient | null): string {
+  if (ambient === null) return `${programMaterialId}:${lighting}`;
+  return ambient.source === "hourly" ? `${programMaterialId}:${lighting}:hourly` : `${programMaterialId}:${lighting}:${ambient.ambient.join(",")}`;
+}
 
 const compareSourceObjects = (left: string | null, right: string | null) =>
   left === right ? 0 : left === null ? -1 : right === null ? 1 : left.toLowerCase() < right.toLowerCase() ? -1 : 1;
@@ -157,26 +173,27 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
   const { scene, load } = settings;
   const lifetime = new AbortController();
   const pendingMaterials = new Map<string, Promise<NativeMaterial>>(), readyMaterials = new Map<string, NativeMaterial>();
-  const litMaterials = new Set<NativeMaterial>();
+  const hourlyAmbientMaterials = new Set<NativeMaterial>();
   const pendingStreams = new Map<string, Promise<StaticMeshVertexStreams>>();
   const chunks = new Map<string, BoundStaticMeshChunk>();
   const pendingChunkTokens = new Map<string, object>();
   const sourceObjectByMesh = new WeakMap<AbstractMesh, string | null>();
   let latchedFrame: StaticMeshHourlyLightingFrame | null = null, rebuildCount = 0, heldReason: string | null = null;
-  const createdMaterial = async (programMaterialId: string, lighting: MaterialLighting) => {
+  const createdMaterial = async (programMaterialId: string, lighting: MaterialLighting, ambient: StaticMeshPlacementAmbient | null) => {
     const nativeMaterial = createNativeMaterial(scene, await settings.loadProgram(programMaterialId, lifetime.signal), { sessionSeed: settings.sessionSeed, lighting });
     if (lifetime.signal.aborted) { nativeMaterial.dispose(); lifetime.signal.throwIfAborted(); }
-    readyMaterials.set(`${programMaterialId}:${lighting}`, nativeMaterial);
-    if (lighting !== "unlit") litMaterials.add(nativeMaterial);
+    readyMaterials.set(materialKey(programMaterialId, lighting, ambient), nativeMaterial);
+    if (ambient?.source === "hourly") hourlyAmbientMaterials.add(nativeMaterial);
+    if (ambient?.source === "render-data") nativeMaterial.setStaticMeshAmbient(normalisedAmbient(ambient.ambient));
     return nativeMaterial;
   };
-  const nativeMaterialFor = (programMaterialId: string, lighting: MaterialLighting) => {
-    const key = `${programMaterialId}:${lighting}`;
+  const nativeMaterialFor = (programMaterialId: string, lighting: MaterialLighting, ambient: StaticMeshPlacementAmbient | null) => {
+    const key = materialKey(programMaterialId, lighting, ambient);
     const ready = readyMaterials.get(key);
     if (ready) return Promise.resolve(ready);
     let pending = pendingMaterials.get(key);
     if (!pending) {
-      pending = createdMaterial(programMaterialId, lighting);
+      pending = createdMaterial(programMaterialId, lighting, ambient);
       pendingMaterials.set(key, pending);
       const settled = () => { if (pendingMaterials.get(key) === pending) pendingMaterials.delete(key); };
       pending.then(settled, settled);
@@ -202,12 +219,13 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
     if (load.listing === null) return gap([load.gap]);
     const join = joinStaticMeshSlot(load.listing, sourceObject);
     if (join.kind === "gap") return { ...gap(join.reasons), sourceObject: join.sourceObject };
-    const nativeMaterial = await nativeMaterialFor(join.programMaterialId, "unlit");
+    const nativeMaterial = await nativeMaterialFor(join.programMaterialId, "unlit", null);
     const inspected = nativeMaterial.inspect();
     const compiled = inspected.status === "compiled";
     return { mesh, sourceObject: join.sourceObject, status: compiled ? "library-compiled" : "library-diagnostic", programMaterialId: join.programMaterialId,
       reasons: compiled ? [] : inspected.reasons, libraryMaterial: compiled ? nativeMaterial.material : null };
   };
+  const latchedAmbient = () => latchedFrame?.status === "resolved" ? latchedFrame.ambient : null;
   const latchFrame = () => {
     const frame = settings.hourlyLighting();
     if (frame.status === "unresolved") { heldReason = frame.reason; return; }
@@ -215,23 +233,31 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
     heldReason = null;
     rebuildCount += 1;
   };
-  const colourPlacement = (lit: LitStaticMeshPlacement) => {
+  const colourPlacement = (placement: LitStaticMeshPlacement) => {
     if (latchedFrame?.status !== "resolved") return;
-    const colours = staticMeshPlacementInstanceColours(lit.list, lit.streams, lit.localToWorld, lit.ordinary, latchedFrame.sun);
-    lit.vertexZeroRgb = [colours[0]!, colours[1]!, colours[2]!];
-    for (const geometry of lit.geometries) geometry.writeColours(colours);
+    const colours = placement.lit === null ? staticMeshAbsentInstanceColours(placement.streams)
+      : staticMeshPlacementInstanceColours(placement.lit.instance, placement.runtimeSunAffect, placement.streams, placement.lit.ordinary, latchedFrame.sun);
+    placement.vertexZeroRgb = [colours[0]!, colours[1]!, colours[2]!];
+    for (const geometry of placement.geometries) geometry.writeColours(colours);
+  };
+  const litInstance = (instance: StaticMeshPlacementInstance | null, lightEnvironment: RebuildLightEnvironment):
+    { readonly reason: string } | { readonly lit: LitStaticMeshInstance | null } => {
+    if (instance === null) return { lit: null };
+    const ordinaryLights = resolveStaticMeshOrdinaryTerm(instance.list, settings.ordinaryLightRecords, lightEnvironment);
+    if (ordinaryLights.status !== "resolved") return { reason: ordinaryLights.reason };
+    return { lit: { instance, ordinary: { gain: instance.gain, lights: ordinaryLights.value } } };
   };
   const placementLighting = async (surfaces: StaticMeshPlacementSurfaces, slots: ReadonlyMap<AbstractMesh, BoundStaticMeshSlot>):
     Promise<{ readonly reason: string } | Omit<LitStaticMeshPlacement, "geometries" | "vertexZeroRgb"> & { readonly meshVertices: ReadonlyMap<Mesh, Uint32Array> }> => {
-    const join = staticMeshPlacementLightingJoin(settings.lightLists, surfaces.placement);
+    const join = staticMeshPlacementLightingJoin(settings.lightLists, settings.actorAmbients, surfaces.placement);
     if (join.status === "unlit") return { reason: join.reason };
     if (latchedFrame?.status !== "resolved") return { reason: heldReason ?? staticMeshRebuildTriggerUnresolvedReason };
-    const ordinaryLights = resolveStaticMeshOrdinaryTerm(join.list, settings.ordinaryLightRecords, latchedFrame.lightEnvironment);
-    if (ordinaryLights.status !== "resolved") return { reason: ordinaryLights.reason };
+    const instance = litInstance(join.instance, latchedFrame.lightEnvironment);
+    if ("reason" in instance) return instance;
     const pin = surfaces.placement.vertexStreams;
     if (pin.status !== "pinned") return { reason: pin.reason };
     const streams = await vertexStreamsFor(pin.resource, pin.sha256, pin.bytes);
-    const streamsReason = staticMeshVertexStreamsReason(join.list, streams);
+    const streamsReason = staticMeshVertexStreamsReason(join.instance?.list ?? null, streams);
     if (streamsReason !== null) return { reason: streamsReason };
     const meshVertices = new Map<Mesh, Uint32Array>();
     for (const mesh of surfaces.meshes) {
@@ -241,8 +267,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
       if (vertices === null) return { reason: staticMeshLightingReasons.primitiveUnjoined };
       meshVertices.set(mesh as Mesh, vertices);
     }
-    return { placement: surfaces.placement, list: join.list, streams, localToWorld: join.localToWorld,
-      ordinary: { gain: join.gain, lights: ordinaryLights.value }, meshVertices };
+    return { placement: surfaces.placement, lit: instance.lit, runtimeSunAffect: join.runtimeSunAffect, ambient: join.ambient, streams, meshVertices };
   };
   const observer = scene.onBeforeRenderObservable.add(() => {
     if (readyMaterials.size === 0) return;
@@ -250,8 +275,8 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
     for (const nativeMaterial of readyMaterials.values()) nativeMaterial.update(uniforms);
     const frame = settings.hourlyLighting();
     if (frame.status !== "resolved") return;
-    const ambient: readonly [number, number, number] = [frame.ambient[0] / byteMaximum, frame.ambient[1] / byteMaximum, frame.ambient[2] / byteMaximum];
-    for (const nativeMaterial of litMaterials) nativeMaterial.setStaticMeshAmbient(ambient);
+    const ambient = normalisedAmbient(frame.ambient);
+    for (const nativeMaterial of hourlyAmbientMaterials) nativeMaterial.setStaticMeshAmbient(ambient);
   });
   return {
     async addChunk(chunkId, placements) {
@@ -268,11 +293,11 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
         if ("reason" in lighting) { unlitPlacementReasons.push(lighting.reason); continue; }
         const geometries: StaticMeshInstanceColourGeometry[] = [];
         for (const [mesh, vertices] of lighting.meshVertices) {
-          litMeshMaterials.set(mesh, (await nativeMaterialFor(slots.get(mesh)!.programMaterialId!, "vertex-modulate2x")).material);
+          litMeshMaterials.set(mesh, (await nativeMaterialFor(slots.get(mesh)!.programMaterialId!, "vertex-modulate2x", lighting.ambient)).material);
           geometries.push(createStaticMeshInstanceColourGeometry(mesh, vertices));
         }
-        const lit: LitStaticMeshPlacement = { placement: lighting.placement, list: lighting.list, streams: lighting.streams, localToWorld: lighting.localToWorld,
-          ordinary: lighting.ordinary, geometries, vertexZeroRgb: [0, 0, 0] };
+        const lit: LitStaticMeshPlacement = { placement: lighting.placement, lit: lighting.lit, runtimeSunAffect: lighting.runtimeSunAffect, ambient: lighting.ambient,
+          streams: lighting.streams, geometries, vertexZeroRgb: [0, 0, 0] };
         colourPlacement(lit);
         litPlacements.push(lit);
       }
@@ -304,9 +329,10 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
         litMeshes: litPlacements.reduce((sum, lit) => sum + lit.geometries.length, 0),
         unlitPlacementReasons: countReasons(boundChunks.flatMap(chunk => chunk.unlitPlacementReasons)), rebuildCount,
         lastRebuildHour: latchedFrame?.status === "resolved" ? latchedFrame.sun.hour : null, heldReason,
-        ambient: latchedFrame?.status === "resolved" ? latchedFrame.ambient : null,
+        ambient: latchedAmbient(),
         rebuildTrigger: { status: "unresolved", reason: staticMeshRebuildTriggerUnresolvedReason }, composition: staticMeshDrawnComposition,
-        probes: litPlacements.map(lit => ({ sourceActor: lit.placement.sourceActor, exportIndex: lit.placement.exportIndex, vertexZeroRgb: lit.vertexZeroRgb }))
+        probes: litPlacements.map(lit => ({ sourceActor: lit.placement.sourceActor, exportIndex: lit.placement.exportIndex, hasInstance: lit.lit !== null,
+          ambientSource: lit.ambient.source, ambient: lit.ambient.source === "render-data" ? lit.ambient.ambient : latchedAmbient(), vertexZeroRgb: lit.vertexZeroRgb }))
           .sort((left, right) => left.exportIndex - right.exportIndex) };
       return { gap: load.gap, lighting, meshCount: slots.length, statusCounts, slots: slotInspections(slots) };
     },
@@ -318,7 +344,7 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
       pendingChunkTokens.clear();
       for (const nativeMaterial of readyMaterials.values()) nativeMaterial.dispose();
       readyMaterials.clear();
-      litMaterials.clear();
+      hourlyAmbientMaterials.clear();
     },
   };
 }

@@ -1,5 +1,6 @@
 import type { TypedPayload } from "../../../shared/typedPayload";
 import { decodeLightmapRebuildInputs, lightmapRebuildInputNames, type LightmapRebuildInputs } from "./decodeLightmapRebuildInputs";
+import { decodeStaticMeshActorAmbients, staticMeshAmbientZoneArrayNames, type StaticMeshActorAmbientResult } from "./decodeStaticMeshActorAmbients";
 import { decodeLightActorRecords, type LightActorRecords } from "./lightmapRebuildActors";
 import { requireLightingInput, requireLightingPrefixStarts, stagedWhenListed, type StagedLightingInput } from "./stagedLightingInput";
 import type { TileLightingRecordsDocument } from "./tileLightingRecords";
@@ -36,7 +37,6 @@ export interface StaticMeshLightList {
   readonly actorExportIndex: number;
   readonly instanceExportIndex: number;
   readonly vertexCount: number;
-  readonly sunAffect: StagedLightingInput<number>;
   readonly ordinaryInputs: StagedLightingInput<StaticMeshOrdinaryInputs>;
   readonly ordinaryMasks: readonly StaticMeshLightMask[];
   readonly hourlyMasks: readonly StaticMeshLightMask[];
@@ -48,6 +48,7 @@ export interface HourlyLightingInputs {
   readonly terrainIntensityMaps: StagedLightingInput<TerrainIntensityMaps>;
   readonly terrainLightMasks: StagedLightingInput<TerrainLightMaskSummary>;
   readonly staticMeshLightLists: StagedLightingInput<ReadonlyMap<number, StaticMeshLightList>>;
+  readonly staticMeshActorAmbients: StagedLightingInput<ReadonlyMap<number, StaticMeshActorAmbientResult>>;
   readonly lightmapRebuild: StagedLightingInput<LightmapRebuildInputs>;
   readonly lightActors: LightActorRecords;
 }
@@ -100,19 +101,6 @@ function decodeTerrainLightMasks(payload: TypedPayload): TerrainLightMaskSummary
   return { sectorCount, lightCount, lightsCoveringAVertex };
 }
 
-function decodeStaticMeshSunAffect(payload: TypedPayload, listCount: number): (list: number) => StagedLightingInput<number> {
-  const name = "SMLL.sunAffect";
-  const staged = stagedWhenListed(payload, [name], () => {
-    const sunAffect = payload.int32(name);
-    requireLightingInput(sunAffect.length === listCount, `${name} holds ${sunAffect.length} values for ${listCount} static mesh light lists.`);
-    const outside = sunAffect.findIndex(value => !sunAffectValues.has(value));
-    requireLightingInput(outside === -1, `${name}[${outside}] = ${sunAffect[outside]} is not -1, 0 or 1.`);
-    return sunAffect;
-  });
-  if (staged.status === "unstaged") return () => staged;
-  return list => ({ status: "staged", value: staged.value[list]! });
-}
-
 function decodeStaticMeshOrdinaryInputs(payload: TypedPayload, listCount: number): (list: number) => StagedLightingInput<StaticMeshOrdinaryInputs> {
   const resolvedName = "SMLL.ordinaryInputsResolved", scaleGlowName = "SMLL.scaleGlow", localToWorldName = "SMLL.localToWorld";
   const staged = stagedWhenListed(payload, [resolvedName, scaleGlowName, localToWorldName], () => {
@@ -148,7 +136,7 @@ function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, 
   requireLightingPrefixStarts("SMEN.bitStart", bitStart, light.length, bits.length);
   requireLightingPrefixStarts("SMLL.sceneStart", sceneStart, listCount, sceneLight.length);
   requireLightingPrefixStarts("SMSC.bitStart", sceneBitStart, sceneLight.length, sceneBits.length);
-  const sunAffectOf = decodeStaticMeshSunAffect(payload, listCount), ordinaryInputsOf = decodeStaticMeshOrdinaryInputs(payload, listCount);
+  const ordinaryInputsOf = decodeStaticMeshOrdinaryInputs(payload, listCount);
   const lists = new Map<number, StaticMeshLightList>();
   for (let list = 0; list < listCount; list += 1) {
     const vertexCount = colourCount[list]!, actor = actorExportIndex[list]!;
@@ -160,7 +148,7 @@ function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, 
           `static mesh actor ${actor} ${kind} mask ${offset} covers ${visibility.length * bitsPerByte} of ${vertexCount} vertices.`);
         return { light: lights[entry]!, visibility };
       });
-    lists.set(actor, { actorExportIndex: actor, instanceExportIndex: instanceExportIndex[list]!, vertexCount, sunAffect: sunAffectOf(list),
+    lists.set(actor, { actorExportIndex: actor, instanceExportIndex: instanceExportIndex[list]!, vertexCount,
       ordinaryInputs: ordinaryInputsOf(list), ordinaryMasks: masks("ordinary light", sceneStart, sceneLight, sceneBitStart, sceneBits), hourlyMasks: masks("hourly", environmentStart, light, bitStart, bits) });
   }
   return lists;
@@ -176,6 +164,7 @@ export function decodeHourlyLightingInputs(payload: TypedPayload, recordsDocumen
       () => decodeTerrainLightMasks(payload)),
     staticMeshLightLists: stagedWhenListed(payload, ["SMLL.actorExportIndex", "SMLL.instanceExportIndex", "SMLL.colorCount", "SMLL.environmentStart",
       "SMLL.sceneStart", "SMEN.light", "SMEN.bitStart", "SMEN.bits", "SMSC.light", "SMSC.bitStart", "SMSC.bits"], () => decodeStaticMeshLightLists(payload)),
+    staticMeshActorAmbients: stagedWhenListed(payload, staticMeshAmbientZoneArrayNames, () => decodeStaticMeshActorAmbients(payload, recordsDocument)),
     lightmapRebuild: stagedWhenListed(payload, lightmapRebuildInputNames, () => decodeLightmapRebuildInputs(payload, recordsDocument, lightActors)),
     lightActors,
   };

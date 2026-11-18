@@ -105,8 +105,8 @@ describe("DB-7 hourly lighting fixtures through the pure lighting model", () => 
       const ambient = hourlyColour("StaticMeshAmbient", hour), plane = hourlyPlane("HSVStaticMeshLight", hour);
       expect(ambient).toEqual(fixtureNumbers(input, "hourlyAmbientRGB"));
       expectBitExact(plane, fixtureNumbers(input, "hourlyStaticSunPlane"));
-      const light = resolved(staticMeshAmbientLight({ hourlyAmbient: ambient, actorSunAffect: fixtureBoolean(input, "assumedEnvironmentGate"),
-        selectedLevelOfDetail: 0, hasStaticMeshInstance: true, staticSunPlane: plane }));
+      expect(fixtureBoolean(input, "assumedEnvironmentGate")).toBe(true);
+      const light = staticMeshAmbientLight({ hourlyAmbient: ambient, selectedLevelOfDetail: 0, hasStaticMeshInstance: true, staticSunPlane: plane });
       expect(light).toEqual([...fixtureNumbers(output, "ambientRGB"), fixtureNumber(output, "alpha")]);
     });
 
@@ -116,8 +116,7 @@ describe("DB-7 hourly lighting fixtures through the pure lighting model", () => 
       const ambient = hourlyColour("StaticMeshAmbient", hour), plane = hourlyPlane("HSVStaticMeshLight", hour);
       expect(ambient).toEqual(fixtureNumbers(input, "ambientRGB"));
       expectBitExact(plane, fixtureNumbers(input, "sunPlane"));
-      const light = resolved(staticMeshAmbientLight({ hourlyAmbient: ambient, actorSunAffect: true, selectedLevelOfDetail: 2,
-        hasStaticMeshInstance: false, staticSunPlane: plane }));
+      const light = staticMeshAmbientLight({ hourlyAmbient: ambient, selectedLevelOfDetail: 2, hasStaticMeshInstance: false, staticSunPlane: plane });
       expect(light).toEqual([...fixtureNumbers(output, "ambientRGB"), fixtureNumber(output, "alpha")]);
     });
 

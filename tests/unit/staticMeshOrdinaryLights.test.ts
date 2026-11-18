@@ -54,8 +54,8 @@ function stagedInstanceRgb(fixture: OrdinaryIntegratedFixture): number[][] {
   const ordinary = resolveStaticMeshOrdinaryTerm(list, recordsOf(fixture), environmentAt(fixture));
   if (ordinary.status !== "resolved") throw new Error(ordinary.reason);
   const [x, y, z] = fixture.sunDirection;
-  const colours = staticMeshPlacementInstanceColours(list, streams, stagedLocalToWorld(fixture), { gain: staticMeshOrdinaryLightGain(fixture.scaleGlow),
-    lights: ordinary.value }, { hour: fixture.hour, lightDirection: { x, y, z }, staticSunPlane: fixture.sunPlane as NativePlane });
+  const gain = staticMeshOrdinaryLightGain(fixture.scaleGlow);
+  const colours = staticMeshPlacementInstanceColours({ list, localToWorld: stagedLocalToWorld(fixture), gain }, true, streams, { gain, lights: ordinary.value }, { hour: fixture.hour, lightDirection: { x, y, z }, staticSunPlane: fixture.sunPlane as NativePlane });
   return fixture.vertexIndices.map((_, position) => Array.from(colours.subarray(position * 3, position * 3 + 3)));
 }
 

@@ -118,7 +118,7 @@ export function stagedOrdinarySubsetOf(fixture: OrdinaryIntegratedFixture, hourl
   const masks = (entries: readonly OrdinaryFixtureMaskEntry[]): StaticMeshLightMask[] =>
     entries.map(entry => ({ light: entry.light, visibility: subsetMask(fixture, entry.maskHex) }));
   const list: StaticMeshLightList = { actorExportIndex: fixture.actorExportIndex, instanceExportIndex: fixture.instanceExportIndex,
-    vertexCount: fixture.vertexIndices.length, sunAffect: { status: "staged", value: 1 },
+    vertexCount: fixture.vertexIndices.length,
     ordinaryInputs: { status: "staged", value: { scaleGlow: fixture.scaleGlow, localToWorld: Float32Array.from(fixture.localToWorld) } },
     ordinaryMasks: masks(fixture.ordinaryEntries), hourlyMasks: masks(hourlyEntries) };
   const vectors = (byVertex: Readonly<Record<string, NativeVector3>>) => fixture.vertexIndices.flatMap(vertex => byVertex[String(vertex)]!);
