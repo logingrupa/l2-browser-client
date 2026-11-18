@@ -245,7 +245,7 @@
    "package": "textures/l2_skies.utx",
    "packageSha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f",
    "format": "DXT1",
-   "minLod": null,
+   "minLod": 0,
    "storedMipCount": 1,
    "storedMipDimensions": [
     [
@@ -267,7 +267,7 @@
    "package": "textures/l2_skies.utx",
    "packageSha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f",
    "format": "DXT5",
-   "minLod": null,
+   "minLod": 0,
    "storedMipCount": 1,
    "storedMipDimensions": [
     [
@@ -289,7 +289,7 @@
    "package": "textures/l2_skies.utx",
    "packageSha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f",
    "format": "DXT1",
-   "minLod": null,
+   "minLod": 0,
    "storedMipCount": 11,
    "storedMipDimensions": [
     [
@@ -351,7 +351,7 @@
    "package": "textures/l2_skies.utx",
    "packageSha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f",
    "format": "DXT5",
-   "minLod": null,
+   "minLod": 0,
    "storedMipCount": 11,
    "storedMipDimensions": [
     [
@@ -413,7 +413,7 @@
    "package": "textures/dion_curumadungeon_t.utx",
    "packageSha256": "3def70df6f5d2ffb180dbaad62ead29ca2f782595e859521efad044ff2ddaba5",
    "format": "DXT1",
-   "minLod": null,
+   "minLod": 0,
    "storedMipCount": 7,
    "storedMipDimensions": [
     [
@@ -459,7 +459,7 @@
    "package": "textures/cruma_tr_t.utx",
    "packageSha256": "08f0f7036f3eeabb64659059ed7e8e8c15a72cac8d94cc03007fdee363cb1e01",
    "format": "DXT1",
-   "minLod": null,
+   "minLod": 0,
    "storedMipCount": 9,
    "storedMipDimensions": [
     [

@@ -9,9 +9,9 @@ import argparse
 import hashlib
 import json
 
+from native_assets_lib.material_texture_mip_chain import texture_min_lod
 from native_assets_lib.texture_mips import build_texture_source
 from native_assets_lib.texture_package_118 import read_unreal_package
-from native_assets_lib.texture_source_reader import INTEGER_PROPERTY_TYPE, integer_property
 from world.export_day_night_fixtures import FIXTURES_ROOT, read_pinned_json, require, require_output_directory_inside_fixtures
 
 TEXTURE_SAMPLERS_REPORT_SHA256 = 'fc0169fe76524dd3a118474b9211e1b55b182870be3ddf9274d38431d619c1a5'
@@ -82,7 +82,7 @@ def live_texture(client_root, packages, texture_name, stage):
     package = packages[relative_path]
     metadata, _ = build_texture_source(package, texture_export_named(package, texture_name))
     return {'texture': texture_name, 'package': relative_path, 'packageSha256': package.source_hash, 'format': metadata['format']['name'],
-            'minLod': integer_property(metadata['propertyTags'], 'MinLOD', INTEGER_PROPERTY_TYPE), 'storedMipCount': metadata['mipCount'],
+            'minLod': texture_min_lod(metadata), 'storedMipCount': metadata['mipCount'],
             'storedMipDimensions': [[mip['width'], mip['height']] for mip in metadata['mips']],
             'live': {'levelCount': stage['levelCount'], 'firstSourceMip': stage['firstSourceMip'], 'size': stage['size']}}
 

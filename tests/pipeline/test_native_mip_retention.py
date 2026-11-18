@@ -80,7 +80,7 @@ class NativeMipRetentionTests(unittest.TestCase):
         self.assertEqual(len(textures), 6)
         for texture in textures:
             width, height = texture['storedMipDimensions'][0]
-            retention = native_mip_retention(width, height, [tuple(dimensions) for dimensions in texture['storedMipDimensions']], texture['minLod'] or 0)
+            retention = native_mip_retention(width, height, [tuple(dimensions) for dimensions in texture['storedMipDimensions']], texture['minLod'])
             self.assertEqual((retention.first_mip, retention.level_count), (texture['live']['firstSourceMip'], texture['live']['levelCount']), texture['texture'])
 
     def test_a_512_by_128_chain_stops_at_its_smaller_dimension(self):
