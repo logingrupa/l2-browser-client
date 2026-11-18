@@ -17,7 +17,7 @@ from native_store.catalog_writer import read_store_catalog, validate_catalog_rec
 from native_store.gap_rows import write_gap_rows
 from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
+from native_store.store_paths import REPOSITORY_ROOT, StorePathError, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records, run_at_below_normal_priority
 from native_store.verified_file_writes import sha256_hex
 from reference_client_guard import require_reference_client
@@ -255,13 +255,14 @@ def run_shared_sky_step(project_root, client_root):
     try:
         level = read_level_model(package)
         selection = select_shared_sky_root(package, level, class_defaults, gaps)
+        converted = SharedSkyConversion(None, None, None, []) if selection is None else convert_shared_sky(
+            project_root, client, package, level, selection, lock_record['eSha256'], gaps)
     except LevelModelLayoutError as error:
         return unit_step_row(SHARED_SKY_CENSUS_KEY, SHARED_SKY_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
+    except StorePathError:
+        raise
     except ValueError as error:
         return unit_step_row(SHARED_SKY_CENSUS_KEY, SHARED_SKY_STEP_NAME, FAILED_STATUS, conversion_failure_reason(error), source_identity, step_evidence)
-    converted = SharedSkyConversion(None, None, None, [])
-    if selection is not None:
-        converted = convert_shared_sky(project_root, client, package, level, selection, lock_record['eSha256'], gaps)
     inputs = locked_input_records(sorted({SHARED_SKY_MAP_PATH, *converted.package_paths}))
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     gap_rows = gaps.rows()

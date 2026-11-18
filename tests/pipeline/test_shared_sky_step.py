@@ -214,6 +214,28 @@ class SharedSkyStepRecordTests(unittest.TestCase):
 
 
 @unittest.skipUnless((REFERENCE_CLIENT / 'maps/skylevel.unr').is_file(), 'the conversion client E:/Lineage2-client is absent on this host')
+class SharedSkyConversionRefusalTests(unittest.TestCase):
+    def run_step_with_convert_refusal(self, refusal):
+        from unittest import mock
+        from world import shared_sky_step
+        scratch = scratch_work_root(self, 'shared-sky-refusal-')
+        with mock.patch.object(shared_sky_step, 'convert_shared_sky', side_effect=refusal):
+            return shared_sky_step.run_shared_sky_step(scratch, REFERENCE_CLIENT)
+
+    def test_a_geometry_refusal_while_converting_is_a_failed_skylevel_row(self):
+        from world.error_detail import conversion_failure_reason
+        refusal = BspPolygonError('node 0 polygon winding is reversed or degenerate against its stored plane')
+        row = self.run_step_with_convert_refusal(refusal)
+        self.assertEqual((row['key'], row['step'], row['status'], row['reason']),
+                         ('map:skylevel', 'shared-sky', 'failed', conversion_failure_reason(refusal)))
+
+    def test_a_store_path_refusal_while_converting_is_raised(self):
+        from native_store.store_paths import StorePathError
+        with self.assertRaisesRegex(StorePathError, 'synthetic store path refusal'):
+            self.run_step_with_convert_refusal(StorePathError('synthetic store path refusal'))
+
+
+@unittest.skipUnless((REFERENCE_CLIENT / 'maps/skylevel.unr').is_file(), 'the conversion client E:/Lineage2-client is absent on this host')
 class RealClientSharedSkyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
