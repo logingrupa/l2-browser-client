@@ -64,6 +64,19 @@ describe("shared SkyLevel visibility at the RM-21 20_21 north pose", () => {
     expect(frame.unresolvedSortingParts).toEqual([]);
   });
 
+  it("stages an index range for every node it accepts at this pose", () => {
+    expect(frame.unstagedAcceptedNodes).toEqual([]);
+  });
+
+  it("counts an accepted drawable node without a staged index range and leaves it out of the queue instead of dropping it unnamed", () => {
+    const droppedNode = frame.draws[1]!.nodes[0]!, nodeRange = Int32Array.from(model.nodeRange);
+    nodeRange[droppedNode] = -1;
+    const reduced = computeSkyLevelVisibilityFrame({ ...model, nodeRange }, liveScene, committedBspWalkRules.selector);
+    expect(reduced.unstagedAcceptedNodes).toEqual([droppedNode]);
+    expect(reduced.acceptedNodes).toHaveLength(frame.acceptedNodes.length - 1);
+    expect(reduced.draws.flatMap(draw => draw.nodes)).not.toContain(droppedNode);
+  });
+
   it("builds the sky scene from the camera pose and the sky location", () => {
     const scene = skyLevelSceneOfPose(nativeSceneMatrices(northPose, committedBspWalkRules.frustum.nearClip, committedBspWalkRules.frustum.farClip),
       skyLocation, committedBspWalkRules.frustum);

@@ -48,6 +48,7 @@ export interface SkyLevelVisibilityFrame extends SkyDrawOrder {
   readonly acceptedNodes: Int32Array;
   readonly runs: readonly SkyMaterialRun[];
   readonly unresolvedSortingParts: readonly number[];
+  readonly unstagedAcceptedNodes: readonly number[];
 }
 
 const label = "Shared sky visibility";
@@ -113,13 +114,13 @@ function materialRuns(model: SkyLevelVisibilityModel, draws: readonly SkyDraw[])
 }
 
 export function computeSkyLevelVisibilityFrame(model: SkyLevelVisibilityModel, scene: SkyLevelScene, selector: BspNodeSelectorRules): SkyLevelVisibilityFrame {
-  const location = locateZone(model, scene.eye), accepted: number[] = [];
+  const location = locateZone(model, scene.eye), accepted: number[] = [], unstagedAcceptedNodes: number[] = [];
   walkSelectedBspNodes(model, { eye: scene.eye, sceneZone: location.zone, visibleZones: zoneSetOf(location.zone), frustum: scene.frustum }, selector, {
-    accept(node) { if (model.nodeRange[node] !== indexNone) accepted.push(node); },
+    accept(node) { (model.nodeRange[node] === indexNone ? unstagedAcceptedNodes : accepted).push(node); },
   });
   const partOfNode = (node: number) => model.rangePart[model.nodeRange[node]!]!;
   const unresolvedSortingParts = [...new Set(accepted.map(partOfNode).filter(part => model.partSortingResolved[part] !== 1))].sort((left, right) => left - right);
   const order = orderSkyLevelDraws(accepted, node => model.nodeSection[node]!, node => model.partRequiresSorting[partOfNode(node)] === 1);
   return { sceneZone: location.zone, sceneLeaf: location.leaf, acceptedNodes: Int32Array.from(accepted), ...order, runs: materialRuns(model, order.draws),
-    unresolvedSortingParts };
+    unresolvedSortingParts, unstagedAcceptedNodes };
 }
