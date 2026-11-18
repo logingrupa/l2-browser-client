@@ -15,7 +15,7 @@ from world.shared_sky_visibility_rules import (SharedSkyVisibilityRulesError, ma
 
 FIXTURES_FILE = ROOT / 'tests' / 'fixtures' / 'environment' / 'shared-sky-visibility-fixtures.json'
 FIXTURES_FILE_SHA256 = '7586d71fb14ad1eff5fb2e8f49bf7c189e2e1a84550f5924c93ae05630294ead'
-RULES_FILE_SHA256 = '646156c47fea548a0a48c1e5ac4a4a9161dd77cad035c3dc40658b4c405aa4a6'
+RULES_FILE_SHA256 = '5499ef3f520c917321c68e3a1f469c75c94b0b792f04f07311b24fc009beb3a6'
 FIXTURES = json.loads(FIXTURES_FILE.read_bytes())
 
 

@@ -1,4 +1,4 @@
-from world.level_model import LevelModelRangeError, require_level_model_ranges
+from world.level_model import INDEX_NONE, LevelModelRangeError, require_level_model_ranges
 from world.typed_payload import TypedPayloadArray
 
 ZONE_SET_WORD_MASK = 0xFFFFFFFF
@@ -43,7 +43,22 @@ def node_arrays(model):
             array('NODE.zone', 'uint8', [zone for node in nodes for zone in node.i_zone]),
             array('NODE.zoneSet', 'uint32', [word for node in nodes for word in zone_set_words(node.zone_mask)]),
             array('NODE.renderBound', 'int32', [node.i_render_bound for node in nodes]),
-            array('NODE.sphere', 'float32', [value for node in nodes for value in node.exclusive_sphere])]
+            array('NODE.sphere', 'float32', [value for node in nodes for value in node.exclusive_sphere]),
+            array('NODE.surface', 'int32', [node.i_surf for node in nodes]),
+            array('NODE.surfaceFlags', 'uint32', [model.surfs[node.i_surf].flags for node in nodes]),
+            array('NODE.section', 'int32', [node.i_section for node in nodes]),
+            array('NODE.drawable', 'uint8', [int(node.i_section != INDEX_NONE and node.i_vert_offset != INDEX_NONE) for node in nodes])]
+
+
+def sky_visibility_arrays(model, parts, part_sorting):
+    node_ranges = [(part_index, node_range) for part_index, part in enumerate(parts) for node_range in part['nodeRanges']]
+    return [*node_arrays(model), *bound_arrays(model), array('LEAF.zone', 'uint8', [leaf[0] for leaf in model.leaves]),
+            array('RNGE.node', 'int32', [node_range['node'] for _, node_range in node_ranges]),
+            array('RNGE.part', 'int32', [part_index for part_index, _ in node_ranges]),
+            array('RNGE.firstIndex', 'int32', [node_range['indexStart'] for _, node_range in node_ranges]),
+            array('RNGE.indexCount', 'int32', [node_range['indexCount'] for _, node_range in node_ranges]),
+            array('PART.requiresSorting', 'uint8', [int(sorting is True) for sorting in part_sorting]),
+            array('PART.sortingResolved', 'uint8', [int(sorting is not None) for sorting in part_sorting])]
 
 
 def bound_arrays(model):

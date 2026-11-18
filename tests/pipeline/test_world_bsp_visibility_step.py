@@ -179,7 +179,7 @@ class VisibilityRecipeAndRegistrationTests(unittest.TestCase):
                                                                 'manifestSha256': sha256, 'manifestBytes': 2000}])
 
     def test_the_step_name_and_version_are_pinned(self):
-        self.assertEqual((BSP_VISIBILITY_STEP_NAME, BSP_VISIBILITY_STEP_ALGORITHM_VERSION), ('bsp-visibility', 3))
+        self.assertEqual((BSP_VISIBILITY_STEP_NAME, BSP_VISIBILITY_STEP_ALGORITHM_VERSION), ('bsp-visibility', 4))
 
     def test_the_unit_config_holds_the_struct_property_rules_sha256_because_the_product_embeds_the_zone_records(self):
         with (mock.patch('world.bsp_visibility_step.sealed_chunk_plan', return_value=('c' * 64, ROOT, {})),

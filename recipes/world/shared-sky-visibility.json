@@ -31,6 +31,22 @@
    "RM22-TAIL-REFERENCE-ARRAY-NAME"
   ]
  },
+ "nodeSelector": {
+  "function": "Route visible BSP node",
+  "address": "0x10689fd0",
+  "backfaceKeepFlags": [
+   67109120,
+   524288
+  ],
+  "fakeBackdropFlag": 128,
+  "ordinaryGeometry": {
+   "excludedFlag": 536870912,
+   "unlessNeitherFlags": [
+    1,
+    8192
+   ]
+  }
+ },
  "viewFrustum": {
   "function": "FLevelSceneNode::GetViewFrustum",
   "address": "0x10654530",

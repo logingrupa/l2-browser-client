@@ -27,7 +27,7 @@ from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 from world.visibility_members import map_emitter_members, static_mesh_members
 
-BSP_VISIBILITY_STEP_ALGORITHM_VERSION = 3
+BSP_VISIBILITY_STEP_ALGORITHM_VERSION = 4
 BSP_VISIBILITY_STEP_NAME = 'bsp-visibility'
 BSP_VISIBILITY_PRODUCT_NAME = 'bsp-visibility.json'
 TILE_BSP_VISIBILITY_FOLDER = 'native-tile-bsp-visibility'

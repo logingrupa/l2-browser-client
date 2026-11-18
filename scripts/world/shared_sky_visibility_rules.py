@@ -8,7 +8,7 @@ from native_store.store_paths import REPOSITORY_ROOT
 
 SHARED_SKY_VISIBILITY_RULES_RELATIVE_PATH = 'recipes/world/shared-sky-visibility.json'
 SHARED_SKY_VISIBILITY_RULES_KIND = 'shared-sky-visibility-rules'
-DOCUMENT_FIELDS = {'schemaVersion', 'kind', 'sources', 'levelTail', 'viewFrustum', 'materialSorting', 'depthClear'}
+DOCUMENT_FIELDS = {'schemaVersion', 'kind', 'sources', 'levelTail', 'nodeSelector', 'viewFrustum', 'materialSorting', 'depthClear'}
 LEVEL_TAIL_COUNT_FIELDS = ('obsoleteArrayBelowVersion', 'objectReferenceCount', 'stringMapFromVersion', 'stringArrayMigrationFromVersion')
 SOURCE_NAMES = ('sharedSkyNodes', 'viewFrustum', 'skyDrawOrder')
 SHA256_HEX = re.compile(r'[0-9a-f]{64}')

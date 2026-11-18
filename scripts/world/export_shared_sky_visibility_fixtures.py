@@ -20,6 +20,8 @@ VIEW_FRUSTUM_MANIFEST_SHA256 = 'e6699aa3218ac1fe986fbef5b7c918a4c337afdd3a2bce53
 SKY_DRAW_ORDER_SHA256 = 'ad73cee09e34a1d9ad560026b90c6e4643b1225c8b905d4377b0b19cb3fa20c1'
 SKY_DRAW_ORDER_MANIFEST_SHA256 = '1d02a8374e80d46f2099f1e05ad04ec4a9268aca056cfe385750798ab64f2303'
 FIXTURES_OUTPUT_NAME = 'shared-sky-visibility-fixtures.json'
+STAGED_SKY_VISIBILITY_FOLDER = 'skylevel-visibility'
+STAGED_SKY_VISIBILITY_FILES = ('visibility.json', 'payload.bin')
 RULES_RELATIVE_PATH = 'recipes/world/shared-sky-visibility.json'
 LEVEL_SERIALIZE_ADDRESS = '0x105d07f0'
 VIEW_FRUSTUM_ADDRESS = '0x10654530'
@@ -27,6 +29,11 @@ OBSOLETE_ARRAY_PATTERN = re.compile(r'if Ar\.Ver<(\d+): serialize and destroy te
 OBJECT_REFERENCE_PATTERN = re.compile(r'for i in0\.\.(\d+): Ar << objectRef\(this\+0xc4')
 STRING_MAP_PATTERN = re.compile(r'if Ar\.Ver>=(\d+): SerializeStringMap')
 STRING_ARRAY_MIGRATION_PATTERN = re.compile(r'else if Ar\.Ver>=(\d+): read two string arrays')
+NODE_SELECTOR_ADDRESS = '0x10689fd0'
+BACKFACE_PATTERN = re.compile(r'If d<=0 and !\(surf\.flags&(0x[0-9a-f]+)\) and scene\.zone!=0 and !\(surf\.flags&(0x[0-9a-f]+)\): skip this node')
+FAKE_BACKDROP_PATTERN = re.compile(r'If surf\.flags&(0x[0-9a-f]+): evaluate FakeBackdrop gates')
+ORDINARY_GEOMETRY_PATTERN = re.compile(r'Ordinary geometry additionally requires !\(flags&(0x[0-9a-f]+|\d+)\) OR \(!\(flags&(0x[0-9a-f]+|\d+)\) AND '
+                                       r'!\(flags&(0x[0-9a-f]+|\d+)\)\)')
 TAIL_NAME_CLAIM_PREFIX = 'RM22-TAIL-'
 TAIL_NAME_CLAIM_SUFFIX = '-NAME'
 TAIL_OLDER_VERSIONS_CLAIM = 'RM22-TAIL-OLDER-VERSIONS'
@@ -83,6 +90,21 @@ def level_tail_rules(nodes_answer):
                                     if identifier.startswith(TAIL_NAME_CLAIM_PREFIX) and identifier.endswith(TAIL_NAME_CLAIM_SUFFIX))}
 
 
+def pattern_flags(pattern, text, label):
+    match = pattern.search(text)
+    require(match is not None, f'the RM-22 selector pseudocode states no {label}')
+    return [int(group, 0) for group in match.groups()]
+
+
+def node_selector_rules(nodes_answer):
+    pseudocode = single(nodes_answer['functions'], lambda row: row['va'] == NODE_SELECTOR_ADDRESS, 'RM-22 selector')['pseudocode']
+    [ordinary_excluded_flag, ordinary_first_flag, ordinary_second_flag] = pattern_flags(ORDINARY_GEOMETRY_PATTERN, pseudocode, 'ordinary geometry rule')
+    [fake_backdrop_flag] = pattern_flags(FAKE_BACKDROP_PATTERN, pseudocode, 'FakeBackdrop flag')
+    return {'function': 'Route visible BSP node', 'address': NODE_SELECTOR_ADDRESS,
+            'backfaceKeepFlags': pattern_flags(BACKFACE_PATTERN, pseudocode, 'backface keep flags'), 'fakeBackdropFlag': fake_backdrop_flag,
+            'ordinaryGeometry': {'excludedFlag': ordinary_excluded_flag, 'unlessNeitherFlags': [ordinary_first_flag, ordinary_second_flag]}}
+
+
 def data_row_value(frustum_answer, name):
     row = single(frustum_answer['construction']['dataReplay'], lambda entry: entry['decodedValues'].get('name') == name, f'RM-23 data row {name}')
     values = row['decodedValues']
@@ -130,7 +152,7 @@ def shared_sky_visibility_rules(nodes_answer, frustum_answer, order_answer):
             'sources': {'sharedSkyNodes': {'file': 'shared-sky-nodes.json', 'sha256': SHARED_SKY_NODES_SHA256},
                         'viewFrustum': {'file': 'view-frustum.json', 'sha256': VIEW_FRUSTUM_SHA256, 'manifestSha256': VIEW_FRUSTUM_MANIFEST_SHA256},
                         'skyDrawOrder': {'file': 'sky-draw-order.json', 'sha256': SKY_DRAW_ORDER_SHA256, 'manifestSha256': SKY_DRAW_ORDER_MANIFEST_SHA256}},
-            'levelTail': level_tail_rules(nodes_answer), 'viewFrustum': view_frustum_rules(frustum_answer),
+            'levelTail': level_tail_rules(nodes_answer), 'nodeSelector': node_selector_rules(nodes_answer), 'viewFrustum': view_frustum_rules(frustum_answer),
             'materialSorting': material_sorting_rules(order_answer), 'depthClear': depth_clear_rules(order_answer)}
 
 
@@ -213,9 +235,37 @@ def export_shared_sky_visibility_fixtures(nodes_path, frustum_path, frustum_mani
     return {FIXTURES_OUTPUT_NAME: hashlib.sha256(fixtures).hexdigest(), RULES_RELATIVE_PATH: hashlib.sha256(rules).hexdigest()}
 
 
+def pinned_bundle_file(bundle_folder, manifest, name):
+    pin = manifest['files'].get(name)
+    require(pin is not None, f'the shared sky bundle manifest pins no {name}')
+    return read_pinned_bytes(Path(bundle_folder) / name, pin['sha256'], f'the shared sky bundle {name}')
+
+
+def export_staged_sky_visibility(bundle_manifest_path, output_directory=DEFAULT_OUTPUT_DIRECTORY):
+    output = require_output_directory_inside_fixtures(Path(output_directory) / STAGED_SKY_VISIBILITY_FOLDER)
+    manifest_path = Path(bundle_manifest_path)
+    manifest = json.loads(manifest_path.read_bytes())
+    require(manifest.get('kind') == 'native-shared-sky-bundle', f'{manifest_path} is not a shared sky bundle manifest')
+    files = {name: pinned_bundle_file(manifest_path.parent, manifest, name) for name in STAGED_SKY_VISIBILITY_FILES}
+    output.mkdir(parents=True, exist_ok=True)
+    for name, payload in files.items():
+        (output / name).write_bytes(payload)
+    return {f'{STAGED_SKY_VISIBILITY_FOLDER}/{name}': hashlib.sha256(payload).hexdigest() for name, payload in files.items()}
+
+
 def main(arguments):
     parser = argparse.ArgumentParser(description='Write the RM-22, RM-23 and RM-24 shared sky visibility rules recipe and the frustum, node and draw '
-                                                 'order fixtures into tests/fixtures/environment.')
+                                                 'order fixtures into tests/fixtures/environment, or copy the staged skylevel visibility payload '
+                                                 'of a converted shared sky bundle there.')
+    parser.add_argument('--staged-sky-bundle-manifest')
+    known, _ = parser.parse_known_args(arguments)
+    if known.staged_sky_bundle_manifest is not None:
+        try:
+            print(json.dumps(export_staged_sky_visibility(known.staged_sky_bundle_manifest), indent=2))
+        except (OSError, ValueError, KeyError) as error:
+            print(f'{type(error).__name__}: {error}', file=sys.stderr)
+            return 1
+        return 0
     parser.add_argument('--shared-sky-nodes', required=True)
     parser.add_argument('--view-frustum', required=True)
     parser.add_argument('--view-frustum-manifest', required=True)

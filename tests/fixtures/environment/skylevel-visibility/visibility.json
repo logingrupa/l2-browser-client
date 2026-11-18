@@ -1,0 +1,167 @@
+{
+  "units": "source",
+  "axes": "ue2-z-up",
+  "sourceSha256": "5ecfe78912a21f15783b78aee1b9d9542781ef11bb8a8c813868959f5157152f",
+  "converterVersion": "shared-sky-2",
+  "arrays": [
+    {
+      "name": "NODE.plane",
+      "type": "float32",
+      "count": 19880,
+      "byteOffset": 0,
+      "byteLength": 79520
+    },
+    {
+      "name": "NODE.front",
+      "type": "int32",
+      "count": 4970,
+      "byteOffset": 79520,
+      "byteLength": 19880
+    },
+    {
+      "name": "NODE.back",
+      "type": "int32",
+      "count": 4970,
+      "byteOffset": 99400,
+      "byteLength": 19880
+    },
+    {
+      "name": "NODE.coplanar",
+      "type": "int32",
+      "count": 4970,
+      "byteOffset": 119280,
+      "byteLength": 19880
+    },
+    {
+      "name": "NODE.leaf",
+      "type": "int32",
+      "count": 9940,
+      "byteOffset": 139160,
+      "byteLength": 39760
+    },
+    {
+      "name": "NODE.zone",
+      "type": "uint8",
+      "count": 9940,
+      "byteOffset": 178920,
+      "byteLength": 9940
+    },
+    {
+      "name": "NODE.zoneSet",
+      "type": "uint32",
+      "count": 9940,
+      "byteOffset": 188860,
+      "byteLength": 39760
+    },
+    {
+      "name": "NODE.renderBound",
+      "type": "int32",
+      "count": 4970,
+      "byteOffset": 228620,
+      "byteLength": 19880
+    },
+    {
+      "name": "NODE.sphere",
+      "type": "float32",
+      "count": 19880,
+      "byteOffset": 248500,
+      "byteLength": 79520
+    },
+    {
+      "name": "NODE.surface",
+      "type": "int32",
+      "count": 4970,
+      "byteOffset": 328020,
+      "byteLength": 19880
+    },
+    {
+      "name": "NODE.surfaceFlags",
+      "type": "uint32",
+      "count": 4970,
+      "byteOffset": 347900,
+      "byteLength": 19880
+    },
+    {
+      "name": "NODE.section",
+      "type": "int32",
+      "count": 4970,
+      "byteOffset": 367780,
+      "byteLength": 19880
+    },
+    {
+      "name": "NODE.drawable",
+      "type": "uint8",
+      "count": 4970,
+      "byteOffset": 387660,
+      "byteLength": 4970
+    },
+    {
+      "name": "BNDS.box",
+      "type": "float32",
+      "count": 11520,
+      "byteOffset": 392632,
+      "byteLength": 46080
+    },
+    {
+      "name": "BNDS.valid",
+      "type": "uint8",
+      "count": 1920,
+      "byteOffset": 438712,
+      "byteLength": 1920
+    },
+    {
+      "name": "LEAF.zone",
+      "type": "uint8",
+      "count": 2574,
+      "byteOffset": 440632,
+      "byteLength": 2574
+    },
+    {
+      "name": "RNGE.node",
+      "type": "int32",
+      "count": 4851,
+      "byteOffset": 443208,
+      "byteLength": 19404
+    },
+    {
+      "name": "RNGE.part",
+      "type": "int32",
+      "count": 4851,
+      "byteOffset": 462612,
+      "byteLength": 19404
+    },
+    {
+      "name": "RNGE.firstIndex",
+      "type": "int32",
+      "count": 4851,
+      "byteOffset": 482016,
+      "byteLength": 19404
+    },
+    {
+      "name": "RNGE.indexCount",
+      "type": "int32",
+      "count": 4851,
+      "byteOffset": 501420,
+      "byteLength": 19404
+    },
+    {
+      "name": "PART.requiresSorting",
+      "type": "uint8",
+      "count": 7,
+      "byteOffset": 520824,
+      "byteLength": 7
+    },
+    {
+      "name": "PART.sortingResolved",
+      "type": "uint8",
+      "count": 7,
+      "byteOffset": 520832,
+      "byteLength": 7
+    }
+  ],
+  "payload": {
+    "file": "payload.bin",
+    "sha256": "15bde7a1b94896e7874e98895103b94b7afaac6a31fc4b54a2dcfce846788f47",
+    "bytes": 520840
+  }
+}

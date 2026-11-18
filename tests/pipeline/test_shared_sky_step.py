@@ -24,12 +24,14 @@ from world.shared_sky_step import (SHARED_SKY_STEP_ALGORITHM_VERSION, SHARED_SKY
 from world.sky_geometry import SKY_GLB_GENERATOR, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
 from world.sky_materials import SkyTextureUnsupported, external_reference_reasons, single_graph_texture_export
+from world.shared_sky_visibility_rules import material_requires_sorting
 from world.sky_root_conversion import alpha_source, presentation_field_gap, root_colour_rgba
 from world.terrain_coordinates import f32
 
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
 SHARED_SKY_FIXTURES = json.loads((ROOT / 'tests/fixtures/environment/shared-sky-rm21-fixtures.json').read_text(encoding='utf-8'))['sharedSkyLevel']
 SKYLEVEL_LEVEL_MODEL_FIXTURE = json.loads((ROOT / 'tests/fixtures/world-readers/level-model-118-0.json').read_text(encoding='utf-8'))
+STAGED_SKY_VISIBILITY_FIXTURE = ROOT / 'tests/fixtures/environment/skylevel-visibility'
 TILE_ID = '00_00'
 SKY_ZONE = 1
 OBJECT_NAMES = {1: 'Sky_T.Shaders.Haze', 3: 'Sky_T.Shaders.Back', 4: 'SKY_T.SHADERS.HAZE', 2: f'{TILE_ID}.BrushActor0'}
@@ -179,7 +181,7 @@ class SkyMaterialTests(unittest.TestCase):
 
 class SharedSkyStepRecordTests(unittest.TestCase):
     def test_the_step_is_one_world_unit_with_its_own_converter_closure(self):
-        self.assertEqual((SHARED_SKY_UNIT_KEY, SHARED_SKY_STEP_ALGORITHM_VERSION), ('shared-sky:skylevel', 1))
+        self.assertEqual((SHARED_SKY_UNIT_KEY, SHARED_SKY_STEP_ALGORITHM_VERSION), ('shared-sky:skylevel', 2))
         self.assertEqual(step_source_modules('world', 'shared-sky'), ('world.shared_sky_step',))
 
     def test_the_sky_reasons_it_can_write_are_listed_and_the_tile_detail_mode_reasons_are_gone(self):
@@ -346,9 +348,18 @@ class RealClientSharedSkyTests(unittest.TestCase):
         manifest = json.loads((bundle_folder / 'manifest.json').read_text(encoding='utf-8'))
         self.assertEqual((manifest['kind'], manifest['map'], manifest['counts']['materialRoots']),
                          ('native-shared-sky-bundle', 'skylevel', len(SHARED_SKY_FIXTURES['surfaceCountsByMaterial'])))
-        for name in ('sky.glb', 'sky.json'):
+        for name in ('sky.glb', 'sky.json', 'visibility.json', 'payload.bin'):
             payload = (bundle_folder / name).read_bytes()
             self.assertEqual(manifest['files'][name], {'bytes': len(payload), 'sha256': hashlib.sha256(payload).hexdigest()})
+
+    def test_the_bundle_visibility_payload_is_the_committed_staged_fixture_and_parts_carry_the_rm24_sorting(self):
+        bundle_folder = (self.store_root / self.product['manifest']['resource'].removeprefix('/l2/')).parent
+        for name in ('visibility.json', 'payload.bin'):
+            with self.subTest(name=name):
+                self.assertEqual((bundle_folder / name).read_bytes(), (STAGED_SKY_VISIBILITY_FIXTURE / name).read_bytes())
+        for part in self.snapshot['parts']:
+            with self.subTest(material=part['sourceMaterial']):
+                self.assertEqual(part['requiresSorting'], material_requires_sorting(part['sourceMaterial']))
 
     def test_every_material_file_the_step_writes_is_pinned_from_the_catalog_and_sealed_in_its_receipt(self):
         from native_store.catalog_writer import read_store_catalog

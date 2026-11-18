@@ -25,6 +25,7 @@ from world.actor_field_values import UNRESOLVED_PROVENANCE
 from world.bsp_chunk_geometry import load_bsp_poly_flags, poly_flags_recipe_sha256
 from world.bsp_material_mapping_size import surface_material_identities
 from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
+from world.bsp_visibility_payload import sky_visibility_arrays
 from world.error_detail import conversion_failure_reason
 from world.level_model import LevelModelLayoutError, read_level_model
 from world.level_zones import read_level_zones
@@ -45,14 +46,16 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package_by_path
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
 from world.tile_step_gap_rows import UnitStepGapRows
-from world.shared_sky_visibility_rules import read_shared_sky_visibility_rules
+from world.shared_sky_visibility_rules import material_requires_sorting, read_shared_sky_visibility_rules
+from world.typed_payload import TYPED_PAYLOAD_PAYLOAD_NAME, typed_payload_asset
 from world.world_lane_names import WORLD_LANE_NAME
 
-SHARED_SKY_STEP_ALGORITHM_VERSION = 1
+SHARED_SKY_STEP_ALGORITHM_VERSION = 2
 SHARED_SKY_UNIT_KEY = f'{SHARED_SKY_STEP_NAME}:{SHARED_SKY_MAP_NAME}'
 SHARED_SKY_PRODUCT_NAME = 'shared-sky.json'
 SHARED_SKY_SNAPSHOT_NAME = 'sky.json'
 SHARED_SKY_GLB_NAME = 'sky.glb'
+SHARED_SKY_VISIBILITY_NAME = 'visibility.json'
 SHARED_SKY_BUNDLE_KIND = 'native-shared-sky-bundle'
 SHARED_SKY_SNAPSHOT_KIND = 'native-shared-sky-snapshot'
 SKIES_CATALOG_SLICE = 'skies'
@@ -69,12 +72,10 @@ SHARED_SKY_DRAW_RULE = ('Engine.SkyLevel under !GIsEditor && GIsL2Seamless && GL
                         'skylevel.unr for every map; the tile SkyZoneInfo room is never drawn')
 SHARED_SKY_EYE_RULE = ('FSkySceneNode 0x10655a20: M = T(-sky.Location) * InvR(sky.Rotation) * T(parent.ViewOrigin); projection inherited, '
                        'DrawScale unused, camera translation cancels (RM-21)')
-SHARED_SKY_NODE_SELECTION_ASSUMPTION = ('labelled assumption: every node whose zone sides hold the sky zone and that the BSP draw rule draws '
-                                        '(at least 3 vertices, no visual skip flag); whether the native sky RenderLevel draws exactly these nodes '
-                                        'from the sky eye is open (RM-22 b)')
+SHARED_SKY_NODE_SELECTION = ('geometry holds every drawn polygon node touching the sky zone; visibility.json carries the native node arrays so '
+                              'the runtime RenderLevel walk 0x1068c560 and selector 0x10689fd0 pick the submitted nodes from the sky eye (RM-22, RM-23)')
 SHARED_SKY_LIMITATIONS = ['Frozen authored sky source state; no native visible-pixel parity is established.',
-                          'The sky view eligibility gate before 0x10689fd0 and FakeBackdrop viewport+0x160 are open (RM-22 c); the runtime '
-                          'draws the shared sky always and names the gap.',
+                          'RequiresSorting per material comes from the RM-24 frame routes; a material absent from that frame stays unresolved.',
                           'Texture panner rates and stored matrices are retained in the material programs.',
                           'Source ColorModifier bytes are B, G, R, A (research Q6 binary-member-order).',
                           'Original mip blocks are preserved; PNG is an ordinary BC1/BC3 decode of mip 0, without alpha/channel repair, '
@@ -149,7 +150,7 @@ def shared_sky_snapshot(level, selection, location, actor_properties_record, par
     sky_actor = selection.actor
     return {'schemaVersion': 1, 'kind': SHARED_SKY_SNAPSHOT_KIND, 'id': f'interlude:{level.binding["model"]["qualified"]}.{sky_actor["name"]}',
             'map': SHARED_SKY_MAP_NAME, 'drawRule': SHARED_SKY_DRAW_RULE, 'zoneRule': SHARED_SKY_ZONE_RULE, 'eyeRule': SHARED_SKY_EYE_RULE,
-            'nodeSelection': SHARED_SKY_NODE_SELECTION_ASSUMPTION, 'sourceSkyZone': sky_actor['object'], 'skyZoneIndex': selection.zone_index,
+            'nodeSelection': SHARED_SKY_NODE_SELECTION,'sourceSkyZone': sky_actor['object'], 'skyZoneIndex': selection.zone_index,
             'sourceSkyZonePosition': location, 'sourceSkyZoneRotation': selection.rotation,
             'rootTranslationMetres': sky_root_translation_metres(location), 'coordinateRule': SKY_COORDINATE_RULE, 'uvRule': SKY_UV_RULE,
             'parts': parts, 'materials': materials, 'skyActorProperties': actor_properties_record, 'levelModelBinding': level.binding,
@@ -173,9 +174,16 @@ def material_listing_pin(material_listing):
             'manifestBytes': len(material_listing.payload)}
 
 
-def shared_sky_bundle_files(snapshot, texture_files, material_listing):
+def sky_visibility_asset(model, parts, map_sha256):
+    arrays = sky_visibility_arrays(model, parts, [part['requiresSorting'] for part in parts])
+    return typed_payload_asset(arrays, {'sourceSha256': map_sha256, 'converterVersion': f'{SHARED_SKY_STEP_NAME}-{SHARED_SKY_STEP_ALGORITHM_VERSION}'})
+
+
+def shared_sky_bundle_files(snapshot, texture_files, material_listing, visibility):
     files = dict(texture_files)
     files[SHARED_SKY_SNAPSHOT_NAME] = json_bytes(snapshot)
+    files[SHARED_SKY_VISIBILITY_NAME] = visibility.asset_bytes
+    files[TYPED_PAYLOAD_PAYLOAD_NAME] = visibility.payload_bytes
     files[SHARED_SKY_GLB_NAME] = build_sky_glb(snapshot, files)
     counts = sky_counts(snapshot['parts'])
     files[BUNDLE_MANIFEST_NAME] = json_bytes({'schemaVersion': 1, 'kind': SHARED_SKY_BUNDLE_KIND, 'id': snapshot['id'], 'map': snapshot['map'],
@@ -215,10 +223,12 @@ def convert_shared_sky(project_root, client, package, level, selection, map_sha2
     package_paths = sorted(conversion.packages.packages)
     if not roots:
         return SharedSkyConversion(None, None, None, package_paths)
-    parts = build_sky_zone_parts(package, material_of_surface, level.model, selection.zone_index, flags, roots)
+    parts = [{**part, 'requiresSorting': material_requires_sorting(part['sourceMaterial'])}
+             for part in build_sky_zone_parts(package, material_of_surface, level.model, selection.zone_index, flags, roots)]
     snapshot = shared_sky_snapshot(level, selection, location, actor_properties_record, parts, conversion.materials, map_sha256)
     material_listing = shared_sky_material_listing(conversion.material_files)
-    files, counts = shared_sky_bundle_files(snapshot, conversion.texture_files, material_listing)
+    files, counts = shared_sky_bundle_files(snapshot, conversion.texture_files, material_listing,
+                                            sky_visibility_asset(level.model, parts, map_sha256))
     return SharedSkyConversion(files, counts, material_listing, package_paths)
 
 
