@@ -32,6 +32,15 @@ describe("decoded L2FogInfo of 20_21 export 9236", () => {
       { Time: 5, FogColor: { R: 1, G: 2, B: 3, A: 0 } }] } : field);
     expect(decodeFogInfos([repeated])[0]!.unresolvedReason).toBe("lighting-fog-info-colour-times-not-increasing:9236");
   });
+
+  it("refuses a field list entry without a provenance and a Location that is not X, Y, Z", () => {
+    const record = fogInfo9236Record();
+    expect(() => decodeFogInfos([{ ...record, fields: [...record.fields, { field: "Location", value: null }] }]))
+      .toThrow("lighting records: fogInfos[0].fields[10] is not a field record with field, provenance and value.");
+    expect(() => decodeFogInfos([{ ...record, fields: record.fields.map(field => field.field === "Location" ? { ...field, value: { X: 1, Y: 2 } } : field) }]))
+      .toThrow("lighting records: fogInfos[0].Location is not an X, Y, Z location.");
+    expect(() => decodeFogInfos([{ exportIndex: 9236 }])).toThrow("lighting records: fogInfos[0] has no exportIndex and fields list.");
+  });
 });
 
 describe("L2FogInfo selection by the Q12 answer", () => {
