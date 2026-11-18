@@ -68,8 +68,7 @@ def lightmap_record_arrays(lightmaps):
     records = lightmaps.records
     return [array('LMRC.surface', 'int32', [record.surface for record in records]),
             array('LMRC.rectangle', 'int32', [value for record in records for value in record.rectangle]),
-            array('LMRC.projection', 'float32', [value for record in records for value in record.projection]),
-            array('LMRC.shadowMaskCount', 'int32', [record.shadow_mask_count for record in records])]
+            array('LMRC.projection', 'float32', [value for record in records for value in record.projection])]
 
 
 def lightmap_page_arrays(lightmaps):

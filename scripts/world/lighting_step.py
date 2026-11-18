@@ -19,6 +19,7 @@ from world.actor_field_values import UNRESOLVED_PROVENANCE, resolved_actor_field
 from world.bsp_node_sun_affect import NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED, SUN_AFFECTED
 from world.level_zones import SUN_AFFECT_FIELD, read_level_zones
 from world.light_actors import read_lighting_actors, read_static_mesh_light_lists, reference_client_class_chains
+from world.lightmap_rebuild_inputs import lightmap_rebuild_input_arrays
 from world.lighting_payload import (bsp_lightmap_arrays, lighting_records_array, static_mesh_light_list_arrays, terrain_intensity_map_arrays,
                                     terrain_lighting_arrays, typed_payload_byte_count)
 from world.native_terrain_sectors import native_terrain
@@ -34,7 +35,7 @@ from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 from world.error_detail import conversion_failure_reason, first_line_of_error
 
-LIGHTING_STEP_ALGORITHM_VERSION = 7
+LIGHTING_STEP_ALGORITHM_VERSION = 8
 LIGHTING_STEP_NAME = 'lighting'
 LIGHTING_PRODUCT_NAME = 'lighting.json'
 TILE_LIGHTING_FOLDER = 'native-tile-lighting'
@@ -164,6 +165,7 @@ def tile_lighting_payload(package, unit, class_defaults):
     bsp_arrays, reasons, bsp_counts = bsp_lightmap_arrays(package, lightmaps, model, tile_node_ranges(unit.bsp, unit.chunk_plan), zones)
     actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))
     lighting_actors = read_lighting_actors(package, model, actors, class_chains)
+    rebuild_arrays, rebuild_counts, rebuild_reasons = lightmap_rebuild_input_arrays(lightmaps, model, lighting_actors.lights)
     light_lists = read_static_mesh_light_lists(package, actors)
     terrain = native_terrain(package)
     sectors = read_terrain_lighting(package, terrain)
@@ -171,9 +173,9 @@ def tile_lighting_payload(package, unit, class_defaults):
     water_volumes, water_reasons = water_volume_links(lighting_actors.water_volumes, unit.collision)
     records = lighting_records(lighting_actors, zones, water_volumes, load_lighting_rules())
     light_list_sun_affect = static_mesh_light_list_sun_affect(package, light_lists, class_defaults)
-    arrays = [*bsp_arrays, *static_mesh_light_list_arrays(light_lists, light_list_sun_affect), *terrain_lighting_arrays(sectors), *intensity_map_arrays,
+    arrays = [*bsp_arrays, *rebuild_arrays, *static_mesh_light_list_arrays(light_lists, light_list_sun_affect), *terrain_lighting_arrays(sectors), *intensity_map_arrays,
               lighting_records_array(records)]
-    counts = {'bspLightmaps': bsp_counts, 'lights': len(lighting_actors.lights), 'fogInfos': len(lighting_actors.fog_infos),
+    counts = {'bspLightmaps': {**bsp_counts, **rebuild_counts}, 'lights': len(lighting_actors.lights), 'fogInfos': len(lighting_actors.fog_infos),
               'levelInfos': len(lighting_actors.level_infos), 'zones': len(records['zones']),
               'waterVolumes': len(records['waterVolumes']), 'staticMeshLightLists': len(light_lists),
               'staticMeshSceneLights': sum(len(light_list.scene_lights) for light_list in light_lists),
@@ -181,7 +183,7 @@ def tile_lighting_payload(package, unit, class_defaults):
               'terrainSectors': len(sectors), 'terrainSectorLights': sum(len(sector.lights) for sector in sectors),
               'terrainShadowMaps': sum(len(sector.shadow_maps) for sector in sectors), 'terrainIntensityMaps': intensity_map_count}
     chain_reasons = class_chain_unresolved_reasons(lighting_actors.unresolved_classes)
-    return arrays, sorted({*reasons, *water_reasons, *chain_reasons, *intensity_map_reasons}), counts
+    return arrays, sorted({*reasons, *rebuild_reasons, *water_reasons, *chain_reasons, *intensity_map_reasons}), counts
 
 
 def run_lighting_step(project_root, client_root, tile_id):

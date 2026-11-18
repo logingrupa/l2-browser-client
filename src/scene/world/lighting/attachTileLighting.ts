@@ -23,6 +23,8 @@ import { loadStaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
 import { bindStaticMeshHourlyVisibility, type StaticMeshHourlyVisibilityInspection } from "./staticMeshHourlyVisibility";
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
+import { createRebuiltLightmapWorkerComposer } from "./rebuiltLightmapWorkerProtocol";
+import type { RebuildLightEnvironment } from "./rebuildShadowLights";
 import type { TileLightingVisibility } from "./tileLightingVisibility";
 import { worldTimeOfDayFor, type RunningWorldTimeOfDay } from "../worldTimeOfDay";
 
@@ -68,6 +70,16 @@ const millisecondsPerSecond = 1000;
 
 function unboundTileLighting(gap: string): AttachedTileLighting {
   return { skyMaterialUniforms: null, cameraFog: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
+}
+
+function startRebuiltLightmapWorker(): Worker {
+  return new Worker(new URL("./rebuiltLightmapWorker.ts", import.meta.url), { type: "module" });
+}
+
+function rebuildLightEnvironment(timeOfDay: RunningWorldTimeOfDay, levelTimeSeconds: number): RebuildLightEnvironment {
+  const snapshot = timeOfDay.manager.snapshot();
+  return { hour: timeOfDay.manager.hour(), dayPart: snapshot.dayPart, celestialPhiDegrees: snapshot.celestialPhiDegrees, slopeSunAngle: snapshot.slopeSunAngleDegrees,
+    frozen: { value: snapshot.frozen.value, verified: snapshot.frozen.status !== "unresolved" }, tables: timeOfDay.tables, blend: timeOfDay.manager.blend(), levelTimeSeconds };
 }
 
 function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, frame: TileVisibilityFrame | null, timeOfDay: RunningWorldTimeOfDay,
@@ -125,8 +137,10 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     return { levelSeconds: presentationClock.levelSeconds, hour: environment.hour, environmentType: environment.targetType, fog: cameraEnvironment.fog };
   };
   const skyMaterialUniforms = (): NativeMaterialUniforms => ({ ...materialUniforms(), fog: cameraEnvironment.skyFog.fog });
+  const rebuiltLightmapComposer = createRebuiltLightmapWorkerComposer(startRebuiltLightmapWorker);
   const binding = bindTileLighting({ scene, model, sessionSeed, environment: () => timeOfDay.sample(),
-    levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, visibility, loadProgram: loadNativeMaterial });
+    levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, visibility, loadProgram: loadNativeMaterial,
+    rebuildEnvironment: () => rebuildLightEnvironment(timeOfDay, presentationClock.levelSeconds), composeRebuiltLightmap: rebuiltLightmapComposer.compose });
   const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
     uniforms: materialUniforms, loadProgram: loadNativeMaterial, lightLists: model.hourly.staticMeshLightLists, hourlyLighting: staticMeshHourlyLighting,
     loadVertexStreams: loadStaticMeshVertexStreams });
@@ -154,6 +168,12 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     },
     inspection: () => ({ ...binding.inspection(), cameraEnvironment, fogTransition: fogTransition.inspection(), staticMeshSlots: staticMeshBinding.inspection(),
       terrainLayers: terrainLayerBinding.inspection(), hourly: hourlyInspection() }),
-    dispose() { scene.onBeforeRenderObservable.remove(advance); binding.dispose(); staticMeshBinding.dispose(); terrainLayerBinding.dispose(); },
+    dispose() {
+      scene.onBeforeRenderObservable.remove(advance);
+      binding.dispose();
+      rebuiltLightmapComposer.dispose();
+      staticMeshBinding.dispose();
+      terrainLayerBinding.dispose();
+    },
   };
 }

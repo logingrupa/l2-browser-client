@@ -75,7 +75,14 @@ describe("hourly lighting developer variables", () => {
     });
     expect(nodeSetReadings).toEqual([["(every node counts as submitted: culling off)", "(every node counts as submitted: culling off)"],
       ["(submitted nodes from the visibility walk)", "(submitted nodes from the visibility walk)"]]);
-    expect(byName("lighting.bsp.rebuildAmbient").value).toMatch(/\(rebuild only, not bound\)$/);
+    expect(byName("lighting.bsp.textureSources")).toMatchObject({ value: "0: compressed child | 1: compressed child", status: "native" });
+    const sourceReadings = hourlyLightingVariables(() => ({ ...(attached.inspection() as TileLightingRuntimeInspection), textureSources: [
+      { texture: 0, source: "rebuild-not-requested" }, { texture: 1, source: "rebuild-pending" },
+      { texture: 2, source: "gap", reason: "bsp-rebuild-composition-failed:worker stopped" }] }));
+    expect(sourceReadings.find(entry => entry.name === "lighting.bsp.textureSources")!.value())
+      .toBe("0: rebuild not requested | 1: rebuild pending | 2: gap bsp-rebuild-composition-failed:worker stopped");
+    expect(byName("lighting.bsp.upload")).toMatchObject({ status: "unverified",
+      value: "compressed child rgba8-mip0-cpu-decoded (lightmap-bc1-cpu-decode); rebuilt composite rgba8-single-mip-rebuilt" });
     expect(byName("lighting.staticMesh.ambient")).toMatchObject({ status: "native" });
     expect(byName("lighting.staticMesh.visibility")).toMatchObject({ status: "native",
       value: `1 of 1 placements hourly; ${staticMeshVisibilityProbeActor} vertex 0 0.5 (entries 3 > 4 at 0.5)` });

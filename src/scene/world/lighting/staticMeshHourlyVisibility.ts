@@ -1,6 +1,7 @@
 import { staticMeshHourlyEntryBlend, staticMeshShaderVisibility, staticMeshVertexVisible } from "../../../environment/model/staticMeshHourlyLighting";
 import type { HourlyKeyBlend } from "../../../environment/model/sampleNativeTimeTables";
-import type { StagedLightingInput, StaticMeshLightList } from "./decodeHourlyLightingInputs";
+import type { StaticMeshLightList } from "./decodeHourlyLightingInputs";
+import type { StagedLightingInput } from "./stagedLightingInput";
 
 export interface StaticMeshHourlyPlacement {
   readonly sourceActor: string;

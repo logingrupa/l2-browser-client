@@ -8,3 +8,7 @@ export interface ReferenceConstantRow<Value> {
   readonly interludeEvidence: string | null;
   readonly runtimeDefault: Value;
 }
+
+export function confirmedInterludeConstantRow<Value>(id: string, value: Value, provenance: string): ReferenceConstantRow<Value> {
+  return { id, value, provenance, status: "confirmed-interlude", interludeEvidence: provenance, runtimeDefault: value };
+}

@@ -9,11 +9,16 @@ import { createNativeMaterial, type FogState, type LightmapLighting, type Loaded
 import { lightmapStageColourOperation, type LightmapColourOperation } from "../../../environment/model/nativeDrawLightingStates";
 import { bspLightmapSlot } from "../../../environment/model/bspLightmapSelection";
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
+import type { BspLightmapPageSource } from "../../../environment/model/bspLightmapSelection";
+import type { RebuiltLightmapResult } from "./composeRebuiltLightmap";
 import type { TileLightingModel } from "./decodeTileLighting";
-import { decodeDxt1Texels, lightmapHourPages, lightmapPageAtHour } from "./lightmapPages";
+import { decodeDxt1Texels, lightmapHourPages, lightmapPageAtHour, lightmapPageSource } from "./lightmapPages";
+import type { RebuiltLightmapRequest } from "./rebuiltLightmapRequest";
+import { createRebuiltLightmapStore, type LightmapTextureSource } from "./rebuiltLightmapStore";
+import type { RebuildLightEnvironment } from "./rebuildShadowLights";
 import { ENVIRONMENT_ENGINE_CONSTANTS } from "../../../environment/model/nativeEnvironmentEngineConstants";
 import { readNativeMaterialProgramPin } from "../../../assets/native/nativeMaterialProgramPin";
-import { planLightmapSections, type LightmapSectionPlan } from "./tileLightmapSections";
+import { planLightmapSections, sectionLightmapTextures, type LightmapSectionPlan } from "./tileLightmapSections";
 import {
   planWithVisibilityNodeRanges, sunAffectedNodeVisible, sunAffectNodeSetOf, type SunAffectNodeSet, type TileLightingVisibility,
 } from "./tileLightingVisibility";
@@ -38,6 +43,8 @@ export interface TileLightingSettings {
   readonly fog: () => FogState;
   readonly visibility: TileLightingVisibility | null;
   readonly loadProgram: (materialId: string, signal: AbortSignal) => Promise<LoadedNativeMaterial>;
+  readonly rebuildEnvironment: () => RebuildLightEnvironment;
+  readonly composeRebuiltLightmap: (request: RebuiltLightmapRequest) => Promise<RebuiltLightmapResult>;
 }
 
 export interface TileLightingSectionInspection {
@@ -49,6 +56,7 @@ export interface TileLightingSectionInspection {
   readonly sunAffect: boolean | null;
   readonly colourOperation: LightmapColourOperation | null;
   readonly page: number | null;
+  readonly pageSource: BspLightmapPageSource | null;
   readonly hourPages: readonly number[];
   readonly status: TileLightingSurfaceStatus;
   readonly programMaterialId: string | null;
@@ -72,7 +80,8 @@ export interface TileLightingInspection {
   readonly sunAffectedSectionCount: number;
   readonly sunAffectNodeSet: SunAffectNodeSet;
   readonly textureSlots: readonly LightmapTextureSlot[];
-  readonly lightmapUpload: typeof lightmapCpuDecodedUpload;
+  readonly lightmapUploads: typeof lightmapPageUploads;
+  readonly textureSources: readonly LightmapTextureSource[];
   readonly statusCounts: Readonly<Record<TileLightingSurfaceStatus, number>>;
   readonly sections: readonly TileLightingSectionInspection[];
 }
@@ -107,7 +116,10 @@ interface BoundChunk {
 
 const lightmapHourOutsideDayReason = "lightmap-hour-outside-day";
 const colourModifierClass = "Engine.ColorModifier";
-const lightmapCpuDecodedUpload = { format: "rgba8-mip0-cpu-decoded", reason: "lightmap-bc1-cpu-decode" } as const;
+const lightmapPageUploads = {
+  compressedChild: { format: "rgba8-mip0-cpu-decoded", reason: "lightmap-bc1-cpu-decode" },
+  rebuiltComposite: { format: "rgba8-single-mip-rebuilt", reason: null },
+} as const;
 
 function textureSlots(model: TileLightingModel, hour: number): LightmapTextureSlot[] {
   return Array.from({ length: model.textureCount }, (_, texture) => {
@@ -150,21 +162,37 @@ function applyPreparedSections(prepared: readonly PreparedSection[]): BoundSecti
   return prepared.map(({ section }) => section);
 }
 
+function lightmapTexture(scene: Scene, rgba: Uint8Array, edge: number, name: string): BaseTexture {
+  const texture = RawTexture.CreateRGBATexture(rgba, edge, edge, scene, false, false, Texture.BILINEAR_SAMPLINGMODE);
+  texture.name = name;
+  texture.gammaSpace = false;
+  texture.wrapU = Texture.CLAMP_ADDRESSMODE; texture.wrapV = Texture.CLAMP_ADDRESSMODE;
+  return texture;
+}
+
+function cachedTexture(cache: Map<number, BaseTexture>, key: number, create: () => BaseTexture): BaseTexture {
+  const texture = cache.get(key) ?? create();
+  cache.set(key, texture);
+  return texture;
+}
+
 export function bindTileLighting(settings: TileLightingSettings): TileLightingBinding {
   const { scene, model } = settings;
-  const pageTextures = new Map<number, BaseTexture>(), programs = new Map<string, LoadedNativeMaterial>(), chunks = new Map<string, BoundChunk>();
+  const pageTextures = new Map<number, BaseTexture>(), rebuiltTextures = new Map<number, BaseTexture>();
+  const programs = new Map<string, LoadedNativeMaterial>(), chunks = new Map<string, BoundChunk>();
+  const rebuiltLightmaps = createRebuiltLightmapStore({ model, environment: settings.rebuildEnvironment, compose: settings.composeRebuiltLightmap });
   let disposed = false;
-  const pageTexture = (page: number): BaseTexture => {
-    const cached = pageTextures.get(page);
-    if (cached) return cached;
+  const compressedPageTexture = (page: number) => cachedTexture(pageTextures, page, () => {
     const source = model.pages[page]!;
-    const texture = RawTexture.CreateRGBATexture(decodeDxt1Texels(source.texels, source.edge), source.edge, source.edge, scene, false, false, Texture.BILINEAR_SAMPLINGMODE);
-    texture.name = `Tile lightmap page ${page}`;
-    texture.gammaSpace = false;
-    texture.wrapU = Texture.CLAMP_ADDRESSMODE; texture.wrapV = Texture.CLAMP_ADDRESSMODE;
-    pageTextures.set(page, texture);
-    return texture;
-  };
+    return lightmapTexture(scene, decodeDxt1Texels(source.texels, source.edge), source.edge, `Tile lightmap page ${page}`);
+  });
+  const rebuiltTexture = (texture: number) => cachedTexture(rebuiltTextures, texture, () => {
+    const rebuilt = rebuiltLightmaps.result(texture);
+    if (rebuilt.status !== "resolved") throw new RangeError(`Lightmap texture ${texture} is bound although its rebuild is ${rebuilt.reason}.`);
+    return lightmapTexture(scene, rebuilt.value.rgba, rebuilt.value.edge, `Tile rebuilt lightmap ${texture}`);
+  });
+  const pageTexture = (page: number, texture: number): BaseTexture =>
+    lightmapPageSource(model, page) === "rebuilt-composite" ? rebuiltTexture(texture) : compressedPageTexture(page);
   const programFor = async (programMaterialId: string, signal: AbortSignal) => {
     let loaded = programs.get(programMaterialId);
     if (!loaded) { loaded = await settings.loadProgram(programMaterialId, signal); programs.set(programMaterialId, loaded); }
@@ -195,7 +223,10 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
     for (const chunk of chunks.values()) for (const section of chunk.sections) {
       if (!section.nativeMaterial) continue;
       const page = pageAtHour(model, section.plan, environment.hour, sunAffectedNodeVisible(visibility, chunk.chunkOrdinal, section.plan));
-      if (page !== null && page !== section.boundPage) { section.nativeMaterial.setLightmap(pageTexture(page)); section.boundPage = page; }
+      if (page !== null && page !== section.boundPage && section.plan.kind === "lightmapped") {
+        section.nativeMaterial.setLightmap(pageTexture(page, section.plan.lightmapTexture));
+        section.boundPage = page;
+      }
       section.nativeMaterial.update(uniforms);
     }
   };
@@ -214,8 +245,11 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
       chunks.set(chunk.chunkId, bound);
       const prepared: PreparedSection[] = [];
       try {
+        await rebuiltLightmaps.prepare(sectionLightmapTextures(model, chunk.sections));
+        bound.abort.signal.throwIfAborted();
         const plans = planLightmapSections(model, [{ ...chunk, primitiveVertexCount: primitive => chunk.meshes[primitive]!.getTotalVertices(),
-          primitiveIndices: primitive => chunk.meshes[primitive]!.getIndices() ?? [] }]).map(plan => planWithVisibilityNodeRanges(visibility, chunk.chunkOrdinal, plan));
+          primitiveIndices: primitive => chunk.meshes[primitive]!.getIndices() ?? [] }], rebuiltLightmaps.textureSource)
+          .map(plan => planWithVisibilityNodeRanges(visibility, chunk.chunkOrdinal, plan));
         for (const plan of plans) prepared.push(await prepareSection(plan, chunk.meshes[plan.primitive]!, bound.abort.signal));
         bound.abort.signal.throwIfAborted();
       } catch (error) {
@@ -236,19 +270,22 @@ export function bindTileLighting(settings: TileLightingSettings): TileLightingBi
       return { gap: null, sourceSha256: model.sourceSha256, environment, lightmapHourGap: lightmapHourGap(environment.hour), fog: settings.fog(), sectionCount: sections.length,
         lightmappedSectionCount: sections.filter(({ section }) => section.plan.kind === "lightmapped").length,
         sunAffectedSectionCount: sections.filter(({ sunAffect }) => sunAffect).length, sunAffectNodeSet: sunAffectNodeSetOf(visibility),
-        textureSlots: textureSlots(model, environment.hour), lightmapUpload: lightmapCpuDecodedUpload, statusCounts,
-        sections: sections.map(({ section: { plan, status, programMaterialId, reasons, colourOperation }, sunAffect }) => ({ chunkId: plan.chunkId,
-          primitive: plan.primitive, lighting: plan.kind, lightmapTexture: plan.kind === "lightmapped" ? plan.lightmapTexture : null,
-          nativeRenderSection: plan.kind === "lightmapped" ? plan.nativeRenderSection : null, sunAffect: plan.kind === "lightmapped" ? sunAffect : null, colourOperation,
-          page: pageAtHour(model, plan, environment.hour, sunAffect), hourPages: plan.kind === "lightmapped" ? lightmapHourPages(model, plan.lightmapTexture) : [],
-          status, programMaterialId, reasons: plan.kind === "unlit" ? [plan.reason, ...reasons] : reasons })) };
+        textureSlots: textureSlots(model, environment.hour), lightmapUploads: lightmapPageUploads, textureSources: rebuiltLightmaps.textureSources(), statusCounts,
+        sections: sections.map(({ section: { plan, status, programMaterialId, reasons, colourOperation }, sunAffect }) => {
+          const page = pageAtHour(model, plan, environment.hour, sunAffect);
+          return { chunkId: plan.chunkId, primitive: plan.primitive, lighting: plan.kind, lightmapTexture: plan.kind === "lightmapped" ? plan.lightmapTexture : null,
+            nativeRenderSection: plan.kind === "lightmapped" ? plan.nativeRenderSection : null, sunAffect: plan.kind === "lightmapped" ? sunAffect : null, colourOperation,
+            page, pageSource: page === null ? null : lightmapPageSource(model, page),
+            hourPages: plan.kind === "lightmapped" ? lightmapHourPages(model, plan.lightmapTexture) : [],
+            status, programMaterialId, reasons: plan.kind === "unlit" ? [plan.reason, ...reasons] : reasons };
+        }) };
     },
     dispose() {
       if (disposed) return;
       disposed = true;
       scene.onBeforeRenderObservable.remove(observer);
       for (const chunkId of [...chunks.keys()]) removeChunk(chunkId);
-      for (const texture of pageTextures.values()) texture.dispose();
+      for (const texture of [...pageTextures.values(), ...rebuiltTextures.values()]) texture.dispose();
     },
   };
 }

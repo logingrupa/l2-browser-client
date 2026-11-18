@@ -1,0 +1,106 @@
+{
+ "maps": [
+  {
+   "tileId": "20_20",
+   "source": {
+    "path": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/bsp-lightmap-cache-db16/packages/20_20-lightmap-data.json",
+    "sha256": "3e180804e73ec55019b735089af708a798b7e3c3ba0688f54b7780fa4cbc8579",
+    "selection": "len(lightmaps), sum of shadowCount, distinct shadows[].object, sum of shadows[].size, atlases[].children[] revision and compressedRevision"
+   },
+   "mapSource": {
+    "file": "C:\\Lineage2-client\\maps\\20_20.unr",
+    "fileSha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
+    "sizeBytes": 11131253
+   },
+   "records": 2332,
+   "shadows": 5903,
+   "shadowLights": 339,
+   "shadowBytes": 42451,
+   "pages": [
+    {
+     "revision": 211740,
+     "compressedRevision": 6986
+    },
+    {
+     "revision": 211395,
+     "compressedRevision": 6641
+    },
+    {
+     "revision": 211395,
+     "compressedRevision": 6641
+    },
+    {
+     "revision": 211395,
+     "compressedRevision": 6641
+    },
+    {
+     "revision": 211395,
+     "compressedRevision": 6641
+    },
+    {
+     "revision": 211395,
+     "compressedRevision": 6641
+    },
+    {
+     "revision": 211395,
+     "compressedRevision": 6641
+    },
+    {
+     "revision": 211395,
+     "compressedRevision": 6641
+    }
+   ]
+  },
+  {
+   "tileId": "20_10",
+   "source": {
+    "path": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/bsp-lightmap-cache-db16/packages/20_10-lightmap-data.json",
+    "sha256": "d2d3d85d31c8f2add42bd1da7e0fb305994d6998a40fa33c60ebf656e63cba64",
+    "selection": "len(lightmaps), sum of shadowCount, distinct shadows[].object, sum of shadows[].size, atlases[].children[] revision and compressedRevision"
+   },
+   "mapSource": {
+    "file": "C:\\Lineage2-client\\maps\\20_10.unr",
+    "fileSha256": "02cd70174cbbc27cfe8ff46f18c96d6442de100e8784b23b1d064eff98ab1aeb",
+    "sizeBytes": 7356279
+   },
+   "records": 447,
+   "shadows": 4162,
+   "shadowLights": 792,
+   "shadowBytes": 101059,
+   "pages": [
+    {
+     "revision": 5428,
+     "compressedRevision": 5410
+    },
+    {
+     "revision": 5427,
+     "compressedRevision": 5409
+    },
+    {
+     "revision": 5427,
+     "compressedRevision": 5409
+    },
+    {
+     "revision": 5427,
+     "compressedRevision": 5409
+    },
+    {
+     "revision": 5427,
+     "compressedRevision": 5409
+    },
+    {
+     "revision": 5427,
+     "compressedRevision": 5409
+    },
+    {
+     "revision": 5427,
+     "compressedRevision": 5409
+    },
+    {
+     "revision": 5427,
+     "compressedRevision": 5409
+    }
+   ]
+  }
+ ]
+}

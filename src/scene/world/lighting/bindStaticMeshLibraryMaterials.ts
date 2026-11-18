@@ -10,7 +10,8 @@ import {
 import { readNativeSourceReference } from "../nativeSourceReference";
 import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
 import { joinStaticMeshSlot, type StaticMeshMaterialsLoad } from "../staticMeshLibraryMaterials";
-import type { StagedLightingInput, StaticMeshLightList } from "./decodeHourlyLightingInputs";
+import type { StaticMeshLightList } from "./decodeHourlyLightingInputs";
+import type { StagedLightingInput } from "./stagedLightingInput";
 import type { StaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
 import { createStaticMeshInstanceColourGeometry, type StaticMeshInstanceColourGeometry } from "./staticMeshInstanceColourGeometry";
 import {

@@ -1,10 +1,9 @@
 import type { NativePlane } from "../environment/model/nativePlane";
-import type { EnvironmentResult } from "../environment/model/nativeEnvironmentColours";
-import type { RgbBytes } from "../environment/model/sampleNativeTimeTables";
 import type { TileLightingRuntimeInspection } from "../scene/world/lighting/attachTileLighting";
 import type { SunAffectNodeSet } from "../scene/world/lighting/tileLightingVisibility";
 import { terrainProbeSample } from "../scene/world/lighting/bindTerrainVertexLighting";
 import type { HourlyAmbientInspection } from "../scene/world/lighting/hourlyLightingTerms";
+import type { LightmapTextureSource } from "../scene/world/lighting/rebuiltLightmapStore";
 import type { VariableInfo } from "../ui/devSheet/types";
 
 export type TileLightingReading = TileLightingRuntimeInspection | { readonly gap: string };
@@ -26,10 +25,6 @@ const sunAffectNodeSetText: Readonly<Record<SunAffectNodeSet, string>> = {
 const nativeReading = (text: string): HourlyReading => ({ text, native: true });
 const unverifiedReading = (text: string): HourlyReading => ({ text, native: false });
 const planeText = (plane: NativePlane) => plane.map(component => String(component)).join(", ");
-
-function environmentText<Value>(result: EnvironmentResult<Value>, text: (value: Value) => string): HourlyReading {
-  return result.status === "resolved" ? nativeReading(text(result.value)) : unverifiedReading(result.reason);
-}
 
 function ambientText(ambient: HourlyAmbientInspection): HourlyReading {
   return ambient.status === "resolved" ? nativeReading(`${ambient.value.join(", ")} (${ambient.condition})`) : unverifiedReading(`${ambient.reason} (${ambient.condition})`);
@@ -62,8 +57,17 @@ function terrainReadings(lighting: TileLightingRuntimeInspection): Record<string
   };
 }
 
+function textureSourceText(source: LightmapTextureSource): string {
+  switch (source.source) {
+    case "compressed": return `${source.texture}: compressed child`;
+    case "rebuild-not-requested": return `${source.texture}: rebuild not requested`;
+    case "rebuild-pending": return `${source.texture}: rebuild pending`;
+    case "rebuilt": return `${source.texture}: rebuilt at hour ${source.builtAtHour}, ${source.uncoveredTexels} uncovered texels (${source.notes.join(", ")})`;
+    case "gap": return `${source.texture}: gap ${source.reason}`;
+  }
+}
+
 function bspReadings(lighting: TileLightingRuntimeInspection): Record<string, () => HourlyReading> {
-  const gapCount = (reason: string) => lighting.sections.filter(section => section.reasons.includes(reason)).length;
   const operations = () => {
     const lightmapped = lighting.sections.filter(section => section.colourOperation !== null);
     const modulate = lightmapped.filter(section => section.colourOperation?.operation === "modulate").length;
@@ -80,13 +84,14 @@ function bspReadings(lighting: TileLightingRuntimeInspection): Record<string, ()
       const counts = Object.entries(gaps.reduce<Record<string, number>>((sum, reason) => ({ ...sum, [reason]: (sum[reason] ?? 0) + 1 }), {}));
       return counts.length === 0 ? nativeReading("none") : unverifiedReading(counts.map(([reason, count]) => `${reason} ${count}`).join(", "));
     },
-    "lighting.bsp.compressedGate": () => gapCount("bsp-live-cache-state") === 0 ? nativeReading("every bound page has revision == compressed revision")
-      : unverifiedReading(`${gapCount("bsp-live-cache-state")} sections bsp-live-cache-state`),
+    "lighting.bsp.textureSources": () => {
+      const text = lighting.textureSources.map(textureSourceText).join(" | ");
+      return lighting.textureSources.every(source => source.source === "compressed") ? nativeReading(text) : unverifiedReading(text);
+    },
     "lighting.bsp.colourOperation": () => unverifiedReading(operations()),
-    "lighting.bsp.upload": () => unverifiedReading(`${lighting.lightmapUpload.format} (${lighting.lightmapUpload.reason})`),
-    "lighting.bsp.rebuildAmbient": () => {
-      const reading = environmentText(lighting.hourly.terms.bsp.rebuildAmbient, (rgb: RgbBytes) => rgb.join(", "));
-      return { ...reading, text: `${reading.text} (rebuild only, not bound)` };
+    "lighting.bsp.upload": () => {
+      const { compressedChild, rebuiltComposite } = lighting.lightmapUploads;
+      return unverifiedReading(`compressed child ${compressedChild.format} (${compressedChild.reason}); rebuilt composite ${rebuiltComposite.format}`);
     },
   };
 }
@@ -143,10 +148,11 @@ const hourlyVariableSources: Readonly<Record<string, string>> = {
     + "hasSun resets on every draw call and is chosen per frame from the visible nodes (DB-15 bsp-sun-affect-scope.json 6a300d07, Engine.dll 0x10669de0); "
     + "the visible node set is our port of the visibility walk, not a recorded native draw list",
   "lighting.bsp.gaps": "sections without a bound lightmap, by reason",
-  "lighting.bsp.compressedGate": "LMPG.revision == LMPG.compressedRevision selects the compressed child (claim bsp-compressed-choice)",
+  "lighting.bsp.textureSources": "per lightmap texture: LMPG.revision == LMPG.compressedRevision binds the compressed child (UseCompressedLightmaps=True); a differing page binds "
+    + "the ordinary builder 0x10675390 composite, built once per session at first need off the main thread with the hour of that moment, or names the first unresolved "
+    + "input (DB-16 bsp-lightmap-cache-rebuild.json 599d44b8, DB-17 ordinary-lightmap-rebuild-helpers.json fb15ebf4); bsp-live-cache-state when the payload has no rebuild inputs",
   "lighting.bsp.colourOperation": "EnableLighting argument 3: MODULATE for UColorModifier, the global op otherwise (claim bsp-compressed-choice, d3d-modulation)",
-  "lighting.bsp.upload": "the DXT1 child is decoded to RGBA on the CPU; mip 0 only",
-  "lighting.bsp.rebuildAmbient": "GetBSPAmbientColor * 0.5 starts a texel rebuild only; compressed atlases already hold ambient (claim bsp-ambient-build)",
+  "lighting.bsp.upload": "the DXT1 child is decoded to RGBA on the CPU, mip 0 only; a rebuilt composite uploads its single A8R8G8B8 level as RGBA (FD3DTexture::Cache 0x10032ac0)",
   "lighting.staticMesh.ambient": "StaticMeshAmbient >> 1, alpha 255, only as D3DRS_AMBIENT (claim ma-static-ambient)",
   "lighting.staticMesh.levelOfDetailSunTerm": "+ low byte of trunc(HSVStaticMeshLight * 32) on LOD 2 with no instance (claim ma-static-ambient, ma-static-lod)",
   "lighting.staticMesh.visibility": "SMEN hourly masks, key 24 (i + 0.5) / n, (1 - w) bit(prev) + w bit(next) (claim ma-hour-keys)",

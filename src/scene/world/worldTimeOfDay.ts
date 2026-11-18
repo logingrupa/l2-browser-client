@@ -3,6 +3,7 @@ import {
   environmentColour, environmentLightPlane, environmentScale, skyLayerColour, type EnvironmentResult, type EnvironmentTransitionGap,
 } from "../../environment/model/nativeEnvironmentColours";
 import type { NativePlane } from "../../environment/model/nativePlane";
+import type { NativeEnvironmentTables } from "../../environment/model/nativeEnvironmentTypeTables";
 import { createNativeEnvironmentManager, type NativeEnvironmentManager, type NativeEnvironmentSnapshot } from "../../environment/model/nativeEnvironmentManager";
 import type { NativeHourSource, ReadRealSeconds } from "../../environment/model/nativeTimeClock";
 import type { RgbBytes, TimeScaleSample } from "../../environment/model/sampleNativeTimeTables";
@@ -39,7 +40,6 @@ export interface HourlyEnvironmentLighting {
   readonly staticMeshAmbient: EnvironmentResult<RgbBytes>;
   readonly staticMeshLight: EnvironmentResult<NativePlane>;
   readonly actorAmbient: EnvironmentResult<RgbBytes>;
-  readonly bspAmbient: EnvironmentResult<RgbBytes>;
 }
 
 export interface RunningWorldTimeOfDay {
@@ -49,6 +49,7 @@ export interface RunningWorldTimeOfDay {
   readonly environmentTypes: readonly number[];
   readonly fogRanges: EnvironmentFogRanges;
   readonly fogSpeedSeconds: number;
+  readonly tables: NativeEnvironmentTables;
   sample(): WorldEnvironmentSample;
   skyEnvironmentColours(): readonly SkyEnvironmentColour[];
   hazeColour(): SkyEnvironmentColourResult;
@@ -81,7 +82,7 @@ export function startWorldTimeOfDay(scene: Scene, timeTables: NativeTimeTablesEx
   const tick = scene.onBeforeRenderObservable.add(() => manager.tick(scene.getEngine().getDeltaTime() / millisecondsPerSecond));
   let disposed = false;
   return {
-    status: "running", manager, skyBindings, fogRanges, fogSpeedSeconds, environmentTypes: [...tables.keys()].sort((first, second) => first - second),
+    status: "running", manager, skyBindings, fogRanges, fogSpeedSeconds, tables, environmentTypes: [...tables.keys()].sort((first, second) => first - second),
     sample() {
       const snapshot = manager.snapshot();
       return { hour: snapshot.clock.hour, hourSource: snapshot.clock.hourSource, oldType: snapshot.oldType, targetType: snapshot.targetType, weight: snapshot.weight };
@@ -103,7 +104,7 @@ export function startWorldTimeOfDay(scene: Scene, timeTables: NativeTimeTablesEx
         terrainAmbient: environmentColour(tables, blend, "TerrainAmbient", hour), terrainLight: environmentLightPlane(tables, blend, "HSVTerrainLight", hour),
         staticMeshAmbient: environmentColour(tables, blend, "StaticMeshAmbient", hour),
         staticMeshLight: environmentLightPlane(tables, blend, "HSVStaticMeshLight", hour),
-        actorAmbient: environmentColour(tables, blend, "ActorAmbient", hour), bspAmbient: environmentColour(tables, blend, "BSPAmbient", hour) };
+        actorAmbient: environmentColour(tables, blend, "ActorAmbient", hour) };
     },
     dispose() {
       if (disposed) return;

@@ -1,0 +1,72 @@
+{
+ "schemaVersion": 1,
+ "kind": "db17-movable-sun-dynamic-light-native-fixtures",
+ "source": {
+  "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/ordinary-lightmap-db17/time-sun/sun-native-fixtures.json",
+  "sha256": "39b185ac69be4c03ae5a08406038954ca09a490787dc7167d0d05c6d0af7d1b8",
+  "method": "Original client code executes in Unicorn with native GMath and native manager/global light getters. Tables come from decoded timeenv rows. Synthetic level graph uses settled type 0, hour 6, no local sublights, day part 0, slope 30, SunRise 180, LevelInfo brightness 1. Base AActor Tick is modeled as successful return after real NMovableSunLight Tick finishes direction calculation. Authored NMovableSunLight rotation and default colour flags used. No game launch."
+ },
+ "setup": {
+  "hour": 6,
+  "environmentType": 0,
+  "dayPart": 0,
+  "slopeSunAngle": 30,
+  "celestialPhiDegrees": 180,
+  "frozen": false,
+  "lightType": 1,
+  "lightEffect": 19,
+  "sunlightColour": true,
+  "levelBrightness": 1,
+  "note": "setup values from the source method text and time-sun/sun-native.py (manager +0x170 = 180, +0x174 = 30, +0x130 = 0, hour double 6, actor +0x3bc = 1, +0x3bd = 19, +0x3d0 = 1, LevelInfo +0x5b0 = 1)"
+ },
+ "fixtures": [
+  {
+   "scenario": "authored-rotation-before-tick",
+   "hour": 6,
+   "environmentType": 0,
+   "localSublightCount": 0,
+   "LevelInfoBrightness": 1.0,
+   "actorRotation": [
+    -8846,
+    25324,
+    0
+   ],
+   "dyn14": [
+    -0.49988725781440735,
+    0.4328802227973938,
+    -0.7501516342163086
+   ],
+   "dyn38": [
+    0.278127521276474,
+    0.23720411956310272,
+    0.19324937462806702,
+    0.3921568691730499
+   ],
+   "dyn38BytesHex": "bb668e3ea3e5723e2ae3453ec9c8c83e"
+  },
+  {
+   "scenario": "after-movable-sun-tick",
+   "hour": 6,
+   "environmentType": 0,
+   "localSublightCount": 0,
+   "LevelInfoBrightness": 1.0,
+   "actorRotation": [
+    0,
+    -32767,
+    0
+   ],
+   "dyn14": [
+    -1.0,
+    1.2246468525851679e-16,
+    0.0
+   ],
+   "dyn38": [
+    0.278127521276474,
+    0.23720411956310272,
+    0.19324937462806702,
+    0.3921568691730499
+   ],
+   "dyn38BytesHex": "bb668e3ea3e5723e2ae3453ec9c8c83e"
+  }
+ ]
+}

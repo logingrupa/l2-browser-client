@@ -1,4 +1,5 @@
-import { bspLightmapSlot } from "../../../environment/model/bspLightmapSelection";
+import { bspLightmapPageSource, bspLightmapSlot, type BspLightmapPageSource } from "../../../environment/model/bspLightmapSelection";
+import type { LightmapPageRevisions } from "./decodeHourlyLightingInputs";
 import type { TileLightingModel } from "./decodeTileLighting";
 
 const dxt1BlockEdge = 4;
@@ -18,6 +19,24 @@ export function lightmapPageAtHour(model: TileLightingModel, texture: number, ho
 export function lightmapHourPages(model: TileLightingModel, texture: number): readonly number[] {
   const firstPage = model.texturePageStart[texture]!, endPage = model.texturePageStart[texture + 1]!;
   return Array.from({ length: endPage - firstPage }, (_, slot) => firstPage + slot);
+}
+
+export function lightmapPageSource(model: TileLightingModel, page: number): BspLightmapPageSource {
+  const revisions = model.hourly.pageRevisions;
+  if (revisions.status === "unstaged") throw new RangeError(`Lightmap page ${page} has no revisions: ${revisions.reason}.`);
+  return bspLightmapPageSource(revisions.value.revision[page]!, revisions.value.compressedRevision[page]!);
+}
+
+export function pageRangeHasRebuiltPage(revisions: LightmapPageRevisions, firstPage: number, endPage: number): boolean {
+  for (let page = firstPage; page < endPage; page++) {
+    if (bspLightmapPageSource(revisions.revision[page]!, revisions.compressedRevision[page]!) === "rebuilt-composite") return true;
+  }
+  return false;
+}
+
+export function lightmapTextureHasRebuiltPage(model: TileLightingModel, texture: number): boolean {
+  const revisions = model.hourly.pageRevisions;
+  return revisions.status === "staged" && pageRangeHasRebuiltPage(revisions.value, model.texturePageStart[texture]!, model.texturePageStart[texture + 1]!);
 }
 
 function expandRgb565(colour: number): [number, number, number] {

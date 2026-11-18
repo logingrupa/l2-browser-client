@@ -5,9 +5,10 @@ import {
 } from "../../../environment/model/staticMeshHourlyLighting";
 import type { Vector3 } from "../../../shared/math/vector3";
 import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
-import { sunAffected, type StagedLightingInput, type StaticMeshLightList } from "./decodeHourlyLightingInputs";
+import { sunAffected, type StaticMeshLightList } from "./decodeHourlyLightingInputs";
 import { authoredColourStreamsWhite, type StaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
 import { staticMeshPlacementNormalTransform } from "./staticMeshPlacementNormalTransform";
+import type { StagedLightingInput } from "./stagedLightingInput";
 
 export interface StaticMeshSunFrame {
   readonly hour: number;

@@ -3,7 +3,7 @@ import { parseNativeTimeTables } from "../../src/environment/parseNativeTimeTabl
 import type { EnvironmentFogRanges } from "../../src/materials/ue2/model/fog";
 import type { TileVisibilityFrame } from "../../src/scene/world/bspVisibility/core/tileVisibilityFrame";
 import { zoneSetOf } from "../../src/scene/world/bspVisibility/core/zoneSet";
-import { decodeTileLightingRecords, type TileLightingRecords } from "../../src/scene/world/lighting/tileLightingRecords";
+import { decodeTileLightingRecords, readTileLightingRecordsDocument, type TileLightingRecords } from "../../src/scene/world/lighting/tileLightingRecords";
 import { timeTablesDocument } from "./worldTimeOfDayFixture";
 
 export type FogWorkedCaseTile = "15_22" | "20_21";
@@ -36,7 +36,7 @@ export function convertedEnvironmentFogRanges(): EnvironmentFogRanges {
 
 export function decodedFogWorkedCaseRecords(tileRecords: FogWorkedCaseTileRecords): TileLightingRecords {
   const document = { schemaVersion: 1, kind: "native-tile-lighting-records", fogInfos: tileRecords.fogInfos, zones: tileRecords.zones, waterVolumes: [] };
-  return decodeTileLightingRecords(new TextEncoder().encode(JSON.stringify(document)));
+  return decodeTileLightingRecords(readTileLightingRecordsDocument(new TextEncoder().encode(JSON.stringify(document))));
 }
 
 export function zoneIndexOfActor(tileRecords: FogWorkedCaseTileRecords, actor: string): number {

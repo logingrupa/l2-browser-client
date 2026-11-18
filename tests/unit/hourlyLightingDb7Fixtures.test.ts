@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bspLightmapRebuildAmbient, bspLightmapSlot } from "../../src/environment/model/bspLightmapSelection";
+import { bspLightmapSlot } from "../../src/environment/model/bspLightmapSelection";
 import { actorAmbientLight, staticMeshAmbientLight } from "../../src/environment/model/meshLightingTerms";
 import { nativeDrawLightingStates } from "../../src/environment/model/nativeDrawLightingStates";
 import { environmentColour, environmentLightPlane } from "../../src/environment/model/nativeEnvironmentColours";
@@ -89,14 +89,13 @@ describe("DB-7 hourly lighting fixtures through the pure lighting model", () => 
     expect([colour[2], colour[1], colour[0]]).toEqual(fixtureNumbers(output, "vertexRGB"));
   });
 
-  it.each(bspRows)("reproduces %s atlas 0 slot and its rebuild-only ambient", (_, row) => {
+  it.each(bspRows)("reproduces %s atlas 0 slot and its BSPAmbient input", (_, row) => {
     const { input, output, hour } = row;
     const childCount = context.atlasChildCounts[0]!;
     expect(childCount).toBe(fixtureNumber(input, "atlasCount"));
     expect(bspLightmapSlot(hour, childCount, fixtureBoolean(input, "bSunAffect"))).toBe(fixtureNumber(output, "selectedAtlasChild"));
     const ambient = hourlyColour("BSPAmbient", hour);
     expect(ambient).toEqual(fixtureNumbers(input, "GetBSPAmbientColorRGB"));
-    expect(bspLightmapRebuildAmbient(ambient)).toEqual(fixtureNumbers(output, "rebuildAmbientRGB"));
     expect(nativeDrawLightingStates.bsp).toMatchObject({ deviceLighting: false, colourVertex: false, ambientSource: "baked-into-compressed-lightmap" });
   });
 

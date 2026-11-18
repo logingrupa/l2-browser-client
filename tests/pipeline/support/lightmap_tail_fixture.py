@@ -6,10 +6,11 @@ from world.reader_licensee_layouts import REVIEWED_PACKAGE_VERSION
 
 RENDER_VERTEX_PREFIX_BYTES = 20
 RENDER_VERTEX_NORMAL = (0.0, 0.0, 1.0)
-FIXTURE_TILE_TAG = 5
+FIXTURE_LEVEL_REFERENCE = 5
 FIXTURE_PAGE_REVISION = 7
 FIXTURE_TEXTURE_FORMAT = 3
 FIXTURE_COMPRESSED_REVISION = 7
+FIXTURE_SURFACE_PLANE = (0.0, 0.0, 1.0, 0.0)
 
 
 def compact_index_bytes(value):
@@ -30,11 +31,18 @@ def render_section_bytes(vertex_uvs, node_count, lightmap_texture, material_refe
             + compact_index_bytes(material_reference) + struct.pack('<iIi', node_count, poly_flags, lightmap_texture))
 
 
-def lightmap_record_bytes(texture_index, surface, rectangle, zone_index=0, revision=0):
+def shadow_mask_bytes(light_reference, bits, width, height, minimum_x, minimum_y):
+    row_bytes = (width + 7) // 8
+    return (compact_index_bytes(light_reference) + compact_index_bytes(len(bits)) + bits
+            + struct.pack('<7i', width, height, row_bytes, minimum_x, minimum_y, minimum_x + width - 1, minimum_y + height - 1))
+
+
+def lightmap_record_bytes(texture_index, surface, rectangle, zone_index=0, revision=0, shadow_masks=()):
     return (compact_index_bytes(texture_index) + compact_index_bytes(surface) + compact_index_bytes(zone_index)
             + b''.join(compact_index_bytes(value) for value in rectangle)
-            + struct.pack(f'<{LIGHTMAP_PROJECTION_FLOAT_COUNT}f', *([0.0] * LIGHTMAP_PROJECTION_FLOAT_COUNT)) + compact_index_bytes(0)
-            + compact_index_bytes(FIXTURE_TILE_TAG) + struct.pack('<i', revision))
+            + struct.pack(f'<{LIGHTMAP_PROJECTION_FLOAT_COUNT}f', *([0.0] * LIGHTMAP_PROJECTION_FLOAT_COUNT))
+            + compact_index_bytes(len(shadow_masks)) + b''.join(shadow_masks)
+            + compact_index_bytes(FIXTURE_LEVEL_REFERENCE) + struct.pack('<i', revision))
 
 
 def record_index_list_bytes(indices):
@@ -45,30 +53,34 @@ def page_mip_bytes(seed):
     return tuple(bytes((seed + offset) & 0xFF for offset in range(byte_count)) for _, byte_count in LIGHTMAP_PAGE_MIPS)
 
 
-def append_lightmap_texture(tail, record_indices, page_mips):
+def append_lightmap_texture(tail, record_indices, page_mips, compressed_revisions=None):
     tail += compact_index_bytes(len(page_mips))
-    for mips in page_mips:
-        tail += (compact_index_bytes(FIXTURE_TILE_TAG) + record_index_list_bytes(record_indices) + bytes(LIGHTMAP_PAGE_CACHE_IDENTITY_BYTES)
+    for slot, mips in enumerate(page_mips):
+        compressed_revision = FIXTURE_COMPRESSED_REVISION if compressed_revisions is None else compressed_revisions[slot]
+        tail += (compact_index_bytes(FIXTURE_LEVEL_REFERENCE) + record_index_list_bytes(record_indices) + bytes(LIGHTMAP_PAGE_CACHE_IDENTITY_BYTES)
                  + struct.pack('<i', FIXTURE_PAGE_REVISION))
         for mip in mips:
             skip_position = len(tail) + 4 + len(compact_index_bytes(len(mip))) + len(mip)
             tail += struct.pack('<i', skip_position) + compact_index_bytes(len(mip)) + mip
         edge = LIGHTMAP_PAGE_MIPS[0][0]
-        tail += struct.pack('<B3i', FIXTURE_TEXTURE_FORMAT, edge, edge, FIXTURE_COMPRESSED_REVISION)
+        tail += struct.pack('<B3i', FIXTURE_TEXTURE_FORMAT, edge, edge, compressed_revision)
     tail += record_index_list_bytes([])
 
 
-def build_lightmap_tail(sections, record_rectangles, textures):
+def build_lightmap_tail(sections, record_rectangles, textures, record_shadow_masks=None, record_zones=None, texture_compressed_revisions=None):
     tail = bytearray(compact_index_bytes(len(sections)))
     for section in sections:
         tail += section
     texture_of_record = {record: texture for texture, (record_indices, _) in enumerate(textures) for record in record_indices}
     tail += compact_index_bytes(len(record_rectangles))
     for record, (surface, rectangle) in enumerate(record_rectangles):
-        tail += lightmap_record_bytes(texture_of_record.get(record, 0), surface, rectangle)
+        shadow_masks = () if record_shadow_masks is None else record_shadow_masks.get(record, ())
+        zone_index = 0 if record_zones is None else record_zones[record]
+        tail += lightmap_record_bytes(texture_of_record.get(record, 0), surface, rectangle, zone_index, shadow_masks=shadow_masks)
     tail += compact_index_bytes(len(textures))
-    for record_indices, page_mips in textures:
-        append_lightmap_texture(tail, record_indices, page_mips)
+    for texture, (record_indices, page_mips) in enumerate(textures):
+        compressed_revisions = None if texture_compressed_revisions is None else texture_compressed_revisions[texture]
+        append_lightmap_texture(tail, record_indices, page_mips, compressed_revisions)
     return bytes(tail)
 
 
@@ -81,7 +93,11 @@ def lightmap_zone(sun_affect, unresolved=False):
     return SimpleNamespace(sun_affect=SimpleNamespace(value=sun_affect), unresolved=unresolved)
 
 
-def lightmap_model_and_package(tail, nodes, surface_count):
-    model = SimpleNamespace(export=SimpleNamespace(serial_offset=0, serial_size=len(tail)), lightmap_tail=len(tail), nodes=list(nodes),
-                            surfs=[SimpleNamespace() for _ in range(surface_count)])
+def lightmap_surface(plane=FIXTURE_SURFACE_PLANE, flags=0):
+    return SimpleNamespace(plane=plane, flags=flags)
+
+
+def lightmap_model_and_package(tail, nodes, surface_count, surfaces=None):
+    surfs = [lightmap_surface() for _ in range(surface_count)] if surfaces is None else list(surfaces)
+    model = SimpleNamespace(export=SimpleNamespace(serial_offset=0, serial_size=len(tail)), lightmap_tail=len(tail), nodes=list(nodes), surfs=surfs)
     return model, SimpleNamespace(data=tail, summary={'version': REVIEWED_PACKAGE_VERSION})

@@ -3,7 +3,7 @@ import { Material } from "@babylonjs/core/Materials/material";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { FOG_DISABLED, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/material";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
@@ -12,9 +12,10 @@ import { bindTileLighting, lightmapColourOperationOf, type TileLightingBspChunk 
 import { decodeTileLighting, type TileLightingModel } from "../../src/scene/world/lighting/decodeTileLighting";
 import { decodeDxt1Texels, lightmapPageAtHour } from "../../src/scene/world/lighting/lightmapPages";
 import {
-  planLightmapSections, sectionSunAffectUnresolvedReason, type LightmapSectionChunk,
+  sectionSunAffectUnresolvedReason, type LightmapSectionChunk,
 } from "../../src/scene/world/lighting/tileLightmapSections";
 import type { WorldEnvironmentSample } from "../../src/scene/world/worldTimeOfDay";
+import { inThreadLightmapRebuild, planSectionsWithoutComposition } from "../support/lightmapRebuildFixture";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
 import { replaceArray, tileLightingArrays, tileLightingModel, tileLightingPayload, withoutArray } from "../support/tileLightingFixture";
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
@@ -112,7 +113,7 @@ describe("lightmap pages by hour", () => {
 
 describe("planLightmapSections", () => {
   it("places each node range's lightmap coordinates on its own vertices and leaves unlit sections unlit", () => {
-    const [sunAffected, sheltered, unlit] = planLightmapSections(tileLightingModel(), [plainChunk()]);
+    const [sunAffected, sheltered, unlit] = planSectionsWithoutComposition(tileLightingModel(), [plainChunk()]);
     expect(sunAffected).toMatchObject({ kind: "lightmapped", lightmapTexture: 0, nativeRenderSection: 0, sunAffectedNodes: [10] });
     expect(Array.from(sunAffected?.kind === "lightmapped" ? sunAffected.lightmapCoordinates : [])).toEqual([0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75]);
     expect(sheltered).toMatchObject({ kind: "lightmapped", lightmapTexture: 1, nativeRenderSection: 1, sunAffectedNodes: [] });
@@ -121,7 +122,7 @@ describe("planLightmapSections", () => {
 
   it("lists the sun-affected nodes of each section from the LMNR row of each node range", () => {
     const swapped = decoded(replaceArray(tileLightingArrays(), "LMNR.sunAffect", [0, 1, 0]));
-    const [first, second] = planLightmapSections(swapped, [plainChunk()]);
+    const [first, second] = planSectionsWithoutComposition(swapped, [plainChunk()]);
     expect([first, second].map(plan => plan?.kind === "lightmapped" ? plan.sunAffectedNodes : null)).toEqual([[], [11]]);
   });
 
@@ -135,12 +136,12 @@ describe("planLightmapSections", () => {
     ["a page whose revision differs from its compressed revision",
       () => decoded(replaceArray(tileLightingArrays(), "LMPG.compressedRevision", [3, 3, 4, 3, 3, 3, 3, 3, 3])), plainChunk(), "bsp-live-cache-state"],
   ])("turns %s into a named gap instead of a lightmap", (_, model, chunk, reason) => {
-    expect(planLightmapSections(model(), [chunk])[0]).toMatchObject({ kind: "gap", reason });
+    expect(planSectionsWithoutComposition(model(), [chunk])[0]).toMatchObject({ kind: "gap", reason });
   });
 
   it("names a node range the lighting resource holds differently from the chunk BSP", () => {
     const shifted = nodeRanges.map(range => range.node === 10 ? { ...range, indexCount: 3 } : range);
-    expect(planLightmapSections(tileLightingModel(), [plainChunk(shifted)])[0]).toMatchObject({ kind: "gap", reason: "lighting-node-range-unmapped:10" });
+    expect(planSectionsWithoutComposition(tileLightingModel(), [plainChunk(shifted)])[0]).toMatchObject({ kind: "gap", reason: "lighting-node-range-unmapped:10" });
   });
 });
 
@@ -163,7 +164,7 @@ describe("bindTileLighting", () => {
     const chunk: TileLightingBspChunk = { chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes };
     let environment = environmentAtHour(1);
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1, environment: () => environment,
-      levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility: null, loadProgram: async () => loaded });
+      levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility: null, loadProgram: async () => loaded, ...inThreadLightmapRebuild() });
     await binding.addChunk(chunk);
     const pagesAtOne = binding.inspection().sections.map(section => section.page);
     expect(binding.inspection().sections.map(section => section.status)).toEqual(["library-compiled", "library-compiled", "program-unconverted"]);
@@ -176,7 +177,7 @@ describe("bindTileLighting", () => {
     expect(pagesAtOne).toEqual([0, 8, null]);
     expect(pagesAtThirteen).toEqual([4, 8, null]);
     expect(binding.inspection().textureSlots).toEqual([{ texture: 0, childCount: 8, sunAffectedSlot: 4 }, { texture: 1, childCount: 1, sunAffectedSlot: 0 }]);
-    expect(binding.inspection()).toMatchObject({ sunAffectedSectionCount: 1, lightmapUpload: { reason: "lightmap-bc1-cpu-decode" } });
+    expect(binding.inspection()).toMatchObject({ sunAffectedSectionCount: 1, lightmapUploads: { compressedChild: { reason: "lightmap-bc1-cpu-decode" } } });
     expect(binding.inspection().sections.map(section => [section.sunAffect, section.colourOperation?.operation ?? null, section.reasons])).toEqual([
       [true, "global-modulation", ["d3d-device-live-state"]], [false, "global-modulation", ["d3d-device-live-state"]], [null, null, ["section-unlit"]]]);
     expect(binding.inspection().lightmapHourGap).toBeNull();
@@ -228,9 +229,9 @@ describe("bindTileLighting", () => {
     let releaseProgram: (() => void) | null = null;
     const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1,
       environment: () => environmentAtHour(1), levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility: null,
-      loadProgram: (_materialId, signal) => new Promise((_resolve, reject) => { releaseProgram = () => reject(signal.reason); }) });
+      loadProgram: (_materialId, signal) => new Promise((_resolve, reject) => { releaseProgram = () => reject(signal.reason); }), ...inThreadLightmapRebuild() });
     const adding = binding.addChunk({ chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes });
-    await Promise.resolve();
+    await vi.waitFor(() => expect(releaseProgram).not.toBeNull());
     binding.removeChunk("chunk-0-0");
     releaseProgram!();
     await expect(adding).rejects.toThrow();

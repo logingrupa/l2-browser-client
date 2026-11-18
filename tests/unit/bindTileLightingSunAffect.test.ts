@@ -13,11 +13,12 @@ import { bindTileLighting } from "../../src/scene/world/lighting/bindTileLightin
 import { decodeTileLighting, type TileLightingModel } from "../../src/scene/world/lighting/decodeTileLighting";
 import { visibilityNodeRangeMissingReason, type TileLightingVisibility } from "../../src/scene/world/lighting/tileLightingVisibility";
 import {
-  planLightmapSections, sectionSunAffectUnresolvedReason, sortedSectionMixedSunAffectReason, type LightmapSectionChunk,
+  sectionSunAffectUnresolvedReason, sortedSectionMixedSunAffectReason, type LightmapSectionChunk,
 } from "../../src/scene/world/lighting/tileLightmapSections";
 import type { NativeBspNodeRange, NativeBspSection } from "../../src/scene/world/nativeBspResources";
 import type { WorldEnvironmentSample } from "../../src/scene/world/worldTimeOfDay";
 import { fixtureNumber, readHourlyLightingFixtures } from "../support/hourlyLightingFixtures";
+import { inThreadLightmapRebuild, planSectionsWithoutComposition } from "../support/lightmapRebuildFixture";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
 import { hourSetSlotCount, sharedSectionArrays, sharedSectionShelteredNode, sharedSectionSunNode, tileLightingPayload } from "../support/tileLightingFixture";
 
@@ -103,7 +104,7 @@ async function bindSharedSection(chunkOrdinal: number, visibility: TileLightingV
   const loaded = swatchMaterial(), meshes = sharedSectionMeshes(scene, loaded.materialId);
   let hour = 0;
   const binding = bindTileLighting({ scene, model: sharedSectionModel(undefined, chunkOrdinal), sessionSeed: 1, environment: () => environmentAtHour(hour),
-    levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility, loadProgram: async () => loaded });
+    levelSeconds: () => 0, fog: () => FOG_DISABLED, visibility, loadProgram: async () => loaded, ...inThreadLightmapRebuild() });
   await binding.addChunk({ chunkId: `chunk-${chunkOrdinal}`, chunkOrdinal, sections, nodeRanges, meshes });
   const renderAtHour = (nextHour: number) => {
     hour = nextHour;
@@ -114,7 +115,7 @@ async function bindSharedSection(chunkOrdinal: number, visibility: TileLightingV
 
 describe("planLightmapSections with a section of several node ranges", () => {
   it("carries the nodes of the section whose node range is sun-affected", () => {
-    const [shared, indoor] = planLightmapSections(sharedSectionModel(), [sharedSectionChunk()]);
+    const [shared, indoor] = planSectionsWithoutComposition(sharedSectionModel(), [sharedSectionChunk()]);
     expect(shared).toMatchObject({ kind: "lightmapped", lightmapTexture: 0, nativeRenderSection: 0, sunAffectedNodes: [sharedSectionSunNode] });
     expect(Array.from(shared?.kind === "lightmapped" ? shared.lightmapCoordinates : []))
       .toEqual([0.25, 0.5, 0.75, 0.5, 0.75, 0.75, 0.25, 0.75, 0.5, 0.75, 0.5, 0.875]);
@@ -122,20 +123,20 @@ describe("planLightmapSections with a section of several node ranges", () => {
   });
 
   it("names the section a gap when one of its node ranges has an unresolved sun affect", () => {
-    expect(planLightmapSections(sharedSectionModel([1, -1, 0, 0]), [sharedSectionChunk()])[0])
+    expect(planSectionsWithoutComposition(sharedSectionModel([1, -1, 0, 0]), [sharedSectionChunk()])[0])
       .toMatchObject({ kind: "gap", reason: sectionSunAffectUnresolvedReason });
   });
 
   it("names a sorted section a gap when its node ranges mix sun-affected and sheltered nodes", () => {
-    expect(planLightmapSections(sharedSectionModel(), [sharedSectionChunk(sortedSections)])[0])
+    expect(planSectionsWithoutComposition(sharedSectionModel(), [sharedSectionChunk(sortedSections)])[0])
       .toEqual({ kind: "gap", chunkId: "chunk-0-0", primitive: 0, reason: sortedSectionMixedSunAffectReason });
     expect(sortedSectionMixedSunAffectReason).toBe("bsp-sorted-section-mixed-sun-affect");
   });
 
   it("keeps a sorted section lightmapped when all or none of its node ranges are sun-affected", () => {
-    expect(planLightmapSections(sharedSectionModel([1, 1, 0, 0]), [sharedSectionChunk(sortedSections)])[0])
+    expect(planSectionsWithoutComposition(sharedSectionModel([1, 1, 0, 0]), [sharedSectionChunk(sortedSections)])[0])
       .toMatchObject({ kind: "lightmapped", sunAffectedNodes: [sharedSectionSunNode, sharedSectionShelteredNode] });
-    expect(planLightmapSections(sharedSectionModel([0, 0, 0, 0]), [sharedSectionChunk(sortedSections)])[0])
+    expect(planSectionsWithoutComposition(sharedSectionModel([0, 0, 0, 0]), [sharedSectionChunk(sortedSections)])[0])
       .toMatchObject({ kind: "lightmapped", sunAffectedNodes: [] });
   });
 });
