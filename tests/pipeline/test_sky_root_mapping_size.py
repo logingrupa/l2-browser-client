@@ -28,7 +28,7 @@ class SkyRootMappingSizeTests(unittest.TestCase):
         replacements = {'SkyMaterialPackages': mock.Mock(return_value=packages), 'ReferenceClientClassScripts': mock.Mock(),
                         'read_sky_material_graph': mock.Mock(return_value=[material]),
                         'sky_texture_products_by_node': mock.Mock(return_value=({SKY_TEXTURE: (TEXTURE_RECEIPT, {'Ring.png': b'ring'})}, [])),
-                        'sky_texture_pngs_by_node': mock.Mock(return_value={}), 'sky_material_program': mock.Mock(return_value=ROOT_PROGRAM),
+                        'sky_texture_pngs_by_node': mock.Mock(return_value=({}, [])), 'sky_material_program': mock.Mock(return_value=ROOT_PROGRAM),
                         'write_material_program_record': mock.Mock(return_value=({'programSha256': 'a' * 64}, [])),
                         'write_material_texture_images': mock.Mock(return_value=[]),
                         'single_graph_texture_export': mock.Mock(return_value={'object': SKY_TEXTURE})}

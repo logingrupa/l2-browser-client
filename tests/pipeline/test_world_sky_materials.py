@@ -1,4 +1,5 @@
 import hashlib
+import json
 from pathlib import Path
 import struct
 import sys
@@ -15,6 +16,7 @@ from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from ue2_package_fixture import compact, package_bytes, tag
 from world import pinned_image_decoder, sky_materials, sky_root_conversion
+from world.material_texture_images import MaterialTexturePng
 from world.sky_materials import SkyTextureUnsupported, native_texture_source, sky_material_program, sky_texture_pngs_by_node, \
     sky_texture_products_by_node
 
@@ -154,9 +156,23 @@ class SkyProgramTextureImageTests(unittest.TestCase):
         package = read_unreal_package(data, SKY_PACKAGE_FILENAME)
         graph = read_material_graph(package, package.exports[0])
         products, gap_reasons = sky_texture_products_by_node(package, graph)
+        pngs_by_node, level_gap_reasons = sky_texture_pngs_by_node(products)
+        self.assertEqual(level_gap_reasons, [])
         with patch.object(sky_materials, 'kept_material_class_defaults', return_value=self.texture_declarations):
-            program = sky_material_program(graph, None, None, sky_texture_pngs_by_node(products))
+            program = sky_material_program(graph, None, None, pngs_by_node)
         return program, products, gap_reasons
+
+    def test_a_sky_texture_whose_level_retention_is_refused_keeps_its_png_without_levels_and_names_the_texture_gap(self):
+        package = read_unreal_package(package_118_bytes(), SKY_PACKAGE_FILENAME)
+        products, _ = sky_texture_products_by_node(package, read_material_graph(package, package.exports[0]))
+        receipt, files = products['Sky_T.Haze']
+        native = json.loads(files['Haze.native.json'])
+        native['propertyTags'].append({'name': 'MinLOD', 'type': INTEGER_PROPERTY_KIND, 'status': 'decoded', 'value': 3})
+        products['Sky_T.Haze'] = receipt, {**files, 'Haze.native.json': json.dumps(native).encode('utf-8')}
+        pngs_by_node, level_gap_reasons = sky_texture_pngs_by_node(products)
+        self.assertEqual(pngs_by_node, {'Sky_T.Haze': MaterialTexturePng(files[receipt['png']['file']], None)})
+        self.assertEqual(len(level_gap_reasons), 1)
+        self.assertRegex(level_gap_reasons[0], r'^decode-failed:MaterialTextureMipChainError:.*retains')
 
     def test_the_sky_program_pins_the_png_and_the_original_mip_blocks_of_the_sky_texture_the_step_converts(self):
         program, products, gap_reasons = self.texture_root_program(package_118_bytes())

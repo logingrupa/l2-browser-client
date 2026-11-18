@@ -3,11 +3,13 @@ import json
 from pathlib import Path
 from typing import NamedTuple
 
-from native_assets_lib.material_texture_mip_chain import NATIVE_RESOURCE_PREFIX, NativeMipChain, material_texture_mip_chain_pin, material_texture_mip_level_file
+from native_assets_lib.material_texture_mip_chain import (NATIVE_RESOURCE_PREFIX, NativeMipChain, material_texture_mip_chain_pin, material_texture_mip_level_file,
+                                                          native_mip_chain_of_texture_source)
 from native_store.catalog_writer import add_store_file
 from native_store.native_material_program_pins import MATERIAL_PROGRAM_FILE_NAME, NATIVE_MATERIALS_FOLDER
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, require_converter_output
+from world.error_detail import conversion_failure_reason
 
 MATERIAL_TEXTURE_IMAGES_FOLDER = 'textures'
 MATERIAL_TEXTURE_IMAGE_NAME = 'texture.png'
@@ -23,6 +25,13 @@ class MaterialTextureImageError(ValueError):
 class MaterialTexturePng(NamedTuple):
     png: bytes
     native_mip_chain: NativeMipChain | None
+
+
+def material_texture_png_with_native_levels(png, read_native_source):
+    try:
+        return MaterialTexturePng(png, native_mip_chain_of_texture_source(read_native_source())), None
+    except ValueError as error:
+        return MaterialTexturePng(png, None), conversion_failure_reason(error)
 
 
 def reviewed_texture_nodes(graph):

@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from native_assets_lib.material_program import MaterialProgramError, derive_material_program
 from native_assets_lib.material_texture_mip_chain import native_mip_chain_of_texture_source
 from native_assets_lib.texture_source_reader import DXT1_FORMAT_ID, UnsupportedTextureSource, expected_mip_bytes
+from native_catalog.ue2 import FormatError
 from native_store.store_paths import lane_store_root
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
@@ -139,6 +140,32 @@ class LibraryMaterialTexturePngTests(unittest.TestCase):
         self.assertEqual(gap_reasons, [])
         self.assertEqual(chain.format_name, 'DXT3')
         self.assertEqual([level.payload for level in chain.levels], [fixture_level_payload(level) for level in texture['mips']])
+
+    def library_texture_pngs_with_source(self, read_source):
+        material_texture_images.stored_texture_images_by_store_root.clear()
+        self.addCleanup(material_texture_images.stored_texture_images_by_store_root.clear)
+        texture_object = 'Synthetic_T.Wall'
+        graph = {'nodes': [{'object': texture_object, 'classObject': 'Engine.Texture', 'status': 'reviewed', 'exportIndex': 1}]}
+        package = SimpleNamespace(exports=[{'object': texture_object}])
+        converter = SimpleNamespace(output=scratch_work_root(self, 'library-texture-converter-'),
+                                    texture=lambda work, reference: (synthetic_png_bytes(), {}, reference))
+        store_root = scratch_work_root(self, 'library-texture-store-') / 'l2'
+        with patch.object(surface_material_programs, 'texture_source_or_unsupported', side_effect=read_source):
+            pngs_by_node, gap_reasons = material_texture_pngs(package, graph, converter, store_root)
+        return pngs_by_node[texture_object], gap_reasons
+
+    def test_a_refused_level_retention_keeps_the_png_without_levels_and_names_the_texture_gap(self):
+        texture_png, gap_reasons = self.library_texture_pngs_with_source(lambda _, item: synthetic_dxt1_source(64, 64, 2, min_lod=3))
+        self.assertEqual((texture_png.png, texture_png.native_mip_chain), (synthetic_png_bytes(), None))
+        self.assertEqual(len(gap_reasons), 1)
+        self.assertRegex(gap_reasons[0], r'^decode-failed:MaterialTextureMipChainError:.*retains')
+
+    def test_a_failed_source_read_keeps_the_png_without_levels_and_names_the_texture_gap(self):
+        def unreadable_source(_, item):
+            raise FormatError('Native mip lazy-array end differs from payload range')
+        texture_png, gap_reasons = self.library_texture_pngs_with_source(unreadable_source)
+        self.assertEqual((texture_png.png, texture_png.native_mip_chain), (synthetic_png_bytes(), None))
+        self.assertEqual(gap_reasons, ['decode-failed:FormatError:Native mip lazy-array end differs from payload range'])
 
 
 class MaterialProgramMipChainCheckTests(unittest.TestCase):

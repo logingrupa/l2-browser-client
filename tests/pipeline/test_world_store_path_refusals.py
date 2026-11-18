@@ -91,7 +91,7 @@ class SkyMaterialStorePathRefusalTests(unittest.TestCase):
         packages = mock.Mock(resolve=mock.Mock(return_value=('package', {'object': SKY_MATERIAL})))
         replacements = {'SkyMaterialPackages': mock.Mock(return_value=packages), 'ReferenceClientClassScripts': mock.Mock(),
                         'read_sky_material_graph': mock.Mock(return_value=[material]), 'sky_texture_products_by_node': mock.Mock(return_value=({}, [])),
-                        'sky_texture_pngs_by_node': mock.Mock(return_value={}), 'sky_material_program': mock.Mock(return_value={}),
+                        'sky_texture_pngs_by_node': mock.Mock(return_value=({}, [])), 'sky_material_program': mock.Mock(return_value={}),
                         'write_material_program_record': mock.Mock(return_value=({}, [])), 'write_material_texture_images': mock.Mock(return_value=[])}
         for name, replacement in replacements.items():
             patcher = mock.patch.object(sky_root_conversion, name, replacement)

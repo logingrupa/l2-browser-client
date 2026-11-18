@@ -9,13 +9,12 @@ from PIL import Image
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.material_graph import read_material_graph
 from native_assets_lib.material_program import derive_material_program
-from native_assets_lib.material_texture_mip_chain import native_mip_chain_of_texture_source
 from native_assets_lib.texture_dds import UnsupportedTextureDDS, build_texture_dds
 from native_assets_lib.texture_mips import UnsupportedTextureSource, build_texture_source
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX
 from native_catalog.ue2 import FormatError
 from world.class_default_reads import kept_material_class_defaults
-from world.material_texture_images import TEXTURE_CLASS, MaterialTexturePng, material_texture_image_pins, reviewed_texture_nodes
+from world.material_texture_images import TEXTURE_CLASS, material_texture_image_pins, material_texture_png_with_native_levels, reviewed_texture_nodes
 from world.pinned_image_decoder import DDS_PLUGIN_SHA256, IMAGING_BINARY_SHA256, require_pinned_image_decoder
 
 OBJECT_PROPERTY_IMPORT_TARGET = 'import'
@@ -130,5 +129,10 @@ def sky_texture_native_source(receipt, files):
 
 
 def sky_texture_pngs_by_node(products):
-    return {node: MaterialTexturePng(files[receipt['png']['file']], native_mip_chain_of_texture_source(sky_texture_native_source(receipt, files)))
-            for node, (receipt, files) in products.items()}
+    pngs_by_node, gap_reasons = {}, []
+    for node, (receipt, files) in products.items():
+        pngs_by_node[node], level_gap_reason = material_texture_png_with_native_levels(files[receipt['png']['file']],
+                                                                                      lambda: sky_texture_native_source(receipt, files))
+        if level_gap_reason is not None:
+            gap_reasons.append(level_gap_reason)
+    return pngs_by_node, gap_reasons

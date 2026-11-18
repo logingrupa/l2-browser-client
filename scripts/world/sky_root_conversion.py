@@ -101,8 +101,9 @@ class SkyRootConversion:
         try:
             package, root_export = self.packages.resolve(identity)
             [material] = read_sky_material_graph(package, [root_export])
-            products, texture_gap_reasons = sky_texture_products_by_node(package, material.graph)
-            pngs_by_node = sky_texture_pngs_by_node(products)
+            products, product_gap_reasons = sky_texture_products_by_node(package, material.graph)
+            pngs_by_node, level_gap_reasons = sky_texture_pngs_by_node(products)
+            texture_gap_reasons = [*product_gap_reasons, *level_gap_reasons]
             program = sky_material_program(material.graph, self.class_work_root, self.class_scripts, pngs_by_node)
             program_record, program_files = write_material_program_record(self.store_root, material.graph, program)
             image_files = write_material_texture_images(self.store_root, pngs_by_node)
