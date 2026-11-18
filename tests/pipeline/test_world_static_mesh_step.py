@@ -17,6 +17,7 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import StoreFileEntry, add_store_file
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
+from native_store.verified_file_writes import StorePayloadIntegrityError
 from world import static_mesh_step
 from world.static_mesh_vertex_streams import VertexStreamOutcome
 from world.static_mesh_step import (STATIC_MESH_STEP_ALGORITHM_VERSION, ConvertedStaticMesh, StaticMeshAssignment, StaticMeshUnit,
@@ -211,6 +212,13 @@ class StaticMeshOutcomeTests(unittest.TestCase):
         self.assertEqual(outcomes, {'Old_S.Rock': ('gap', 'static-material-layout-unreviewed:123/13'),
                                     'Old_S.Tree': ('gap', 'static-material-layout-unreviewed:123/13')})
         self.assertEqual(RecordingConverter.instances, [])
+
+    def test_an_integrity_error_of_a_converted_archive_fails_the_whole_step_instead_of_becoming_a_failed_object_outcome(self):
+        integrity_error = StorePayloadIntegrityError("Archive asset.l2asset is not a readable zip: Bad CRC-32 for file 'model.glb'")
+        with patch.object(static_mesh_step, 'Converter', RecordingConverter),                 patch.object(static_mesh_step, 'read_package_header', return_value={'packageVersion': 123, 'licensee': 0}),                 patch.object(static_mesh_step, 'require_reference_client'),                 patch.object(static_mesh_step, 'converted_model_store_files_and_record', side_effect=integrity_error):
+            with self.assertRaises(StorePayloadIntegrityError) as raised:
+                static_mesh_outcomes(self.project_root, Path('E:/Lineage2-client'), [mesh_request('Rock_S', 'Rock')])
+        self.assertIs(raised.exception, integrity_error)
 
     def test_a_reviewed_layout_converts_once_per_mesh_with_the_model_request_and_a_failure_is_a_failed_outcome(self):
         requests = [mesh_request('Rock_S', 'Rock'), mesh_request('Rock_S', 'Broken'), mesh_request('Bad_S', 'Rock')]
