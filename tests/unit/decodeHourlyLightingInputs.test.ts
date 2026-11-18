@@ -96,6 +96,11 @@ describe("decodeHourlyLightingInputs", () => {
       new Array<number>(16).fill(0)), /hold 2, 2 and 16 values for 2 static mesh light lists/],
     ["a resolved LocalToWorld that is not affine", replaceArray([...restagedArrays(), ...staticMeshOrdinaryInputArrays()], "SMLL.localToWorld",
       new Array<number>(32).fill(0)), /SMLL.localToWorld of static mesh light list 1 is not an affine row-major matrix/],
+    ["a resolved ScaleGlow that is not finite", replaceArray([...restagedArrays(), ...staticMeshOrdinaryInputArrays()], "SMLL.scaleGlow", [0, Number.NaN]),
+      /SMLL.scaleGlow or SMLL.localToWorld of static mesh light list 1 holds a value that is not finite/],
+    ["a resolved LocalToWorld whose rotation holds a value that is not finite", replaceArray([...restagedArrays(), ...staticMeshOrdinaryInputArrays()],
+      "SMLL.localToWorld", [...new Array<number>(16).fill(0), Number.NaN, ...readStaticMeshLightingFixtures().fixtures[0]!.matrix.slice(1)]),
+      /SMLL.scaleGlow or SMLL.localToWorld of static mesh light list 1 holds a value that is not finite/],
   ])("refuses %s", (_, arrays, message) => {
     expect(() => decodedHourly(arrays)).toThrow(message);
   });

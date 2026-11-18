@@ -123,6 +123,8 @@ function decodeStaticMeshOrdinaryInputs(payload: TypedPayload, listCount: number
       requireLightingInput(resolved[list] === 0 || resolved[list] === ordinaryInputsResolved, `${resolvedName}[${list}] = ${resolved[list]} is not 0 or 1.`);
       if (resolved[list] !== ordinaryInputsResolved) continue;
       const start = list * localToWorldComponents;
+      requireLightingInput(Number.isFinite(scaleGlow[list]!) && localToWorld.subarray(start, start + localToWorldComponents).every(Number.isFinite),
+        `${scaleGlowName} or ${localToWorldName} of static mesh light list ${list} holds a value that is not finite.`);
       requireLightingInput(localToWorldAffineColumn.every(([index, value]) => localToWorld[start + index] === value),
         `${localToWorldName} of static mesh light list ${list} is not an affine row-major matrix.`);
     }
