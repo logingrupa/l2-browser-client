@@ -15,6 +15,7 @@ import {
   bindStaticMeshLibraryMaterials, type StaticMeshHourlyLightingFrame, type StaticMeshLibraryBinding,
 } from "../../src/scene/world/lighting/bindStaticMeshLibraryMaterials";
 import type { StaticMeshLightList } from "../../src/scene/world/lighting/decodeHourlyLightingInputs";
+import { staticMeshLightingReasons } from "../../src/scene/world/lighting/staticMeshPlacementLighting";
 import type { StaticMeshActorAmbientResult } from "../../src/scene/world/lighting/decodeStaticMeshActorAmbients";
 import type { StagedLightingInput } from "../../src/scene/world/lighting/stagedLightingInput";
 import { parseStaticMeshVertexStreams, type StaticMeshVertexStreams } from "../../src/scene/world/lighting/loadStaticMeshVertexStreams";
@@ -311,15 +312,24 @@ describe("static mesh ambient without hourly entries or without an instance (RM-
     expect(hourlyLightingUnresolvedItems.map(item => item.id)).toContain("static-mesh-light-changed-clearing");
   });
 
-  it("draws actor 1155, which has no static mesh instance, with zero COLOR0, the hourly ambient 60 and the 120/255 multiplier", async () => {
+  it("leaves actor 1155, sun-affected with no static mesh instance, unlit because native adds the sun-plane term at the unresolved LOD 2", async () => {
     const fixture = staticMeshAmbientFixtureOf(rm20, 1155);
     expect(fixture.hasInstance).toBe(false);
+    expect(fixture.runtimeSunAffect).toBe(true);
+    const { f, mesh } = await drawnRm20Actor(fixture, null);
+    expect(f.binding.inspection().lighting).toMatchObject({ litPlacements: 0, probes: [],
+      unlitPlacementReasons: { [staticMeshLightingReasons.levelOfDetailUnresolved]: 1 } });
+    expect(mesh.geometry!.isVerticesDataPresent(instanceColourAttributeName)).toBe(false);
+    expect(f.loadVertexStreams).not.toHaveBeenCalled();
+  });
+
+  it("draws a no-instance actor that touches no sun-affected zone with zero COLOR0 and its own render data ambient", async () => {
+    const fixture = staticMeshAmbientFixtureOf(rm20, 1123);
     const { f, mesh } = await drawnRm20Actor(fixture, null);
     const probe = f.binding.inspection().lighting.probes[0]!;
-    expect(probe).toMatchObject({ hasInstance: false, ambientSource: "hourly", ambient: [60, 60, 60, 255], vertexZeroRgb: [0, 0, 0] });
+    expect(probe).toMatchObject({ hasInstance: false, ambientSource: "render-data", ambient: [...fixture.setAmbientRGB, 255], vertexZeroRgb: [0, 0, 0] });
     expect(Array.from({ length: pillar.vertexCount }, (_, vertex) => instanceColourBytes(mesh, vertex)).every(bytes => bytes.join() === "0,0,0,255")).toBe(true);
-    expect(modulate2xMultiplier(instanceColourBytes(mesh, 0), probe.ambient!)).toEqual([120 / 255, 120 / 255, 120 / 255]);
-    expect(fixture.noInstanceNoExtraDynamicLights![0]!.textureMultiplierRGB).toEqual([120 / 255, 120 / 255, 120 / 255]);
+    expect(modulate2xMultiplier(instanceColourBytes(mesh, 0), probe.ambient!)).toEqual(fixture.retainedNoExtraDynamicLights![0]!.textureMultiplierRGB);
   });
 
   it("drops the hourly entries of an actor that touches no sun-affected zone and gives it a material of its own render data ambient", async () => {

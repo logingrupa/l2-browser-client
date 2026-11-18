@@ -35,6 +35,8 @@ describe("native draw lighting states", () => {
     ]);
     expect(hourlyLightingUnresolvedItems.find(item => item.id === "static-mesh-light-changed-clearing")).toMatchObject({ surface: "staticMesh",
       reason: expect.stringContaining("950 retained 60 vs cleared 71,69,68") });
+    expect(hourlyLightingUnresolvedItems.find(item => item.id === "ma-final-static-vertex")).toMatchObject({
+      reason: expect.stringContaining("a sun-affected actor without a static mesh instance (static-mesh-level-of-detail-unresolved)") });
     expect(terrainRefreshThreshold).toMatchObject({ status: "unresolved", reason: "terrain-refresh-threshold-unresolved" });
   });
 

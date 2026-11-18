@@ -46,6 +46,7 @@ export const staticMeshLightingReasons = {
   vertexCountMismatch: "static-mesh-vertex-streams-count-mismatch",
   colourSelector: "static-mesh-colour-selector-unresolved",
   primitiveUnjoined: "static-mesh-primitive-unjoined",
+  levelOfDetailUnresolved: "static-mesh-level-of-detail-unresolved",
 } as const;
 
 const rgbChannels = 3;
@@ -63,6 +64,7 @@ export function staticMeshPlacementLightingJoin(lightLists: StagedLightingInput<
   if (placement.vertexStreams.status === "gap") return { status: "unlit", reason: placement.vertexStreams.reason };
   if (lightLists.status === "unstaged") return { status: "unlit", reason: lightLists.reason };
   const list = lightLists.value.get(placement.exportIndex);
+  if (list === undefined && runtimeSunAffect) return { status: "unlit", reason: staticMeshLightingReasons.levelOfDetailUnresolved };
   if (list === undefined) return { status: "eligible", instance: null, runtimeSunAffect, ambient };
   if (list.ordinaryInputs.status === "unstaged") return { status: "unlit", reason: list.ordinaryInputs.reason };
   const transform = staticMeshPlacementLocalToWorld(list.ordinaryInputs.value.localToWorld);
