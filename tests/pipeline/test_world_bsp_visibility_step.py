@@ -126,7 +126,7 @@ class VisibilityPayloadTests(unittest.TestCase):
         self.assertEqual(by_name['LEAF.zone'].values, (1, 2))
         self.assertEqual(by_name['LEAF.pvs'].values, (0b110, 0, 0xFFFFFFFF, 0xFFFFFFFF))
         self.assertEqual(by_name['PORT.node'].values, (2,))
-        self.assertEqual(by_name['ZONE.class'].values, (1 | 8, 8, 2))
+        self.assertEqual(by_name['ZONE.class'].values, (1 | 8, 8, 0))
         self.assertEqual(outdoor_zones, frozenset({0, 1}))
         self.assertEqual(by_name['RNGE.indexCount'].values, (6,))
         self.assertEqual(by_name['MEMB.leafStart'].values, (0,))

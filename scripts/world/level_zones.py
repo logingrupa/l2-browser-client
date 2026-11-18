@@ -10,7 +10,6 @@ AMBIENT_FIELDS = ('AmbientVector', 'AmbientBrightness', 'AmbientHue', 'AmbientSa
 ZONE_FOG_FIELDS = ('bDistanceFog', 'bTerrainZone', 'DistanceFogColor', 'DistanceFogStart', 'DistanceFogEnd', 'DistanceFogBlendTime')
 SKY_ZONE_CLASS = 'Engine.SkyZoneInfo'
 ZONE_CLASS_OUTDOOR_BIT = 1
-ZONE_CLASS_SKY_BIT = 2
 ZONE_CLASS_UNRESOLVED_BIT = 4
 
 
@@ -30,8 +29,7 @@ class LevelZone(NamedTuple):
 
     @property
     def class_bits(self):
-        return ((ZONE_CLASS_OUTDOOR_BIT if self.outdoor else 0) | (ZONE_CLASS_SKY_BIT if self.sky else 0)
-                | (ZONE_CLASS_UNRESOLVED_BIT if self.unresolved else 0))
+        return (ZONE_CLASS_OUTDOOR_BIT if self.outdoor else 0) | (ZONE_CLASS_UNRESOLVED_BIT if self.unresolved else 0)
 
     def to_record(self):
         return {'zoneIndex': self.zone_index, 'actor': self.actor, 'actorClass': self.actor_class, 'connectivity': self.connectivity,

@@ -118,7 +118,7 @@ class LevelZoneTableTests(unittest.TestCase):
 
     def test_the_sky_class_comes_from_the_zone_actor_class(self):
         self.assertEqual(sky_zone_indices(self.zones), frozenset({2}))
-        self.assertEqual([zone.class_bits for zone in self.zones], [1 | 4, 0, 1 | 2, 4])
+        self.assertEqual([zone.class_bits for zone in self.zones], [1 | 4, 0, 1, 4])
 
     def test_a_zone_without_an_actor_is_unresolved_and_listed(self):
         actorless = self.zones[3]
@@ -137,7 +137,7 @@ class LevelZoneTableTests(unittest.TestCase):
                           ('00_00.LevelInfo0', True, False)])
         self.assertEqual((zones[0].sun_affect.value, zones[0].sun_affect.provenance), (True, 'class-default'))
         self.assertEqual(zones[0].to_record()['levelInfoFallback'], True)
-        self.assertEqual([zone.class_bits for zone in zones], [1, 0, 1 | 2, 1])
+        self.assertEqual([zone.class_bits for zone in zones], [1, 0, 1, 1])
 
     def test_actors_zero_that_is_not_a_level_info_leaves_actorless_zones_unresolved(self):
         zones = read_level_zones(synthetic_zone_package(), level_with_actors(synthetic_zone_model(), [1, 3]), CLASS_DEFAULTS, zone_class_chains())

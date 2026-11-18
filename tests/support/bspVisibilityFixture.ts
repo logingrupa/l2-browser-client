@@ -46,7 +46,7 @@ export function threeRoomVisibilityArrays(): TypedPayloadFixtureArray[] {
     { name: "ZONE.connectivity", type: "uint32", values: [...zoneWords(outside), ...zoneWords(camera, throughPortal), ...zoneWords(camera, throughPortal, behindWall),
       ...zoneWords(throughPortal, behindWall)] },
     { name: "ZONE.visibility", type: "uint32", values: [0, 0, 0, 0, 0, 0, 0, 0] },
-    { name: "ZONE.class", type: "uint8", values: [9, 0, 0, 2] },
+    { name: "ZONE.class", type: "uint8", values: [9, 0, 0, 0] },
     { name: "PORT.node", type: "int32", values: [0] },
     { name: "RNGE.chunk", type: "int32", values: [0, 0, 1] },
     { name: "RNGE.node", type: "int32", values: [2, 3, 4] },
