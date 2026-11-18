@@ -84,6 +84,16 @@ describe("per-pass fog colour from D3DDrv 0x1000ae10 and 0x1000f4a0 (RM-21)", ()
       interludeEvidence: "D3DDrv.dll 05622dde 0x1000ae10 (branch 0x1000c7f7), 0x1000f4a0 (branch 0x1000f4e2), fog override gate 0x100263a0" });
     expect(FOG_CONSTANTS.neutralGreyByte).toMatchObject({ status: "confirmed-interlude", runtimeDefault: 127 });
   });
+
+  it("keeps the bare Texture and non-blending root fog family on its own unconfirmed row, outside the RM-21 table", () => {
+    expect(FOG_CONSTANTS.materialFamilies.runtimeDefault).not.toHaveProperty("nonBlendingRoot");
+    expect(FOG_CONSTANTS.nonBlendingRootFamily).toMatchObject({ status: "unconfirmed", interludeEvidence: null, runtimeDefault: "fog-colour" });
+    const bareTexture = blendFactorsForMaterial(parseMaterialProgram(JSON.parse(JSON.stringify(programOf("Synthetic.Texture",
+      [swatchTextureNode("Synthetic.Texture", image)])))));
+    expect(bareTexture).toMatchObject({ status: "resolved", source: "texture", fogFamily: "fog-colour" });
+    expect(bareTexture.status === "resolved" && bareTexture.constantIds).toEqual(expect.arrayContaining([FOG_CONSTANTS.nonBlendingRootFamily.id]));
+    expect(bareTexture.status === "resolved" && bareTexture.constantIds).not.toContain(FOG_CONSTANTS.materialFamilies.id);
+  });
 });
 
 describe("pass equations on the shared sky fog depth (RM-21)", () => {

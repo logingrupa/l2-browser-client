@@ -116,8 +116,8 @@ function textureState(node: MaterialProgramNode, twoSidedFromModifiers: boolean)
     status: "resolved", source: "texture", sourceNode: node.id, modeName: alphaTexture ? "bAlphaTexture" : masked ? "bMasked" : "opaque", pair,
     colourWrite: true, depthWrite: !alphaTexture, depthTest: true, twoSided: twoSidedFromModifiers || (optionalBoolean(node, "bTwoSided") ?? false),
     alphaTest: masked, alphaReference: masked ? BLEND_CONSTANTS.maskedAlphaReference.runtimeDefault : 0,
-    fogFamily: FOG_CONSTANTS.materialFamilies.runtimeDefault.nonBlendingRoot,
-    constantIds: [BLEND_CONSTANTS.bareTexturePairs.id, BLEND_CONSTANTS.maskedAlphaReference.id, FOG_CONSTANTS.materialFamilies.id],
+    fogFamily: FOG_CONSTANTS.nonBlendingRootFamily.runtimeDefault,
+    constantIds: [BLEND_CONSTANTS.bareTexturePairs.id, BLEND_CONSTANTS.maskedAlphaReference.id, FOG_CONSTANTS.nonBlendingRootFamily.id],
   };
 }
 
@@ -125,8 +125,8 @@ function nonBlendingRootState(node: MaterialProgramNode, twoSidedFromModifiers: 
   const pair = BLEND_CONSTANTS.nonBlendingRoot.runtimeDefault;
   return {
     status: "resolved", source: "non-blending-root", sourceNode: node.id, modeName: node.class, pair, colourWrite: true, depthWrite: true, depthTest: true,
-    twoSided: twoSidedFromModifiers, alphaTest: false, alphaReference: 0, fogFamily: FOG_CONSTANTS.materialFamilies.runtimeDefault.nonBlendingRoot,
-    constantIds: [BLEND_CONSTANTS.nonBlendingRoot.id, FOG_CONSTANTS.materialFamilies.id],
+    twoSided: twoSidedFromModifiers, alphaTest: false, alphaReference: 0, fogFamily: FOG_CONSTANTS.nonBlendingRootFamily.runtimeDefault,
+    constantIds: [BLEND_CONSTANTS.nonBlendingRoot.id, FOG_CONSTANTS.nonBlendingRootFamily.id],
   };
 }
 
