@@ -33,7 +33,10 @@ TILE_RESOURCE_FIELDS = ('kind', 'manifest', 'manifestSha256', 'manifestBytes')
 SECTOR_RANGE_FIELDS = ('firstColumn', 'lastColumn', 'firstRow', 'lastRow')
 TERRAIN_COMPONENT_FIELDS = ('resource', 'sha256', 'maskUvRule')
 COMPONENT_RESOURCE_FIELDS = ('resource', 'sha256')
-MODEL_FIELDS = ('id', 'archive', 'archiveSha256', 'placements')
+MODEL_FIELDS = ('id', 'archive', 'archiveSha256', 'vertexStreams', 'placements')
+VERTEX_STREAMS_FIELDS = ('file', 'sha256', 'bytes')
+VERTEX_STREAMS_GAP_FIELDS = ('gapReason',)
+VERTEX_STREAMS_MAXIMUM_BYTES = 16 * 1024 * 1024
 PLACEMENT_FIELDS = ('id', 'modelId', 'sourceActor', 'exportIndex', 'sourceMesh', 'matrix', 'materialOverrides', 'collision')
 NULLABLE_CHUNK_COMPONENT_STEPS = ('terrain', 'bsp', 'collision')
 TILE_RESOURCE_MAXIMUM_BYTES = 128 * 1024 * 1024
@@ -57,6 +60,7 @@ CHUNK_COMPONENT_PATH_TEMPLATES = MappingProxyType({'terrain': '/l2/maps/<sha256>
                                                    'bsp': '/l2/maps/<sha256>/native-tile-chunk-bsp/bsp.glb',
                                                    'collision': '/l2/maps/<sha256>/native-tile-chunk-collision/asset.json'})
 MODEL_ARCHIVE_PATH_TEMPLATE = '/l2/<sha256>/asset.l2asset'
+VERTEX_STREAMS_PATH_TEMPLATE = '/l2/static-mesh-vertex-streams/<sha256>/vertex-streams.json'
 MAXIMUM_CHUNK_MODELS = 1024
 MAXIMUM_CHUNK_PLACEMENTS = 4096
 PLACEMENT_MATRIX_LENGTH = 16
@@ -73,6 +77,7 @@ TILE_RESOURCE_PATH_PATTERNS = MappingProxyType({kind: hash_addressed_path_patter
 CHUNK_MANIFEST_PATH_PATTERN = hash_addressed_path_pattern(CHUNK_MANIFEST_PATH_TEMPLATE)
 CHUNK_COMPONENT_PATH_PATTERNS = MappingProxyType({step: hash_addressed_path_pattern(template) for step, template in CHUNK_COMPONENT_PATH_TEMPLATES.items()})
 MODEL_ARCHIVE_PATH_PATTERN = hash_addressed_path_pattern(MODEL_ARCHIVE_PATH_TEMPLATE)
+VERTEX_STREAMS_PATH_PATTERN = hash_addressed_path_pattern(VERTEX_STREAMS_PATH_TEMPLATE)
 
 
 class TileManifestError(ValueError):
@@ -300,6 +305,16 @@ def require_chunk_placement(placement, model_id, placement_ids, label):
     placement_ids.add(placement['id'])
 
 
+def require_vertex_streams(vertex_streams, label):
+    if isinstance(vertex_streams, dict) and set(vertex_streams) == set(VERTEX_STREAMS_GAP_FIELDS):
+        if not (isinstance(vertex_streams['gapReason'], str) and vertex_streams['gapReason']):
+            raise TileManifestError(f'{label} gapReason must be a non-empty string: {vertex_streams["gapReason"]!r}')
+        return
+    require_exact_keys(vertex_streams, VERTEX_STREAMS_FIELDS, label)
+    require_pinned_path(vertex_streams['file'], vertex_streams['sha256'], VERTEX_STREAMS_PATH_PATTERN, TileManifestError, label)
+    require_byte_length(vertex_streams['bytes'], VERTEX_STREAMS_MAXIMUM_BYTES, TileManifestError, label)
+
+
 def require_chunk_models(models, label):
     if not (isinstance(models, list) and len(models) <= MAXIMUM_CHUNK_MODELS):
         raise TileManifestError(f'{label} models must be a list of at most {MAXIMUM_CHUNK_MODELS} models')
@@ -313,6 +328,7 @@ def require_chunk_models(models, label):
         model_ids.add(model['id'])
         require_pinned_path(model['archive'], model['archiveSha256'], MODEL_ARCHIVE_PATH_PATTERN, TileManifestError,
                             f'{label} model {model["id"]} archive')
+        require_vertex_streams(model['vertexStreams'], f'{label} model {model["id"]} vertexStreams')
         if not (isinstance(model['placements'], list) and model['placements']):
             raise TileManifestError(f'{label} model {model["id"]} placements must be a non-empty list: {model["placements"]!r}')
         for placement in model['placements']:

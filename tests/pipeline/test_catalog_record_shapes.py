@@ -75,7 +75,8 @@ def chunk_placement(model_id, placement_id='placement-1', **fields):
 
 
 def chunk_model(placements, model_id='interlude:SyntheticFixture.Model'):
-    return {'id': model_id, 'archive': f'/l2/{SHA256_A}/asset.l2asset', 'archiveSha256': SHA256_A, 'placements': placements}
+    return {'id': model_id, 'archive': f'/l2/{SHA256_A}/asset.l2asset', 'archiveSha256': SHA256_A,
+            'vertexStreams': {'gapReason': 'static-mesh-colour-stream-join-mismatch'}, 'placements': placements}
 
 
 def write_vocabulary_root(test_case, document):
@@ -365,6 +366,10 @@ class TileManifestValidationTests(unittest.TestCase):
             'terrain with passing gap row': (changed(GOLDEN_CHUNK_MANIFEST, gaps=[*gaps_without_terrain, passing_terrain_gap]), 'has no terrain'),
             'captured mask rule': (changed(GOLDEN_CHUNK_MANIFEST, terrain=changed(terrain, maskUvRule='captured')), "maskUvRule 'captured'"),
             'model archive SHA differs': (changed(GOLDEN_CHUNK_MANIFEST, models=[model]), 'differs from its pin'),
+            'vertex streams outside their folder': (changed(GOLDEN_CHUNK_MANIFEST, models=[changed(chunk_model([chunk_placement(model_id)]),
+                vertexStreams={'file': f'/l2/{SHA256_A}/vertex-streams.json', 'sha256': SHA256_A, 'bytes': 10})]), 'vertexStreams path must match'),
+            'vertex streams gap without a reason': (changed(GOLDEN_CHUNK_MANIFEST, models=[changed(chunk_model([chunk_placement(model_id)]),
+                vertexStreams={'gapReason': ''})]), 'gapReason must be a non-empty string'),
             'bsp short sha256': (changed(GOLDEN_CHUNK_MANIFEST, bsp={'resource': f'/l2/{SHA256_A}/asset.l2asset', 'sha256': 'abc'}),
                                  'SHA-256 must be 64 lowercase hex'),
         }

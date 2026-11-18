@@ -24,10 +24,10 @@ GLTF_AXIS_OF_SOURCE_AXIS = (0, 2, 1)
 GLTF_FLOAT_COMPONENT_TYPE = 5126
 GLB_HEADER_BYTES = 12
 GLB_CHUNK_HEADER_BYTES = 8
-COLOUR_STREAMS_KIND = 'native-static-mesh-colour-streams'
-COLOUR_STREAMS_SCHEMA_VERSION = 1
-COLOUR_STREAMS_FILE_NAME = 'colour-streams.json'
-COLOUR_STREAMS_STORE_FOLDER = 'static-mesh-colour-streams'
+VERTEX_STREAMS_KIND = 'native-static-mesh-vertex-streams'
+VERTEX_STREAMS_SCHEMA_VERSION = 2
+VERTEX_STREAMS_FILE_NAME = 'vertex-streams.json'
+VERTEX_STREAMS_STORE_FOLDER = 'static-mesh-vertex-streams'
 COLOUR_SELECTOR_UNRESOLVED_REASON = 'static-mesh-colour-selector-unresolved'
 COLOUR_STREAM_LAYOUT_UNREVIEWED_REASON_PREFIX = 'static-mesh-colour-stream-layout-unreviewed:'
 COLOUR_STREAM_JOIN_MISMATCH_REASON = 'static-mesh-colour-stream-join-mismatch'
@@ -39,9 +39,10 @@ class StaticMeshSection(NamedTuple):
     triangle_count: int
 
 
-class StaticMeshColourStreams(NamedTuple):
+class StaticMeshVertexStreams(NamedTuple):
     sections: tuple
     positions: tuple
+    normals: tuple
     primary_colours: bytes
     primary_revision: int
     alternate_colours: bytes
@@ -50,7 +51,7 @@ class StaticMeshColourStreams(NamedTuple):
     indices: tuple
 
 
-class ColourStreamOutcome(NamedTuple):
+class VertexStreamOutcome(NamedTuple):
     payload: bytes | None
     gap_reason: str | None
 
@@ -63,8 +64,8 @@ def colour_stream_unread_reason(error):
     return f'{COLOUR_STREAM_UNREAD_REASON_PREFIX}{first_line_of_error(error)}'
 
 
-def colour_streams_store_path(payload_sha256):
-    return f'{COLOUR_STREAMS_STORE_FOLDER}/{payload_sha256}/{COLOUR_STREAMS_FILE_NAME}'
+def vertex_streams_store_path(payload_sha256):
+    return f'{VERTEX_STREAMS_STORE_FOLDER}/{payload_sha256}/{VERTEX_STREAMS_FILE_NAME}'
 
 
 def counted(reader, label, maximum=MAXIMUM_STREAM_ELEMENTS):
@@ -104,7 +105,7 @@ def read_uv_streams(reader, vertex_count, label):
     return streams
 
 
-def read_static_mesh_colour_streams(package, export):
+def read_static_mesh_vertex_streams(package, export):
     label = f'static mesh {export["object"]}'
     _, reader = package.properties(export)
     reader.take(PRIMITIVE_BOUNDS_BYTES)
@@ -117,7 +118,7 @@ def read_static_mesh_colour_streams(package, export):
     alternate_colours, alternate_revision = read_colour_stream(reader, vertex_count, f'{label} alternate colour stream')
     uv_streams = read_uv_streams(reader, vertex_count, label)
     indices = tuple(index for (index,) in unpacked_rows(reader, INDEX_FORMAT, counted(reader, f'{label} index buffer')))
-    return StaticMeshColourStreams(sections, tuple(vertex[:3] for vertex in vertices), primary_colours, primary_revision, alternate_colours,
+    return StaticMeshVertexStreams(sections, tuple(vertex[:3] for vertex in vertices), tuple(vertex[3:6] for vertex in vertices), primary_colours, primary_revision, alternate_colours,
                                    alternate_revision, uv_streams[0], indices)
 
 
@@ -182,24 +183,25 @@ def joined_primitive_vertices(glb, streams):
     return joined
 
 
-def colour_streams_document(source_object, package_record, streams, primitives):
-    return {'schemaVersion': COLOUR_STREAMS_SCHEMA_VERSION, 'kind': COLOUR_STREAMS_KIND, 'sourceObject': source_object,
+def vertex_streams_document(source_object, package_record, streams, primitives):
+    return {'schemaVersion': VERTEX_STREAMS_SCHEMA_VERSION, 'kind': VERTEX_STREAMS_KIND, 'sourceObject': source_object,
             'package': package_record, 'nativeVertexCount': len(streams.positions),
+            'nativeNormals': [component for normal in streams.normals for component in normal],
             'primary': {'bgraHex': streams.primary_colours.hex(), 'revision': streams.primary_revision},
             'alternate': {'bgraHex': streams.alternate_colours.hex(), 'revision': streams.alternate_revision},
             'selector': None, 'selectorGapReason': COLOUR_SELECTOR_UNRESOLVED_REASON, 'primitives': primitives}
 
 
-def static_mesh_colour_stream_outcome(package_version, load_package, request, glb):
+def static_mesh_vertex_stream_outcome(package_version, load_package, request, glb):
     if package_version not in REVIEWED_COLOUR_STREAM_LAYOUTS:
-        return ColourStreamOutcome(None, colour_stream_layout_unreviewed_reason(*package_version))
+        return VertexStreamOutcome(None, colour_stream_layout_unreviewed_reason(*package_version))
     package, package_record = load_package(request['package'])
     try:
         export = static_mesh_export(package, request['object'])
-        streams = read_static_mesh_colour_streams(package, export)
+        streams = read_static_mesh_vertex_streams(package, export)
         primitives = joined_primitive_vertices(glb, streams)
     except FormatError as error:
-        return ColourStreamOutcome(None, colour_stream_unread_reason(error))
+        return VertexStreamOutcome(None, colour_stream_unread_reason(error))
     if primitives is None:
-        return ColourStreamOutcome(None, COLOUR_STREAM_JOIN_MISMATCH_REASON)
-    return ColourStreamOutcome(json_bytes(colour_streams_document(export['object'], package_record, streams, primitives)), None)
+        return VertexStreamOutcome(None, COLOUR_STREAM_JOIN_MISMATCH_REASON)
+    return VertexStreamOutcome(json_bytes(vertex_streams_document(export['object'], package_record, streams, primitives)), None)

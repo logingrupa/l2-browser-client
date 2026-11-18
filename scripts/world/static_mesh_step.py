@@ -19,7 +19,7 @@ from world.light_actors import reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.error_detail import MODEL_CONVERSION_ERRORS, conversion_failure_reason
-from world.static_mesh_colour_streams import colour_streams_store_path, static_mesh_colour_stream_outcome
+from world.static_mesh_vertex_streams import static_mesh_vertex_stream_outcome, vertex_streams_store_path
 from world.static_mesh_converter_folder import STATIC_MESH_CONVERTER_FOLDER
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actor_subclass_actors, static_mesh_actors
@@ -28,7 +28,7 @@ from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-STATIC_MESH_STEP_ALGORITHM_VERSION = 5
+STATIC_MESH_STEP_ALGORITHM_VERSION = 6
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
 STATIC_MESH_REQUESTS_PRODUCT_NAME = 'static-mesh-requests.json'
@@ -140,15 +140,15 @@ class StaticMeshPackages:
         return self.loaded[relative]
 
 
-def with_colour_streams(converted, outcome):
+def with_vertex_streams(converted, outcome):
     if outcome.gap_reason is not None:
-        return converted._replace(model_record={**converted.model_record, 'colourStreams': {'gapReason': outcome.gap_reason}})
+        return converted._replace(model_record={**converted.model_record, 'vertexStreams': {'gapReason': outcome.gap_reason}})
     payload_sha256 = sha256_hex(outcome.payload)
-    relative = colour_streams_store_path(payload_sha256)
+    relative = vertex_streams_store_path(payload_sha256)
     store_files = dict(converted.store_files)
     add_store_file(store_files, relative, outcome.payload)
-    colour_streams = {'file': relative, 'sha256': payload_sha256, 'bytes': len(outcome.payload)}
-    return ConvertedStaticMesh({**converted.model_record, 'colourStreams': colour_streams}, store_files)
+    vertex_streams = {'file': relative, 'sha256': payload_sha256, 'bytes': len(outcome.payload)}
+    return ConvertedStaticMesh({**converted.model_record, 'vertexStreams': vertex_streams}, store_files)
 
 
 def model_glb_bytes(converted):
@@ -235,8 +235,8 @@ def static_mesh_outcomes(project_root, client, requests):
         except MODEL_CONVERSION_ERRORS as error:
             outcomes[request['object']] = (FAILED_STATUS, conversion_failure_reason(error))
             continue
-        colour_streams = static_mesh_colour_stream_outcome((header['packageVersion'], header['licensee']), packages, request, model_glb_bytes(converted))
-        outcomes[request['object']] = with_colour_streams(converted, colour_streams)
+        vertex_streams = static_mesh_vertex_stream_outcome((header['packageVersion'], header['licensee']), packages, request, model_glb_bytes(converted))
+        outcomes[request['object']] = with_vertex_streams(converted, vertex_streams)
     return outcomes
 
 
@@ -246,12 +246,18 @@ def chunk_model_records(placements, models_by_id):
         placements_by_model.setdefault(placement['modelId'], []).append(placement)
     models = sorted((models_by_id[model_id] for model_id in placements_by_model), key=model_sort_key)
     return [{'id': model['id'], 'archive': '/l2/' + model['archive']['file'], 'archiveSha256': model['archive']['sha256'],
-             'placements': placements_by_model[model['id']]} for model in models]
+             'vertexStreams': chunk_vertex_streams_record(model['vertexStreams']), 'placements': placements_by_model[model['id']]} for model in models]
 
 
-def colour_stream_gap_rows(tile_id, step_name, source_identity, evidence, models):
-    return [tile_step_row(tile_id, step_name, GAP_STATUS, model['colourStreams']['gapReason'], {**source_identity, 'object': model['sourceObject']}, evidence)
-            for model in models if 'gapReason' in model['colourStreams']]
+def chunk_vertex_streams_record(vertex_streams):
+    if 'gapReason' in vertex_streams:
+        return {'gapReason': vertex_streams['gapReason']}
+    return {'file': '/l2/' + vertex_streams['file'], 'sha256': vertex_streams['sha256'], 'bytes': vertex_streams['bytes']}
+
+
+def vertex_stream_gap_rows(tile_id, step_name, source_identity, evidence, models):
+    return [tile_step_row(tile_id, step_name, GAP_STATUS, model['vertexStreams']['gapReason'], {**source_identity, 'object': model['sourceObject']}, evidence)
+            for model in models if 'gapReason' in model['vertexStreams']]
 
 
 def static_meshes_product(tile_id, chunk_plan, assignment, mesh_outcomes):
@@ -263,7 +269,7 @@ def static_meshes_product(tile_id, chunk_plan, assignment, mesh_outcomes):
               for chunk in chunk_plan['chunks']}
     models = sorted(models_by_id.values(), key=model_sort_key)
     return {'tileId': tile_id, 'models': models, 'chunks': chunks, 'unplacedGapRows': assignment.chunk_gap_rows(None),
-            'gapRows': assignment.gap_rows() + colour_stream_gap_rows(assignment.tile_id, STATIC_MESH_STEP_NAME, assignment.source_identity,
+            'gapRows': assignment.gap_rows() + vertex_stream_gap_rows(assignment.tile_id, STATIC_MESH_STEP_NAME, assignment.source_identity,
                                                                        assignment.evidence, models)}
 
 

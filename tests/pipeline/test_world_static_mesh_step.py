@@ -17,10 +17,10 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
 from world import static_mesh_step
-from world.static_mesh_colour_streams import ColourStreamOutcome
+from world.static_mesh_vertex_streams import VertexStreamOutcome
 from world.static_mesh_step import (STATIC_MESH_STEP_ALGORITHM_VERSION, ConvertedStaticMesh, StaticMeshAssignment, StaticMeshUnit,
                                     assign_static_placements, placeable_requests, placement_accounting_difference, run_static_mesh_step,
-                                    static_mesh_ledger, static_mesh_outcomes, static_meshes_product, with_colour_streams, colour_stream_gap_rows)
+                                    static_mesh_ledger, static_mesh_outcomes, static_meshes_product, with_vertex_streams, vertex_stream_gap_rows)
 from world.freeze_world_oracle import matrix_canonical_sha256
 from world.light_actors import ClassChains, reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
@@ -86,15 +86,16 @@ def converted_mesh(package, name):
     payload = f'synthetic archive {package}.{name}'.encode()
     archive_sha256 = hashlib.sha256(payload).hexdigest()
     glb = f'synthetic model {package}.{name}'.encode()
-    colour_streams = f'synthetic colour streams {package}.{name}'.encode()
+    vertex_streams = f'synthetic vertex streams {package}.{name}'.encode()
+    vertex_streams_sha256 = hashlib.sha256(vertex_streams).hexdigest()
+    vertex_streams_file = f'static-mesh-vertex-streams/{vertex_streams_sha256}/vertex-streams.json'
     store_files = {f'{archive_sha256}/asset.l2asset': (f'{archive_sha256}/asset.l2asset', payload),
                    f'{archive_sha256}/model.glb': (f'{archive_sha256}/model.glb', glb),
-                   f'{archive_sha256}/colour-streams.json': (f'{archive_sha256}/colour-streams.json', colour_streams)}
+                   vertex_streams_file: (vertex_streams_file, vertex_streams)}
     record = {'id': f'interlude:{package}.{name}', 'sourceObject': f'{package}.{name}',
               'archive': {'file': f'{archive_sha256}/asset.l2asset', 'sha256': archive_sha256, 'bytes': len(payload)},
               'model': {'file': f'{archive_sha256}/model.glb', 'sha256': hashlib.sha256(glb).hexdigest(), 'bytes': len(glb)},
-              'colourStreams': {'file': f'{archive_sha256}/colour-streams.json', 'sha256': hashlib.sha256(colour_streams).hexdigest(),
-                                'bytes': len(colour_streams)}}
+              'vertexStreams': {'file': vertex_streams_file, 'sha256': vertex_streams_sha256, 'bytes': len(vertex_streams)}}
     return ConvertedStaticMesh(record, store_files)
 
 
@@ -219,35 +220,35 @@ class StaticMeshOutcomeTests(unittest.TestCase):
                                               {'kind': 'model', 'package': 'staticmeshes/Rock_S.usx', 'object': 'Rock_S.Broken'}])
         self.assertEqual(converter.output, lane_work_root(self.project_root, 'world') / 'static-mesh-converter')
         self.assertIsInstance(outcomes['Rock_S.Rock'], ConvertedStaticMesh)
-        self.assertEqual(outcomes['Rock_S.Rock'].model_record['colourStreams'], {'gapReason': 'static-mesh-colour-stream-layout-unreviewed:123/28'})
+        self.assertEqual(outcomes['Rock_S.Rock'].model_record['vertexStreams'], {'gapReason': 'static-mesh-colour-stream-layout-unreviewed:123/28'})
         self.assertEqual(outcomes['Rock_S.Broken'], ('failed', 'decode-failed:ValueError:UModel cannot safely select this duplicate leaf name'))
         self.assertEqual(outcomes['Bad_S.Rock'], ('failed', 'decode-failed:header too short'))
 
-    def test_a_joined_colour_stream_sidecar_is_stored_under_its_own_payload_hash(self):
+    def test_a_joined_vertex_stream_sidecar_is_stored_under_its_own_payload_hash(self):
         converted = converted_mesh('Rock_S', 'Rock')
-        bare = ConvertedStaticMesh({key: value for key, value in converted.model_record.items() if key != 'colourStreams'},
-                                   {key: value for key, value in converted.store_files.items() if not key.endswith('/colour-streams.json')})
-        joined = with_colour_streams(bare, ColourStreamOutcome(b'{"kind":"sidecar"}', None))
+        bare = ConvertedStaticMesh({key: value for key, value in converted.model_record.items() if key != 'vertexStreams'},
+                                   {key: value for key, value in converted.store_files.items() if not key.endswith('/vertex-streams.json')})
+        joined = with_vertex_streams(bare, VertexStreamOutcome(b'{"kind":"sidecar"}', None))
         payload_sha256 = hashlib.sha256(b'{"kind":"sidecar"}').hexdigest()
-        relative = f'static-mesh-colour-streams/{payload_sha256}/colour-streams.json'
-        self.assertEqual(joined.model_record['colourStreams'], {'file': relative, 'sha256': payload_sha256, 'bytes': 18})
+        relative = f'static-mesh-vertex-streams/{payload_sha256}/vertex-streams.json'
+        self.assertEqual(joined.model_record['vertexStreams'], {'file': relative, 'sha256': payload_sha256, 'bytes': 18})
         self.assertEqual(joined.store_files[relative], (relative, b'{"kind":"sidecar"}'))
         self.assertNotIn(relative, bare.store_files)
 
-    def test_a_colour_stream_gap_becomes_a_gap_row_of_the_step_that_converted_the_model(self):
-        gapped = {'sourceObject': 'Rock_S.Rock', 'colourStreams': {'gapReason': 'static-mesh-colour-stream-unread:truncated'}}
-        joined = {'sourceObject': 'Rock_S.Other', 'colourStreams': {'file': 'x', 'sha256': 'a' * 64, 'bytes': 1}}
-        rows = colour_stream_gap_rows('20_21', 'movers', {'path': 'maps/20_21.unr', 'sha256': 'b' * 64}, 'receipt.json', [gapped, joined])
+    def test_a_vertex_stream_gap_becomes_a_gap_row_of_the_step_that_converted_the_model(self):
+        gapped = {'sourceObject': 'Rock_S.Rock', 'vertexStreams': {'gapReason': 'static-mesh-colour-stream-unread:truncated'}}
+        joined = {'sourceObject': 'Rock_S.Other', 'vertexStreams': {'file': 'x', 'sha256': 'a' * 64, 'bytes': 1}}
+        rows = vertex_stream_gap_rows('20_21', 'movers', {'path': 'maps/20_21.unr', 'sha256': 'b' * 64}, 'receipt.json', [gapped, joined])
         self.assertEqual([(row['step'], row['reason'], row['sourceIdentity']['object']) for row in rows],
                          [('movers', 'static-mesh-colour-stream-unread:truncated', 'Rock_S.Rock')])
 
-    def test_two_models_sharing_an_archive_keep_their_own_colour_stream_sidecars(self):
+    def test_two_models_sharing_an_archive_keep_their_own_vertex_stream_sidecars(self):
         converted = converted_mesh('Rock_S', 'Rock')
-        bare = ConvertedStaticMesh({key: value for key, value in converted.model_record.items() if key != 'colourStreams'},
-                                   {key: value for key, value in converted.store_files.items() if not key.endswith('/colour-streams.json')})
-        first = with_colour_streams(bare, ColourStreamOutcome(b'{"kind":"first"}', None))
-        second = with_colour_streams(bare, ColourStreamOutcome(b'{"kind":"second"}', None))
-        self.assertNotEqual(first.model_record['colourStreams']['file'], second.model_record['colourStreams']['file'])
+        bare = ConvertedStaticMesh({key: value for key, value in converted.model_record.items() if key != 'vertexStreams'},
+                                   {key: value for key, value in converted.store_files.items() if not key.endswith('/vertex-streams.json')})
+        first = with_vertex_streams(bare, VertexStreamOutcome(b'{"kind":"first"}', None))
+        second = with_vertex_streams(bare, VertexStreamOutcome(b'{"kind":"second"}', None))
+        self.assertNotEqual(first.model_record['vertexStreams']['file'], second.model_record['vertexStreams']['file'])
 
     def test_a_failure_reason_keeps_the_sentence_and_drops_machine_paths(self):
         requests = [mesh_request('Rock_S', 'Payload'), mesh_request('Rock_S', 'Hung')]
@@ -329,11 +330,18 @@ class StaticMeshAssignmentTests(unittest.TestCase):
         self.assertEqual([row['sourceIdentity']['object'] for row in product['unplacedGapRows']], [f'{TILE_ID}.StaticMeshActor17'])
         self.assertEqual(json_bytes(product), json_bytes(static_meshes_product(TILE_ID, self.chunk_plan, self.assignment(), synthetic_outcomes())))
 
-    def test_a_placed_model_without_colour_streams_adds_one_listed_gap_row_naming_the_model(self):
+    def test_each_chunk_model_carries_its_vertex_stream_sidecar_record_with_the_store_prefix(self):
+        product = static_meshes_product(TILE_ID, self.chunk_plan, self.assignment(), synthetic_outcomes())
+        sidecar = synthetic_outcomes()['Rock_S.Rock'].model_record['vertexStreams']
+        self.assertEqual(product['chunks']['chunk-0-0']['models'][0]['vertexStreams'],
+                         {'file': '/l2/' + sidecar['file'], 'sha256': sidecar['sha256'], 'bytes': sidecar['bytes']})
+
+    def test_a_placed_model_without_vertex_streams_adds_one_listed_gap_row_naming_the_model(self):
         outcomes = synthetic_outcomes()
         rock = outcomes['Rock_S.Rock']
-        outcomes['Rock_S.Rock'] = with_colour_streams(rock, ColourStreamOutcome(None, 'static-mesh-colour-stream-join-mismatch'))
+        outcomes['Rock_S.Rock'] = with_vertex_streams(rock, VertexStreamOutcome(None, 'static-mesh-colour-stream-join-mismatch'))
         product = static_meshes_product(TILE_ID, self.chunk_plan, self.assignment(), outcomes)
+        self.assertEqual(product['chunks']['chunk-0-0']['models'][0]['vertexStreams'], {'gapReason': 'static-mesh-colour-stream-join-mismatch'})
         rows = [row for row in product['gapRows'] if row['reason'] == 'static-mesh-colour-stream-join-mismatch']
         self.assertEqual([(row['sourceIdentity']['object'], row['status']) for row in rows], [('Rock_S.Rock', 'gap')])
         validate_gap_row(rows[0], load_gap_reason_patterns())
@@ -443,7 +451,7 @@ class RunStaticMeshStepTests(unittest.TestCase):
         for model in product['models']:
             self.assertTrue((store_root / model['archive']['file']).is_file())
             self.assertTrue((store_root / model['model']['file']).is_file())
-            self.assertTrue((store_root / model['colourStreams']['file']).is_file())
+            self.assertTrue((store_root / model['vertexStreams']['file']).is_file())
         self.assertFalse((store_root / 'catalog.json').exists())
         self.assertEqual(sorted(output['path'].split('/')[0] for output in receipt['outputs']), ['l2'] * 6 + ['work'])
 
