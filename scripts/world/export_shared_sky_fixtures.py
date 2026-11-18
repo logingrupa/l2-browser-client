@@ -27,6 +27,7 @@ KEPT_MATERIAL_FIELDS = ('object', 'exportIndex', 'authoredOrDefaultColorBGRA', '
                         'referencedBySharedSkyBSP')
 KEPT_PIXEL_GEOMETRY_FIELDS = ('nodeIndex', 'surfaceIndex', 'pointIndices', 'cameraDepth')
 OUTPUT_BLENDING_COUNT = 7
+POLYGON_MINIMUM_VERTEX_COUNT = 3
 FRAME_BUFFER_BLENDING_COUNT = 9
 
 
@@ -77,6 +78,13 @@ def sky_zone_of_decode(decode):
             'drawScale': actor['values'].get('DrawScale'), 'serializesRotation': 'Rotation' in actor['values']}
 
 
+def sky_zone_node_counts(decode):
+    sky_zone_index = sky_zone_of_decode(decode)['zoneIndex']
+    sky_zone_nodes = [node for node in decode['nodes'] if sky_zone_index in node['zones']]
+    return {'skyZoneNodeCount': len(sky_zone_nodes),
+            'skyZonePolygonNodeCount': sum(1 for node in sky_zone_nodes if len(node['vertices']) >= POLYGON_MINIMUM_VERTEX_COUNT)}
+
+
 def decoded_node_points(decode, node_index):
     node = decode['nodes'][node_index]
     require(node['nodeIndex'] == node_index, f'the RM-18 skylevel decode node list is not indexed by node at {node_index}')
@@ -91,7 +99,7 @@ def shared_skylevel(answer, decode):
                        'mapSha256': decode['source']['fileSha256']},
             'levelExportIndex': decode['levelExportIndex'], 'modelExportIndex': decode['modelExportIndex'], 'zoneCount': len(decode['zones']),
             'surfaceCount': len(decode['surfaces']), 'nodeCount': len(decode['nodes']),
-            'skyZone': sky_zone_of_decode(decode), 'skyZoneNodeCount': sum(1 for node in decode['nodes'] if 1 in node['zones']),
+            'skyZone': sky_zone_of_decode(decode), **sky_zone_node_counts(decode),
             'surfaceCountsByMaterial': dict(sorted(Counter(surface['material'] for surface in decode['surfaces']).items())),
             'pixelGeometry': pixel_geometry, 'pixelNode': decoded_node_points(decode, pixel_geometry['nodeIndex']),
             'usesSkyDrawScale': answer['transform']['usesSkyDrawScale'],

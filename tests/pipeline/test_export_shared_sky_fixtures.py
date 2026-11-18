@@ -7,10 +7,11 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from world.export_day_night_fixtures import DayNightFixtureError
-from world.export_shared_sky_fixtures import SHARED_SKY_PASSES_SHA256, SHARED_SKYLEVEL_DECODE_SHA256, shared_sky_fixtures_document, sky_zone_of_decode
+from world.export_shared_sky_fixtures import (SHARED_SKY_PASSES_SHA256, SHARED_SKYLEVEL_DECODE_SHA256, shared_sky_fixtures_document, sky_zone_node_counts,
+                                              sky_zone_of_decode)
 
 FIXTURES_FILE = ROOT / 'tests' / 'fixtures' / 'environment' / 'shared-sky-rm21-fixtures.json'
-FIXTURES_FILE_SHA256 = '1cb7c83b57b15a078be3e97c132e80f48bf6702be6b0a1e5927facaa59bc3731'
+FIXTURES_FILE_SHA256 = '0d329836e4b3cc86b8d1612a50ba20c5c0acf5a7c7d60e735dc5e55b8e3d8aae'
 
 
 class CommittedSharedSkyFixturesTests(unittest.TestCase):
@@ -30,6 +31,13 @@ class CommittedSharedSkyFixturesTests(unittest.TestCase):
         self.assertEqual(skylevel['skyZone']['actor'], 'skylevel.SkyZoneInfo0')
         self.assertEqual([point['pointIndex'] for point in skylevel['pixelNode']['points']], skylevel['pixelGeometry']['pointIndices'])
         self.assertEqual(len(skylevel['materials']), 9)
+
+    def test_the_sky_zone_node_counts_use_the_decoded_sky_zone_and_count_the_nodes_with_a_polygon(self):
+        polygon = [{'pointIndex': index, 'position': [0.0, 0.0, 0.0]} for index in range(3)]
+        decode = {'zones': [{'zoneIndex': 0, 'actor': None, 'actorIndex': 0}, {'zoneIndex': 2, 'actor': 'skylevel.SkyZoneInfo0', 'actorIndex': 13}],
+                  'actors': [{'exportIndex': 13, 'object': 'skylevel.SkyZoneInfo0', 'values': {'Location': [1.0, 2.0, 3.0]}}],
+                  'nodes': [{'zones': [0, 2], 'vertices': polygon}, {'zones': [2, 2], 'vertices': polygon[:2]}, {'zones': [1, 1], 'vertices': polygon}]}
+        self.assertEqual(sky_zone_node_counts(decode), {'skyZoneNodeCount': 2, 'skyZonePolygonNodeCount': 1})
 
     def test_an_answer_without_fixtures_is_refused(self):
         with self.assertRaisesRegex(DayNightFixtureError, 'holds no fixtures'):

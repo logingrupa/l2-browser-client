@@ -487,6 +487,7 @@
    "serializesRotation": false
   },
   "skyZoneNodeCount": 4861,
+  "skyZonePolygonNodeCount": 4851,
   "surfaceCountsByMaterial": {
    "L2_Skies.Shaders.Cloud_Final01_sh": 18,
    "L2_Skies.Shaders.Cloud_Final02_sh": 648,

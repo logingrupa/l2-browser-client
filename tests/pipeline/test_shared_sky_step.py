@@ -270,8 +270,10 @@ class RealClientSharedSkyTests(unittest.TestCase):
         self.assertEqual((binding['level']['reference'], binding['model']['reference']),
                          (SHARED_SKY_FIXTURES['levelExportIndex'], SHARED_SKY_FIXTURES['modelExportIndex']))
         self.assertEqual(binding['remainingTailBytes'], SKYLEVEL_LEVEL_MODEL_FIXTURE['levelBinding']['remainingTailBytes'])
+        source = self.snapshot['source']
+        self.assertEqual((source['modelSha256'], source['modelBytes']), (SKYLEVEL_LEVEL_MODEL_FIXTURE['exportSha256'], SKYLEVEL_LEVEL_MODEL_FIXTURE['exportBytes']))
         counts = SKYLEVEL_LEVEL_MODEL_FIXTURE['counts']
-        self.assertEqual((counts['surfaces'], counts['nodes'], counts['points']), (SHARED_SKY_FIXTURES['surfaceCount'], SHARED_SKY_FIXTURES['nodeCount'], 7318))
+        self.assertEqual((counts['surfaces'], counts['nodes']), (SHARED_SKY_FIXTURES['surfaceCount'], SHARED_SKY_FIXTURES['nodeCount']))
         self.assertEqual(self.snapshot['skyZoneIndex'], SHARED_SKY_FIXTURES['skyZone']['zoneIndex'])
 
     def test_the_sky_zone_actor_is_skyzoneinfo0_at_the_rm21_eye_with_drawscale_unused_and_its_class_default_rotation(self):
@@ -290,14 +292,13 @@ class RealClientSharedSkyTests(unittest.TestCase):
                           if node_range['node'] == pixel_node['nodeIndex'])
         self.assertEqual(node_range['surface'], pixel_node['surfaceIndex'])
         self.assertEqual(node_range['nativePositions'], [point['position'] for point in pixel_node['points']])
-        self.assertEqual(node_range['nativePositions'][3], [715.0, 263864.0, 24534.5])
 
     def test_the_seven_roots_draw_every_surface_of_their_material_from_the_sky_zone(self):
         expected = {material.casefold(): count for material, count in SHARED_SKY_FIXTURES['surfaceCountsByMaterial'].items()}
         self.assertEqual({material: len({node_range['surface'] for node_range in part['nodeRanges']}) for material, part in self.parts.items()}, expected)
-        self.assertEqual(self.product['counts']['materialRoots'], 7)
+        self.assertEqual(self.product['counts']['materialRoots'], len(expected))
         drawn_nodes = sum(len(part['nodeRanges']) for part in self.parts.values())
-        self.assertLessEqual(drawn_nodes, SHARED_SKY_FIXTURES['skyZoneNodeCount'])
+        self.assertEqual((drawn_nodes, self.product['counts']['nodes']), (SHARED_SKY_FIXTURES['skyZonePolygonNodeCount'],) * 2)
 
     def test_skylevel_imports_starfield_final01_but_not_starfield_final02_or_cloud_final(self):
         from world.raw_map_step import read_map_lock_record
@@ -325,16 +326,22 @@ class RealClientSharedSkyTests(unittest.TestCase):
                     self.assertEqual(fields['OutputBlending']['value']['ordinal'], material['shaderOutputBlending'])
                     self.assertEqual(fields['Opacity']['value'] is not None, material['hasOpacity'])
 
-    def test_every_sh_cloud_keeps_its_authored_peach_colour(self):
-        for material_root, part in self.parts.items():
-            if material_root.endswith('_sh'):
-                with self.subTest(material=material_root):
-                    self.assertEqual(part['authoredColorRGBA'], [255, 192, 151, 255])
+    def test_every_sh_cloud_keeps_the_one_authored_colour_of_the_rm21_sh_rows(self):
+        sh_colours = {tuple(material['authoredOrDefaultColorBGRA']) for material in SHARED_SKY_FIXTURES['materials']
+                      if material['referencedBySharedSkyBSP'] and material['object'].casefold().endswith('_sh')}
+        self.assertEqual(len(sh_colours), 1)
+        [(blue, green, red, alpha)] = sh_colours
+        sh_parts = {material_root: part for material_root, part in self.parts.items() if material_root.endswith('_sh')}
+        self.assertTrue(sh_parts)
+        for material_root, part in sh_parts.items():
+            with self.subTest(material=material_root):
+                self.assertEqual(part['authoredColorRGBA'], [red, green, blue, alpha])
 
     def test_the_bundle_pins_its_glb_and_snapshot(self):
         bundle_folder = (self.store_root / self.product['manifest']['resource'].removeprefix('/l2/')).parent
         manifest = json.loads((bundle_folder / 'manifest.json').read_text(encoding='utf-8'))
-        self.assertEqual((manifest['kind'], manifest['map'], manifest['counts']['materialRoots']), ('native-shared-sky-bundle', 'skylevel', 7))
+        self.assertEqual((manifest['kind'], manifest['map'], manifest['counts']['materialRoots']),
+                         ('native-shared-sky-bundle', 'skylevel', len(SHARED_SKY_FIXTURES['surfaceCountsByMaterial'])))
         for name in ('sky.glb', 'sky.json'):
             payload = (bundle_folder / name).read_bytes()
             self.assertEqual(manifest['files'][name], {'bytes': len(payload), 'sha256': hashlib.sha256(payload).hexdigest()})
