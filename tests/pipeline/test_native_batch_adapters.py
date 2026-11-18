@@ -14,6 +14,7 @@ import native_batch_adapters as adapters
 import native_assets
 from native_environment import HEADER, build_products
 from native_assets_lib.gltf import json_bytes
+from support.environment_source_files import FOG_SECTION_TEXT
 
 
 def sha(data):
@@ -27,7 +28,8 @@ def write(root, name, data):
     return path
 
 
-ENVIRONMENT_SETUP_PAYLOAD = b'[EnvSetup]\r\nHAZERING=HazeRing_Final\r\nNumCloudColor=0\r\nTimeEnvFileName0=timeenv0.int\r\n'
+ENVIRONMENT_SETUP_SECTION_PAYLOAD = b'[EnvSetup]\r\nHAZERING=HazeRing_Final\r\nNumCloudColor=0\r\nTimeEnvFileName0=timeenv0.int\r\n'
+ENVIRONMENT_SETUP_PAYLOAD = ENVIRONMENT_SETUP_SECTION_PAYLOAD + FOG_SECTION_TEXT.encode('latin-1')
 
 
 def envelope(payload):
@@ -79,8 +81,8 @@ class AdapterTests(unittest.TestCase):
         write(self.root, 'recipes/request.json', [request])
         return target, index, manifest
 
-    def environment(self, type_payload=b'[SkyBoxColor]\r\nNUM=1\r\nCOLOR1=(T=12,R=66,G=124,B=176)\r\n'):
-        originals = {'Env.int': envelope(ENVIRONMENT_SETUP_PAYLOAD), 'timeenv0.int': envelope(type_payload)}
+    def environment(self, type_payload=b'[SkyBoxColor]\r\nNUM=1\r\nCOLOR1=(T=12,R=66,G=124,B=176)\r\n', setup_payload=ENVIRONMENT_SETUP_PAYLOAD):
+        originals = {'Env.int': envelope(setup_payload),'timeenv0.int': envelope(type_payload)}
         products = build_products(originals)
         for name, data in products.items(): write(self.output, name, data)
         write(self.lock.parent, self.lock.name, {'schemaVersion': 1, 'files': [
@@ -287,6 +289,14 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(result['status'], 'partial')
         self.assertEqual(result['unsupported'], [{'status': 'time-tables-unresolved',
                                                   'reasons': ['time-table-field-unparsed:timeenv0.int:SkyBoxColor:COLOR1:R']}])
+
+    def test_environment_without_fog_section_is_partial_with_each_missing_fog_key(self):
+        job = self.environment(setup_payload=ENVIRONMENT_SETUP_SECTION_PAYLOAD)
+        result = adapters.collect(job, self.output, self.lock, self.root)
+        self.assertEqual(result['status'], 'partial')
+        fog_keys = [*(f'StartRange{index}' for index in range(1, 6)), *(f'EndRange{index}' for index in range(1, 6)), 'FogSpeed']
+        self.assertEqual(result['unsupported'], [{'status': 'time-tables-unresolved',
+                                                  'reasons': sorted(f'environment-setup-value-missing:{key}' for key in fog_keys)}])
 
     def test_environment_derived_table_or_implementation_tamper_fails(self):
         job = self.environment()
