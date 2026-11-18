@@ -1,5 +1,6 @@
 import type { Vector3 } from "../../../../shared/math/vector3";
-import { indexNone, type BspVisibilityModel } from "./decodeBspVisibility";
+import { indexNone } from "./bspNodeArrays";
+import type { BspVisibilityModel } from "./decodeBspVisibility";
 import { nodePlaneDot } from "./locateZone";
 
 interface TraversalEntry {

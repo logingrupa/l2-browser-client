@@ -1,19 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { TypedPayloadError } from "../../src/shared/typedPayload";
-import { BspVisibilityDecodeError, decodeBspVisibility } from "../../src/scene/world/bspVisibility/core/decodeBspVisibility";
+import { BspPayloadDecodeError } from "../../src/scene/world/bspVisibility/core/bspNodeArrays";
+import { decodeBspVisibility } from "../../src/scene/world/bspVisibility/core/decodeBspVisibility";
 import { locateZone } from "../../src/scene/world/bspVisibility/core/locateZone";
 import { createTileVisibilityFrameSource, translucentSectionRangesOf } from "../../src/scene/world/bspVisibility/core/tileVisibilityFrame";
 import { orderTranslucentSections } from "../../src/scene/world/bspVisibility/core/translucentOrder";
-import type { ViewPose } from "../../src/scene/world/bspVisibility/core/viewFrustum";
+import type { ViewPose } from "../../src/scene/world/bspVisibility/core/nativeViewFrustum";
+import { committedBspWalkRules } from "../../src/scene/world/bspVisibility/sharedSkyVisibilityRules";
 import {
-  threeRoomPortalX, threeRoomSections, threeRoomVisibilityArrays, threeRoomVisibilityModel, threeRoomVisibilityPayload, threeRoomWallX, threeRoomZones,
+  threeRoomPortalX, threeRoomSections, threeRoomViewport, threeRoomVisibilityArrays, threeRoomVisibilityModel, threeRoomVisibilityPayload, threeRoomWallX, threeRoomZones,
 } from "../support/bspVisibilityFixture";
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
 
 const mostVisibleLimits = { portalRange: Infinity, portalDepthCap: Infinity, staticMeshRange: Infinity, emitterRange: Infinity };
 const at = (x: number) => ({ x, y: 0, z: 0 });
-const poseAt = (x: number): ViewPose => ({ position: at(x), forward: { x: 1, y: 0, z: 0 }, up: { x: 0, y: 0, z: 1 }, verticalFieldOfView: Math.PI / 3,
-  aspectRatio: 2, near: 10, far: Infinity });
+const poseAt = (x: number): ViewPose => ({ position: at(x), forward: { x: 1, y: 0, z: 0 }, up: { x: 0, y: 0, z: 1 }, ...threeRoomViewport,
+});
 
 function replaceArray(name: string, values: number[]): TypedPayloadFixtureArray[] {
   return threeRoomVisibilityArrays().map(array => array.name === name ? { ...array, values } : array);
@@ -34,7 +36,7 @@ describe("decodeBspVisibility", () => {
   });
 
   it("refuses a resource whose counts disagree", () => {
-    expect(() => decodeArrays(replaceArray("NODE.back", [-1, -1, -1, -1]))).toThrow(BspVisibilityDecodeError);
+    expect(() => decodeArrays(replaceArray("NODE.back", [-1, -1, -1, -1]))).toThrow(BspPayloadDecodeError);
     expect(() => decodeArrays(replaceArray("NODE.back", [-1, -1, -1, -1]))).toThrow(/NODE\.back holds 4 values; the counts need 5/);
     expect(() => decodeArrays(replaceArray("MEMB.leafStart", [0, 1, 2, 3, 4]))).toThrow(/MEMB\.leafStart holds 5 values/);
   });
@@ -107,7 +109,7 @@ describe("translucentOrder", () => {
 describe("tile visibility frame source", () => {
   it("reports the camera zone, every zone visible while culling is off, and reuses a frame for an unchanged float32 pose", () => {
     const model = threeRoomVisibilityModel();
-    const source = createTileVisibilityFrameSource(model, mostVisibleLimits);
+    const source = createTileVisibilityFrameSource(model, mostVisibleLimits, committedBspWalkRules);
     source.setTranslucentSections([threeRoomSections.translucentWalls]);
     const first = source.frame(poseAt(-500), false);
     expect(first).toMatchObject({ culling: false, cameraZone: threeRoomZones.camera, visibleZoneCount: 4, skyZones: [threeRoomZones.behindWall] });
@@ -119,7 +121,7 @@ describe("tile visibility frame source", () => {
 
   it("orders only the translucent sections it was given and recomputes the frame when that set changes", () => {
     const model = threeRoomVisibilityModel();
-    const source = createTileVisibilityFrameSource(model, mostVisibleLimits);
+    const source = createTileVisibilityFrameSource(model, mostVisibleLimits, committedBspWalkRules);
     expect(source.frame(poseAt(-500), false).translucentOrder.size).toBe(0);
     source.setTranslucentSections([threeRoomSections.translucentWalls]);
     const withTranslucentWalls = source.frame(poseAt(-500), false);

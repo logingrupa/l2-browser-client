@@ -1,9 +1,10 @@
 import type { VariableInfo } from "../../../ui/devSheet/types";
 import type { ResidencyDrawLimitRule } from "../worldResidencyRing";
 import type { BspVisibilityLimitRule } from "./bspVisibilityRules";
-import { indexNone, memberKindMapEmitter, type BspVisibilityModel } from "./core/decodeBspVisibility";
+import { indexNone } from "./core/bspNodeArrays";
+import { memberKindMapEmitter, type BspVisibilityModel } from "./core/decodeBspVisibility";
 import type { TileVisibilityFrame, TileVisibilityFrameSource } from "./core/tileVisibilityFrame";
-import type { ViewPose } from "./core/viewFrustum";
+import type { ViewPose } from "./core/nativeViewFrustum";
 
 export interface IndexBlock {
   readonly firstIndex: number;

@@ -9,7 +9,7 @@ import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources
 import type { NativeModelInstance } from "../nativeModelPlacements";
 import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
 import { memberKindStaticMesh, type BspVisibilityModel } from "./core/decodeBspVisibility";
-import type { ViewPose } from "./core/viewFrustum";
+import type { ViewPose } from "./core/nativeViewFrustum";
 import type { ChunkVisibilityTargets, IndexBlock, TileViewSource, TranslucentSectionTarget, VisibilityTarget } from "./bindTileVisibility";
 
 export interface TileVisibilityBspMeshes {
@@ -35,8 +35,15 @@ function sourceVector(world: Vector3): SourceVector {
   return worldPositionToSource({ x: world.x, y: world.y, z: world.z });
 }
 
-function sourceDistance(worldDistance: number): number {
-  return worldPositionToSource({ x: worldDistance, y: 0, z: 0 }).x;
+export function cameraViewPose(scene: Scene): ViewPose | null {
+  const camera = scene.activeCamera;
+  if (camera === null || camera.mode !== Camera.PERSPECTIVE_CAMERA) return null;
+  const engine = scene.getEngine(), aspectRatio = engine.getAspectRatio(camera);
+  const horizontalFieldOfView = camera.fovMode === Camera.FOVMODE_HORIZONTAL_FIXED ? camera.fov : 2 * Math.atan(Math.tan(camera.fov / 2) * aspectRatio);
+  return { position: sourceVector(camera.globalPosition),
+    forward: normalizeVector(sourceVector(camera.getDirection(Vector3.Forward(scene.useRightHandedSystem)))),
+    up: normalizeVector(sourceVector(camera.getDirection(Vector3.Up()))), horizontalFieldOfView,
+    viewportWidth: engine.getRenderWidth() * camera.viewport.width, viewportHeight: engine.getRenderHeight() * camera.viewport.height };
 }
 
 export function sceneTileViewSource(scene: Scene): TileViewSource {
@@ -45,16 +52,7 @@ export function sceneTileViewSource(scene: Scene): TileViewSource {
       const observer = scene.onBeforeRenderObservable.add(step);
       return () => { scene.onBeforeRenderObservable.remove(observer); };
     },
-    pose(): ViewPose | null {
-      const camera = scene.activeCamera;
-      if (camera === null || camera.mode !== Camera.PERSPECTIVE_CAMERA) return null;
-      const aspectRatio = scene.getEngine().getAspectRatio(camera);
-      const verticalFieldOfView = camera.fovMode === Camera.FOVMODE_VERTICAL_FIXED ? camera.fov : 2 * Math.atan(Math.tan(camera.fov / 2) / aspectRatio);
-      return { position: sourceVector(camera.globalPosition),
-        forward: normalizeVector(sourceVector(camera.getDirection(Vector3.Forward(scene.useRightHandedSystem)))),
-        up: normalizeVector(sourceVector(camera.getDirection(Vector3.Up()))), verticalFieldOfView, aspectRatio,
-        near: sourceDistance(camera.minZ), far: camera.maxZ === 0 ? Infinity : sourceDistance(camera.maxZ) };
-    },
+    pose: () => cameraViewPose(scene),
   };
 }
 

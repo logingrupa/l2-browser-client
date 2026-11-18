@@ -13,13 +13,14 @@ import {
   bindTileVisibility, cullingVariableName, type ChunkVisibilityTargets, type IndexBlock, type TileViewSource, type VisibilityTarget,
 } from "../../src/scene/world/bspVisibility/bindTileVisibility";
 import { createTileVisibilityFrameSource, type TileVisibilityLimits } from "../../src/scene/world/bspVisibility/core/tileVisibilityFrame";
-import type { ViewPose } from "../../src/scene/world/bspVisibility/core/viewFrustum";
+import type { ViewPose } from "../../src/scene/world/bspVisibility/core/nativeViewFrustum";
+import { committedBspWalkRules } from "../../src/scene/world/bspVisibility/sharedSkyVisibilityRules";
 import type { NativeTileBspChunk } from "../../src/scene/world/loadNativeTileChunks";
 import type { NativeBspSection } from "../../src/scene/world/nativeBspResources";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import { residencyDrawLimitRules, worldResidencySettingsForChunkEdge } from "../../src/scene/world/worldResidencyRing";
 import { committedBspVisibilityRules } from "../../src/scene/world/bspVisibility/bspVisibilityRules";
-import { threeRoomMembers, threeRoomSections, threeRoomVisibilityModel } from "../support/bspVisibilityFixture";
+import { threeRoomMembers, threeRoomSections, threeRoomViewport, threeRoomVisibilityModel } from "../support/bspVisibilityFixture";
 
 vi.mock("../../src/scene/world/bspVisibility/loadBspVisibility", async () => {
   const { threeRoomVisibilityModel: model } = await import("../support/bspVisibilityFixture");
@@ -28,7 +29,7 @@ vi.mock("../../src/scene/world/bspVisibility/loadBspVisibility", async () => {
 
 const mostVisible: TileVisibilityLimits = { portalRange: Infinity, portalDepthCap: Infinity, staticMeshRange: Infinity, emitterRange: Infinity };
 const poseAt = (x: number): ViewPose => ({ position: { x, y: 0, z: 0 }, forward: { x: 1, y: 0, z: 0 }, up: { x: 0, y: 0, z: 1 },
-  verticalFieldOfView: Math.PI / 3, aspectRatio: 16 / 9, near: 10, far: Infinity });
+  ...threeRoomViewport });
 
 interface RecordingTarget extends VisibilityTarget { readonly calls: boolean[] }
 const recordingTarget = (): RecordingTarget => {
@@ -51,7 +52,7 @@ function bindThreeRooms(initialPose: ViewPose) {
   const sections = [recordingTarget(), recordingTarget()], meshBehindWall = recordingTarget(), terrain = recordingTarget(), floorTerrain = recordingTarget();
   const reorders: (readonly IndexBlock[])[] = [];
   const manual = manualView(initialPose);
-  const binding = bindTileVisibility({ tileId: "fixture", model, view: manual.view, limitRules: [], frameSource: createTileVisibilityFrameSource(model, mostVisible) });
+  const binding = bindTileVisibility({ tileId: "fixture", model, view: manual.view, limitRules: [], frameSource: createTileVisibilityFrameSource(model, mostVisible, committedBspWalkRules) });
   binding.addChunkTargets("chunk-0-0", chunkTargets(new Map([[threeRoomSections.translucentWalls, sections[0]!]]), terrain, {
     members: new Map([[threeRoomMembers.meshBehindWall.member, meshBehindWall]]),
     translucentSections: new Map([[threeRoomSections.translucentWalls, { reorderIndexBlocks: blocks => { reorders.push(blocks); } }]]) }));
@@ -83,7 +84,7 @@ describe("bindTileVisibility", () => {
   it("gives a chunk added after culling ran the shown state of its sections and stops driving a removed chunk", () => {
     const model = threeRoomVisibilityModel();
     const manual = manualView(poseAt(-500));
-    const binding = bindTileVisibility({ tileId: "fixture", model, view: manual.view, limitRules: [], frameSource: createTileVisibilityFrameSource(model, mostVisible) });
+    const binding = bindTileVisibility({ tileId: "fixture", model, view: manual.view, limitRules: [], frameSource: createTileVisibilityFrameSource(model, mostVisible, committedBspWalkRules) });
     const walls = recordingTarget(), floor = recordingTarget(), wallsTerrain = recordingTarget(), floorTerrain = recordingTarget();
     binding.addChunkTargets("chunk-0-0", chunkTargets(new Map([[threeRoomSections.translucentWalls, walls]]), wallsTerrain));
     binding.setCulling(true);
@@ -253,7 +254,7 @@ describe("Babylon targets and picking", () => {
     const sectionTarget = (mesh: Mesh): VisibilityTarget => ({ setVisible: visible => { mesh.isVisible = visible; } });
     const model = threeRoomVisibilityModel();
     const binding = bindTileVisibility({ tileId: "fixture", model, view: sceneTileViewSource(scene), limitRules: [],
-      frameSource: createTileVisibilityFrameSource(model, mostVisible) });
+      frameSource: createTileVisibilityFrameSource(model, mostVisible, committedBspWalkRules) });
     binding.addChunkTargets("chunk-0-0", chunkTargets(new Map([[0, sectionTarget(wall)]]), { setVisible() {} }));
     binding.addChunkTargets("chunk-1-0", chunkTargets(new Map([[1, sectionTarget(behindWall)]]), { setVisible() {} }));
     const pickGrid = () => {

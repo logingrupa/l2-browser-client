@@ -10,6 +10,7 @@ import { committedBspVisibilityRules } from "./bspVisibilityRules";
 import { bindTileVisibility, type BoundTileVisibilityInspection, type TileVisibilityBinding, type TileVisibilityGapInspection } from "./bindTileVisibility";
 import type { BspVisibilityModel } from "./core/decodeBspVisibility";
 import { createTileVisibilityFrameSource } from "./core/tileVisibilityFrame";
+import { committedBspWalkRules } from "./sharedSkyVisibilityRules";
 import { loadBspVisibility } from "./loadBspVisibility";
 
 export interface UnmappedVisibilityChunk {
@@ -65,7 +66,7 @@ export async function attachTileVisibility(scene: Scene, manifest: NativeTileMan
   }
   const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));
   const binding = bindTileVisibility({ tileId: manifest.tileId, model, view: sceneTileViewSource(scene),
-    frameSource: createTileVisibilityFrameSource(model, committedBspVisibilityRules.limits), limitRules: [...committedBspVisibilityRules.limitRules, ...drawLimitRules] });
+    frameSource: createTileVisibilityFrameSource(model, committedBspVisibilityRules.limits, committedBspWalkRules), limitRules: [...committedBspVisibilityRules.limitRules, ...drawLimitRules] });
   const unmappedReasonByChunkId = new Map<string, string>();
   return {
     binding,

@@ -1,4 +1,5 @@
 import { decodeBspVisibility, type BspVisibilityModel } from "../../src/scene/world/bspVisibility/core/decodeBspVisibility";
+import { sharedSkyVisibilityRules } from "../../src/scene/world/bspVisibility/sharedSkyVisibilityRules";
 import { goldenTypedPayloadMetadata, writeTypedPayloadFixture, type TypedPayloadFixture, type TypedPayloadFixtureArray } from "./typedPayloadFixture";
 
 export const threeRoomZones = { outside: 0, camera: 1, throughPortal: 2, behindWall: 3 } as const;
@@ -10,9 +11,11 @@ export const threeRoomMembers = {
   skyMeshBehindWall: { member: 3, exportIndex: 201 },
   unboundedMesh: { member: 4, exportIndex: 202 },
 } as const;
+export const threeRoomViewport = { horizontalFieldOfView: 2 * Math.atan(Math.tan(Math.PI / 6) * 16 / 9), viewportWidth: 1600, viewportHeight: 900 } as const;
 export const threeRoomPortalX = 0;
 export const threeRoomWallX = 1000;
 
+const twoSidedSurfaceFlags = sharedSkyVisibilityRules.nodeSelector.backfaceKeepFlags[0]!;
 const zoneBit = (zone: number) => 2 ** zone;
 const allZoneWords = [0xffffffff, 0xffffffff];
 const zoneWords = (...zones: number[]) => [zones.reduce((set, zone) => set | zoneBit(zone), 0) >>> 0, 0];
@@ -32,6 +35,10 @@ export function threeRoomVisibilityArrays(): TypedPayloadFixtureArray[] {
       ...zoneWords(behindWall)] },
     { name: "NODE.renderBound", type: "int32", values: [-1, -1, -1, -1, 0] },
     { name: "NODE.sphere", type: "float32", values: [0, 0, 0, 100, 1000, 0, 0, 100, 0, 0, 0, 100, 1000, 0, 0, 100, 2000, 0, 0, 100] },
+    { name: "NODE.surface", type: "int32", values: [0, 1, 2, 3, 4] },
+    { name: "NODE.surfaceFlags", type: "uint32", values: Array.from({ length: 5 }, () => twoSidedSurfaceFlags) },
+    { name: "NODE.section", type: "int32", values: [-1, -1, 0, 0, 1] },
+    { name: "NODE.drawable", type: "uint8", values: [0, 0, 1, 1, 1] },
     { name: "BNDS.box", type: "float32", values: [1500, -100, -100, 2500, 100, 100] },
     { name: "BNDS.valid", type: "uint8", values: [1] },
     { name: "LEAF.zone", type: "uint8", values: [camera, throughPortal, behindWall, behindWall] },

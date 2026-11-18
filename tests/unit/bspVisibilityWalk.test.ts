@@ -2,35 +2,21 @@ import { describe, expect, it } from "vitest";
 import { committedBspVisibilityRules, parseBspVisibilityRules } from "../../src/scene/world/bspVisibility/bspVisibilityRules";
 import { decodeBspVisibility } from "../../src/scene/world/bspVisibility/core/decodeBspVisibility";
 import { computeTileVisibilityFrame, type TileVisibilityLimits } from "../../src/scene/world/bspVisibility/core/tileVisibilityFrame";
-import { boxOutsideFrustum, createViewFrustum, sphereInsideFrustum, type ViewPose } from "../../src/scene/world/bspVisibility/core/viewFrustum";
+import type { ViewPose } from "../../src/scene/world/bspVisibility/core/nativeViewFrustum";
 import { zoneSetMembers } from "../../src/scene/world/bspVisibility/core/zoneSet";
-import { threeRoomMembers, threeRoomSections, threeRoomVisibilityArrays, threeRoomVisibilityModel, threeRoomVisibilityPayload, threeRoomZones } from "../support/bspVisibilityFixture";
+import { committedBspWalkRules } from "../../src/scene/world/bspVisibility/sharedSkyVisibilityRules";
+import {
+  threeRoomMembers, threeRoomSections, threeRoomViewport, threeRoomVisibilityArrays, threeRoomVisibilityModel, threeRoomVisibilityPayload, threeRoomZones,
+} from "../support/bspVisibilityFixture";
 
 const mostVisible: TileVisibilityLimits = { portalRange: Infinity, portalDepthCap: Infinity, staticMeshRange: Infinity, emitterRange: Infinity };
 const facingPositiveX = { x: 1, y: 0, z: 0 };
 const facingNegativeX = { x: -1, y: 0, z: 0 };
 const pose = (x: number, forward = facingPositiveX): ViewPose => ({ position: { x, y: 0, z: 0 }, forward, up: { x: 0, y: 0, z: 1 },
-  verticalFieldOfView: Math.PI / 3, aspectRatio: 16 / 9, near: 10, far: Infinity });
+  ...threeRoomViewport });
 const model = threeRoomVisibilityModel();
-const culledFrame = (viewPose: ViewPose, limits = mostVisible) => computeTileVisibilityFrame(model, new Map(), viewPose, true, limits);
+const culledFrame = (viewPose: ViewPose, limits = mostVisible) => computeTileVisibilityFrame(model, new Map(), viewPose, true, limits, committedBspWalkRules);
 const visibleZones = (viewPose: ViewPose, limits = mostVisible) => zoneSetMembers(culledFrame(viewPose, limits).visibleZones, model.zoneCount);
-
-describe("view frustum", () => {
-  const frustum = createViewFrustum({ ...pose(0), far: 1000 });
-
-  it("keeps a sphere on the view axis and drops one behind the camera or past the far plane", () => {
-    expect(sphereInsideFrustum(frustum, { x: 500, y: 0, z: 0 }, 1)).toBe(true);
-    expect(sphereInsideFrustum(frustum, { x: -500, y: 0, z: 0 }, 1)).toBe(false);
-    expect(sphereInsideFrustum(frustum, { x: 1500, y: 0, z: 0 }, 1)).toBe(false);
-    expect(sphereInsideFrustum(frustum, { x: -50, y: 0, z: 0 }, 100)).toBe(true);
-  });
-
-  it("finds a box wholly outside one plane", () => {
-    expect(boxOutsideFrustum(frustum, { x: -900, y: -10, z: -10 }, { x: -800, y: 10, z: 10 })).toBe(true);
-    expect(boxOutsideFrustum(frustum, { x: 100, y: -10, z: -10 }, { x: 200, y: 10, z: 10 })).toBe(false);
-    expect(boxOutsideFrustum(frustum, { x: 100, y: 5000, z: -10 }, { x: 200, y: 6000, z: 10 })).toBe(true);
-  });
-});
 
 describe("portal walk", () => {
   it("shows the zone through the open portal and never the zone behind the wall", () => {
@@ -71,7 +57,7 @@ describe("portal walk", () => {
       .map(array => array.name === "MEMB.leaves" ? { ...array, values: [0, 1, 1, 1] } : array);
     const payload = threeRoomVisibilityPayload(arrays);
     const solidModel = decodeBspVisibility(payload.assetRecord, payload.payloadBytes);
-    const frame = computeTileVisibilityFrame(solidModel, new Map(), pose(2500), true, mostVisible);
+    const frame = computeTileVisibilityFrame(solidModel, new Map(), pose(2500), true, mostVisible, committedBspWalkRules);
     expect(frame).toMatchObject({ cameraLeaf: -1, cameraZone: threeRoomZones.behindWall, outdoorView: true, terrainVisible: true });
     expect(zoneSetMembers(frame.visibleZones, solidModel.zoneCount)).toEqual([threeRoomZones.outside]);
     expect([...frame.sectionVisible]).toEqual([0, 0]);
@@ -85,7 +71,7 @@ describe("portal walk", () => {
       .map(array => array.name === "MEMB.leaves" ? { ...array, values: [0, 1, 1, 1] } : array)
       .map(array => array.name === "NODE.zone" ? { ...array, values: outsideFloorZones } : array);
     const payload = threeRoomVisibilityPayload(arrays);
-    const frame = computeTileVisibilityFrame(decodeBspVisibility(payload.assetRecord, payload.payloadBytes), new Map(), pose(2500), true, mostVisible);
+    const frame = computeTileVisibilityFrame(decodeBspVisibility(payload.assetRecord, payload.payloadBytes), new Map(), pose(2500), true, mostVisible, committedBspWalkRules);
     expect(frame.outdoorView).toBe(true);
     expect([...frame.sectionVisible]).toEqual([0, 1]);
     expect([...frame.rangeVisible]).toEqual([0, 0, 1]);
@@ -110,7 +96,7 @@ describe("member gating", () => {
   });
 
   it("keeps every section, member and terrain visible with culling off", () => {
-    const frame = computeTileVisibilityFrame(model, new Map(), pose(-500, facingNegativeX), false, mostVisible);
+    const frame = computeTileVisibilityFrame(model, new Map(), pose(-500, facingNegativeX), false, mostVisible, committedBspWalkRules);
     expect([...frame.sectionVisible]).toEqual([1, 1]);
     expect([...frame.rangeVisible]).toEqual([1, 1, 1]);
     expect([...frame.memberVisible]).toEqual([1, 1, 1, 1, 1]);
@@ -119,7 +105,7 @@ describe("member gating", () => {
 
   it("orders only the translucent sections that stay visible", () => {
     const ranges = new Map([[threeRoomSections.translucentWalls, Int32Array.from([0, 1])]]);
-    expect(computeTileVisibilityFrame(model, ranges, pose(-500), true, mostVisible).translucentOrder.size).toBe(1);
-    expect(computeTileVisibilityFrame(model, ranges, pose(-500, facingNegativeX), true, mostVisible).translucentOrder.size).toBe(0);
+    expect(computeTileVisibilityFrame(model, ranges, pose(-500), true, mostVisible, committedBspWalkRules).translucentOrder.size).toBe(1);
+    expect(computeTileVisibilityFrame(model, ranges, pose(-500, facingNegativeX), true, mostVisible, committedBspWalkRules).translucentOrder.size).toBe(0);
   });
 });

@@ -21,7 +21,8 @@ describe("src/scene/world/bspVisibility/core import boundary", () => {
       "src/scene/world/bspVisibility/core/decodeBspVisibility.ts",
       "src/scene/world/bspVisibility/core/locateZone.ts",
       "src/scene/world/bspVisibility/core/portalWalk.ts",
-      "src/scene/world/bspVisibility/core/viewFrustum.ts",
+      "src/scene/world/bspVisibility/core/nativeViewFrustum.ts",
+      "src/scene/world/bspVisibility/core/bspNodeSelector.ts",
       "src/scene/world/bspVisibility/core/translucentOrder.ts",
       "src/scene/world/bspVisibility/core/tileVisibilityFrame.ts",
     ]));

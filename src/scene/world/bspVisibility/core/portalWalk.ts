@@ -1,7 +1,9 @@
 import { subtractVectors, vectorLength, type Vector3 } from "../../../../shared/math/vector3";
-import { indexNone, type BspVisibilityModel } from "./decodeBspVisibility";
+import { indexNone } from "./bspNodeArrays";
+import { nodeSphereVisible } from "./bspNodeSelector";
+import type { BspVisibilityModel } from "./decodeBspVisibility";
 import { nodePlaneDot, type ZoneLocation } from "./locateZone";
-import { sphereInsideFrustum, type ViewFrustum } from "./viewFrustum";
+import type { NativeViewFrustum } from "./nativeViewFrustum";
 import {
   fullZoneSetWord, isEmptyZoneSet, maximumZoneCount, zoneSetAt, zoneSetHas, zoneSetIntersection, zoneSetOf, zoneSetUnion, type ZoneSet,
 } from "./zoneSet";
@@ -30,10 +32,6 @@ function nodeSphereRadius(model: BspVisibilityModel, node: number): number {
   return model.nodeSphere[node * sphereComponentCount + 3]!;
 }
 
-export function nodeSphereInsideFrustum(model: BspVisibilityModel, node: number, frustum: ViewFrustum): boolean {
-  return sphereInsideFrustum(frustum, nodeSphereCenter(model, node), nodeSphereRadius(model, node));
-}
-
 export function seedZoneSet(model: BspVisibilityModel, location: ZoneLocation): ZoneSet {
   const cameraZone = zoneSetOf(location.zone);
   if (location.leaf === indexNone) return cameraZone;
@@ -43,15 +41,15 @@ export function seedZoneSet(model: BspVisibilityModel, location: ZoneLocation): 
   return zoneSetUnion(isEmptyZoneSet(connectivity) ? potentiallyVisible : zoneSetIntersection(potentiallyVisible, connectivity), cameraZone);
 }
 
-function portalOpens(model: BspVisibilityModel, portal: number, nearZone: number, farZone: number, camera: Vector3, frustum: ViewFrustum | null,
+function portalOpens(model: BspVisibilityModel, portal: number, nearZone: number, farZone: number, camera: Vector3, frustum: NativeViewFrustum | null,
   limits: PortalWalkLimits): boolean {
-  if (frustum !== null && !nodeSphereInsideFrustum(model, portal, frustum)) return false;
+  if (!nodeSphereVisible(model, portal, frustum)) return false;
   if (vectorLength(subtractVectors(camera, nodeSphereCenter(model, portal))) > limits.portalRange + nodeSphereRadius(model, portal)) return false;
   const connectivity = zoneSetAt(model.zoneConnectivity, nearZone);
   return isEmptyZoneSet(connectivity) || zoneSetHas(connectivity, farZone);
 }
 
-export function expandThroughPortals(model: BspVisibilityModel, camera: Vector3, seed: ZoneSet, frustum: ViewFrustum | null, limits: PortalWalkLimits):
+export function expandThroughPortals(model: BspVisibilityModel, camera: Vector3, seed: ZoneSet, frustum: NativeViewFrustum | null, limits: PortalWalkLimits):
   PortalWalkResult {
   const depth = new Int32Array(model.zoneCount).fill(unreachedDepth);
   for (let zone = 0; zone < model.zoneCount; zone++) if (zoneSetHas(seed, zone)) depth[zone] = 0;
