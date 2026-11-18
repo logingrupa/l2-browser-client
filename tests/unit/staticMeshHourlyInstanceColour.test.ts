@@ -34,7 +34,7 @@ function vertexColour(fixture: StaticMeshLightingFixture, vertex: number, sample
   const weightedBlend = swapWeights ? { ...blend, weight: Math.fround(1 - blend.weight) } : blend;
   const entries = staticMeshHourlyEntryContributions(weightedBlend, staticMeshVertexVisible(hourlyMasks[blend.index]!, vertex),
     staticMeshVertexVisible(hourlyMasks[blend.nextIndex]!, vertex));
-  return staticMeshHourlyInstanceColour(sampleIntensity, entries, fixture.sunPlane as NativePlane);
+  return staticMeshHourlyInstanceColour(sampleIntensity, entries, fixture.sunPlane as NativePlane, [0, 0, 0, 0]);
 }
 
 const bgrToRgb = (bgra: readonly number[]) => [bgra[2], bgra[1], bgra[0]];
@@ -66,7 +66,7 @@ describe("RM-10 pillar hourly instance colour (actor 7732, cruma_s.f_04)", () =>
 
   it("clamps SampleIntensity at zero for a normal facing away from the light and adds nothing for an entry whose bit is clear", () => {
     expect(staticMeshSampleIntensity({ x: 0, y: 0, z: -1 }, { x: 0, y: 0, z: -1 })).toBe(0);
-    expect(staticMeshHourlyInstanceColour(2, [{ contributes: false, weight: 1 }], [1, 1, 1, 1])).toEqual([0, 0, 0]);
-    expect(staticMeshHourlyInstanceColour(2, [{ contributes: true, weight: 1 }, { contributes: true, weight: 1 }], [1, 1, 1, 1])).toEqual([255, 255, 255]);
+    expect(staticMeshHourlyInstanceColour(2, [{ contributes: false, weight: 1 }], [1, 1, 1, 1], [0, 0, 0, 0])).toEqual([0, 0, 0]);
+    expect(staticMeshHourlyInstanceColour(2, [{ contributes: true, weight: 1 }, { contributes: true, weight: 1 }], [1, 1, 1, 1], [0, 0, 0, 0])).toEqual([255, 255, 255]);
   });
 });

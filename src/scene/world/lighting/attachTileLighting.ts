@@ -21,6 +21,7 @@ import { bindTileLighting, type TileLightingBinding, type TileLightingBspChunk, 
 import { hourlyLightingTerms, staticMeshInstanceAmbient, type HourlyLightingTerms } from "./hourlyLightingTerms";
 import { loadStaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
 import { bindStaticMeshHourlyVisibility, type StaticMeshHourlyVisibilityInspection } from "./staticMeshHourlyVisibility";
+import { staticMeshOrdinaryLightRecords } from "./staticMeshOrdinaryLights";
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
 import { createRebuiltLightmapWorkerComposer } from "./rebuiltLightmapWorkerProtocol";
@@ -118,7 +119,8 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     if (environment.staticMeshLight.status !== "resolved") return { status: "unresolved", reason: environment.staticMeshLight.reason };
     const { dayPart, celestialPhiDegrees, slopeSunAngleDegrees } = timeOfDay.manager.snapshot();
     const sun = nativeSunLightDirection({ hour: environment.hour, dayPart, phiDegrees: celestialPhiDegrees, slopeSunAngleDegrees });
-    return { status: "resolved", ambient: ambient.value, sun: { hour: environment.hour, lightDirection: sun.direction, staticSunPlane: environment.staticMeshLight.value } };
+    return { status: "resolved", ambient: ambient.value, sun: { hour: environment.hour, lightDirection: sun.direction, staticSunPlane: environment.staticMeshLight.value },
+      lightEnvironment: rebuildLightEnvironment(timeOfDay, presentationClock.levelSeconds) };
   };
   const referencePawn = fogReferencePawnFor(scene);
   const fogTransition = createCameraFogTransition(timeOfDay.fogSpeedSeconds);
@@ -142,7 +144,8 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, visibility, loadProgram: loadNativeMaterial,
     rebuildEnvironment: () => rebuildLightEnvironment(timeOfDay, presentationClock.levelSeconds), composeRebuiltLightmap: rebuiltLightmapComposer.compose });
   const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
-    uniforms: materialUniforms, loadProgram: loadNativeMaterial, lightLists: model.hourly.staticMeshLightLists, hourlyLighting: staticMeshHourlyLighting,
+    uniforms: materialUniforms, loadProgram: loadNativeMaterial, lightLists: model.hourly.staticMeshLightLists,
+    ordinaryLightRecords: staticMeshOrdinaryLightRecords(model.hourly.lightActors), hourlyLighting: staticMeshHourlyLighting,
     loadVertexStreams: loadStaticMeshVertexStreams });
   const terrainLayerBinding = bindTerrainLayerMaterials({ scene, load: terrainMaterials, fog: () => cameraEnvironment.fog, loadProgram: loadNativeMaterial });
   const hourlyInspection = (): HourlyLightingInspection => {

@@ -1,5 +1,6 @@
 import type { TypedPayload } from "../../../shared/typedPayload";
 import { decodeLightmapRebuildInputs, lightmapRebuildInputNames, type LightmapRebuildInputs } from "./decodeLightmapRebuildInputs";
+import { decodeLightActorRecords, type LightActorRecords } from "./lightmapRebuildActors";
 import { requireLightingInput, requireLightingPrefixStarts, stagedWhenListed, type StagedLightingInput } from "./stagedLightingInput";
 import type { TileLightingRecordsDocument } from "./tileLightingRecords";
 
@@ -21,7 +22,7 @@ export interface TerrainLightMaskSummary {
   readonly lightsCoveringAVertex: number;
 }
 
-export interface StaticMeshHourlyMask {
+export interface StaticMeshLightMask {
   readonly light: number;
   readonly visibility: Uint8Array;
 }
@@ -31,8 +32,8 @@ export interface StaticMeshLightList {
   readonly instanceExportIndex: number;
   readonly vertexCount: number;
   readonly sunAffect: StagedLightingInput<number>;
-  readonly ordinaryLightVertexMask: Uint8Array;
-  readonly hourlyMasks: readonly StaticMeshHourlyMask[];
+  readonly ordinaryMasks: readonly StaticMeshLightMask[];
+  readonly hourlyMasks: readonly StaticMeshLightMask[];
 }
 
 export interface HourlyLightingInputs {
@@ -42,6 +43,7 @@ export interface HourlyLightingInputs {
   readonly terrainLightMasks: StagedLightingInput<TerrainLightMaskSummary>;
   readonly staticMeshLightLists: StagedLightingInput<ReadonlyMap<number, StaticMeshLightList>>;
   readonly lightmapRebuild: StagedLightingInput<LightmapRebuildInputs>;
+  readonly lightActors: LightActorRecords;
 }
 
 export const sunAffectUnresolved = -1;
@@ -101,10 +103,6 @@ function decodeStaticMeshSunAffect(payload: TypedPayload, listCount: number): (l
   return list => ({ status: "staged", value: staged.value[list]! });
 }
 
-function vertexMaskBytes(vertexCount: number): number {
-  return Math.ceil(vertexCount / bitsPerByte);
-}
-
 function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, StaticMeshLightList> {
   const actorExportIndex = payload.int32("SMLL.actorExportIndex"), instanceExportIndex = payload.int32("SMLL.instanceExportIndex");
   const colourCount = payload.uint32("SMLL.colorCount"), environmentStart = payload.uint32("SMLL.environmentStart"), sceneStart = payload.uint32("SMLL.sceneStart");
@@ -121,25 +119,21 @@ function decodeStaticMeshLightLists(payload: TypedPayload): ReadonlyMap<number, 
   for (let list = 0; list < listCount; list += 1) {
     const vertexCount = colourCount[list]!, actor = actorExportIndex[list]!;
     requireLightingInput(!lists.has(actor), `static mesh actor ${actor} has two light lists.`);
-    const hourlyMasks = Array.from({ length: environmentStart[list + 1]! - environmentStart[list]! }, (_, offset) => {
-      const entry = environmentStart[list]! + offset, visibility = bits.subarray(bitStart[entry]!, bitStart[entry + 1]!);
-      requireLightingInput(visibility.length * bitsPerByte >= vertexCount, `static mesh actor ${actor} hourly mask ${offset} covers ${visibility.length * bitsPerByte} of ${vertexCount} vertices.`);
-      return { light: light[entry]!, visibility };
-    });
-    const ordinaryLightVertexMask = new Uint8Array(vertexMaskBytes(vertexCount));
-    for (let entry = sceneStart[list]!; entry < sceneStart[list + 1]!; entry += 1) {
-      const visibility = sceneBits.subarray(sceneBitStart[entry]!, sceneBitStart[entry + 1]!);
-      requireLightingInput(visibility.length * bitsPerByte >= vertexCount,
-        `static mesh actor ${actor} ordinary light mask ${entry - sceneStart[list]!} covers ${visibility.length * bitsPerByte} of ${vertexCount} vertices.`);
-      ordinaryLightVertexMask.forEach((byte, index) => { ordinaryLightVertexMask[index] = byte | visibility[index]!; });
-    }
+    const masks = (kind: string, starts: Uint32Array, lights: Int32Array, maskStarts: Uint32Array, maskBits: Uint8Array): StaticMeshLightMask[] =>
+      Array.from({ length: starts[list + 1]! - starts[list]! }, (_, offset) => {
+        const entry = starts[list]! + offset, visibility = maskBits.subarray(maskStarts[entry]!, maskStarts[entry + 1]!);
+        requireLightingInput(visibility.length * bitsPerByte >= vertexCount,
+          `static mesh actor ${actor} ${kind} mask ${offset} covers ${visibility.length * bitsPerByte} of ${vertexCount} vertices.`);
+        return { light: lights[entry]!, visibility };
+      });
     lists.set(actor, { actorExportIndex: actor, instanceExportIndex: instanceExportIndex[list]!, vertexCount, sunAffect: sunAffectOf(list),
-      ordinaryLightVertexMask, hourlyMasks });
+      ordinaryMasks: masks("ordinary light", sceneStart, sceneLight, sceneBitStart, sceneBits), hourlyMasks: masks("hourly", environmentStart, light, bitStart, bits) });
   }
   return lists;
 }
 
 export function decodeHourlyLightingInputs(payload: TypedPayload, recordsDocument: TileLightingRecordsDocument): HourlyLightingInputs {
+  const lightActors = decodeLightActorRecords(recordsDocument);
   return {
     nodeRangeSunAffect: stagedWhenListed(payload, ["LMNR.sunAffect"], () => decodeNodeRangeSunAffect(payload)),
     pageRevisions: stagedWhenListed(payload, ["LMPG.revision", "LMPG.compressedRevision"], () => decodePageRevisions(payload)),
@@ -148,6 +142,7 @@ export function decodeHourlyLightingInputs(payload: TypedPayload, recordsDocumen
       () => decodeTerrainLightMasks(payload)),
     staticMeshLightLists: stagedWhenListed(payload, ["SMLL.actorExportIndex", "SMLL.instanceExportIndex", "SMLL.colorCount", "SMLL.environmentStart",
       "SMLL.sceneStart", "SMEN.light", "SMEN.bitStart", "SMEN.bits", "SMSC.light", "SMSC.bitStart", "SMSC.bits"], () => decodeStaticMeshLightLists(payload)),
-    lightmapRebuild: stagedWhenListed(payload, lightmapRebuildInputNames, () => decodeLightmapRebuildInputs(payload, recordsDocument)),
+    lightmapRebuild: stagedWhenListed(payload, lightmapRebuildInputNames, () => decodeLightmapRebuildInputs(payload, recordsDocument, lightActors)),
+    lightActors,
   };
 }

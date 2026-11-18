@@ -71,15 +71,17 @@ export function staticMeshHourlyEntryContributions(blend: HourlyKeyBlend, previo
   return [{ contributes: previousContributes, weight: Math.fround(1 - blend.weight) }, { contributes: nextContributes, weight: blend.weight }];
 }
 
-export function staticMeshHourlyInstanceColour(sampleIntensity: number, entries: readonly StaticMeshHourlyEntryContribution[], staticSunPlane: NativePlane): RgbBytes {
-  let colour: BgraBytes = [0, 0, 0, 0];
+export function staticMeshHourlyInstanceColour(sampleIntensity: number, entries: readonly StaticMeshHourlyEntryContribution[], staticSunPlane: NativePlane,
+  ordinaryColour: BgraBytes): RgbBytes {
+  let hourlyColour: BgraBytes = [0, 0, 0, 0];
   for (const entry of entries) {
     if (!entry.contributes) continue;
     const scale = sampleIntensity * staticMeshHourlyLightScale.value * entry.weight;
     const scaledPlane: NativePlane = [Math.fround(scale * staticSunPlane[0]), Math.fround(scale * staticSunPlane[1]), Math.fround(scale * staticSunPlane[2]),
       Math.fround(scale * staticSunPlane[3])];
-    colour = saturatingAddBgra(colour, fColorFromPlane(scaledPlane));
+    hourlyColour = saturatingAddBgra(hourlyColour, fColorFromPlane(scaledPlane));
   }
+  const colour = saturatingAddBgra(ordinaryColour, hourlyColour);
   return [colour[2], colour[1], colour[0]];
 }
 

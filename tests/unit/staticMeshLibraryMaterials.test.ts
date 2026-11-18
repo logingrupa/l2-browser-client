@@ -124,7 +124,8 @@ const unresolvedHourlyLighting = (): StaticMeshHourlyLightingFrame => ({ status:
 
 function librarySettings(f: ReturnType<typeof slotMeshes>, load: StaticMeshMaterialsLoad, fields: Partial<StaticMeshLibrarySettings> = {}): StaticMeshLibrarySettings {
   return { scene: f.scene, load, sessionSeed: 3, uniforms: materialUniforms, loadProgram: f.loadProgram,
-    lightLists: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.actorExportIndex" }, hourlyLighting: unresolvedHourlyLighting,
+    lightLists: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.actorExportIndex" },
+    ordinaryLightRecords: { lightsByExportIndex: new Map(), levelInfos: [] }, hourlyLighting: unresolvedHourlyLighting,
     loadVertexStreams: () => Promise.reject(new Error("no vertex streams in this test")), ...fields };
 }
 

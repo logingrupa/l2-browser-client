@@ -1,3 +1,4 @@
+import type { BgraBytes } from "../../../environment/model/nativeColourBytes";
 import type { NativePlane } from "../../../environment/model/nativePlane";
 import {
   staticMeshHourlyEntryBlend, staticMeshHourlyEntryContributions, staticMeshHourlyInstanceColour, staticMeshSampleIntensity, staticMeshVertexVisible,
@@ -23,7 +24,6 @@ export type StaticMeshPlacementLightingJoin =
 export const staticMeshLightingReasons = {
   lightListAbsent: "static-mesh-light-list-absent",
   ambientFallbackProducer: "rm10-static-ambient-fallback-producer",
-  allLightEffects: "rm10-all-light-effects",
   vertexCountMismatch: "static-mesh-vertex-streams-count-mismatch",
   colourSelector: "static-mesh-colour-selector-unresolved",
   primitiveUnjoined: "static-mesh-primitive-unjoined",
@@ -31,6 +31,7 @@ export const staticMeshLightingReasons = {
 
 const rgbChannels = 3;
 const normalComponents = 3;
+const nonContributingOrdinaryColour: BgraBytes = [0, 0, 0, 0];
 
 export function staticMeshPlacementLightingJoin(lightLists: StagedLightingInput<ReadonlyMap<number, StaticMeshLightList>>,
   placement: NativeTileChunkPlacement): StaticMeshPlacementLightingJoin {
@@ -40,7 +41,6 @@ export function staticMeshPlacementLightingJoin(lightLists: StagedLightingInput<
   if (list.hourlyMasks.length === 0) return { status: "unlit", reason: staticMeshLightingReasons.ambientFallbackProducer };
   if (list.sunAffect.status === "unstaged") return { status: "unlit", reason: list.sunAffect.reason };
   if (list.sunAffect.value !== sunAffected) return { status: "unlit", reason: staticMeshLightingReasons.ambientFallbackProducer };
-  if (list.ordinaryLightVertexMask.some(byte => byte !== 0)) return { status: "unlit", reason: staticMeshLightingReasons.allLightEffects };
   if (placement.vertexStreams.status === "gap") return { status: "unlit", reason: placement.vertexStreams.reason };
   const transform = staticMeshPlacementNormalTransform(placement.matrix);
   if (transform.status === "unresolved") return { status: "unlit", reason: transform.reason };
@@ -62,7 +62,7 @@ export function staticMeshPlacementInstanceColours(list: StaticMeshLightList, st
     const normal = { x: streams.nativeNormals[offset]!, y: streams.nativeNormals[offset + 1]!, z: streams.nativeNormals[offset + 2]! };
     const sampleIntensity = staticMeshSampleIntensity(staticMeshWorldNormal(rows, normal), frame.lightDirection);
     const entries = staticMeshHourlyEntryContributions(blend, staticMeshVertexVisible(previous, vertex), staticMeshVertexVisible(next, vertex));
-    colours.set(staticMeshHourlyInstanceColour(sampleIntensity, entries, frame.staticSunPlane), vertex * rgbChannels);
+    colours.set(staticMeshHourlyInstanceColour(sampleIntensity, entries, frame.staticSunPlane, nonContributingOrdinaryColour), vertex * rgbChannels);
   }
   return colours;
 }

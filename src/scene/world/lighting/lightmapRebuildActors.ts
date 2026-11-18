@@ -19,9 +19,12 @@ export interface RebuildZoneAmbient {
   readonly levelInfoFallback: boolean;
 }
 
-export interface LightmapRebuildActors {
+export interface LightActorRecords {
   readonly lights: readonly TileLightActorRecord[];
   readonly levelInfos: readonly TileLevelInfoRecord[];
+}
+
+export interface LightmapRebuildActors extends LightActorRecords {
   readonly zoneAmbients: readonly RebuildZoneAmbient[];
 }
 
@@ -46,9 +49,12 @@ function readZoneAmbient(value: unknown, position: number): RebuildZoneAmbient {
   return { zoneIndex: value.zoneIndex as number, levelInfoFallback: value.levelInfoFallback as boolean, ambient: readLightingFields(value.ambient, `${label}.ambient`) };
 }
 
-export function decodeLightmapRebuildActors(document: TileLightingRecordsDocument): LightmapRebuildActors {
-  requireLightingRecords(Array.isArray(document.lights) && Array.isArray(document.levelInfos) && Array.isArray(document.zones),
-    "lightmap rebuild inputs need the lights, levelInfos and zones lists.");
-  return { lights: (document.lights as unknown[]).map(readLightActor), levelInfos: (document.levelInfos as unknown[]).map(readLevelInfo),
-    zoneAmbients: (document.zones as unknown[]).map(readZoneAmbient) };
+export function decodeLightActorRecords(document: TileLightingRecordsDocument): LightActorRecords {
+  requireLightingRecords(Array.isArray(document.lights) && Array.isArray(document.levelInfos), "the lighting records need the lights and levelInfos lists.");
+  return { lights: (document.lights as unknown[]).map(readLightActor), levelInfos: (document.levelInfos as unknown[]).map(readLevelInfo) };
+}
+
+export function decodeLightmapRebuildActors(lightActors: LightActorRecords, document: TileLightingRecordsDocument): LightmapRebuildActors {
+  requireLightingRecords(Array.isArray(document.zones), "lightmap rebuild inputs need the zones list.");
+  return { ...lightActors, zoneAmbients: (document.zones as unknown[]).map(readZoneAmbient) };
 }

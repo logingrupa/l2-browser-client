@@ -13,7 +13,9 @@ import { joinStaticMeshSlot, type StaticMeshMaterialsLoad } from "../staticMeshL
 import type { StaticMeshLightList } from "./decodeHourlyLightingInputs";
 import type { StagedLightingInput } from "./stagedLightingInput";
 import type { StaticMeshVertexStreams } from "./loadStaticMeshVertexStreams";
+import type { RebuildLightEnvironment } from "./rebuildShadowLights";
 import { createStaticMeshInstanceColourGeometry, type StaticMeshInstanceColourGeometry } from "./staticMeshInstanceColourGeometry";
+import { staticMeshOrdinaryTermReason, type StaticMeshOrdinaryLightRecords } from "./staticMeshOrdinaryLights";
 import {
   staticMeshLightingReasons, staticMeshPlacementInstanceColours, staticMeshPlacementLightingJoin, staticMeshVertexStreamsReason, type StaticMeshSunFrame,
 } from "./staticMeshPlacementLighting";
@@ -61,7 +63,7 @@ export interface StaticMeshPlacementSurfaces {
 }
 
 export type StaticMeshHourlyLightingFrame =
-  | { readonly status: "resolved"; readonly sun: StaticMeshSunFrame; readonly ambient: RgbaBytes }
+  | { readonly status: "resolved"; readonly sun: StaticMeshSunFrame; readonly ambient: RgbaBytes; readonly lightEnvironment: RebuildLightEnvironment }
   | { readonly status: "unresolved"; readonly reason: string };
 
 export interface StaticMeshLibrarySettings {
@@ -71,6 +73,7 @@ export interface StaticMeshLibrarySettings {
   readonly uniforms: () => NativeMaterialUniforms;
   readonly loadProgram: (materialId: string, signal: AbortSignal) => Promise<LoadedNativeMaterial>;
   readonly lightLists: StagedLightingInput<ReadonlyMap<number, StaticMeshLightList>>;
+  readonly ordinaryLightRecords: StaticMeshOrdinaryLightRecords;
   readonly hourlyLighting: () => StaticMeshHourlyLightingFrame;
   readonly loadVertexStreams: (file: string, sha256: string, bytes: number, signal: AbortSignal) => Promise<StaticMeshVertexStreams>;
 }
@@ -220,6 +223,8 @@ export function bindStaticMeshLibraryMaterials(settings: StaticMeshLibrarySettin
     const join = staticMeshPlacementLightingJoin(settings.lightLists, surfaces.placement);
     if (join.status === "unlit") return { reason: join.reason };
     if (latchedFrame?.status !== "resolved") return { reason: heldReason ?? staticMeshRebuildTriggerUnresolvedReason };
+    const ordinaryReason = staticMeshOrdinaryTermReason(join.list, settings.ordinaryLightRecords, latchedFrame.lightEnvironment);
+    if (ordinaryReason !== null) return { reason: ordinaryReason };
     const pin = surfaces.placement.vertexStreams;
     if (pin.status !== "pinned") return { reason: pin.reason };
     const streams = await vertexStreamsFor(pin.file, pin.sha256, pin.bytes);

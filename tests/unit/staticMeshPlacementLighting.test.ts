@@ -20,9 +20,14 @@ import type { NativeTileChunkPlacement } from "../../src/scene/world/nativeTileC
 import { parseStaticMeshMaterialsListing } from "../../src/scene/world/staticMeshLibraryMaterials";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
 import { maskBytes, readStaticMeshLightingFixtures, type StaticMeshLightingFixture } from "../support/staticMeshLightingFixtures";
+import { rebuildEnvironmentAtHourSix } from "../support/lightmapRebuildFixture";
+import { integratedFixtureOf, readOrdinaryStaticLightingFixtures } from "../support/ordinaryStaticLightingFixtures";
+import { staticMeshOrdinaryLightRecords, type StaticMeshOrdinaryLightRecords } from "../../src/scene/world/lighting/staticMeshOrdinaryLights";
 import { staticMeshPlacementSurfacesFixture } from "../support/staticMeshPlacementFixture";
 
 const { pillar, fixtures } = readStaticMeshLightingFixtures();
+const ordinaryPillarCase = integratedFixtureOf(readOrdinaryStaticLightingFixtures(), pillar.actorExportIndex);
+const levelInfo = { exportIndex: 1, fields: new Map([["Brightness", { provenance: "class-default", value: 1 }]]) };
 const programSha256 = "a".repeat(64);
 const sidecarSha256 = "d".repeat(64);
 const slotObject = "cruma_s.f_04_material";
@@ -51,16 +56,24 @@ function pillarStreams(): StaticMeshVertexStreams {
 
 function pillarList(fields: Partial<StaticMeshLightList> = {}): StaticMeshLightList {
   return { actorExportIndex: pillar.actorExportIndex, instanceExportIndex: pillar.instanceExportIndex, vertexCount: pillar.vertexCount,
-    sunAffect: { status: "staged", value: 1 }, ordinaryLightVertexMask: maskBytes(pillar.ordinaryMasks[0]!.maskHex),
+    sunAffect: { status: "staged", value: 1 }, ordinaryMasks: pillar.ordinaryMasks.map(mask => ({ light: mask.light, visibility: maskBytes(mask.maskHex) })),
     hourlyMasks: pillar.hourlyMasks.map(mask => ({ light: mask.light, visibility: maskBytes(mask.maskHex) })), ...fields };
 }
 
-const sunOnlyPillarList = () => pillarList({ ordinaryLightVertexMask: new Uint8Array(Math.ceil(pillar.vertexCount / 8)) });
+const sunOnlyPillarList = () => pillarList({ ordinaryMasks: [] });
+
+function pillarLightRecords(lightTypeOfLight40 = 6, lights = ordinaryPillarCase.ordinaryLights): StaticMeshOrdinaryLightRecords {
+  return staticMeshOrdinaryLightRecords({ levelInfos: [levelInfo], lights: lights.map(light => {
+    const fields = new Map(light.fields.map(field => [field.field, { provenance: field.provenance, value: field.value }]));
+    if (light.exportIndex === 40) fields.set("LightType", { provenance: "authored", value: lightTypeOfLight40 });
+    return { exportIndex: light.exportIndex, object: light.object, actorClass: light.actorClass, fields };
+  }) });
+}
 
 function frameOf(fixture: StaticMeshLightingFixture): StaticMeshHourlyLightingFrame {
   return { status: "resolved", ambient: [fixture.ambientRGB[0] >> 1, fixture.ambientRGB[1] >> 1, fixture.ambientRGB[2] >> 1, 255],
     sun: { hour: fixture.hour, lightDirection: { x: fixture.direction[0], y: fixture.direction[1], z: fixture.direction[2] },
-      staticSunPlane: fixture.sunPlane as NativePlane } };
+      staticSunPlane: fixture.sunPlane as NativePlane }, lightEnvironment: { ...rebuildEnvironmentAtHourSix, hour: fixture.hour } };
 }
 
 function pillarMesh(scene: Scene, name: string): Mesh {
@@ -90,12 +103,13 @@ interface PillarBinding {
 }
 
 function pillarBinding(list: StaticMeshLightList, fixture: StaticMeshLightingFixture = fixtures[0]!,
-  loadVertexStreams: VertexStreamsLoader = vi.fn(async () => pillarStreams())): PillarBinding {
+  loadVertexStreams: VertexStreamsLoader = vi.fn(async () => pillarStreams()), ordinaryLightRecords = pillarLightRecords()): PillarBinding {
   const engine = new NullEngine(), scene = new Scene(engine);
   const frame = { current: frameOf(fixture) };
   const binding = bindStaticMeshLibraryMaterials({ scene, load: { listing: parsedListing, gap: null }, sessionSeed: 3,
     uniforms: () => ({ levelSeconds: 0, hour: fixture.hour, environmentType: 0, fog: FOG_DISABLED }), loadProgram: async materialId => loadedProgram(materialId),
-    lightLists: { status: "staged", value: new Map([[list.actorExportIndex, list]]) }, hourlyLighting: () => frame.current, loadVertexStreams });
+    lightLists: { status: "staged", value: new Map([[list.actorExportIndex, list]]) }, ordinaryLightRecords, hourlyLighting: () => frame.current,
+    loadVertexStreams });
   releases.push(() => { binding.dispose(); scene.dispose(); engine.dispose(); });
   return { scene, binding, frame, loadVertexStreams };
 }
@@ -117,13 +131,26 @@ const fixtureRgb = (fixture: StaticMeshLightingFixture, position: number) => {
 };
 
 describe("static mesh hourly instance colour drawn per placement (RM-10)", () => {
-  it("keeps the real RM-10 pillar unlit because ordinary light 40 sets mask bits, and names the reason", async () => {
+  it("draws the real RM-10 pillar, whose ordinary mask bits all belong to the LightType 6 lights 40 and 30 that add no colour (RM-19)", async () => {
     const f = pillarBinding(pillarList());
+    const mesh = pillarMesh(f.scene, "pillar");
+    const { sourceActor, exportIndex, fields } = pillarPlacement();
+    await f.binding.addChunk("chunk-1-2", [staticMeshPlacementSurfacesFixture(sourceActor, exportIndex, [mesh], fields)]);
+    expect(f.binding.inspection().lighting).toMatchObject({ litPlacements: 1, unlitPlacementReasons: {} });
+    fixtures[0]!.vertexIndices.forEach((vertex, position) => expect(instanceColourBytes(mesh, vertex)).toEqual([...fixtureRgb(fixtures[0]!, position), 255]));
+  });
+
+  it.each<[string, StaticMeshOrdinaryLightRecords, string]>([
+    ["light 40 adds colour", pillarLightRecords(1), "static-mesh-ordinary-light-vertex-positions-unstaged"],
+    ["light 40 has no record", pillarLightRecords(6, ordinaryPillarCase.ordinaryLights.filter(light => light.exportIndex !== 40)),
+      "static-mesh-ordinary-light-record-absent:40"],
+  ])("keeps the pillar unlit with a named reason when %s", async (_, records, reason) => {
+    const f = pillarBinding(pillarList(), fixtures[0]!, vi.fn(async () => pillarStreams()), records);
     const mesh = pillarMesh(f.scene, "pillar");
     const template = mesh.geometry;
     const { sourceActor, exportIndex, fields } = pillarPlacement();
     await f.binding.addChunk("chunk-1-2", [staticMeshPlacementSurfacesFixture(sourceActor, exportIndex, [mesh], fields)]);
-    expect(f.binding.inspection().lighting).toMatchObject({ litPlacements: 0, unlitPlacementReasons: { "rm10-all-light-effects": 1 } });
+    expect(f.binding.inspection().lighting).toMatchObject({ litPlacements: 0, unlitPlacementReasons: { [reason]: 1 } });
     expect(mesh.geometry).toBe(template);
     expect(f.loadVertexStreams).not.toHaveBeenCalled();
   });
@@ -148,7 +175,8 @@ describe("static mesh hourly instance colour drawn per placement (RM-10)", () =>
     const mesh = pillarMesh(f.scene, "pillar");
     const { sourceActor, exportIndex, fields } = pillarPlacement();
     await f.binding.addChunk("chunk-1-2", [staticMeshPlacementSurfacesFixture(sourceActor, exportIndex, [mesh], fields)]);
-    f.frame.current = { status: "resolved", ambient: [60, 60, 60, 255], sun: { hour: 12.3, lightDirection: { x: 0, y: 0, z: 1 }, staticSunPlane: [1, 1, 1, 1] } };
+    f.frame.current = { status: "resolved", ambient: [60, 60, 60, 255], sun: { hour: 12.3, lightDirection: { x: 0, y: 0, z: 1 }, staticSunPlane: [1, 1, 1, 1] },
+      lightEnvironment: rebuildEnvironmentAtHourSix };
     f.binding.update(false);
     expect(instanceColourBytes(mesh, 0)).toEqual([...fixtureRgb(fixtures[0]!, 0), 255]);
     f.frame.current = frameOf(fixtures[1]!);
@@ -198,16 +226,16 @@ describe("static mesh hourly instance colour drawn per placement (RM-10)", () =>
   });
 
   it.each<[string, StaticMeshLightList, Partial<NativeTileChunkPlacement>, string]>([
-    ["an actor without bSunAffect", pillarList({ ordinaryLightVertexMask: new Uint8Array(5), sunAffect: { status: "staged", value: 0 } }), {},
+    ["an actor without bSunAffect", pillarList({ ordinaryMasks: [], sunAffect: { status: "staged", value: 0 } }), {},
       "rm10-static-ambient-fallback-producer"],
-    ["a list without hourly entries", pillarList({ ordinaryLightVertexMask: new Uint8Array(5), hourlyMasks: [] }), {}, "rm10-static-ambient-fallback-producer"],
-    ["a payload without SMLL.sunAffect", pillarList({ ordinaryLightVertexMask: new Uint8Array(5),
+    ["a list without hourly entries", pillarList({ ordinaryMasks: [], hourlyMasks: [] }), {}, "rm10-static-ambient-fallback-producer"],
+    ["a payload without SMLL.sunAffect", pillarList({ ordinaryMasks: [],
       sunAffect: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.sunAffect" } }), {}, "hourly-lighting-input-unstaged:SMLL.sunAffect"],
-    ["a model without a vertex stream sidecar", pillarList({ ordinaryLightVertexMask: new Uint8Array(5) }),
+    ["a model without a vertex stream sidecar", pillarList({ ordinaryMasks: [] }),
       { vertexStreams: { status: "gap", reason: "static-mesh-vertex-streams-unstaged" } }, "static-mesh-vertex-streams-unstaged"],
-    ["a non-uniform DrawScale3D", pillarList({ ordinaryLightVertexMask: new Uint8Array(5) }),
+    ["a non-uniform DrawScale3D", pillarList({ ordinaryMasks: [] }),
       { matrix: [1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }, "static-mesh-normal-transform-unresolved"],
-    ["a sidecar whose vertex count differs from the light list", pillarList({ ordinaryLightVertexMask: new Uint8Array(5), vertexCount: 35 }), {},
+    ["a sidecar whose vertex count differs from the light list", pillarList({ ordinaryMasks: [], vertexCount: 35 }), {},
       "static-mesh-vertex-streams-count-mismatch"],
   ])("leaves %s unlit with a named reason", async (_, list, placementFields, reason) => {
     const f = pillarBinding(list);

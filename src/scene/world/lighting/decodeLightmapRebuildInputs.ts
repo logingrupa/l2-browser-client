@@ -1,6 +1,6 @@
 import type { LightmapProjection, LightmapSurface, NativeVector3, PackedShadowRecord } from "../../../environment/model/lightmapRebuild/lightmapRebuildTypes";
 import type { TypedPayload } from "../../../shared/typedPayload";
-import { decodeLightmapRebuildActors, type LightmapRebuildActors } from "./lightmapRebuildActors";
+import { decodeLightmapRebuildActors, type LightActorRecords, type LightmapRebuildActors } from "./lightmapRebuildActors";
 import { requireLightingInput, requireLightingPrefixStarts } from "./stagedLightingInput";
 import type { TileLightingRecordsDocument } from "./tileLightingRecords";
 
@@ -102,7 +102,7 @@ function decodeRecord(arrays: RecordArrays, record: number, shadows: readonly Li
     shadows: recordShadows };
 }
 
-export function decodeLightmapRebuildInputs(payload: TypedPayload, recordsDocument: TileLightingRecordsDocument): LightmapRebuildInputs {
+export function decodeLightmapRebuildInputs(payload: TypedPayload, recordsDocument: TileLightingRecordsDocument, lightActors: LightActorRecords): LightmapRebuildInputs {
   const rebuildInputs = payload.uint8("LMTX.rebuildInputs"), recordStart = payload.uint32("LMTX.recordStart"), textureCount = rebuildInputs.length;
   requireLightingPrefixStarts("LMTX.recordStart", recordStart, textureCount, recordStart[recordStart.length - 1] ?? 0);
   const shadows = decodeShadows(payload), arrays = readRecordArrays(payload, recordStart[textureCount]!, shadows.length);
@@ -115,7 +115,7 @@ export function decodeLightmapRebuildInputs(payload: TypedPayload, recordsDocume
     requireLightingInput(arrays.shadowStart[first] === arrays.shadowStart[end], `lightmap texture ${texture} has no rebuild inputs but its records list shadow masks.`);
     return [];
   });
-  return { textureHasInputs, textureRecords, actors: decodeLightmapRebuildActors(recordsDocument) };
+  return { textureHasInputs, textureRecords, actors: decodeLightmapRebuildActors(lightActors, recordsDocument) };
 }
 
 export function requireLightmapRebuildInputsMatchModel(inputs: LightmapRebuildInputs, facts: LightmapRebuildModelFacts): void {

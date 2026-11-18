@@ -32,16 +32,16 @@ describe("decodeHourlyLightingInputs", () => {
     const list = hourly.staticMeshLightLists.value.get(instance.actorExportIndex)!;
     expect(list).toMatchObject({ instanceExportIndex: instance.instanceExportIndex, vertexCount: mesh.vertexCount });
     expect(list.hourlyMasks.map(mask => mask.visibility[0]! & 1)).toEqual(context.staticHourlyVertex0Bits);
-    expect(list.ordinaryLightVertexMask).toEqual(new Uint8Array(4));
+    expect(list.ordinaryMasks).toEqual([]);
     expect(list.sunAffect).toEqual({ status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.sunAffect" });
   });
 
-  it("ORs the ordinary light masks of a list into one vertex mask and reads SMLL.sunAffect when staged", () => {
+  it("keeps each ordinary light mask with its light reference and reads SMLL.sunAffect when staged", () => {
     const hourly = decodedHourly([...restagedArrays(), staticMeshSunAffectArray]);
     if (hourly.staticMeshLightLists.status !== "staged") throw new Error("static mesh light lists not staged");
     const { pillar } = readStaticMeshLightingFixtures();
     const list = hourly.staticMeshLightLists.value.get(pillar.actorExportIndex)!;
-    expect(list.ordinaryLightVertexMask).toEqual(maskBytes(pillar.ordinaryMasks[0]!.maskHex));
+    expect(list.ordinaryMasks).toEqual(pillar.ordinaryMasks.map(mask => ({ light: mask.light, visibility: maskBytes(mask.maskHex) })));
     expect(list.sunAffect).toEqual({ status: "staged", value: 1 });
     expect(hourly.staticMeshLightLists.value.get(readConverterExpectations().staticMesh.instance.actorExportIndex)!.sunAffect)
       .toEqual({ status: "staged", value: -1 });
@@ -61,6 +61,7 @@ describe("decodeHourlyLightingInputs", () => {
       terrainLightMasks: { status: "unstaged", reason: "hourly-lighting-input-unstaged:TSEC.exportIndex" },
       staticMeshLightLists: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.actorExportIndex" },
       lightmapRebuild: { status: "unstaged", reason: "hourly-lighting-input-unstaged:LMTX.rebuildInputs" },
+      lightActors: { lights: [], levelInfos: [] },
     });
   });
 
