@@ -1,12 +1,12 @@
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { drawNativeSessionSeed } from "../../../assets/native/nativeSessionSeed";
-import { loadNativeMaterial, type FogState, type NativeMaterialUniforms } from "../../../materials/ue2/babylon/material";
+import { loadNativeMaterial, type NativeMaterialUniforms } from "../../../materials/ue2/babylon/material";
 import { FOG_CONSTANTS } from "../../../materials/ue2/model/constants/fogConstants";
 import { createPresentationClock } from "../../../shared/presentationClock";
 import { worldPositionToSource } from "../../../world/sourceFrame";
 import type { TileVisibilityFrame } from "../bspVisibility/core/tileVisibilityFrame";
-import { computeCameraEnvironment, type CameraEnvironment } from "../cameraEnvironment";
+import { computeCameraEnvironment, type CameraEnvironment, type CameraEnvironmentFog } from "../cameraEnvironment";
 import { fogReferencePawnFor, type FogReferencePawn } from "../fogReferencePawn";
 import type { NativeTileManifest } from "../nativeTileManifest";
 import { loadStaticMeshMaterialsListing } from "../staticMeshLibraryMaterials";
@@ -51,7 +51,7 @@ export interface TileLightingChunkSurfaces {
 
 export interface AttachedTileLighting {
   readonly skyMaterialUniforms: (() => NativeMaterialUniforms) | null;
-  readonly levelFog: (() => FogState) | null;
+  readonly cameraFog: (() => CameraEnvironmentFog) | null;
   readonly binding: TileLightingBinding | null;
   addChunk(surfaces: TileLightingChunkSurfaces): Promise<void>;
   removeChunk(chunkId: string): void;
@@ -65,7 +65,7 @@ const payloadInvalidReasonPrefix = "lighting-payload-invalid:";
 const millisecondsPerSecond = 1000;
 
 function unboundTileLighting(gap: string): AttachedTileLighting {
-  return { skyMaterialUniforms: null, levelFog: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
+  return { skyMaterialUniforms: null, cameraFog: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
 }
 
 function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, frame: TileVisibilityFrame | null, timeOfDay: RunningWorldTimeOfDay,
@@ -121,7 +121,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     return { terms: hourlyLightingTerms(environment), terrain: terrainVertexLighting.inspection(), staticMeshVisibility: staticMeshVisibility.inspection(environment.hour) };
   };
   return {
-    skyMaterialUniforms, levelFog: () => cameraEnvironment.fog, binding,
+    skyMaterialUniforms, cameraFog: () => cameraEnvironment, binding,
     async addChunk(surfaces) {
       if (surfaces.bspChunk !== null) await binding.addChunk(surfaces.bspChunk);
       await staticMeshBinding.addChunk(surfaces.chunkId, surfaces.staticMeshes);

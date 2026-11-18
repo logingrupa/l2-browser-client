@@ -147,7 +147,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     const countedMeshes = () => [...terrainMeshes, ...bspChunks.flatMap(chunk => chunk.meshes), ...instances.flatMap(instance => instance.root.getChildMeshes())];
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: tile.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate,
-      tileMovers: attached.movers, tileVisibility: attached.visibility.binding, skyMaterialUniforms: attached.lighting.skyMaterialUniforms, levelFog: attached.lighting.levelFog,
+      tileMovers: attached.movers, tileVisibility: attached.visibility.binding, skyMaterialUniforms: attached.lighting.skyMaterialUniforms, cameraFog: attached.lighting.cameraFog,
       inspection: () => inspectNativeTileSection({ tileId, chunks, terrainMeshes, instances, bspChunks, modelCount: templates.size, disposed, anchor,
         systems: attached, loadedChunkCount: chunks.length, countedMeshes: countedMeshes() }),
       setTerrainPreview() {}, dispose };

@@ -314,7 +314,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       });
     }
     const environment = wireWorldEnvironment({ adapter, camera, timeOfDay: world.timeOfDay,
-      levelFog: section?.levelFog ?? (() => null), presentationFarPlane: camera.maxZ });
+      cameraFog: section?.cameraFog ?? (() => null), presentationFarPlane: camera.maxZ });
     boundaryReleases.push(() => environment.release());
     if (effectComponents) {
       let priorFollow = followFighter;

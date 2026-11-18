@@ -48,6 +48,8 @@ export interface CameraEnvironment {
   readonly gaps: readonly string[];
 }
 
+export type CameraEnvironmentFog = Pick<CameraEnvironment, "fog" | "skyFog">;
+
 const noCameraZone = -1;
 const transitionedFogSources: ReadonlySet<FogState["source"]> = new Set(["local-fog-list", "terrain-zone-environment"]);
 const unresolvedTerrainZoneEnvironment: TerrainZoneEnvironmentFog = { status: "unresolved" };
