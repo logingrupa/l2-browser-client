@@ -29,6 +29,7 @@ export interface NativeCatalog {
   readonly materialPrograms: readonly unknown[];
   readonly fonts: readonly unknown[];
   readonly environments: readonly unknown[];
+  readonly skies: readonly unknown[];
   readonly sourceCatalogSha256?: string;
   readonly servedCatalogSha256: string;
   readonly laneCatalogSha256: string | null;
@@ -89,7 +90,7 @@ function validateNativeCatalog(input: unknown, servedCatalogSha256: string, lane
     effectComponents: optionalCatalogSlice(catalog, "effectComponents"), tables: optionalCatalogSlice(catalog, "tables"),
     windows: optionalCatalogSlice(catalog, "windows"), tiles: optionalCatalogSlice(catalog, "tiles"),
     materialPrograms: optionalCatalogSlice(catalog, "materialPrograms"), fonts: optionalCatalogSlice(catalog, "fonts"),
-    environments: optionalCatalogSlice(catalog, "environments"),
+    environments: optionalCatalogSlice(catalog, "environments"), skies: optionalCatalogSlice(catalog, "skies"),
     ...optionalSourceCatalogSha256(catalog), servedCatalogSha256, laneCatalogSha256 };
 }
 

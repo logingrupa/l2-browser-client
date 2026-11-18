@@ -16,7 +16,7 @@ describe("selected native tile identity", () => {
   });
 });
 
-describe("native sky presentation on a selected tile", () => {
+describe("native sky presentation with or without a selected tile", () => {
   let engine: NullEngine, scene: Scene;
   beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true; });
   afterEach(() => { scene.dispose(); engine.dispose(); vi.unstubAllGlobals(); });
@@ -27,18 +27,10 @@ describe("native sky presentation on a selected tile", () => {
     return fetcher;
   }
 
-  it.each(["?map=20_20", "?map=20_21"])("reads the selected tile catalog, never the pinned 20_20 sky, with search %j", async search => {
+  it.each(["?map=20_20", "?map=20_21", ""])("reads only the shared skies catalog record, never a tile or pinned sky, with search %j", async search => {
     const fetcher = missingSkyStore();
     vi.stubGlobal("location", { search, protocol: "http:" });
     await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).resolves.toBeNull();
     expect(fetcher.mock.calls.map(call => call[0])).toEqual(["/l2/catalog.json"]);
-  });
-
-  it("keeps reading the pinned 20_20 sky without a selected tile", async () => {
-    const fetcher = missingSkyStore();
-    vi.stubGlobal("location", { search: "", protocol: "http:" });
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).resolves.toBeNull();
-    expect(fetcher).toHaveBeenCalledOnce();
-    expect(fetcher.mock.calls[0]![0]).toMatch(/^\/l2\/skies\/[a-f0-9]{64}\/sky\.glb$/);
   });
 });

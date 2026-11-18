@@ -13,7 +13,7 @@ vi.mock("../../src/assets/native/loadNativeCatalog", () => ({ loadNativeActorCat
 vi.mock("../../src/assets/native/readNativeCatalog", async importOriginal => ({
   ...await importOriginal<typeof import("../../src/assets/native/readNativeCatalog")>(),
   readNativeCatalog: async () => ({ schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [], materialPrograms: [], fonts: [], environments: [], servedCatalogSha256: "c".repeat(64),
+    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [], materialPrograms: [], fonts: [], environments: [], skies: [], servedCatalogSha256: "c".repeat(64),
     laneCatalogSha256: null }),
 }));
 

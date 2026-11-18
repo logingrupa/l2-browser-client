@@ -90,7 +90,7 @@ describe("attachTileLighting", () => {
     const unplaced = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
     const unplacedEnvironment = (unplaced.inspection() as TileLightingRuntimeInspection).cameraEnvironment;
     expect(unplacedEnvironment.gaps).toContain(cameraEnvironmentGaps.fogInfoReferencePawnAbsent);
-    expect(unplacedEnvironment.skyFog).toEqual({ route: "inherit-level", fog: unplacedEnvironment.fog, gaps: [cameraEnvironmentGaps.sharedSkyLevelGeometryUnstaged] });
+    expect(unplacedEnvironment.skyFog).toEqual({ route: "inherit-level", fog: unplacedEnvironment.fog });
     unplaced.dispose();
     provideFogReferencePawn(scene, { position: () => sourcePositionToWorld({ x: 28491.390625 + 3500, y: 110465.5, z: -1361.5125732421875 }) });
     const visibilityInDistanceFogZone = { frame: () => frameInZone(1), nodeRangeVisible: () => true, nodeRangeListed: () => true };

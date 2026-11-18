@@ -102,7 +102,7 @@ describe("sky scene fog", () => {
   it("inherits the level fog under the shared-sky route of the shipped l2.ini and names the unstaged SkyLevel geometry", () => {
     const environment = computeCameraEnvironment(sources({ frame: frameInZone(1, [3]) }));
     expect(environment.fog.source).toBe("camera-zone");
-    expect(environment.skyFog).toEqual({ route: "inherit-level", fog: environment.fog, gaps: [cameraEnvironmentGaps.sharedSkyLevelGeometryUnstaged] });
+    expect(environment.skyFog).toEqual({ route: "inherit-level", fog: environment.fog });
   });
 
   it("hands the sky colour writer the retained L2FogInfo list with its weights and hour, or the missing fog reference pawn", () => {

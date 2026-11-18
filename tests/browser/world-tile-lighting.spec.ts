@@ -31,7 +31,7 @@ interface LightingInspection {
   readonly textureSlots?: readonly { readonly texture: number; readonly childCount: number; readonly sunAffectedSlot: number | null }[];
   readonly hourly?: HourlyLightingReading;
   readonly cameraEnvironment?: { readonly cameraZone: number; readonly fog: FogReading; readonly gaps: readonly string[];
-    readonly skyFog: { readonly route: string | null; readonly fog: FogReading; readonly gaps: readonly string[] } };
+    readonly skyFog: { readonly route: string | null; readonly fog: FogReading } };
 }
 interface FogReading {
   readonly enabled: boolean;
@@ -104,7 +104,7 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
   expect(["local-fog-list", "terrain-zone-environment", "camera-zone", "zone-without-fog"]).toContain(levelFog.source);
   if (levelFog.enabled) expect(levelFog.endSourceUnits).toBeGreaterThan(levelFog.startSourceUnits);
   expect(inspection.cameraEnvironment!.gaps).not.toContain("fog-info-reference-pawn-absent");
-  expect(inspection.cameraEnvironment!.skyFog).toEqual({ route: "inherit-level", fog: levelFog, gaps: ["shared-sky-level-geometry-unstaged"] });
+  expect(inspection.cameraEnvironment!.skyFog).toEqual({ route: "inherit-level", fog: levelFog });
   expect(world.mapEmitterPlacements!.gap).toBeNull();
   expect(world.mapEmitterPlacements!.placements.length).toBeGreaterThan(0);
   for (const placement of world.mapEmitterPlacements!.placements) {

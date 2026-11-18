@@ -36,7 +36,6 @@ export interface CameraEnvironmentSources {
 export interface SkySceneFog {
   readonly route: typeof FOG_CONSTANTS.skySceneRoute.value;
   readonly fog: FogState;
-  readonly gaps: readonly string[];
 }
 
 export type EmptyListZoneFog =
@@ -81,7 +80,6 @@ export const cameraEnvironmentGaps = {
   fogInfoReferencePawnAbsent: "fog-info-reference-pawn-absent",
   fogInfoRetentionDistanceUnresolved: "fog-info-retention-distance-unresolved",
   fogInfoListOrderAssumed: "fog-info-list-order-assumed",
-  sharedSkyLevelGeometryUnstaged: "shared-sky-level-geometry-unstaged",
   volumeQueryUnbound: "camera-volume-query-unbound",
   volumeWaterFlagAbsent: "camera-volume-water-flag-absent",
   volumePriorityUnknown: "camera-volume-priority-unknown",
@@ -153,7 +151,7 @@ function fogRouteOf(fog: FogState, zone: CameraZoneFogRecord | null, zoneIndex: 
 }
 
 function skySceneFog(levelFog: FogState): SkySceneFog {
-  return { route: FOG_CONSTANTS.skySceneRoute.value, fog: levelFog, gaps: [cameraEnvironmentGaps.sharedSkyLevelGeometryUnstaged] };
+  return { route: FOG_CONSTANTS.skySceneRoute.value, fog: levelFog };
 }
 
 function cameraVolume(sources: CameraEnvironmentSources, gaps: string[]): ContainingVolume | null {

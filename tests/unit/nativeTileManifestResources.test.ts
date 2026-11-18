@@ -34,9 +34,9 @@ const skySha256 = "d".repeat(64);
 const sky = { kind: "sky", manifest: `/l2/skies/${skySha256}/manifest.json`, manifestSha256: skySha256, manifestBytes: 3716 };
 
 describe("native tile manifest resources", () => {
-  it("accepts one sky bundle and one world-audio resource per written audio manifest, never the same manifest twice", () => {
-    expect(parseNativeTileManifest(tileManifest([sky, ...worldAudio])).resources.map(resource => resource.kind)).toEqual(["sky", "world-audio", "world-audio"]);
-    expect(() => parseNativeTileManifest(tileManifest([sky, sky]))).toThrow(/lists more than one sky resource/);
+  it("accepts one world-audio resource per written audio manifest, never the same manifest twice, and refuses a tile sky resource", () => {
+    expect(parseNativeTileManifest(tileManifest(worldAudio)).resources.map(resource => resource.kind)).toEqual(["world-audio", "world-audio"]);
+    expect(() => parseNativeTileManifest(tileManifest([sky]))).toThrow(/sky/);
     expect(() => parseNativeTileManifest(tileManifest([worldAudio[0], worldAudio[0]]))).toThrow(/lists the resource \/l2\/world-audio\/a{64}\/manifest\.json twice/);
   });
 

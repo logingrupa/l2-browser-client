@@ -3,9 +3,7 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
@@ -14,9 +12,9 @@ import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { loadNativeMaterial, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
-import { createNativeSkyPresentation, nativeSkySource } from "../../src/scene/world/nativeSkyPresentation";
+import { createNativeSkyPresentation, sharedSkyViewGateUnresolvedReason } from "../../src/scene/world/nativeSkyPresentation";
 import { swatchTexturePng, syntheticSkyColourModifierProgram, textureImageFor } from "../support/materialProgramFixture";
-import { decodeJsonDocument, fixtureTileId, jsonBytes, readFixtureTileFiles, sha256Hex } from "../support/nativeTileFixtureStore";
+import { jsonBytes, sha256Hex } from "../support/nativeTileFixtureStore";
 
 vi.mock("@babylonjs/core/Loading/sceneLoader", () => ({ LoadAssetContainerAsync: vi.fn() }));
 vi.mock("../../src/materials/ue2/babylon/loadNativeMaterial", async importOriginal =>
@@ -30,8 +28,7 @@ function skyGlb(): Uint8Array<ArrayBuffer> {
   bytes.fill(32, 20); bytes.set(text, 20); return bytes;
 }
 
-type TileSky = "resource" | "gap" | "absent";
-
+const sharedSkySourceId = "interlude:skylevel.Model29.SkyZoneInfo0";
 const skyBackgroundRoot = "l2_skies.Shaders.SkybackgroundColor";
 const skyBackgroundProgramSha256 = "d".repeat(64);
 const skyBackgroundColourBgraHex = "ce9600ff";
@@ -45,171 +42,118 @@ function loadedSkyBackgroundProgram(materialId: string): LoadedNativeMaterial {
     texturePixels: new Map([[whiteChipImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
 }
 
-function tileSkyStore(tileSky: TileSky, materialRoots: number, listedMaterials: readonly unknown[] = []) {
-  const fixture = readFixtureTileFiles(), tile = decodeJsonDocument(fixture.tile.bytes), glb = skyGlb(), responses = new Map<string, Uint8Array<ArrayBuffer>>();
-  const sourceId = `interlude:${fixtureTileId}.Model1.SkyZoneInfo0`;
-  const skySnapshot = jsonBytes({ schemaVersion: 1, kind: "native-sky-source-snapshot", tileId: fixtureTileId, materials: listedMaterials });
-  const skyManifest = jsonBytes({ schemaVersion: 1, kind: "native-sky-source-bundle", id: sourceId, tileId: fixtureTileId,
+interface SharedSkyStoreSettings {
+  readonly materialRoots: number;
+  readonly listedMaterials?: readonly unknown[];
+  readonly catalogHasSky?: boolean;
+  readonly corruptGlb?: boolean;
+}
+
+function sharedSkyStore({ materialRoots, listedMaterials = [], catalogHasSky = true, corruptGlb = false }: SharedSkyStoreSettings) {
+  const glb = skyGlb(), responses = new Map<string, Uint8Array<ArrayBuffer>>();
+  const skySnapshot = jsonBytes({ schemaVersion: 1, kind: "native-shared-sky-snapshot", map: "skylevel", materials: listedMaterials });
+  const skyManifest = jsonBytes({ schemaVersion: 1, kind: "native-shared-sky-bundle", id: sharedSkySourceId, map: "skylevel",
     counts: { materialRoots }, files: { "sky.glb": { bytes: glb.byteLength, sha256: sha256Hex(glb) },
       "sky.json": { bytes: skySnapshot.byteLength, sha256: sha256Hex(skySnapshot) } } });
   const skyManifestSha256 = sha256Hex(skyManifest), skyFolder = `/l2/skies/${skyManifestSha256}`;
-  const gaps = tile.gaps as Record<string, unknown>[];
-  if (tileSky !== "gap") tile.gaps = gaps.filter(row => row.step !== "sky");
-  if (tileSky === "resource") {
-    tile.resources = [{ kind: "sky", manifest: `${skyFolder}/manifest.json`, manifestSha256: skyManifestSha256, manifestBytes: skyManifest.byteLength }];
-    responses.set(`${skyFolder}/manifest.json`, skyManifest).set(`${skyFolder}/sky.glb`, glb).set(`${skyFolder}/sky.json`, skySnapshot);
-  }
-  const tileBytes = jsonBytes(tile), tileSha256 = sha256Hex(tileBytes), tilePath = `/l2/tiles/${tileSha256}/tile.json`;
-  responses.set(tilePath, tileBytes).set("/l2/catalog.json", jsonBytes({ schemaVersion: 1, models: [],
-    tiles: [{ id: fixtureTileId, manifest: tilePath, manifestSha256: tileSha256, manifestBytes: tileBytes.byteLength }] }));
-  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+  responses.set(`${skyFolder}/manifest.json`, skyManifest).set(`${skyFolder}/sky.glb`, corruptGlb ? new Uint8Array([1, 2, 3]) : glb)
+    .set(`${skyFolder}/sky.json`, skySnapshot);
+  const skies = catalogHasSky ? [{ id: "skylevel", manifest: `${skyFolder}/manifest.json`, manifestSha256: skyManifestSha256, manifestBytes: skyManifest.byteLength }] : [];
+  responses.set("/l2/catalog.json", jsonBytes({ schemaVersion: 1, models: [], skies }));
+  const fetcher = vi.fn(async (url: string) => {
     const value = responses.get(url);
     return new Response(value?.slice().buffer ?? "missing", { status: value ? 200 : 404 });
-  }));
-  vi.stubGlobal("location", { search: `?map=${fixtureTileId}`, protocol: "http:" });
-  return { sourceId, skyManifestSha256 };
+  });
+  vi.stubGlobal("fetch", fetcher);
+  vi.stubGlobal("location", { search: "?map=20_21", protocol: "http:" });
+  return { skyManifestSha256, fetcher };
 }
 
 function containerWithMeshes(scene: Scene, count: number, sourceReferences: readonly string[] = []) {
   const container = new AssetContainer(scene);
   for (let index = 0; index < count; index++) {
-    const mesh = MeshBuilder.CreateBox(`tile sky part ${index}`, {}, scene);
-    const sourceReference = sourceReferences[index];
-    if (sourceReference === undefined) mesh.material = new StandardMaterial(`tile sky material ${index}`, scene);
-    else {
-      const gltfMaterial = new PBRMaterial(sourceReference, scene);
-      gltfMaterial.metadata = { gltf: { extras: { nativeSourceReference: sourceReference, sourceSnapshot: true } } };
-      mesh.material = gltfMaterial;
-      container.materials.push(gltfMaterial);
-    }
+    const mesh = MeshBuilder.CreateBox(`shared sky part ${index}`, {}, scene);
+    const gltfMaterial = new PBRMaterial(sourceReferences[index] ?? `shared sky material ${index}`, scene);
+    gltfMaterial.metadata = { gltf: { extras: { nativeSourceReference: sourceReferences[index] ?? skyBackgroundRoot, sourceSnapshot: true } } };
+    mesh.material = gltfMaterial;
+    container.materials.push(gltfMaterial);
     container.meshes.push(mesh); container.rootNodes.push(mesh);
   }
   container.removeAllFromScene();
   return container;
 }
 
-describe("stored native sky presentation lifetime", () => {
-  let engine: NullEngine, scene: Scene;
-  beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true; });
-  afterEach(() => { scene.dispose(); engine.dispose(); vi.unstubAllGlobals(); vi.mocked(LoadAssetContainerAsync).mockReset(); });
-  function authored() {
-    const root = new TransformNode("sky", scene); root.scaling.z = -1; root.position.set(1, 2, 3);
-    root.metadata = { nativeSkyRoot: { schemaVersion: 1, ...nativeSkySource, sourceSnapshot: true } };
-    const origin = new TransformNode("source origin", scene); origin.parent = root; origin.position.set(-2.922, -245.03, -2644.03);
-    const meshes = [0, 1, 2].map(index => {
-      const mesh = MeshBuilder.CreateBox(`part${index}`, {}, scene); mesh.parent = origin;
-      mesh.material = new StandardMaterial(`source${index}`, scene); mesh.material.fogEnabled = true;
-      mesh.sideOrientation = 0; return mesh;
-    });
-    return { root, origin, meshes };
-  }
-  it("retains authored geometry, offsets and materials and restores presentation state on abort", async () => {
-    const { root, origin, meshes } = authored(), abort = new AbortController();
-    const world = MeshBuilder.CreateBox("world", {}, scene), laterGroup = MeshBuilder.CreateBox("authored group2", {}, scene);
-    laterGroup.renderingGroupId = 2;
-    scene.setRenderingAutoClearDepthStencil(1, false, false, false);
-    const positions = meshes.map(mesh => mesh.getVerticesData("position")), materials = meshes.map(mesh => mesh.material);
-    const sky = await createNativeSkyPresentation(scene, abort.signal, null, null);
-    expect(sky?.inspection()).toMatchObject({ authored: true, meshes: 3, status: "source-snapshot" });
-    expect(root.scaling.z).toBe(1); expect(meshes[0]!.sideOrientation).toBe(1);
-    expect(world.renderingGroupId).toBe(1); expect(laterGroup.renderingGroupId).toBe(2);
-    const added = MeshBuilder.CreateBox("later actor", {}, scene);
-    const camera = new FreeCamera("camera", new Vector3(8, 9, 10), scene); camera.getViewMatrix(true);
-    scene.onBeforeCameraRenderObservable.notifyObservers(camera);
-    expect(added.renderingGroupId).toBe(1);
-    expect(root.position.asArray()).toEqual([9, 11, 13]); expect(origin.position.asArray()).toEqual([-2.922, -245.03, -2644.03]);
-    expect(meshes.map(mesh => mesh.getVerticesData("position"))).toEqual(positions);
-    abort.abort(); sky?.dispose();
-    expect(root.position.asArray()).toEqual([1, 2, 3]); expect(root.scaling.z).toBe(-1);
-    expect(world.renderingGroupId).toBe(0); expect(added.renderingGroupId).toBe(0); expect(laterGroup.renderingGroupId).toBe(2);
-    expect(meshes.map(mesh => mesh.material)).toEqual(materials); expect(meshes.every(mesh => !mesh.isDisposed() && mesh.material?.fogEnabled && !mesh.material.disableDepthWrite)).toBe(true);
-    expect(meshes[0]!.sideOrientation).toBe(0);
-    expect(scene.getAutoClearDepthStencilSetup(1)).toEqual({ autoClear: false, depth: false, stencil: false });
-  });
-  it("preserves an authored RH sky orientation and restores it on normal disposal", async () => {
-    const { root, meshes } = authored(); root.scaling.z = 1; meshes[0]!.sideOrientation = 1;
-    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null);
-    expect(meshes[0]!.sideOrientation).toBe(1); sky?.dispose(); expect(root.scaling.z).toBe(1);
-  });
-  it.each(["identity", "parent", "duplicate", "missing-part"])("rejects %s without mutating authored state", async failure => {
-    const { root, meshes } = authored();
-    if (failure === "identity") root.metadata.nativeSkyRoot.manifestSha256 = "changed";
-    if (failure === "parent") root.parent = new TransformNode("other", scene);
-    if (failure === "duplicate") authored();
-    if (failure === "missing-part") meshes[0]!.dispose();
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).rejects.toThrow();
-    expect(root.scaling.z).toBe(-1); expect(root.position.asArray()).toEqual([1, 2, 3]);
-  });
-  it("returns absent only for a missing optional source and rejects corrupted bytes", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(null, { status: 404 })).mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]))));
-    expect(await createNativeSkyPresentation(scene, new AbortController().signal, null, null)).toBeNull();
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).rejects.toThrow("hash/length mismatch");
-    expect(scene.meshes).toHaveLength(0);
-  });
-});
-
-describe("selected tile sky presentation", () => {
+describe("shared sky presentation", () => {
   let engine: NullEngine, scene: Scene;
   beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true; });
   afterEach(() => { scene.dispose(); engine.dispose(); vi.unstubAllGlobals(); vi.mocked(LoadAssetContainerAsync).mockReset(); vi.mocked(loadNativeMaterial).mockReset(); });
 
-  it("draws a tile sky surface through the UE2 library program its sky snapshot lists, not the glTF PBR material", async () => {
-    tileSkyStore("resource", 1, [listedSkyBackground]);
+  it("draws the one shared skylevel record on a selected tile through the UE2 library program its snapshot lists", async () => {
+    const { skyManifestSha256 } = sharedSkyStore({ materialRoots: 1, listedMaterials: [listedSkyBackground] });
     vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 1, [skyBackgroundRoot]));
     vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
     const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null);
-    const drawn = scene.meshes.find(mesh => mesh.name === "tile sky part 0")!.material;
+    const drawn = scene.meshes.find(mesh => mesh.name === "shared sky part 0")!.material;
     expect(drawn).toBeInstanceOf(ShaderMaterial);
-    expect(drawn).not.toBeInstanceOf(PBRMaterial);
     expect(drawn?.name).toBe(`UE2 material: ${skyBackgroundRoot}`);
-    expect(vi.mocked(loadNativeMaterial).mock.calls.map(([materialId]) => materialId)).toEqual([skyBackgroundProgramSha256]);
-    expect(sky?.inspection().librarySurfaces).toEqual([{ mesh: "tile sky part 0", sourceReference: skyBackgroundRoot,
+    expect(sky?.inspection()).toMatchObject({ status: "shared-sky", meshes: 1, sourceId: sharedSkySourceId, manifestSha256: skyManifestSha256,
+      drawGate: "always", gaps: [sharedSkyViewGateUnresolvedReason] });
+    expect(sky?.inspection().librarySurfaces).toEqual([{ mesh: "shared sky part 0", sourceReference: skyBackgroundRoot,
       programMaterialId: skyBackgroundProgramSha256, status: "library-compiled", reasons: [] }]);
     sky?.dispose();
     expect(scene.meshes).toHaveLength(0);
     expect(scene.materials.some(material => material.name.startsWith("UE2 material:"))).toBe(false);
   });
 
+  it("follows the camera, draws world meshes after the sky and restores them on abort", async () => {
+    sharedSkyStore({ materialRoots: 1, listedMaterials: [listedSkyBackground] });
+    vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 1, [skyBackgroundRoot]));
+    vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
+    const world = MeshBuilder.CreateBox("world", {}, scene), laterGroup = MeshBuilder.CreateBox("group2", {}, scene);
+    laterGroup.renderingGroupId = 2;
+    scene.setRenderingAutoClearDepthStencil(1, false, false, false);
+    const abort = new AbortController();
+    const sky = await createNativeSkyPresentation(scene, abort.signal, null, null);
+    expect(world.renderingGroupId).toBe(1); expect(laterGroup.renderingGroupId).toBe(2);
+    const added = MeshBuilder.CreateBox("later actor", {}, scene);
+    const camera = new FreeCamera("camera", new Vector3(8, 9, 10), scene); camera.getViewMatrix(true);
+    scene.onBeforeCameraRenderObservable.notifyObservers(camera);
+    expect(added.renderingGroupId).toBe(1);
+    expect(scene.transformNodes.find(node => node.name === "Native shared sky · skylevel")!.position.asArray()).toEqual([8, 9, 10]);
+    abort.abort(); sky?.dispose();
+    expect(world.renderingGroupId).toBe(0); expect(added.renderingGroupId).toBe(0); expect(laterGroup.renderingGroupId).toBe(2);
+    expect(scene.getAutoClearDepthStencilSetup(1)).toEqual({ autoClear: false, depth: false, stencil: false });
+  });
+
   it("reports texturesReady from the library material each sky mesh draws with, not the glTF material it replaced", async () => {
-    tileSkyStore("resource", 1, [listedSkyBackground]);
+    sharedSkyStore({ materialRoots: 1, listedMaterials: [listedSkyBackground] });
     const container = containerWithMeshes(scene, 1, [skyBackgroundRoot]);
     const readyTexture = { isReady: () => true } as unknown as BaseTexture, unreadyTexture = { isReady: () => false } as unknown as BaseTexture;
     vi.spyOn(container.materials[0]!, "getActiveTextures").mockReturnValue([unreadyTexture]);
     vi.mocked(LoadAssetContainerAsync).mockResolvedValue(container);
     vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
     const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null);
-    const drawnTextures = vi.spyOn(scene.meshes.find(mesh => mesh.name === "tile sky part 0")!.material!, "getActiveTextures").mockReturnValue([readyTexture]);
+    const drawnTextures = vi.spyOn(scene.meshes.find(mesh => mesh.name === "shared sky part 0")!.material!, "getActiveTextures").mockReturnValue([readyTexture]);
     expect(sky?.inspection().texturesReady).toBe(true);
     drawnTextures.mockReturnValue([unreadyTexture]);
     expect(sky?.inspection().texturesReady).toBe(false);
     sky?.dispose();
   });
 
-  it("presents the tile sky resource with one mesh per material root", async () => {
-    const { sourceId, skyManifestSha256 } = tileSkyStore("resource", 2);
-    vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 2));
-    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null);
-    expect(sky?.inspection()).toMatchObject({ authored: false, meshes: 2, sourceId, manifestSha256: skyManifestSha256, tileId: fixtureTileId, tileSkyGap: null });
-    sky?.dispose();
-    expect(scene.meshes).toHaveLength(0);
-  });
-
-  it("refuses a tile sky whose meshes differ from its material root count", async () => {
-    tileSkyStore("resource", 3);
+  it("refuses a shared sky whose meshes differ from its material root count", async () => {
+    sharedSkyStore({ materialRoots: 3 });
     vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 2));
     await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).rejects.toThrow("each of its 3 material roots");
     expect(scene.meshes).toHaveLength(0);
   });
 
-  it("names the tile sky gap reason when the tile has no sky resource", async () => {
-    tileSkyStore("gap", 1);
-    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).rejects.toThrow(`Native tile ${fixtureTileId} sky is a gap: step-pending:sky.`);
-    expect(LoadAssetContainerAsync).not.toHaveBeenCalled();
-  });
-
-  it("presents no sky for a tile whose sky step passed without a SkyZoneInfo zone", async () => {
-    tileSkyStore("absent", 1);
+  it("presents no sky while the catalog has no skylevel record and rejects corrupted sky bytes", async () => {
+    sharedSkyStore({ materialRoots: 1, catalogHasSky: false });
     await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).resolves.toBeNull();
+    vi.unstubAllGlobals();
+    sharedSkyStore({ materialRoots: 1, corruptGlb: true });
+    await expect(createNativeSkyPresentation(scene, new AbortController().signal, null, null)).rejects.toThrow();
     expect(LoadAssetContainerAsync).not.toHaveBeenCalled();
+    expect(scene.meshes).toHaveLength(0);
   });
 });

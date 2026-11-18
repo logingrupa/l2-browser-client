@@ -10,14 +10,13 @@ import { FOG_DISABLED, type NativeMaterialUniforms } from "../../src/materials/u
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import {
-  bindNativeSkyLibraryMaterials, joinNativeSkySurface, parseNativeSkyMaterialsListing, skyMaterialsListingAbsentReason, skySurfaceMaterialUnlistedReason,
+  bindNativeSkyLibraryMaterials, joinNativeSkySurface, parseNativeSkyMaterialsListing, skySurfaceMaterialUnlistedReason,
   skySurfaceProgramAbsentReason, skySurfaceSourceReferenceNoneReason, type NativeSkyLibrarySettings, type NativeSkyMaterialsListing,
 } from "../../src/scene/world/nativeSkyLibraryMaterials";
 import type { SkyEnvironmentColour } from "../../src/scene/world/worldTimeOfDay";
 import { swatchTexturePng, syntheticSkyColourModifierProgram, syntheticUnportedProgram, textureImageFor } from "../support/materialProgramFixture";
 import { shippedSkyBindings } from "../support/worldTimeOfDayFixture";
 
-const tileId = "15_22";
 const backgroundRoot = "l2_skies.Shaders.SkybackgroundColor";
 const backgroundProgramSha256 = "a".repeat(64);
 const unportedProgramSha256 = "b".repeat(64);
@@ -29,12 +28,12 @@ const failedReason = "decode-failed:FormatError:texture missing";
 const pin = (programSha256: string) => ({ directory: `native-materials/${programSha256}`, programSha256 });
 const listedMaterial = (root: string, program: unknown, gapReasons: string[] = []) => ({ mapReference: root.replace("l2_skies", "L2_Skies"), root, program, gapReasons });
 const snapshot = (materials: readonly unknown[], extra: Record<string, unknown> = {}) =>
-  ({ schemaVersion: 1, kind: "native-sky-source-snapshot", tileId, parts: [], materials, ...extra });
+  ({ schemaVersion: 1, kind: "native-shared-sky-snapshot", map: "skylevel", parts: [], materials, ...extra });
 const whiteChipImage = textureImageFor(swatchTexturePng());
 
 describe("sky surface to library program join", () => {
   const listing = parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, pin(backgroundProgramSha256)),
-    listedMaterial(failedRoot, null, [failedReason]), listedMaterial("l2_skies.Shaders.Bare", null)]), tileId);
+    listedMaterial(failedRoot, null, [failedReason]), listedMaterial("l2_skies.Shaders.Bare", null)]));
 
   it("joins a sky surface's glTF source reference to the program its sky snapshot lists, case-insensitively like the native names", () => {
     expect(joinNativeSkySurface(listing, backgroundRoot)).toEqual({ kind: "program", programMaterialId: backgroundProgramSha256 });
@@ -48,13 +47,13 @@ describe("sky surface to library program join", () => {
     expect(joinNativeSkySurface(listing, "l2_skies.Shaders.Bare")).toEqual({ kind: "gap", reasons: [skySurfaceProgramAbsentReason] });
   });
 
-  it("refuses another snapshot kind or tile, a repeated root, a field outside the sky material record and a program that is no pin", () => {
-    expect(() => parseNativeSkyMaterialsListing(snapshot([], { kind: "native-sky-source-bundle" }), tileId)).toThrow(/native-sky-source-snapshot schema 1 record of tile 15_22/);
-    expect(() => parseNativeSkyMaterialsListing(snapshot([]), "20_21")).toThrow(/record of tile 20_21/);
+  it("refuses another snapshot kind or map, a repeated root, a field outside the sky material record and a program that is no pin", () => {
+    expect(() => parseNativeSkyMaterialsListing(snapshot([], { kind: "native-shared-sky-bundle" }))).toThrow(/native-shared-sky-snapshot schema 1 record of map skylevel/);
+    expect(() => parseNativeSkyMaterialsListing(snapshot([], { map: "20_21" }))).toThrow(/record of map skylevel/);
     expect(() => parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, pin(backgroundProgramSha256)),
-      listedMaterial(backgroundRoot.toUpperCase(), pin(backgroundProgramSha256))]), tileId)).toThrow(/twice/);
-    expect(() => parseNativeSkyMaterialsListing(snapshot([{ ...listedMaterial(backgroundRoot, null), colour: 1 }]), tileId)).toThrow(/must hold exactly mapReference, root, program, gapReasons/);
-    expect(() => parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, { directory: "elsewhere", programSha256: backgroundProgramSha256 })]), tileId))
+      listedMaterial(backgroundRoot.toUpperCase(), pin(backgroundProgramSha256))]))).toThrow(/twice/);
+    expect(() => parseNativeSkyMaterialsListing(snapshot([{ ...listedMaterial(backgroundRoot, null), colour: 1 }]))).toThrow(/must hold exactly mapReference, root, program, gapReasons/);
+    expect(() => parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, { directory: "elsewhere", programSha256: backgroundProgramSha256 })])))
       .toThrow(/no native-materials program pin/);
   });
 });
@@ -78,21 +77,14 @@ describe("sky surfaces bound through the UE2 library", () => {
     return { materialId, program, plan: compileMaterialStagePlan(program),
       texturePixels: new Map([[whiteChipImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]), textureMipChains: new Map() };
   });
-  const bind = (meshes: readonly Mesh[], listing: NativeSkyMaterialsListing | null, overrides: Partial<NativeSkyLibrarySettings> = {}) =>
+  const bind = (meshes: readonly Mesh[], listing: NativeSkyMaterialsListing, overrides: Partial<NativeSkyLibrarySettings> = {}) =>
     bindNativeSkyLibraryMaterials({ scene, meshes, listing, sessionSeed: 1, materialUniforms: null, environmentColours: null, loadProgram,
       signal: new AbortController().signal, ...overrides });
-  const backgroundListing = () => parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, pin(backgroundProgramSha256))]), tileId);
-
-  it("keeps every glTF material and names the absent listing when the sky source pins no snapshot programs", async () => {
-    const meshes = [skyMesh(backgroundRoot)], materials = meshes.map(mesh => mesh.material);
-    const binding = await bind(meshes, null);
-    expect(binding.surfaces.map(({ status, reasons }) => ({ status, reasons }))).toEqual([{ status: "program-unconverted", reasons: [skyMaterialsListingAbsentReason] }]);
-    expect(meshes.map(mesh => mesh.material)).toEqual(materials);
-  });
+  const backgroundListing = () => parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, pin(backgroundProgramSha256))]));
 
   it("draws a compiled program through the library without depth write and keeps the glTF material of a diagnostic program with its reasons", async () => {
     const listing = parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, pin(backgroundProgramSha256)),
-      listedMaterial(unportedRoot, pin(unportedProgramSha256))]), tileId);
+      listedMaterial(unportedRoot, pin(unportedProgramSha256))]));
     const meshes = [skyMesh(backgroundRoot), skyMesh(unportedRoot)], unportedMaterial = meshes[1]!.material;
     const binding = await bind(meshes, listing);
     expect(binding.surfaces.map(({ status, programMaterialId }) => ({ status, programMaterialId }))).toEqual([
@@ -164,7 +156,7 @@ describe("sky surfaces bound through the UE2 library", () => {
 
   it("refuses an Env.int sky object that two listed sky surfaces name differently and disposes what it compiled", async () => {
     const listing = parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, pin(backgroundProgramSha256)),
-      listedMaterial(nightBackgroundRoot, pin(nightBackgroundProgramSha256))]), tileId);
+      listedMaterial(nightBackgroundRoot, pin(nightBackgroundProgramSha256))]));
     const meshes = [skyMesh(backgroundRoot), skyMesh(nightBackgroundRoot)], snapshotMaterials = meshes.map(mesh => mesh.material);
     await expect(bind(meshes, listing, { materialUniforms: () => skyUniforms(),
       environmentColours: { tableColours: () => shippedSkyBindings.map(binding => ({ ...binding, colour: { status: "resolved", value: [0, 0, 0] } })),

@@ -9,7 +9,7 @@ import type { WorldEvent } from "../../src/world/worldTypes";
 import { dayNightTimeTables } from "../support/worldTimeOfDayFixture";
 
 const zoneFog: FogState = { enabled: true, source: "camera-zone", colour: [.5, .5, .5], startSourceUnits: 1000, endSourceUnits: 12000 };
-const cameraFogOf = (level: FogState): CameraEnvironmentFog => ({ fog: level, skyFog: { route: "inherit-level", fog: level, gaps: [] },
+const cameraFogOf = (level: FogState): CameraEnvironmentFog => ({ fog: level, skyFog: { route: "inherit-level", fog: level },
   retainedFogInfos: { status: "listed", hour: 12, fogInfos: [] } });
 const unstagedTimeOfDay: WorldTimeOfDay = { status: "gap", reason: "environment-time-tables-unstaged", detail: "not staged" };
 const scenes: Scene[] = [];

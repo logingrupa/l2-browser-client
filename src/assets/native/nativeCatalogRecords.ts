@@ -18,8 +18,11 @@ export interface NativeFontCatalogRecord {
 export interface NativeEnvironmentCatalogRecord {
   readonly environment: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number;
 }
+export interface NativeSkyCatalogRecord {
+  readonly sky: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number;
+}
 
-type PinnedManifestSliceName = "tiles" | "tables" | "windows" | "materialPrograms" | "fonts" | "environments";
+type PinnedManifestSliceName = "tiles" | "tables" | "windows" | "materialPrograms" | "fonts" | "environments" | "skies";
 
 interface PinnedManifestRecordShape {
   readonly fields: readonly string[];
@@ -53,6 +56,8 @@ const pinnedManifestRecordShapes: Readonly<Record<PinnedManifestSliceName, Pinne
     manifestPathPattern: /^\/l2\/fonts\/(?<sha256>[a-f0-9]{64})\/font\.json$/, maximumManifestBytes: 1_000_000 },
   environments: { fields: pinnedManifestRecordFields, idPattern: /^interlude$/,
     manifestPathPattern: /^\/l2\/environments\/(?<sha256>[a-f0-9]{64})\/manifest\.json$/, maximumManifestBytes: 1_000_000 },
+  skies: { fields: pinnedManifestRecordFields, idPattern: /^skylevel$/,
+    manifestPathPattern: /^\/l2\/skies\/(?<sha256>[a-f0-9]{64})\/manifest\.json$/, maximumManifestBytes: 1_000_000 },
 };
 
 function invalidCatalogRecord(sliceName: PinnedManifestSliceName): Error {
@@ -107,4 +112,9 @@ export function readFontCatalogRecord(value: unknown): NativeFontCatalogRecord {
 export function readEnvironmentCatalogRecord(value: unknown): NativeEnvironmentCatalogRecord {
   const { id, manifest, manifestSha256, manifestBytes } = readPinnedManifestRecord(value, "environments");
   return { environment: id, manifest, manifestSha256, manifestBytes };
+}
+
+export function readSkyCatalogRecord(value: unknown): NativeSkyCatalogRecord {
+  const { id, manifest, manifestSha256, manifestBytes } = readPinnedManifestRecord(value, "skies");
+  return { sky: id, manifest, manifestSha256, manifestBytes };
 }

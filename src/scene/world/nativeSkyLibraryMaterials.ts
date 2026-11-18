@@ -8,7 +8,7 @@ import {
 import { decodeNativeJsonResource } from "./loadNativeSection";
 import { hasExactKeys, isPlainRecord } from "./nativeManifestRecordGuards";
 import { readNativeSourceReference } from "./nativeSourceReference";
-import type { NativeSkyBundleFile } from "./nativeTileSkySource";
+import { sharedSkyRecordId, type NativeSkyBundleFile } from "./nativeSharedSkySource";
 import {
   bindSkyEnvironmentColours, type SkyEnvironmentColourInspection, type SkyEnvironmentColourSources, type SkyEnvironmentColourWriter,
 } from "./skyEnvironmentColours";
@@ -26,7 +26,7 @@ export type NativeSkySurfaceJoin =
   | { readonly kind: "program"; readonly programMaterialId: string }
   | { readonly kind: "gap"; readonly reasons: readonly string[] };
 
-export type NativeSkySurfaceStatus = "library-compiled" | "library-diagnostic" | "program-gap" | "program-unconverted";
+export type NativeSkySurfaceStatus = "library-compiled" | "library-diagnostic" | "program-gap";
 
 export interface NativeSkySurface {
   readonly mesh: AbstractMesh;
@@ -49,7 +49,7 @@ export interface NativeSkySurfaceInspection {
 export interface NativeSkyLibrarySettings {
   readonly scene: Scene;
   readonly meshes: readonly AbstractMesh[];
-  readonly listing: NativeSkyMaterialsListing | null;
+  readonly listing: NativeSkyMaterialsListing;
   readonly sessionSeed: number;
   readonly materialUniforms: (() => NativeMaterialUniforms) | null;
   readonly environmentColours: SkyEnvironmentColourSources | null;
@@ -68,11 +68,11 @@ interface CompiledNativeSkySurface extends NativeSkySurface {
   readonly snapshotMaterial: Material | null;
 }
 
-export const skyMaterialsListingAbsentReason = "sky-materials-listing-absent";
 export const skySurfaceSourceReferenceNoneReason = "sky-surface-source-reference-none";
 export const skySurfaceMaterialUnlistedReason = "sky-surface-material-unlisted";
 export const skySurfaceProgramAbsentReason = "sky-surface-program-absent";
-const skySnapshotKind = "native-sky-source-snapshot";
+const skySnapshotKind = "native-shared-sky-snapshot";
+const skySnapshotLabel = "Native shared sky snapshot";
 const skySnapshotSchemaVersion = 1;
 const skyMaterialFields = ["mapReference", "root", "program", "gapReasons"];
 const maximumListedSkyMaterials = 64;
@@ -90,10 +90,10 @@ function parseSkyMaterialEntry(value: unknown, label: string): NativeSkyMaterial
   return { root: value.root, programMaterialId: parseListedProgramPin(value.program, entryLabel), gapReasons: [...value.gapReasons as string[]] };
 }
 
-export function parseNativeSkyMaterialsListing(input: unknown, tileId: string): NativeSkyMaterialsListing {
-  const label = `Native tile ${tileId} sky snapshot`;
-  if (!isPlainRecord(input) || input.kind !== skySnapshotKind || input.schemaVersion !== skySnapshotSchemaVersion || input.tileId !== tileId) {
-    throw new Error(`${label} must be a ${skySnapshotKind} schema ${skySnapshotSchemaVersion} record of tile ${tileId}.`);
+export function parseNativeSkyMaterialsListing(input: unknown): NativeSkyMaterialsListing {
+  const label = skySnapshotLabel;
+  if (!isPlainRecord(input) || input.kind !== skySnapshotKind || input.schemaVersion !== skySnapshotSchemaVersion || input.map !== sharedSkyRecordId) {
+    throw new Error(`${label} must be a ${skySnapshotKind} schema ${skySnapshotSchemaVersion} record of map ${sharedSkyRecordId}.`);
   }
   if (!Array.isArray(input.materials) || input.materials.length > maximumListedSkyMaterials) {
     throw new Error(`${label} materials must be a list of at most ${maximumListedSkyMaterials} entries.`);
@@ -107,9 +107,9 @@ export function parseNativeSkyMaterialsListing(input: unknown, tileId: string): 
   return listing;
 }
 
-export async function loadNativeSkyMaterialsListing(snapshot: NativeSkyBundleFile, tileId: string, signal: AbortSignal): Promise<NativeSkyMaterialsListing> {
+export async function loadNativeSkyMaterialsListing(snapshot: NativeSkyBundleFile, signal: AbortSignal): Promise<NativeSkyMaterialsListing> {
   const bytes = await fetchVerifiedNativeResource(snapshot.resource, snapshot.sha256, signal, snapshot.bytes);
-  return parseNativeSkyMaterialsListing(decodeNativeJsonResource(bytes, `Native tile ${tileId} sky snapshot`), tileId);
+  return parseNativeSkyMaterialsListing(decodeNativeJsonResource(bytes, skySnapshotLabel));
 }
 
 export function joinNativeSkySurface(listing: NativeSkyMaterialsListing, sourceReference: string | null): NativeSkySurfaceJoin {
@@ -128,7 +128,6 @@ async function librarySkySurface(settings: NativeSkyLibrarySettings, mesh: Abstr
   const sourceReference = readNativeSourceReference(mesh.material);
   const unbound = (status: NativeSkySurfaceStatus, programMaterialId: string | null, reasons: readonly string[]): NativeSkySurface =>
     ({ mesh, sourceReference, status, programMaterialId, reasons, library: null, colorModifierNodes: [] });
-  if (settings.listing === null) return unbound("program-unconverted", null, [skyMaterialsListingAbsentReason]);
   const join = joinNativeSkySurface(settings.listing, sourceReference);
   if (join.kind === "gap") return unbound("program-gap", null, join.reasons);
   const loaded = await settings.loadProgram(join.programMaterialId, settings.signal);

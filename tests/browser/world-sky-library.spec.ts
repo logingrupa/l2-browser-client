@@ -5,8 +5,7 @@ import { decodeNativeStorePng } from "../../src/assets/native/decodeNativeStoreP
 import { buildDisplayGammaTable, defaultDisplayGammaSettings } from "../../src/materials/ue2/model/displayGamma";
 import { desktopViewport } from "./browserViewports";
 
-interface TileCatalogRecord { readonly id: string; readonly manifest: string }
-interface TileManifest { readonly resources: readonly { readonly kind: string; readonly manifest: string }[] }
+interface SkyCatalogRecord { readonly id: string; readonly manifest: string }
 interface SkySnapshot {
   readonly parts: readonly { readonly sourceMaterial: string; readonly authoredColorRGBA: readonly number[] }[];
   readonly materials: readonly { readonly root: string; readonly program: { readonly programSha256: string } | null }[];
@@ -27,12 +26,11 @@ const displayGammaTable = buildDisplayGammaTable(defaultDisplayGammaSettings());
 const colourByteMaximum = 255;
 const displayedByte = (byte: number) => Math.round(displayGammaTable[byte]! * colourByteMaximum);
 
-function tileSkySnapshot(id: string): SkySnapshot | null {
+function sharedSkySnapshot(): SkySnapshot | null {
   const catalogPath = resolve(laneStore, "catalog.json");
   if (!existsSync(catalogPath)) return null;
-  const record = readJson<{ tiles?: TileCatalogRecord[] }>(catalogPath).tiles?.find(entry => entry.id === id);
-  const sky = record ? readJson<TileManifest>(laneStoreFile(record.manifest)).resources.find(resource => resource.kind === "sky") : undefined;
-  return sky ? readJson<SkySnapshot>(laneStoreFile(sky.manifest).replace(/manifest\.json$/, "sky.json")) : null;
+  const record = readJson<{ skies?: SkyCatalogRecord[] }>(catalogPath).skies?.find(entry => entry.id === "skylevel");
+  return record ? readJson<SkySnapshot>(laneStoreFile(record.manifest).replace(/manifest\.json$/, "sky.json")) : null;
 }
 
 const skySurfaces = (page: Page) => page.evaluate(() =>
@@ -61,9 +59,9 @@ test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROO
 
 test.describe("desktop", () => {
   test.use({ viewport: desktopViewport });
-  test(`draws tile ${tileId} sky surfaces through the UE2 library so its authored background colour passes the display gamma ramp once at 1440 x 900`, async ({ page }) => {
-    const snapshot = tileSkySnapshot(tileId);
-    test.skip(snapshot === null, `the world lane store has no tile ${tileId} sky; run the tile batch`);
+  test(`draws the shared sky surfaces on tile ${tileId} through the UE2 library so its authored background colour passes the display gamma ramp once at 1440 x 900`, async ({ page }) => {
+    const snapshot = sharedSkySnapshot();
+    test.skip(snapshot === null, "the world lane store has no shared skylevel sky; run scripts/world/shared_sky_step.py");
     test.setTimeout(tileLoadTimeout + 60_000);
     const pageErrors: string[] = [];
     page.on("pageerror", error => pageErrors.push(error.message));
