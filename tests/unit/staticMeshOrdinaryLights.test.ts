@@ -7,6 +7,7 @@ import {
 } from "../../src/environment/model/staticMeshHourlyLighting";
 import { staticMeshOrdinaryLightGain, staticMeshOrdinaryVertexColour, type StaticMeshOrdinaryLight } from "../../src/environment/model/staticMeshOrdinaryLighting";
 import type { StaticMeshLightList } from "../../src/scene/world/lighting/decodeHourlyLightingInputs";
+import { resolveLightActorColour } from "../../src/scene/world/lighting/lightActorColour";
 import type { TileLightActorRecord } from "../../src/scene/world/lighting/lightmapRebuildActors";
 import type { RebuildLightEnvironment } from "../../src/scene/world/lighting/rebuildShadowLights";
 import {
@@ -91,17 +92,40 @@ function finalColourOf(fixture: OrdinaryIntegratedFixture, vertex: number): read
 const rgbOf = (bgra: readonly number[]) => [bgra[2], bgra[1], bgra[0]];
 
 describe("ordinary light cache from the light record, FDynamicLight::Update 0x10674660 (RM-19)", () => {
-  it.each(document.update.map(row => [row.lightType, row.levelTimeSeconds, row] as const))("LightType %i at %f level seconds gives the native colour and radius",
-    (lightType, levelTimeSeconds, row) => {
+  it.each(document.update.map(row => [row.lightType, row.levelTimeSeconds, row] as const))("LightType %i at %f level seconds gives the native colour plane",
+    (_, levelTimeSeconds, row) => {
+      const owner = { fields: updateRecord(row).fields, reasonPrefix: "static-mesh-ordinary-light", label: "light 40" };
+      expect(resolveLightActorColour(owner, row.lightType, 1, environmentAt({ hour: 12.3, levelTimeSeconds }))).toEqual({ status: "resolved", value: row.colour });
+    });
+
+  it.each(document.update.map(row => [row.lightType, row.levelTimeSeconds, row] as const))(
+    "LightType %i at %f level seconds is dark for 6, names the unverified TimeSeconds for 7 and caches colour and radius for 1", (lightType, levelTimeSeconds, row) => {
       const state = resolveStaticMeshOrdinaryLight(updateRecord(row), 1, environmentAt({ hour: 12.3, levelTimeSeconds }));
       if (lightType === 6) {
         expect(row.colour.slice(0, 3)).toEqual([0, 0, 0]);
         expect(state).toEqual({ status: "resolved", value: { contributes: false } });
         return;
       }
+      if (lightType === 7) {
+        expect(state).toEqual({ status: "unresolved", reason: "static-mesh-ordinary-light-type7-time-seconds-unverified" });
+        return;
+      }
       expect(state).toEqual({ status: "resolved", value: { contributes: true,
         light: { colour: row.colour, sampler: { effect: "point", position: row.location, radius: row.radius } } } });
     });
+
+  it("keeps a LightType 7 light with a zero colour, bDynamicLight or bDeleteMe dark, since its 0.9 +- 0.09 modulation never reaches zero", () => {
+    const modulated = document.update.find(row => row.lightType === 7)!;
+    const withFlagSet = (flag: string) => {
+      const record = updateRecord(modulated);
+      (record.fields as Map<string, unknown>).set(flag, { provenance: "authored", value: true });
+      return record;
+    };
+    for (const record of [updateRecord({ ...modulated, lightBrightness: 0 }), withFlagSet("bDynamicLight"), withFlagSet("bDeleteMe")]) {
+      expect(resolveStaticMeshOrdinaryLight(record, 1, environmentAt({ hour: 12.3, levelTimeSeconds: modulated.levelTimeSeconds }))).toEqual(
+        { status: "resolved", value: { contributes: false } });
+    }
+  });
 
   it.each([...pillarCase.ordinaryLights, ...spotlightCase.ordinaryLights].map(light => [light.exportIndex, light] as const))(
     "light %i resolves to its native cache", (_, light) => {

@@ -1,3 +1,4 @@
+import { DYNAMIC_LIGHT_CONSTANTS } from "../../../environment/model/lightmapRebuild/dynamicLightEngineConstants";
 import { resolvedResult } from "../../../environment/model/lightmapRebuild/lightmapRebuildTypes";
 import { rotatorVector } from "../../../environment/model/lightmapRebuild/rotatorVector";
 import { worldLightRadius } from "../../../environment/model/lightmapRebuild/worldLightRadius";
@@ -20,6 +21,7 @@ export interface StaticMeshOrdinaryLightRecords {
 
 export const staticMeshOrdinaryLightReasons = {
   timeVaryingColour: "static-mesh-ordinary-light-time-varying-colour-unported",
+  lightType7TimeSeconds: "static-mesh-ordinary-light-type7-time-seconds-unverified",
   vertexPositions: "static-mesh-ordinary-light-vertex-positions-unstaged",
   recordAbsentPrefix: "static-mesh-ordinary-light-record-absent:",
 } as const;
@@ -27,6 +29,7 @@ export const staticMeshOrdinaryLightReasons = {
 const darkLight: StaticMeshOrdinaryLightState = { contributes: false };
 const nullLightReference = 0;
 const bitsPerByte = 8;
+const modulatedLightType = DYNAMIC_LIGHT_CONSTANTS.lightTypeMultipliers.value.modulated;
 
 function maskSetsAnyVertex(visibility: Uint8Array, vertexCount: number): boolean {
   const wholeBytes = Math.floor(vertexCount / bitsPerByte), trailingBits = vertexCount % bitsPerByte;
@@ -67,6 +70,7 @@ export function resolveStaticMeshOrdinaryLight(actor: TileLightActorRecord, leve
   const cacheFlags = allFieldsResolved({ dynamicLight: readBooleanField(owner, "bDynamicLight"), deleteMe: readBooleanField(owner, "bDeleteMe") });
   if (cacheFlags.status !== "resolved") return cacheFlags;
   if (cacheFlags.value.dynamicLight || cacheFlags.value.deleteMe) return resolvedResult(darkLight);
+  if (authored.value.lightType === modulatedLightType) return { status: "unresolved", reason: staticMeshOrdinaryLightReasons.lightType7TimeSeconds };
   const sampler = lightSampler(owner);
   if (sampler.status !== "resolved") return sampler;
   return resolvedResult({ contributes: true, light: { colour: colour.value, sampler: sampler.value } });
