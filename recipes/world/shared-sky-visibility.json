@@ -1,0 +1,130 @@
+{
+ "schemaVersion": 1,
+ "kind": "shared-sky-visibility-rules",
+ "sources": {
+  "sharedSkyNodes": {
+   "file": "shared-sky-nodes.json",
+   "sha256": "5275acf9d8027d4556f3419f33db4006fc07bf39b0da9b5541dd32d660460fd4"
+  },
+  "viewFrustum": {
+   "file": "view-frustum.json",
+   "sha256": "1ea27d25e8cd8660e416a86d6978aef7d151057bdf789632882224b6ae62e10f",
+   "manifestSha256": "e6699aa3218ac1fe986fbef5b7c918a4c337afdd3a2bce53d9385e7f819927ce"
+  },
+  "skyDrawOrder": {
+   "file": "sky-draw-order.json",
+   "sha256": "ad73cee09e34a1d9ad560026b90c6e4643b1225c8b905d4377b0b19cb3fa20c1",
+   "manifestSha256": "1d02a8374e80d46f2099f1e05ad04ec4a9268aca056cfe385750798ab64f2303"
+  }
+ },
+ "levelTail": {
+  "function": "ULevel::Serialize",
+  "address": "0x105d07f0",
+  "obsoleteArrayBelowVersion": 98,
+  "objectReferenceCount": 16,
+  "stringMapFromVersion": 63,
+  "stringArrayMigrationFromVersion": 61,
+  "firstDeletedClaim": "RM22-LEVEL-FIRST-DELETED",
+  "olderVersionsUnresolved": "RM22-TAIL-OLDER-VERSIONS",
+  "unprovenNames": [
+   "RM22-TAIL-MAP-NAME",
+   "RM22-TAIL-REFERENCE-ARRAY-NAME"
+  ]
+ },
+ "viewFrustum": {
+  "function": "FLevelSceneNode::GetViewFrustum",
+  "address": "0x10654530",
+  "planeOrder": [
+   "left",
+   "bottom",
+   "right",
+   "top"
+  ],
+  "signedDistance": "(Ny*Py+Nx*Px)+Nz*Pz-W",
+  "inside": "signedDistance<=0",
+  "nearClip": 10,
+  "farClip": 65536,
+  "safeNormalThreshold": 1e-08
+ },
+ "materialSorting": [
+  {
+   "material": "L2_Skies.Shaders.Cloud_Final02_sh",
+   "requiresSorting": true,
+   "renderState": {
+    "ZENABLE": 1,
+    "ZWRITEENABLE": 0,
+    "ZFUNC": 4,
+    "SRCBLEND": 5,
+    "DESTBLEND": 6,
+    "ALPHABLENDENABLE": 1
+   }
+  },
+  {
+   "material": "L2_Skies.Shaders.Cloud_Final03_sh",
+   "requiresSorting": true,
+   "renderState": {
+    "ZENABLE": 1,
+    "ZWRITEENABLE": 0,
+    "ZFUNC": 4,
+    "SRCBLEND": 5,
+    "DESTBLEND": 6,
+    "ALPHABLENDENABLE": 1
+   }
+  },
+  {
+   "material": "L2_Skies.Shaders.Cloud_Final10_sh",
+   "requiresSorting": true,
+   "renderState": {
+    "ZENABLE": 1,
+    "ZWRITEENABLE": 0,
+    "ZFUNC": 4,
+    "SRCBLEND": 2,
+    "DESTBLEND": 2,
+    "ALPHABLENDENABLE": 1
+   }
+  },
+  {
+   "material": "L2_Skies.Shaders.HazeRing_Final",
+   "requiresSorting": true,
+   "renderState": {
+    "ZENABLE": 1,
+    "ZWRITEENABLE": 0,
+    "ZFUNC": 4,
+    "SRCBLEND": 5,
+    "DESTBLEND": 6,
+    "ALPHABLENDENABLE": 1
+   }
+  },
+  {
+   "material": "L2_Skies.Shaders.SkybackgroundColor",
+   "requiresSorting": false,
+   "renderState": {
+    "ZENABLE": 1,
+    "ZWRITEENABLE": 1,
+    "ZFUNC": 4,
+    "SRCBLEND": 2,
+    "DESTBLEND": 1,
+    "ALPHABLENDENABLE": 0
+   }
+  },
+  {
+   "material": "L2_Skies.Shaders.StarField_Final01",
+   "requiresSorting": true,
+   "renderState": {
+    "ZENABLE": 1,
+    "ZWRITEENABLE": 0,
+    "ZFUNC": 4,
+    "SRCBLEND": 2,
+    "DESTBLEND": 2,
+    "ALPHABLENDENABLE": 1
+   }
+  }
+ ],
+ "depthClear": {
+  "callerAddress": "0x1068eaaf",
+  "flags": 2,
+  "depth": 1.0,
+  "colorCleared": false,
+  "stencilCleared": false
+ }
+}
