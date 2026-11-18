@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "kind": "runtime-lighting-rm10-static-fixtures",
+  "source": {
+    "nativeFixtures": {
+      "file": "runtime-lighting-rm10/static/native-fixtures.json",
+      "sha256": "7dbb25af32504745bbaff2c760c24d49457c5907ebc56fae10800d7593f8858b",
+      "method": "Synthetic original-code execution; native GMath constructor, NMovableSunLight.Tick until base AActor.Tick stub, native transform, native hourly CPU builder. FArray storage allocator and destructor modeled. Selected two vertices have no ordinary mask bits; eligible hourly light cache flags zero. No live session."
+    },
+    "realInputs": {
+      "file": "runtime-lighting-rm10/static/real-inputs.json",
+      "sha256": "435607c312bb87eeebb88e9e1906b26527d2a4729803c09f97f2d07cf3b7c220"
+    }
+  },
+  "pillar": {
+    "actorExportIndex": 7732,
+    "actorObject": "20_21.StaticMeshActor2067",
+    "instanceExportIndex": 7099,
+    "meshObject": "cruma_s.f_04",
+    "meshSourceSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+    "vertexCount": 36,
+    "nativeNormals": [
+      -0.8278379440307617,
+      0.0,
+      -0.5609673261642456,
+      -0.8278379440307617,
+      0.0,
+      -0.5609673261642456,
+      -0.8278379440307617,
+      0.0,
+      -0.5609673261642456,
+      -0.8278379440307617,
+      0.0,
+      -0.5609673261642456,
+      -0.9952211380004883,
+      0.0,
+      0.09764688462018967,
+      -0.9952211380004883,
+      0.0,
+      0.09764688462018967,
+      -0.9952211380004883,
+      0.0,
+      0.09764688462018967,
+      -0.9952211380004883,
+      0.0,
+      0.09764689207077026,
+      0.8278353214263916,
+      0.0,
+      -0.5609711408615112,
+      0.8278353214263916,
+      0.0,
+      -0.5609711408615112,
+      0.8278353214263916,
+      0.0,
+      -0.5609711408615112,
+      0.8278377652168274,
+      4.768710937241849e-07,
+      -0.5609675645828247,
+      0.9952210187911987,
+      5.732912313760608e-07,
+      0.09764805436134338,
+      0.9952210187911987,
+      5.732912313760608e-07,
+      0.09764805436134338,
+      0.9952210187911987,
+      5.732912313760608e-07,
+      0.09764805436134338,
+      0.9952211380004883,
+      0.0,
+      0.09764688462018967,
+      0.0,
+      -0.8278353214263916,
+      -0.5609711408615112,
+      0.0,
+      -0.8278353214263916,
+      -0.5609711408615112,
+      0.0,
+      -0.8278353214263916,
+      -0.5609711408615112,
+      0.0,
+      -0.8278353214263916,
+      -0.5609711408615112,
+      0.0,
+      -0.9952210187911987,
+      0.09764811396598816,
+      0.0,
+      -0.9952210187911987,
+      0.09764811396598816,
+      0.0,
+      -0.9952210187911987,
+      0.09764811396598816,
+      0.0,
+      -0.9952210187911987,
+      0.09764811396598816,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.9952210187911987,
+      0.09764811396598816,
+      0.0,
+      0.9952210187911987,
+      0.09764811396598816,
+      0.0,
+      0.9952210187911987,
+      0.09764811396598816,
+      0.0,
+      0.9952210187911987,
+      0.09764811396598816,
+      -5.811807000100089e-07,
+      0.8278351426124573,
+      -0.5609714388847351,
+      -5.811807000100089e-07,
+      0.8278351426124573,
+      -0.5609714388847351,
+      -5.811807000100089e-07,
+      0.8278351426124573,
+      -0.5609714388847351,
+      0.0,
+      0.827838122844696,
+      -0.5609670281410217
+    ],
+    "primaryColoursHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "alternateColoursHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "ordinaryMasks": [
+      {
+        "light": 40,
+        "lightObject": "20_21.Light134",
+        "maskHex": "cc00004108",
+        "applied": 0
+      },
+      {
+        "light": 30,
+        "lightObject": "20_21.Light143",
+        "maskHex": "0000000000",
+        "applied": 0
+      }
+    ],
+    "hourlyMasks": [
+      {
+        "light": 2,
+        "lightObject": "20_21.NMovableSunLight0",
+        "maskHex": "ff00f00b00",
+        "applied": 0
+      },
+      {
+        "light": 2,
+        "lightObject": "20_21.NMovableSunLight0",
+        "maskHex": "00f000fe0f",
+        "applied": 0
+      },
+      {
+        "light": 2,
+        "lightObject": "20_21.NMovableSunLight0",
+        "maskHex": "ff00ff0b00",
+        "applied": 0
+      },
+      {
+        "light": 2,
+        "lightObject": "20_21.NMovableSunLight0",
+        "maskHex": "ff00f00b00",
+        "applied": 0
+      },
+      {
+        "light": 2,
+        "lightObject": "20_21.NMovableSunLight0",
+        "maskHex": "c000000100",
+        "applied": 0
+      },
+      {
+        "light": 2,
+        "lightObject": "20_21.NMovableSunLight0",
+        "maskHex": "f00000f700",
+        "applied": 0
+      },
+      {
+        "light": 2,
+        "lightObject": "20_21.NMovableSunLight0",
+        "maskHex": "00f000fe0f",
+        "applied": 0
+      },
+      {
+        "light": 2,
+        "lightObject": "20_21.NMovableSunLight0",
+        "maskHex": "00ff00fe0f",
+        "applied": 0
+      }
+    ]
+  },
+  "fixtures": [
+    {"index": 0, "hour": 12.3, "environmentType": 0, "rotation": [-9194, 24675, 0], "direction": [-0.45375028252601624, 0.44547370076179504, -0.7717925906181335], "sunPlane": [0.6119563579559326, 0.6119563579559326, 0.6119563579559326, 0.7450980544090271], "ambientRGB": [120, 120, 120], "vertexIndices": [0, 4], "instanceBGRA": [[5, 5, 5, 255], [44, 44, 44, 255]], "matrix": [-1.0606601238250732, 1.0606601238250732, 0.0, 0.0, -1.0606601238250732, -1.0606601238250732, -0.0, 0.0, -0.0, -0.0, 1.5, 0.0, 11936.2265625, 119555.71875, -3679.37060546875, 1.0]},
+    {"index": 1, "hour": 12.303024291992188, "environmentType": 0, "rotation": [-9197, 24668, 0], "direction": [-0.45336827635765076, 0.44544023275375366, -0.7720363736152649], "sunPlane": [0.6119563579559326, 0.6119563579559326, 0.6119563579559326, 0.7450980544090271], "ambientRGB": [120, 120, 120], "vertexIndices": [0, 4], "instanceBGRA": [[5, 5, 5, 255], [44, 44, 44, 255]], "matrix": [-1.0606601238250732, 1.0606601238250732, 0.0, 0.0, -1.0606601238250732, -1.0606601238250732, -0.0, 0.0, -0.0, -0.0, 1.5, 0.0, 11936.2265625, 119555.71875, -3679.37060546875, 1.0]}
+  ]
+}
