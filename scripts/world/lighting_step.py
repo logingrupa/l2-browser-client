@@ -21,7 +21,7 @@ from world.lightmap_rebuild_inputs import lightmap_rebuild_input_arrays
 from world.lighting_payload import (bsp_lightmap_arrays, lighting_records_array, static_mesh_light_list_arrays, terrain_intensity_map_arrays,
                                     terrain_lighting_arrays, typed_payload_byte_count)
 from world.native_terrain_sectors import native_terrain
-from world.static_mesh_light_list_fields import static_mesh_light_list_fields
+from world.static_mesh_light_list_fields import static_mesh_light_list_fields, static_mesh_ordinary_inputs_unresolved_reasons
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
@@ -174,7 +174,8 @@ def tile_lighting_payload(package, unit, class_defaults):
               'terrainSectors': len(sectors), 'terrainSectorLights': sum(len(sector.lights) for sector in sectors),
               'terrainShadowMaps': sum(len(sector.shadow_maps) for sector in sectors), 'terrainIntensityMaps': intensity_map_count}
     chain_reasons = class_chain_unresolved_reasons(lighting_actors.unresolved_classes)
-    return arrays, sorted({*reasons, *rebuild_reasons, *water_reasons, *chain_reasons, *intensity_map_reasons}), counts
+    ordinary_input_reasons = static_mesh_ordinary_inputs_unresolved_reasons(light_list_fields)
+    return arrays, sorted({*reasons, *rebuild_reasons, *water_reasons, *chain_reasons, *intensity_map_reasons, *ordinary_input_reasons}), counts
 
 
 def run_lighting_step(project_root, client_root, tile_id):

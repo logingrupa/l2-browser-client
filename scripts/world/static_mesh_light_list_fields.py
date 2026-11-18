@@ -4,20 +4,25 @@ from typing import NamedTuple
 from native_catalog.ue2 import FormatError
 from world.actor_field_values import UNRESOLVED_PROVENANCE, resolved_actor_field, serialized_actor_values
 from world.bsp_node_sun_affect import NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED, SUN_AFFECTED
+from world.error_detail import first_line_of_error
 from world.level_zones import SUN_AFFECT_FIELD
 from world.static_placement import UE_ZERO_PROVENANCE, resolved_static_values, static_matrix
 
 SCALE_GLOW_FIELD = 'ScaleGlow'
 LOCAL_TO_WORLD_COMPONENTS = 16
+ORDINARY_INPUTS_UNRESOLVED_REASON_PREFIX = 'static-mesh-ordinary-inputs-unresolved:'
+SCALE_GLOW_UNRESOLVED_DETAIL = 'ScaleGlow unresolved'
+ACTOR_ROW_ABSENT_DETAIL = 'actor row absent'
 
 
 class StaticMeshLightListFields(NamedTuple):
     sun_affect: int
     scale_glow: float | None
     local_to_world: tuple | None
+    ordinary_inputs_unresolved_detail: str | None
 
     def ordinary_inputs_resolved(self):
-        return self.scale_glow is not None and self.local_to_world is not None
+        return self.ordinary_inputs_unresolved_detail is None
 
 
 def sun_affect_of_field(field):
@@ -36,12 +41,18 @@ def scale_glow_of_field(field):
 
 def native_local_to_world(actor, class_defaults):
     if actor is None:
-        return None
+        return None, ACTOR_ROW_ABSENT_DETAIL
     try:
         rows = static_matrix(resolved_static_values(actor, class_defaults))
-    except FormatError:
-        return None
-    return tuple(value for row in rows for value in row)
+    except FormatError as error:
+        return None, first_line_of_error(error)
+    return tuple(value for row in rows for value in row), None
+
+
+def light_list_fields_of(sun_affect, scale_glow, actor, class_defaults):
+    local_to_world, local_to_world_detail = native_local_to_world(actor, class_defaults)
+    unresolved_detail = SCALE_GLOW_UNRESOLVED_DETAIL if scale_glow is None else local_to_world_detail
+    return StaticMeshLightListFields(sun_affect, scale_glow, local_to_world, unresolved_detail)
 
 
 def static_mesh_light_list_fields(package, actors, light_lists, class_defaults):
@@ -52,6 +63,11 @@ def static_mesh_light_list_fields(package, actors, light_lists, class_defaults):
         serialized = serialized_actor_values(package, export)
         sun_affect = resolved_actor_field(SUN_AFFECT_FIELD, serialized, export['classObject'], class_defaults)
         scale_glow = resolved_actor_field(SCALE_GLOW_FIELD, serialized, export['classObject'], class_defaults)
-        rows.append(StaticMeshLightListFields(sun_affect_of_field(sun_affect), scale_glow_of_field(scale_glow),
-                                              native_local_to_world(actors_by_export_index.get(light_list.actor_export_index), class_defaults)))
+        rows.append(light_list_fields_of(sun_affect_of_field(sun_affect), scale_glow_of_field(scale_glow),
+                                         actors_by_export_index.get(light_list.actor_export_index), class_defaults))
     return tuple(rows)
+
+
+def static_mesh_ordinary_inputs_unresolved_reasons(light_list_fields):
+    return sorted({f'{ORDINARY_INPUTS_UNRESOLVED_REASON_PREFIX}{fields.ordinary_inputs_unresolved_detail}'
+                   for fields in light_list_fields if not fields.ordinary_inputs_resolved()})
