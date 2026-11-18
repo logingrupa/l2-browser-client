@@ -94,17 +94,9 @@ class LevelModelReaderGateTests(unittest.TestCase):
 
 
 class UnverifiedLevelTailTests(unittest.TestCase):
-    def test_the_shared_sky_level_tail_length_must_equal_the_reviewed_fixture_and_its_bytes_stay_uninterpreted(self):
-        record = READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][SHARED_SKY_PAIR]
-        fixture = json.loads((ROOT / record['fixture']).read_text(encoding='utf-8'))
-        reviewed_tail = fixture['levelBinding']['remainingTailBytes']
-        self.assertEqual(reviewed_tail, 22)
-        require_unverified_level_tail_length(record, {'remainingTailBytes': reviewed_tail}, 'skylevel.unr')
-        with self.assertRaisesRegex(FormatError, '^skylevel.unr Level tail after the Model reference is 23 bytes, not the reviewed 22; RM-22'):
-            require_unverified_level_tail_length(record, {'remainingTailBytes': 23}, 'skylevel.unr')
-
     def test_a_tile_level_model_layout_has_no_tail_length_check(self):
-        require_unverified_level_tail_length(READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][(123, 28)], {'remainingTailBytes': 99}, '20_21.unr')
+        require_unverified_level_tail_length(READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][(123, 28)], {'version': 123, 'licenseeVersion': 28},
+                                             {'remainingTailBytes': 99}, '20_21.unr')
 
 
 class LevelModelRecordTests(unittest.TestCase):

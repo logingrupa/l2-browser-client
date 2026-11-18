@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 from data.pinned_elbera_module import ELBERA_COMMIT
 from native_assets_lib.lineage_material_prefix import (ELBERA_L2LIB_README_PATH, ELBERA_L2LIB_README_SHA256, ELBERA_SOURCE_NAME,
                                                      MATERIAL_PREFIX_EVIDENCE, layout_evidence, lineage_material_prefix)
@@ -11,7 +8,6 @@ from world.bsp_reader_binding import READER_SHA as VENDORED_BSP_READER_SHA256
 from world.elbera_reader_cross_check import ELBERA_L2LIB_PINS, ELBERA_UE2PACKAGE_PATH
 from world.shared_sky_map import SHARED_SKY_MAP_NAME
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 G16_HEIGHTMAP_READER = 'g16-heightmap'
 MAP_ACTOR_READER = 'map-actor'
 TERRAIN_INFO_READER = 'terrain-info'
@@ -138,11 +134,6 @@ def reviewed_reader_layout(reader, licensee_version, cross_check_tile):
         evidence = (*READER_EVIDENCE[reader], *(MATERIAL_PREFIX_EVIDENCE if record['differencesFrom123_28'] else ()))
     record['evidence'] = [dict(entry) for entry in evidence]
     return record
-
-
-def reviewed_level_tail_bytes(level_model_layout):
-    fixture = json.loads((REPOSITORY_ROOT / level_model_layout['fixture']).read_text(encoding='utf-8'))
-    return fixture['levelBinding']['remainingTailBytes']
 
 
 def shared_sky_reader_layout(reader):
