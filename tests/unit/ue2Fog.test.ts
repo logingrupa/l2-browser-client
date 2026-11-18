@@ -19,23 +19,24 @@ const distanceFogZone = { distanceFog: true, terrainZone: false, fog: zoneFog };
 const terrainZone = { ...distanceFogZone, terrainZone: true };
 
 describe("evaluateFogState", () => {
-  it("is off without a source and exports no fogEnd", () => {
+  it("is off without a source and carries no separate fog end field", () => {
     expect(evaluateFogState(noSources)).toEqual(FOG_DISABLED);
+    expect(Object.keys(FOG_DISABLED)).toEqual(["enabled", "source", "colour", "startSourceUnits", "endSourceUnits"]);
   });
 
-  it("takes a fogged volume, then a non-empty local list, then the terrain zone haze, then ZoneInfo distance fog, and exports fogEnd for the frame", () => {
-    expect(evaluateFogState({ ...noSources, cameraZone: distanceFogZone })).toMatchObject({ source: "camera-zone", fogEnd: 1100, colour: [10 / 255, 20 / 255, 30 / 255] });
+  it("takes a fogged volume, then a non-empty local list, then the terrain zone haze, then ZoneInfo distance fog, and exports its range end for the frame", () => {
+    expect(evaluateFogState({ ...noSources, cameraZone: distanceFogZone })).toMatchObject({ source: "camera-zone", endSourceUnits: 1100, colour: [10 / 255, 20 / 255, 30 / 255] });
     expect(evaluateFogState({ ...noSources, cameraZone: terrainZone, terrainZoneEnvironment: resolvedHaze }))
-      .toMatchObject({ source: "terrain-zone-environment", fogEnd: 20480, colour: [188 / 255, 203 / 255, 224 / 255] });
+      .toMatchObject({ source: "terrain-zone-environment", endSourceUnits: 20480, colour: [188 / 255, 203 / 255, 224 / 255] });
     expect(evaluateFogState({ ...noSources, localFogList: blendedLocalFog, cameraZone: terrainZone, terrainZoneEnvironment: resolvedHaze }))
-      .toMatchObject({ source: "local-fog-list", fogEnd: 4500 });
+      .toMatchObject({ source: "local-fog-list", endSourceUnits: 4500 });
     expect(evaluateFogState({ volume: volumeFog, localFogList: blendedLocalFog, cameraZone: terrainZone, terrainZoneEnvironment: resolvedHaze }))
-      .toMatchObject({ source: "volume", fogEnd: 3000 });
+      .toMatchObject({ source: "volume", endSourceUnits: 3000 });
   });
 
   it("turns fog off in a zone without distance fog even when it is a terrain zone", () => {
     expect(evaluateFogState({ ...noSources, cameraZone: { distanceFog: false, terrainZone: true, fog: null }, terrainZoneEnvironment: resolvedHaze }))
-      .toMatchObject({ enabled: false, source: "zone-without-fog", fogEnd: null });
+      .toMatchObject({ enabled: false, source: "zone-without-fog" });
   });
 
   it("enables fog only through the zone bDistanceFog flag, so a blended local list or a fogged volume in a zone without distance fog stays off", () => {

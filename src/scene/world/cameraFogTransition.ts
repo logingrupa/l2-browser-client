@@ -45,7 +45,7 @@ function routeSeed(route: Exclude<CameraFogRoute, { kind: "bypass" }>): FogRange
 
 function transitionedFog(fog: FogState, state: FogTransitionState): FogState {
   const [blue, green, red] = state.colourBgra;
-  return { ...fog, colour: [red / byteMaximum, green / byteMaximum, blue / byteMaximum], startSourceUnits: state.start, endSourceUnits: state.end, fogEnd: state.end };
+  return { ...fog, colour: [red / byteMaximum, green / byteMaximum, blue / byteMaximum], startSourceUnits: state.start, endSourceUnits: state.end };
 }
 
 export function createCameraFogTransition(fogSpeedSeconds: number): CameraFogTransition {

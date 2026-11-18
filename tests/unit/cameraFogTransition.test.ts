@@ -11,7 +11,7 @@ const haze = [188, 203, 224] as const;
 
 function enabledFog(record: FogRangeRecord, source: FogState["source"]): FogState {
   return { enabled: true, source, colour: [record.colourBytes[0] / 255, record.colourBytes[1] / 255, record.colourBytes[2] / 255],
-    startSourceUnits: record.startSourceUnits, endSourceUnits: record.endSourceUnits, fogEnd: record.endSourceUnits };
+    startSourceUnits: record.startSourceUnits, endSourceUnits: record.endSourceUnits };
 }
 
 function environment(fog: FogState, fogRoute: CameraFogRoute): CameraEnvironment {

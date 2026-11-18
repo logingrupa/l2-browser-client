@@ -44,7 +44,7 @@ describe("20_21 local L2FogInfo list at the RM-1 pawn, the RM-1 enabled call", (
     for (const fogRecords of [records, reversed]) {
       const environment = environmentOf(fogRecords);
       expect(environment.fog).toEqual({ enabled: true, source: "local-fog-list", colour: [107 / 255, 114 / 255, 97 / 255],
-        startSourceUnits: 0, endSourceUnits: 10000, fogEnd: 10000 });
+        startSourceUnits: 0, endSourceUnits: 10000 });
       expect(environment.gaps).not.toContain(cameraEnvironmentGaps.fogInfoListOrderAssumed);
       expect(environment.gaps).not.toContain(cameraEnvironmentGaps.fogInfoRetentionDistanceUnresolved);
       expect(environment.fogRoute).toEqual({ kind: "local-list", target: { colourBytes: [107, 114, 97], startSourceUnits: 0, endSourceUnits: 10000 } });

@@ -38,7 +38,6 @@ export interface FogState {
   readonly colour: readonly [number, number, number];
   readonly startSourceUnits: number;
   readonly endSourceUnits: number;
-  readonly fogEnd: number | null;
 }
 
 export interface FogRangeBounds {
@@ -83,7 +82,7 @@ export interface LocalFogListEvaluation {
   readonly orderCanChangeResult: boolean;
 }
 
-export const FOG_DISABLED: FogState = { enabled: false, source: "none", colour: [0, 0, 0], startSourceUnits: 0, endSourceUnits: 0, fogEnd: null };
+export const FOG_DISABLED: FogState = { enabled: false, source: "none", colour: [0, 0, 0], startSourceUnits: 0, endSourceUnits: 0 };
 export const FOG_UNRESOLVED: FogState = { ...FOG_DISABLED, source: "unresolved" };
 const FOG_ZONE_WITHOUT_FOG: FogState = { ...FOG_DISABLED, source: "zone-without-fog" };
 export const FOG_RANGE_SLOT_COUNT = 5;
@@ -105,7 +104,7 @@ function enabledFog(record: FogRangeRecord, source: FogSourceName): FogState {
   requireFogRange(record, source);
   return {
     enabled: true, source, colour: [record.colourBytes[0] / 255, record.colourBytes[1] / 255, record.colourBytes[2] / 255],
-    startSourceUnits: record.startSourceUnits, endSourceUnits: record.endSourceUnits, fogEnd: record.endSourceUnits,
+    startSourceUnits: record.startSourceUnits, endSourceUnits: record.endSourceUnits,
   };
 }
 

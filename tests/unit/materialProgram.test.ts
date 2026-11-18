@@ -158,7 +158,7 @@ describe("createNativeMaterial", () => {
     const inspection = nativeMaterial.inspect();
     expect(inspection.uniforms).toEqual({ levelSeconds: 0.25, hour: 6.5, environmentType: 2, fog });
     expect(inspection.frame?.samplerMatrices).toEqual([[1, 0, 0.5, 0, 1, 0]]);
-    expect(fog.fogEnd).toBe(900);
+    expect(fog.endSourceUnits).toBe(900);
   });
 
   it("overrides only the RGB of a ColorModifier colour source, keeps it on later updates and keeps its authored alpha", () => {
@@ -193,6 +193,6 @@ describe("createNativeMaterial", () => {
     expect(particleFragmentChain(6).babylonBlend.alphaMode).toBe(Constants.ALPHA_SCREENMODE);
     expect(() => particleFragmentChain(2)).toThrow(/destination-colour,source-colour has no Babylon blend state/);
     expect(selectTextureFrame({ frameCount: 4, maximumFrameRate: 10 }, 0.25).index).toBe(2);
-    expect(FOG_DISABLED.fogEnd).toBeNull();
+    expect(FOG_DISABLED.enabled).toBe(false);
   });
 });

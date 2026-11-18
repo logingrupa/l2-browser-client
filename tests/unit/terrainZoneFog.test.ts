@@ -40,7 +40,7 @@ describe("15_22 terrain zone fog, the RM-1 enabled call", () => {
   it("takes the timeenv0 HazeringColor at hour 12.078453 over the Env.int FogRange5 preset at CR 8: 188,203,224 at 8192 to 20480", () => {
     const environment = environmentOf();
     expect(environment.fog).toEqual({ enabled: true, source: "terrain-zone-environment", colour: [188 / 255, 203 / 255, 224 / 255],
-      startSourceUnits: 8192, endSourceUnits: 20480, fogEnd: 20480 });
+      startSourceUnits: 8192, endSourceUnits: 20480 });
     const bgra = [...environment.fog.colour].reverse().map(channel => Math.round(channel * 255));
     expect(bgra).toEqual([224, 203, 188]);
     expect(environment.gaps).toEqual([cameraEnvironmentGaps.volumeQueryUnbound]);
@@ -50,7 +50,7 @@ describe("15_22 terrain zone fog, the RM-1 enabled call", () => {
   it("falls back to the ZoneInfo 3000 to 15000 grey 128 without bTerrainZone, and its alpha 0 colour keeps fog enabled", () => {
     const environment = environmentOf(withTerrainFlag("ue-zero", null));
     expect(environment.fog).toEqual({ enabled: true, source: "camera-zone", colour: [128 / 255, 128 / 255, 128 / 255],
-      startSourceUnits: 3000, endSourceUnits: 15000, fogEnd: 15000 });
+      startSourceUnits: 3000, endSourceUnits: 15000 });
     expect(tileRecords.zones.find(zone => zone.zoneIndex === zoneInfo0)!.distanceFog.find(field => field.field === "DistanceFogColor")!.value)
       .toMatchObject({ A: 0 });
   });

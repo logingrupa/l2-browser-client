@@ -19,18 +19,18 @@ function sources(change: Partial<CameraEnvironmentSources> = {}): CameraEnvironm
 }
 
 describe("computeCameraEnvironment", () => {
-  it("takes the camera zone from the visibility frame and, with the local list empty, evaluates its ZoneInfo distance fog, fogEnd included", () => {
+  it("takes the camera zone from the visibility frame and, with the local list empty, evaluates its ZoneInfo distance fog range", () => {
     const environment = computeCameraEnvironment(sources());
     expect(environment.cameraZone).toBe(1);
     expect(environment.fog).toEqual({ enabled: true, source: "camera-zone", colour: [95 / 255, 112 / 255, 116 / 255], startSourceUnits: 100,
-      endSourceUnits: 20000, fogEnd: 20000 });
+      endSourceUnits: 20000 });
     expect(environment.gaps).toEqual([cameraEnvironmentGaps.fogInfoRetentionDistanceUnresolved, cameraEnvironmentGaps.waterVolumeUnlinked,
       cameraEnvironmentGaps.volumeQueryUnbound]);
   });
 
   it("routes an empty list in a terrain zone to the haze colour over the Env.int preset at CR 8", () => {
     expect(computeCameraEnvironment(sources({ frame: frameInZone(3) })).fog).toEqual({ enabled: true, source: "terrain-zone-environment",
-      colour: [188 / 255, 203 / 255, 224 / 255], startSourceUnits: 8192, endSourceUnits: 20480, fogEnd: 20480 });
+      colour: [188 / 255, 203 / 255, 224 / 255], startSourceUnits: 8192, endSourceUnits: 20480 });
   });
 
   it("keeps fog off in a zone without distance fog and names an unresolved or unknown zone", () => {

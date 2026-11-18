@@ -38,7 +38,6 @@ interface FogReading {
   readonly source: string;
   readonly startSourceUnits: number;
   readonly endSourceUnits: number;
-  readonly fogEnd: number | null;
 }
 interface AmbientReading { readonly status: string; readonly value?: readonly number[] }
 interface HourlyLightingReading {
@@ -102,7 +101,6 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
   if (inspection.gap !== null) throw new Error(`tile ${tileId} has no bound lighting: ${inspection.gap}`);
   expect(inspection.cameraEnvironment!.cameraZone).toBe(world.bspVisibility!.cameraZone);
   const levelFog = inspection.cameraEnvironment!.fog;
-  expect(levelFog.fogEnd === null).toBe(!levelFog.enabled);
   expect(["local-fog-list", "terrain-zone-environment", "camera-zone", "zone-without-fog"]).toContain(levelFog.source);
   if (levelFog.enabled) expect(levelFog.endSourceUnits).toBeGreaterThan(levelFog.startSourceUnits);
   expect(inspection.cameraEnvironment!.gaps).not.toContain("fog-info-reference-pawn-absent");
