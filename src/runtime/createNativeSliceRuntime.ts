@@ -55,6 +55,7 @@ import { installTransparentRenderingOrder } from "./transparentRenderingOrder";
 import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearances } from "./sandboxNpcAppearances";
 import type { WorldEntity } from "../world/worldTypes";
 import type { WorldPosition } from "../world/sourceFrame";
+import { localPawnLocationProvider } from "./localPawnLocation";
 import { createCollisionWorldNavigation } from "./collisionWorldNavigation";
 import { attachDisplayGammaPostProcess, displayGammaAttachedByQuery } from "../materials/ue2/babylon/displayGammaPostProcess";
 import { sampleFootstepSurfaceContact } from "./footstepSurfaceContact";
@@ -137,8 +138,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const collisionWorld = createCollisionWorld();
     let localPlayerFocus: (() => WorldPosition | null) | null = null;
     boundaryReleases.push(provideCollisionCellContext(scene, { world: collisionWorld, focusPosition: () => localPlayerFocus?.() ?? null }));
-    let localPlayerEntityPosition: (() => WorldPosition | null) | null = null;
-    boundaryReleases.push(provideFogReferencePawn(scene, { position: () => localPlayerEntityPosition?.() ?? null }));
+    let localPawnLocation: (() => WorldPosition | null) | null = null;
+    boundaryReleases.push(provideFogReferencePawn(scene, { position: () => localPawnLocation?.() ?? null }));
     const playerCapsuleFromSourceCollision = () => ({ radius: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
       height: 2 * playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre });
     const world = await loadNativeSliceWorld(scene, camera, settings, options.worldSource ?? catalogNativeSliceWorldSource, signal, {
@@ -182,8 +183,10 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         ? Math.round(adapter.speedProfile.runStartSeconds * committedMovementRules.pawn.runStartFramesPerSecond) : null,
       signal: movementLifetime.signal });
     boundaryReleases.push(() => movement.release());
-    const localFeetPosition = () => movement.pose(localPlayerId)?.feetPosition ?? registry?.localPlayer?.position ?? null;
-    const localSurfaceContact = () => sampleFootstepSurfaceContact(scene, localFeetPosition(), playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre);
+    const playerCollisionHeightMetres = playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre;
+    const localPawn = localPawnLocationProvider({ movementFeet: () => movement.pose(localPlayerId)?.feetPosition ?? null,
+      entityFeet: () => registry?.localPlayer?.position ?? null, collisionHeightMetres: playerCollisionHeightMetres });
+    const localSurfaceContact = () => sampleFootstepSurfaceContact(scene, localPawn.feet(), playerCollisionHeightMetres);
     const footstepGround = createFootstepGroundSampler(scene, { decoGrass: decoGrass.field, sourceUnitsPerMetre: playerProfile.sourceUnitsPerMetre });
     boundaryReleases.push(() => footstepGround.dispose());
     if (section) footstepGround.preload(section.terrainMeshes);
@@ -218,10 +221,10 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       clipEvents: entityId => actorClipListingEvents(clipPreview.actorClipListing(entityId)), clipClock: entityId => registry.sourceClock(entityId) });
     boundaryReleases.push(() => spawnedActorSounds.dispose());
     localPlayerFocus = () => registry.localPlayerPosition;
-    localPlayerEntityPosition = () => registry.localPlayer?.position ?? null;
+    localPawnLocation = localPawn.location;
     const localPawnListenerLocation = (): [number, number, number] | null => {
-      const pawn = listenerFollowsLocalPawn() ? registry.localPlayerPosition : null;
-      return pawn ? [pawn.x, pawn.y + playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre, pawn.z] : null;
+      const pawn = listenerFollowsLocalPawn() ? localPawn.location() : null;
+      return pawn ? [pawn.x, pawn.y, pawn.z] : null;
     };
     const { combatAudio, combatFailure } = createNativeSliceCombatAudio(nativeAudio, {
       entity: id => registry.entity(id), sourceClock: id => registry.sourceClock(id),

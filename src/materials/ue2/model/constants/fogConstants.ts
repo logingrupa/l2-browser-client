@@ -81,7 +81,7 @@ const fogConstantRows = {
   fadeReferencePosition: {
     id: "fog.fade-reference-position",
     value: "possessed-pawn-location",
-    provenance: `${fogScopeAnswer}: 0x1065ef77 reads viewport+0x3c -> Actor+0x3bc (Controller.Pawn) and measures the fade 0x10444560 from Pawn+0x1bc (Location), else from the viewport actor Location; the camera position is not used. The client takes the adapter local-player position; its height against Pawn Location is unmeasured`,
+    provenance: `${fogScopeAnswer}: 0x1065ef77 reads viewport+0x3c -> Actor+0x3bc (Controller.Pawn) and measures the fade 0x10444560 from Pawn+0x1bc (Location), else from the viewport actor Location; the camera position is not used. The client takes the local pawn movement pose feet plus the profile collision height, the one Pawn Location it shares with the audio listener, so the fade follows the moving pawn rather than the server destination; that height against Pawn Location is unmeasured (open question 5)`,
     status: "confirmed-interlude",
     interludeEvidence: "Engine.dll 0x1065ef77",
     runtimeDefault: "possessed-pawn-location",
