@@ -21,6 +21,7 @@ from native_store.catalog_writer import merge_catalog_slice, pinned_file_referen
 from native_store.verified_file_writes import CatalogWriteError
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
+from support.synthetic_texture_sources import use_synthetic_textures_without_a_native_body
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
@@ -47,6 +48,7 @@ def synthetic_model_archive(metadata):
 
 class ActorMaterialProgramTests(unittest.TestCase):
     def setUp(self):
+        use_synthetic_textures_without_a_native_body(self)
         self.project_root = scratch_work_root(self, 'actor-material-programs-project-')
         self.store_root = lane_store_root(self.project_root, 'actors')
         self.store_root.mkdir(parents=True)

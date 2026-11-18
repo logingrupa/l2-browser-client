@@ -23,6 +23,7 @@ from support.store_file_publish_programs import synthetic_store_files
 from synthetic_class_scripts import scratch_work_root
 from test_material_program_images import synthetic_png_bytes
 from world import bsp_step, material_texture_images, minimap_textures, static_mesh_step, tile_json_resource
+from world.material_texture_images import MaterialTexturePng
 from world.static_mesh_step import ConvertedStaticMesh
 
 STORE_FILE_PUBLISH_PROGRAM = '\n'.join([
@@ -181,7 +182,7 @@ class WorldStepStorePublishTests(StoreLockRecordingTestCase):
 
     def test_material_texture_images_are_published_under_the_store_lock(self):
         store_root = lane_store_root(scratch_work_root(self, 'store-file-publish-'), 'world')
-        records = material_texture_images.write_material_texture_images(store_root, {'SyntheticMaterials.SkyTexture': synthetic_png_bytes()})
+        records = material_texture_images.write_material_texture_images(store_root, {'SyntheticMaterials.SkyTexture': MaterialTexturePng(synthetic_png_bytes(), None)})
         self.assert_every_call_held_the_store_lock(
             ['immutable_write'], lock_file_path(lane_lock_folder(store_root.parent / 'work'), STORE_LOCK_KEY_PREFIX + store_root.as_posix()))
         self.assertEqual(self.published_relative_paths(store_root), [record['path'] for record in records])

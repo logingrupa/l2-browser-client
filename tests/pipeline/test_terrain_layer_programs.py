@@ -13,6 +13,7 @@ from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import pinned_file_references
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
+from support.synthetic_texture_sources import use_synthetic_textures_without_a_native_body
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
@@ -44,6 +45,7 @@ def empty_slot(index):
 
 class TerrainLayerProgramTests(unittest.TestCase):
     def setUp(self):
+        use_synthetic_textures_without_a_native_body(self)
         self.project_root = scratch_work_root(self, 'terrain-material-project-')
         self.store_root = lane_store_root(self.project_root, 'world')
         self.store_root.mkdir(parents=True)

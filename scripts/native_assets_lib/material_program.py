@@ -6,6 +6,7 @@ from types import MappingProxyType
 
 from native_assets_lib.class_defaults import read_class_defaults_with_provenance, read_class_field_declarations
 from native_assets_lib.material_graph import ARRAY_PROPERTY_TYPE, OBJECT_PROPERTY_TYPE, material_feature_unported_reason
+from native_assets_lib.material_texture_mip_chain import MaterialTextureMipChainError, checked_material_texture_mip_chain_pin
 from native_store.canonical_json import canonical_json_bytes
 
 MATERIAL_PROGRAM_SCHEMA_VERSION = 1
@@ -19,6 +20,7 @@ TEXTURE_CLASS = 'Engine.Texture'
 NO_TEXTURE_IMAGES = MappingProxyType({})
 MAXIMUM_TEXTURE_IMAGE_BYTES = 33554432
 TEXTURE_IMAGE_MEMBERS = ('bytes', 'path', 'sha256')
+TEXTURE_IMAGE_MIP_CHAIN_MEMBER = 'mips'
 SHA256_PATTERN = re.compile(r'[a-f0-9]{64}')
 NATIVE_RESOURCE_PATH_PATTERN = re.compile(r'/l2/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*/)*[A-Za-z0-9_-][A-Za-z0-9._-]*')
 
@@ -137,8 +139,8 @@ def reviewed_program_fields(node, declarations):
 
 
 def checked_texture_image(node_id, pin):
-    if not isinstance(pin, dict) or sorted(pin) != list(TEXTURE_IMAGE_MEMBERS):
-        raise MaterialProgramError(f'texture image pin of {node_id} must be an object that holds exactly {", ".join(TEXTURE_IMAGE_MEMBERS)}')
+    if not isinstance(pin, dict) or sorted(set(pin) - {TEXTURE_IMAGE_MIP_CHAIN_MEMBER}) != list(TEXTURE_IMAGE_MEMBERS):
+        raise MaterialProgramError(f'texture image pin of {node_id} must be an object that holds exactly {", ".join(TEXTURE_IMAGE_MEMBERS)} and may hold {TEXTURE_IMAGE_MIP_CHAIN_MEMBER}')
     path, sha256, size = pin['path'], pin['sha256'], pin['bytes']
     if not (isinstance(path, str) and NATIVE_RESOURCE_PATH_PATTERN.fullmatch(path)):
         raise MaterialProgramError(f'texture image path {path!r} of {node_id} is not a native resource path under /l2/')
@@ -146,7 +148,13 @@ def checked_texture_image(node_id, pin):
         raise MaterialProgramError(f'texture image sha256 {sha256!r} of {node_id} is not a SHA-256')
     if not (type(size) is int and 0 < size <= MAXIMUM_TEXTURE_IMAGE_BYTES):
         raise MaterialProgramError(f'texture image bytes {size!r} of {node_id} must be a positive size up to {MAXIMUM_TEXTURE_IMAGE_BYTES}')
-    return {'path': path, 'sha256': sha256, 'bytes': size}
+    checked = {'path': path, 'sha256': sha256, 'bytes': size}
+    if TEXTURE_IMAGE_MIP_CHAIN_MEMBER not in pin:
+        return checked
+    try:
+        return {**checked, TEXTURE_IMAGE_MIP_CHAIN_MEMBER: checked_material_texture_mip_chain_pin(f'texture image mip chain of {node_id}', pin[TEXTURE_IMAGE_MIP_CHAIN_MEMBER])}
+    except MaterialTextureMipChainError as error:
+        raise MaterialProgramError(str(error)) from error
 
 
 def checked_texture_images(graph, texture_images):

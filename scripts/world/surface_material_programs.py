@@ -8,13 +8,15 @@ from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.material_graph import read_material_graph
 from native_assets_lib.material_program import derive_material_program
 from native_assets_lib.material_resources import write_material_program_record
+from native_assets_lib.material_texture_mip_chain import native_mip_chain_of_texture_source
+from native_assets_lib.texture_png_alpha import texture_source_or_unsupported
 from native_catalog.ue2 import FormatError
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.store_paths import StorePathError, lane_store_root, lane_work_root
 from world.class_default_reads import kept_material_class_defaults
 from world.map_sources import MapSources
 from world.raw_map_step import tile_step_row
-from world.material_texture_images import (material_texture_image_pins, reviewed_texture_nodes, stored_material_texture_images,
+from world.material_texture_images import (MaterialTexturePng, material_texture_image_pins, reviewed_texture_nodes, stored_material_texture_images,
                                            write_material_texture_images)
 from world.error_detail import conversion_failure_reason
 from world.static_mesh_converter_folder import STATIC_MESH_CONVERTER_FOLDER
@@ -75,20 +77,21 @@ def program_root_is_ported(program):
     return root_program_node(program)['status'] != UNPORTED_NODE_STATUS
 
 
-def material_texture_pngs(graph, converter, store_root):
+def material_texture_pngs(package, graph, converter, store_root):
     stored_images = stored_material_texture_images(store_root)
     pngs_by_node, gap_reasons = {}, []
     for node in reviewed_texture_nodes(graph):
         png = stored_images.stored_png(node['object'])
-        if png is None:
-            try:
+        try:
+            if png is None:
                 with tempfile.TemporaryDirectory(dir=converter.output) as work:
                     png, _, _ = converter.texture(Path(work), node['object'])
-            except MATERIAL_CONVERSION_ERRORS as error:
-                gap_reasons.append(conversion_failure_reason(error))
-                continue
-            stored_images.remember(node['object'], png)
-        pngs_by_node[node['object']] = png
+                stored_images.remember(node['object'], png)
+            native_source = texture_source_or_unsupported(package, package.exports[node['exportIndex'] - 1])
+        except MATERIAL_CONVERSION_ERRORS as error:
+            gap_reasons.append(conversion_failure_reason(error))
+            continue
+        pngs_by_node[node['object']] = MaterialTexturePng(png, native_mip_chain_of_texture_source(native_source))
     return pngs_by_node, gap_reasons
 
 
@@ -96,7 +99,7 @@ def material_program_outcome(identity, map_sources, converter, class_work_root, 
     try:
         package, item = resolve_material_export(map_sources, identity)
         graph = read_material_graph(package, item)
-        pngs_by_node, texture_gap_reasons = material_texture_pngs(graph, converter, store_root)
+        pngs_by_node, texture_gap_reasons = material_texture_pngs(package, graph, converter, store_root)
         program = derive_material_program(graph, kept_material_class_defaults(graph, class_work_root, class_scripts),
                                           texture_images=material_texture_image_pins(pngs_by_node))
         program_record, program_files = write_material_program_record(store_root, graph, program)

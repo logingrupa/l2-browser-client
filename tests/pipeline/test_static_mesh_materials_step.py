@@ -18,6 +18,7 @@ from native_store.store_paths import lane_store_root, lane_work_root
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from support.mapping_size_class_defaults import use_synthetic_mapping_class_defaults
+from support.synthetic_texture_sources import use_synthetic_textures_without_a_native_body
 from test_material_program_images import synthetic_png_bytes
 from world import locked_input_receipt, material_texture_images, static_mesh_materials_step, surface_material_programs
 from world.bsp_surface_materials import convert_surface_material
@@ -56,6 +57,7 @@ def synthetic_map_sources():
 
 class StaticMeshMaterialsStepTests(unittest.TestCase):
     def setUp(self):
+        use_synthetic_textures_without_a_native_body(self)
         self.project_root = scratch_work_root(self, 'static-mesh-materials-project-')
         self.store_root = lane_store_root(self.project_root, 'world')
         self.store_root.mkdir(parents=True)
@@ -183,6 +185,7 @@ class SharedProgramPathTests(unittest.TestCase):
                                     material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
         store_root = scratch_work_root(self, 'bsp-bytes-store-') / 'l2'
         use_synthetic_mapping_class_defaults(self)
+        use_synthetic_textures_without_a_native_body(self)
         with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
             outcome = convert_surface_material(TEXTURED_MATERIAL, map_sources, converter, store_root, None, store_root)
         self.assertEqual(outcome.material.program['programSha256'], TEXTURED_PROGRAM_SHA256_BEFORE_THE_SHARED_MODULE)

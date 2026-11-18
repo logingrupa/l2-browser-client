@@ -12,6 +12,7 @@ from native_store.store_paths import ConverterOutputRefusedError, StorePathError
 from support.mapping_size_class_defaults import use_synthetic_mapping_class_defaults
 from support.synthetic_bsp_step_run import SOURCE_IDENTITY, TILE_ID, TILE_UNIT_KEY, read_one_synthetic_bsp_node_instead_of_a_map, start_patch
 from support.synthetic_map_sources import SyntheticMapSources
+from support.synthetic_texture_sources import use_synthetic_textures_without_a_native_body
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
@@ -40,6 +41,7 @@ class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
                                          material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
         start_patch(self, surface_material_programs, 'kept_material_class_defaults', mock.Mock(return_value=SYNTHETIC_CLASS_DEFAULTS))
         use_synthetic_mapping_class_defaults(self)
+        use_synthetic_textures_without_a_native_body(self)
 
     def read_one_synthetic_bsp_node_instead_of_a_map(self, project_root):
         read_one_synthetic_bsp_node_instead_of_a_map(self, project_root, TEXTURED_MATERIAL, self.map_sources, self.converter)

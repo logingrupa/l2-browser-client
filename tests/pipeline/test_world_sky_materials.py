@@ -158,14 +158,18 @@ class SkyProgramTextureImageTests(unittest.TestCase):
             program = sky_material_program(graph, None, None, sky_texture_pngs_by_node(products))
         return program, products, gap_reasons
 
-    def test_the_sky_program_pins_the_png_of_the_sky_texture_the_step_converts(self):
+    def test_the_sky_program_pins_the_png_and_the_original_mip_blocks_of_the_sky_texture_the_step_converts(self):
         program, products, gap_reasons = self.texture_root_program(package_118_bytes())
         receipt, files = products['Sky_T.Haze']
         png = files[receipt['png']['file']]
         png_sha256 = hashlib.sha256(png).hexdigest()
+        block_sha256 = hashlib.sha256(DXT1_BLOCK).hexdigest()
+        level_pins = [{'width': width, 'height': height, 'bytes': len(DXT1_BLOCK), 'sha256': block_sha256,
+                       'path': f'/l2/native-materials/texture-mips/{block_sha256}/level.bin'} for width, height, _ in COMPLETE_MIPS]
         self.assertEqual(gap_reasons, [])
         self.assertEqual([node['image'] for node in program['nodes']],
-                         [{'path': f'/l2/native-materials/textures/{png_sha256}/texture.png', 'sha256': png_sha256, 'bytes': len(png)}])
+                         [{'path': f'/l2/native-materials/textures/{png_sha256}/texture.png', 'sha256': png_sha256, 'bytes': len(png),
+                           'mips': {'format': 'DXT1', 'levels': level_pins}}])
 
     def test_a_sky_texture_the_library_refuses_keeps_a_null_image_and_its_gap_reason(self):
         program, products, gap_reasons = self.texture_root_program(package_118_bytes(format_id=UNREVIEWED_FORMAT))

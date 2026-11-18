@@ -8,12 +8,13 @@ from PIL import Image
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.material_graph import read_material_graph
 from native_assets_lib.material_program import derive_material_program
+from native_assets_lib.material_texture_mip_chain import native_mip_chain_of_texture_source
 from native_assets_lib.texture_dds import UnsupportedTextureDDS, build_texture_dds
 from native_assets_lib.texture_mips import UnsupportedTextureSource, build_texture_source
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX
 from native_catalog.ue2 import FormatError
 from world.class_default_reads import kept_material_class_defaults
-from world.material_texture_images import TEXTURE_CLASS, material_texture_image_pins, reviewed_texture_nodes
+from world.material_texture_images import TEXTURE_CLASS, MaterialTexturePng, material_texture_image_pins, reviewed_texture_nodes
 from world.pinned_image_decoder import DDS_PLUGIN_SHA256, IMAGING_BINARY_SHA256, require_pinned_image_decoder
 
 OBJECT_PROPERTY_IMPORT_TARGET = 'import'
@@ -81,6 +82,10 @@ def native_texture_source(package, item):
         raise SkyTextureUnsupported(error.reason, str(error)) from error
 
 
+def sky_texture_file_stem(texture_object):
+    return texture_object.rsplit('.', 1)[-1]
+
+
 def sky_texture_products(package, texture_export):
     metadata, originals = native_texture_source(package, texture_export)
     try:
@@ -95,7 +100,7 @@ def sky_texture_products(package, texture_export):
         raise FormatError(f'decoded sky texture {texture_export["object"]} is {image.size}, not {width}x{height}')
     buffer = io.BytesIO()
     image.save(buffer, format='PNG', compress_level=9)
-    name = texture_export['object'].rsplit('.', 1)[-1]
+    name = sky_texture_file_stem(texture_export['object'])
     files = {f'{name}.png': buffer.getvalue(), f'{name}.dds': dds, f'{name}.export.bin': originals['native/texture-export.bin'],
              f'{name}.native.json': json_bytes(metadata), f'{name}.dds.json': json_bytes(dds_metadata)}
     files.update({f'{name}.mip{mip["level"]}.bin': originals[mip['file']] for mip in metadata['mips']})
@@ -116,5 +121,12 @@ def sky_texture_products_by_node(package, graph):
     return products, gap_reasons
 
 
+def sky_texture_native_source(receipt, files):
+    stem = sky_texture_file_stem(receipt['sourceReference'])
+    mips = [{**mip, 'file': f'{stem}.mip{mip["level"]}.bin'} for mip in receipt['mips']]
+    return {'format': receipt['format'], 'mips': mips}, files
+
+
 def sky_texture_pngs_by_node(products):
-    return {node: files[receipt['png']['file']] for node, (receipt, files) in products.items()}
+    return {node: MaterialTexturePng(files[receipt['png']['file']], native_mip_chain_of_texture_source(sky_texture_native_source(receipt, files)))
+            for node, (receipt, files) in products.items()}
