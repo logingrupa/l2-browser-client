@@ -19,6 +19,7 @@ from native_store.verified_file_writes import CatalogWriteError, StorePayloadInt
 from native_store.interprocess_lock import STORE_LOCK_KEY_PREFIX, InterprocessLockError, interprocess_lock, lane_lock_folder, lock_file_path
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import StorePathError, lane_store_root, lane_work_root
+from support.flipped_rereads import payload_with_first_byte_flipped, rereads_of_files_named_flip_one_byte
 from support.item_unit_worker_runs import wait_until_path_exists
 from support.store_file_publish_programs import synthetic_store_files
 from synthetic_class_scripts import scratch_work_root
@@ -38,6 +39,8 @@ PUBLISHING_PROCESS_NAMES = ('first', 'second')
 FILE_COUNT_OF_THE_TWO_PROCESS_PUBLISH = 600
 OTHER_WRITER_PAYLOAD = b'bytes of another writer'
 CATALOG_BYTES = b'{"schemaVersion": 1, "models": []}'
+MINIMAP_TEXTURE_ARCHIVE = b'synthetic minimap texture archive'
+MINIMAP_TEXTURE = {'object': 'l2zonename.20_20', 'rule': 'zone-sampler-tile'}
 WORLD_MODULES_THAT_PUBLISH_STORE_FILES = {'bsp_step', 'material_texture_images', 'minimap_textures', 'native_material_listings', 'static_mesh_step', 'tile_json_resource'}
 WORLD_MODULE_THAT_WRITES_A_PRIVATE_ASSET_FOLDER = 'typed_payload'
 STORE_FILE_WRITE = 'immutable_write_expecting_sha256'
@@ -82,6 +85,11 @@ class StoreLockRecordingTestCase(unittest.TestCase):
         self.assertTrue(expected_lock_file_path.is_file())
         self.assertIsNone(interprocess_lock_module.held_lock_file_path)
 
+    def assert_refused_as_a_payload_changed_in_memory(self, refusal, relative, flipped_payload, expected_sha256):
+        self.assertNotIsInstance(refusal.exception, ValueError)
+        self.assertEqual(str(refusal.exception), f'Store file {relative} payload changed in memory since verification: it hashes to '
+                                                 f'{sha256_hex(flipped_payload)} where {expected_sha256} was verified')
+
     def published_relative_paths(self, store_root=None):
         root = store_root or self.store_root
         return sorted(path.relative_to(root).as_posix() for path in root.rglob('*') if path.is_file())
@@ -120,13 +128,8 @@ class StoreFilePublishTests(StoreLockRecordingTestCase):
 
     def files_with_one_flipped_byte_in_the_payload_of(self, files, flipped_relative):
         flipped = files[flipped_relative.casefold()]
-        flipped_payload = bytes([flipped.payload[0] ^ 0x01]) + flipped.payload[1:]
+        flipped_payload = payload_with_first_byte_flipped(flipped.payload)
         return {**files, flipped_relative.casefold(): flipped._replace(payload=flipped_payload)}, flipped_payload
-
-    def assert_refused_as_a_payload_changed_in_memory(self, refusal, relative, flipped_payload, expected_sha256):
-        self.assertNotIsInstance(refusal.exception, ValueError)
-        self.assertEqual(str(refusal.exception), f'Store file {relative} payload changed in memory since verification: it hashes to '
-                                                 f'{sha256_hex(flipped_payload)} where {expected_sha256} was verified')
 
     def test_a_payload_with_one_flipped_byte_is_refused_before_any_existing_file_is_compared_or_any_file_is_written(self):
         files = synthetic_store_files(2)
@@ -204,7 +207,7 @@ class WorldStepStorePublishTests(StoreLockRecordingTestCase):
     def test_a_static_mesh_payload_that_flips_one_byte_while_it_is_held_is_refused_at_publish_and_creates_no_file(self):
         store_files = synthetic_store_files(1)
         ((key, entry),) = store_files.items()
-        held_store_files = {key: entry._replace(payload=bytes([entry.payload[0] ^ 0x01]) + entry.payload[1:])}
+        held_store_files = {key: entry._replace(payload=payload_with_first_byte_flipped(entry.payload))}
         mesh_outcomes = {'Rock.Rock_S': ConvertedStaticMesh({'id': 'rock'}, held_store_files)}
         with self.assertRaises(StorePayloadIntegrityError):
             static_mesh_step.write_static_mesh_store_files(self.project_root, {'models': [{'id': 'rock'}]}, mesh_outcomes)
@@ -221,15 +224,38 @@ class WorldStepStorePublishTests(StoreLockRecordingTestCase):
         self.assert_every_call_held_the_store_lock([STORE_FILE_WRITE] * 2)
         self.assertEqual([output['path'] for output in outputs], [f'l2/{relative}' for relative in self.published_relative_paths()])
 
-    def test_a_converted_minimap_texture_is_published_under_the_store_lock(self):
-        archive, converted_folder = b'synthetic minimap texture archive', self.project_root / 'converted'
+    def converted_minimap_texture_folder(self):
+        converted_folder = self.project_root / 'converted'
         converted_folder.mkdir()
-        (converted_folder / minimap_textures.TEXTURE_ARCHIVE_NAME).write_bytes(archive)
-        conversion = {'file': str(converted_folder / minimap_textures.TEXTURE_ARCHIVE_NAME), 'sha256': hashlib.sha256(archive).hexdigest()}
-        texture_conversion = minimap_textures.MinimapTextureConversion(conversion, synthetic_png_bytes())
-        _, _, output = minimap_textures.store_converted_texture(self.store_root, texture_conversion, {'object': 'l2zonename.20_20', 'rule': 'zone-sampler-tile'})
+        (converted_folder / minimap_textures.TEXTURE_ARCHIVE_NAME).write_bytes(MINIMAP_TEXTURE_ARCHIVE)
+        (converted_folder / minimap_textures.TEXTURE_IMAGE_NAME).write_bytes(synthetic_png_bytes())
+        return {'file': str(converted_folder / minimap_textures.TEXTURE_ARCHIVE_NAME), 'sha256': sha256_hex(MINIMAP_TEXTURE_ARCHIVE)}
+
+    def test_a_converted_minimap_texture_is_published_under_the_store_lock(self):
+        conversion = self.converted_minimap_texture_folder()
+        texture_conversion = minimap_textures.MinimapTextureConversion(conversion, MINIMAP_TEXTURE_ARCHIVE, synthetic_png_bytes())
+        _, _, output = minimap_textures.store_converted_texture(self.store_root, texture_conversion, MINIMAP_TEXTURE)
         self.assert_every_call_held_the_store_lock([STORE_FILE_WRITE])
         self.assertEqual(self.published_relative_paths(), [output['path'].removeprefix('l2/')])
+
+    def test_a_minimap_texture_archive_whose_reread_flips_one_byte_is_published_from_its_single_verified_read(self):
+        conversion = self.converted_minimap_texture_folder()
+        with mock.patch.object(minimap_textures, 'convert_under_request_lock', return_value=conversion), \
+                rereads_of_files_named_flip_one_byte(minimap_textures.TEXTURE_ARCHIVE_NAME) as read_counts_by_path:
+            texture_conversion, failure_reason = minimap_textures.convert_minimap_texture(mock.Mock(), 'l2zonename', MINIMAP_TEXTURE['object'])
+            _, _, output = minimap_textures.store_converted_texture(self.store_root, texture_conversion, MINIMAP_TEXTURE)
+        self.assertEqual((failure_reason, list(read_counts_by_path.values())), (None, [1]))
+        self.assertEqual((self.store_root / output['path'].removeprefix('l2/')).read_bytes(), MINIMAP_TEXTURE_ARCHIVE)
+
+    def test_a_minimap_texture_archive_that_flips_one_byte_while_it_is_held_is_refused_at_publish_and_creates_no_file(self):
+        conversion = self.converted_minimap_texture_folder()
+        flipped_archive = payload_with_first_byte_flipped(MINIMAP_TEXTURE_ARCHIVE)
+        texture_conversion = minimap_textures.MinimapTextureConversion(conversion, flipped_archive, synthetic_png_bytes())
+        with self.assertRaises(StorePayloadIntegrityError) as refusal:
+            minimap_textures.store_converted_texture(self.store_root, texture_conversion, MINIMAP_TEXTURE)
+        self.assert_refused_as_a_payload_changed_in_memory(refusal, f'{conversion["sha256"]}/{minimap_textures.TEXTURE_ARCHIVE_NAME}', flipped_archive,
+                                                           conversion['sha256'])
+        self.assertEqual(self.published_relative_paths(), [])
 
     def test_a_tile_json_resource_is_published_under_the_store_lock(self):
         _, output = tile_json_resource.write_tile_json_resource(self.store_root, 'tile-movers', 'movers.json', {'tileId': '00_00'})

@@ -1,4 +1,3 @@
-import hashlib
 from pathlib import Path, PurePosixPath
 import struct
 
@@ -7,11 +6,12 @@ from native_assets_lib.texture_mips import UnsupportedTextureSource, build_textu
 from native_assets_lib.texture_package_118 import read_unreal_package
 from native_assets_lib.umodel_import_closure import UMODEL_PACKAGE_SUFFIXES
 from native_catalog.ue2 import FormatError
-from native_store.catalog_writer import add_store_file
+from native_store.catalog_writer import StoreFileEntry, add_store_file_entry
 from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import process_reference_client_lock
+from native_store.verified_file_writes import sha256_hex
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
 from world.error_detail import MODEL_CONVERSION_ERRORS, conversion_failure_reason
 from world.world_lane_names import WORLD_LANE_NAME
@@ -30,8 +30,8 @@ class MinimapTextureError(ValueError):
 
 
 class MinimapTextureConversion:
-    def __init__(self, conversion, image):
-        self.conversion, self.image = conversion, image
+    def __init__(self, conversion, archive, image):
+        self.conversion, self.archive, self.image = conversion, archive, image
 
 
 def texture_export_source_status(package, export):
@@ -88,18 +88,19 @@ def convert_minimap_texture(converter, package_request, object_name):
     except MODEL_CONVERSION_ERRORS as error:
         return None, conversion_failure_reason(error)
     archive_path = Path(conversion['file'])
-    if hashlib.sha256(archive_path.read_bytes()).hexdigest() != conversion['sha256']:
+    archive = archive_path.read_bytes()
+    if sha256_hex(archive) != conversion['sha256']:
         raise MinimapTextureError(f'converted archive {archive_path} differs from its reported SHA-256')
-    return MinimapTextureConversion(conversion, (archive_path.parent / TEXTURE_IMAGE_NAME).read_bytes()), None
+    return MinimapTextureConversion(conversion, archive, (archive_path.parent / TEXTURE_IMAGE_NAME).read_bytes()), None
 
 
 def store_converted_texture(store_root, texture_conversion, texture):
     conversion = texture_conversion.conversion
-    archive = Path(conversion['file']).read_bytes()
+    archive = texture_conversion.archive
     dimensions = png_dimensions(texture_conversion.image)
     relative = f'{conversion["sha256"]}/{TEXTURE_ARCHIVE_NAME}'
     destination = {}
-    add_store_file(destination, relative, archive)
+    add_store_file_entry(destination, StoreFileEntry(relative, archive, conversion['sha256']))
     publish_store_files(store_root, destination)
     record = {'archive': f'/l2/{relative}', 'archiveSha256': conversion['sha256'], 'archiveBytes': len(archive),
               'sourceObject': texture['object'], 'rule': texture['rule']}

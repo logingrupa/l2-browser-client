@@ -94,7 +94,8 @@ class ConverterRequestLockTests(unittest.TestCase):
                 converted, reason = minimap_textures.convert_minimap_texture(converter, 'l2zonename', 'l2zonename.20_21')
         request_lock.assert_called_once_with(converter, {'kind': 'texture', 'package': 'l2zonename', 'object': 'l2zonename.20_21'})
         converter.convert.assert_not_called()
-        self.assertEqual((converted.conversion, converted.image, reason), (conversion, b'png', None))
+        self.assertEqual((converted.conversion, converted.archive, converted.image, reason),
+                         (conversion, b'synthetic minimap texture archive', b'png', None))
 
 
 class MoverClassUnitLockTests(unittest.TestCase):
