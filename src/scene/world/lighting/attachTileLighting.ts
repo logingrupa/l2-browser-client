@@ -3,7 +3,6 @@ import type { Scene } from "@babylonjs/core/scene";
 import { drawNativeSessionSeed } from "../../../assets/native/nativeSessionSeed";
 import { nativeSunLightDirection } from "../../../environment/model/nativeSunLightDirection";
 import { loadNativeMaterial, type NativeMaterialUniforms } from "../../../materials/ue2/babylon/material";
-import { FOG_CONSTANTS } from "../../../materials/ue2/model/constants/fogConstants";
 import { createPresentationClock } from "../../../shared/presentationClock";
 import { worldPositionToSource } from "../../../world/sourceFrame";
 import type { TileVisibilityFrame } from "../bspVisibility/core/tileVisibilityFrame";
@@ -77,7 +76,7 @@ function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, frame: Tile
   const cameraSourcePosition = cameraPosition === undefined ? null : worldPositionToSource({ x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z });
   const pawnPosition = referencePawn.position();
   return computeCameraEnvironment({ frame, cameraSourcePosition, referencePawnSourcePosition: pawnPosition === null ? null : worldPositionToSource(pawnPosition),
-    collision: null, records: model.records, skySceneRoute: FOG_CONSTANTS.skySceneRoute.runtimeDefault,
+    collision: null, records: model.records,
     fogEnvironment: { hour: timeOfDay.sample().hour, fogRanges: timeOfDay.fogRanges, hazeColour: timeOfDay.hazeColour() } });
 }
 

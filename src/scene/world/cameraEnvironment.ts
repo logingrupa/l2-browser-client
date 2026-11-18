@@ -1,9 +1,9 @@
 import type { EnvironmentResult } from "../../environment/model/nativeEnvironmentColours";
 import { ENVIRONMENT_ENGINE_CONSTANTS } from "../../environment/model/nativeEnvironmentEngineConstants";
 import type { RgbBytes } from "../../environment/model/sampleNativeTimeTables";
-import { FOG_CONSTANTS, type SkySceneFogRoute } from "../../materials/ue2/model/constants/fogConstants";
+import { FOG_CONSTANTS } from "../../materials/ue2/model/constants/fogConstants";
 import {
-  environmentFogPreset, evaluateFogState, evaluateLocalFogList, FOG_DISABLED, FOG_UNRESOLVED, type CameraZoneFogRecord, type EnvironmentFogRanges,
+  environmentFogPreset, evaluateFogState, evaluateLocalFogList, type CameraZoneFogRecord, type EnvironmentFogRanges,
   type FogColourBytes, type FogRangeRecord, type FogState, type LocalFogList, type TerrainZoneEnvironmentFog,
 } from "../../materials/ue2/model/fog";
 import type { Vector3 } from "../../shared/math/vector3";
@@ -31,11 +31,10 @@ export interface CameraEnvironmentSources {
   readonly collision: CameraEnvironmentCollision | null;
   readonly records: TileLightingRecords;
   readonly fogEnvironment: FogEnvironment;
-  readonly skySceneRoute: SkySceneFogRoute | null;
 }
 
 export interface SkySceneFog {
-  readonly route: SkySceneFogRoute | null;
+  readonly route: typeof FOG_CONSTANTS.skySceneRoute.value;
   readonly fog: FogState;
   readonly gaps: readonly string[];
 }
@@ -72,7 +71,7 @@ export const cameraEnvironmentGaps = {
   fogInfoReferencePawnAbsent: "fog-info-reference-pawn-absent",
   fogInfoRetentionDistanceUnresolved: "fog-info-retention-distance-unresolved",
   fogInfoListOrderAssumed: "fog-info-list-order-assumed",
-  skyFogSceneRouteUnresolved: "sky-fog-scene-route-unresolved",
+  sharedSkyLevelGeometryUnstaged: "shared-sky-level-geometry-unstaged",
   volumeQueryUnbound: "camera-volume-query-unbound",
   volumeWaterFlagAbsent: "camera-volume-water-flag-absent",
   volumePriorityUnknown: "camera-volume-priority-unknown",
@@ -136,14 +135,8 @@ function fogRouteOf(fog: FogState, zone: CameraZoneFogRecord | null, zoneIndex: 
   return { kind: "bypass" };
 }
 
-function skySceneFog(sources: CameraEnvironmentSources, levelFog: FogState, list: LocalFogList): SkySceneFog {
-  const route = sources.skySceneRoute;
-  if (route === null) return { route, fog: FOG_DISABLED, gaps: [cameraEnvironmentGaps.skyFogSceneRouteUnresolved] };
-  if (route === "inherit-level") return { route, fog: levelFog, gaps: [] };
-  const gaps: string[] = [], skyZones = sources.frame?.skyZones ?? [];
-  if (skyZones.length !== 1) return { route, fog: FOG_UNRESOLVED, gaps: [`sky-fog-zone-count:${skyZones.length}`] };
-  const skyZone = skyZones[0]!;
-  return { route, fog: fogOfZone(zoneFog(skyZone, sources.records, gaps), skyZone, list, sources, gaps), gaps };
+function skySceneFog(levelFog: FogState): SkySceneFog {
+  return { route: FOG_CONSTANTS.skySceneRoute.value, fog: levelFog, gaps: [cameraEnvironmentGaps.sharedSkyLevelGeometryUnstaged] };
 }
 
 function cameraVolume(sources: CameraEnvironmentSources, gaps: string[]): ContainingVolume | null {
@@ -163,5 +156,5 @@ export function computeCameraEnvironment(sources: CameraEnvironmentSources): Cam
   const fog = fogOfZone(cameraZoneFog, cameraZone, list, sources, gaps);
   if (sources.records.waterVolumeCount > 0) gaps.push(cameraEnvironmentGaps.waterVolumeUnlinked);
   const containingVolume = cameraVolume(sources, gaps);
-  return { cameraZone, containingVolume, fog, fogRoute: fogRouteOf(fog, cameraZoneFog, cameraZone, list, sources), skyFog: skySceneFog(sources, fog, list), gaps };
+  return { cameraZone, containingVolume, fog, fogRoute: fogRouteOf(fog, cameraZoneFog, cameraZone, list, sources), skyFog: skySceneFog(fog), gaps };
 }

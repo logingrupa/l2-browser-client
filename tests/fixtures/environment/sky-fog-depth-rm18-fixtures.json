@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "sky-fog-depth-rm18-fixtures",
+  "source": {
+    "file": "sky-fog-depth.json",
+    "sha256": "2078c337142b8294533c033da4f308757986703209d10ad8dc51fc41c5920492"
+  },
+  "fixtures": [
+    {"id": "RM18-table-W-or-vertex-depth", "map": "20_21", "pointIndex": 1331, "hour": 12.3, "skyEye": [324.68359375, 264435.34375, 24536.03125], "position": [715.0, 263864.0, 24534.5], "viewPosition": [390.31640625, -1.53125, 571.34375, 1.0], "depthRule": "table-W-or-vertex-depth", "fogDepth": 571.34375, "fogStart": 0, "fogEnd": 10000, "fogColor": [107, 114, 97], "factorRealArithmetic": 0.942865625, "preFogRGB": [66, 124, 176], "resultRGBRealArithmetic": [68.34250937499999, 123.42865625, 171.486384375], "conditions": ["Shared SkyLevel loaded; GIsL2Seamless=1; GL2SharedSky=1; GIsEditor=0", "GL2Shader=0; ordinary non-water BSP material path; normal view mode", "UseFixedVisibility=false; viewport axes +1/+1; near10/far65536; SkyZoneInfo Rotation zero as supplied", "Stable environment type0; hourly writer applied; no material override; modifier child WhiteChip", "Capability branch selected as named; inherited root fog tuple is the supplied RM-1 tuple"]},
+    {"id": "RM18-vertex-range", "map": "20_21", "pointIndex": 1331, "hour": 12.3, "skyEye": [324.68359375, 264435.34375, 24536.03125], "position": [715.0, 263864.0, 24534.5], "viewPosition": [390.31640625, -1.53125, 571.34375, 1.0], "depthRule": "vertex-range", "fogDepth": 691.9414154236904, "fogStart": 0, "fogEnd": 10000, "fogColor": [107, 114, 97], "factorRealArithmetic": 0.9308058584576309, "preFogRGB": [66, 124, 176], "resultRGBRealArithmetic": [68.83695980323714, 123.3080585845763, 170.53366281815283], "conditions": ["Shared SkyLevel loaded; GIsL2Seamless=1; GL2SharedSky=1; GIsEditor=0", "GL2Shader=0; ordinary non-water BSP material path; normal view mode", "UseFixedVisibility=false; viewport axes +1/+1; near10/far65536; SkyZoneInfo Rotation zero as supplied", "Stable environment type0; hourly writer applied; no material override; modifier child WhiteChip", "Capability branch selected as named; inherited root fog tuple is the supplied RM-1 tuple"]}
+  ]
+}

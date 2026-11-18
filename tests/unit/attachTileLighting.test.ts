@@ -5,7 +5,6 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { Scene } from "@babylonjs/core/scene";
-import { FOG_DISABLED } from "../../src/materials/ue2/model/fog";
 import { cameraEnvironmentGaps } from "../../src/scene/world/cameraEnvironment";
 import { provideFogReferencePawn } from "../../src/scene/world/fogReferencePawn";
 import { attachTileLighting, type TileLightingRuntimeInspection } from "../../src/scene/world/lighting/attachTileLighting";
@@ -91,7 +90,7 @@ describe("attachTileLighting", () => {
     const unplaced = await attachTileLighting(scene, lightingTileManifest(), null, new AbortController().signal);
     const unplacedEnvironment = (unplaced.inspection() as TileLightingRuntimeInspection).cameraEnvironment;
     expect(unplacedEnvironment.gaps).toContain(cameraEnvironmentGaps.fogInfoReferencePawnAbsent);
-    expect(unplacedEnvironment.skyFog).toEqual({ route: null, fog: FOG_DISABLED, gaps: [cameraEnvironmentGaps.skyFogSceneRouteUnresolved] });
+    expect(unplacedEnvironment.skyFog).toEqual({ route: "inherit-level", fog: unplacedEnvironment.fog, gaps: [cameraEnvironmentGaps.sharedSkyLevelGeometryUnstaged] });
     unplaced.dispose();
     provideFogReferencePawn(scene, { position: () => sourcePositionToWorld({ x: 28491.390625 + 3500, y: 110465.5, z: -1361.5125732421875 }) });
     const visibilityInDistanceFogZone = { frame: () => frameInZone(1), nodeRangeVisible: () => true, nodeRangeListed: () => true };
@@ -126,7 +125,8 @@ describe("attachTileLighting", () => {
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshPlacements: [staticMeshPlacementSurfacesFixture("20_21.StaticMeshActor0", 1, [staticMesh])], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
     expect((attached.inspection() as TileLightingRuntimeInspection).environment).toEqual(timeOfDay.sample());
-    expect(attached.skyMaterialUniforms!()).toMatchObject({ hour: 12, environmentType: 0, fog: FOG_DISABLED });
+    expect(attached.skyMaterialUniforms!()).toMatchObject({ hour: 12, environmentType: 0,
+      fog: (attached.inspection() as TileLightingRuntimeInspection).cameraEnvironment.fog });
     expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots).toMatchObject({ gap: staticMeshMaterialsResourceAbsentReason, meshCount: 1,
       statusCounts: { "library-compiled": 0, "library-diagnostic": 0, "program-gap": 1 } });
     attached.removeChunk(lateChunkId);

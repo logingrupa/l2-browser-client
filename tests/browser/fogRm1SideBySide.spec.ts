@@ -108,8 +108,8 @@ for (const call of rm1EnabledFogCalls) {
       startSourceUnits: call.startSourceUnits, endSourceUnits: call.endSourceUnits, colourBytes: call.colourBytes });
     const inspection = await fogInspection(page);
     expect(inspection.lightingGap).toBeNull();
-    expect(inspection.skyRoute).toBeNull();
-    expect(inspection.farPlaneSource).toBe("sky-fog-unresolved");
+    expect(inspection.skyRoute).toBe("inherit-level");
+    expect(inspection.farPlaneSource).toBe("far-plane-source-unresolved");
     expect(pageErrors).toEqual([]);
   });
 }

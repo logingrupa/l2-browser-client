@@ -16,7 +16,7 @@ const fogEnvironment = { hour: rm1Hour, fogRanges: convertedEnvironmentFogRanges
 
 function environmentOf(fogRecords: TileLightingRecords) {
   return computeCameraEnvironment({ frame: frameInZone(cameraZone), cameraSourcePosition: null, referencePawnSourcePosition: rm1Pawn, collision: null,
-    records: fogRecords, fogEnvironment, skySceneRoute: null });
+    records: fogRecords, fogEnvironment });
 }
 
 function weightOf(object: string): { readonly distance: number; readonly weight: number } {
@@ -55,7 +55,7 @@ describe("20_21 local L2FogInfo list at the RM-1 pawn, the RM-1 enabled call", (
 
   it("names the absent reference pawn instead of measuring the fade from the camera", () => {
     const environment = computeCameraEnvironment({ frame: frameInZone(cameraZone), cameraSourcePosition: rm1Pawn, referencePawnSourcePosition: null, collision: null,
-      records, fogEnvironment, skySceneRoute: null });
+      records, fogEnvironment });
     expect(environment.fog.source).toBe("unresolved");
     expect(environment.gaps).toContain(cameraEnvironmentGaps.fogInfoReferencePawnAbsent);
   });

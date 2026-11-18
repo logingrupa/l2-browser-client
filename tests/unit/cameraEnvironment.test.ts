@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { FOG_DISABLED, FOG_UNRESOLVED } from "../../src/materials/ue2/model/fog";
-import type { SkySceneFogRoute } from "../../src/materials/ue2/model/constants/fogConstants";
 import { cameraEnvironmentGaps, computeCameraEnvironment, type CameraEnvironmentSources } from "../../src/scene/world/cameraEnvironment";
 import { collisionWorldFromFixtures, committedMovementRules, fixtureCellId, mixedChunkArrays, waterPhysicsVolume } from "../fixtures/movement/movementCollisionFixtures";
 import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
@@ -16,7 +15,7 @@ const hazeBytes = [188, 203, 224] as const;
 
 function sources(change: Partial<CameraEnvironmentSources> = {}): CameraEnvironmentSources {
   return { frame: frameInZone(1), cameraSourcePosition: null, referencePawnSourcePosition: pawnOutsideFogInfo, collision: null, records,
-    fogEnvironment: { hour: 12, fogRanges: shippedEnvironmentFogRanges, hazeColour: { status: "resolved", value: hazeBytes } }, skySceneRoute: null, ...change };
+    fogEnvironment: { hour: 12, fogRanges: shippedEnvironmentFogRanges, hazeColour: { status: "resolved", value: hazeBytes } }, ...change };
 }
 
 describe("computeCameraEnvironment", () => {
@@ -100,25 +99,9 @@ describe("computeCameraEnvironment", () => {
 });
 
 describe("sky scene fog", () => {
-  const routed = (route: SkySceneFogRoute | null, skyZones: readonly number[]) => computeCameraEnvironment(sources({ frame: frameInZone(1, skyZones), skySceneRoute: route }));
-
-  it("keeps the sky unfogged and names the unresolved scene route while GL2SharedSky is unknown", () => {
-    const environment = routed(null, [3]);
-    expect(environment.skyFog).toEqual({ route: null, fog: FOG_DISABLED, gaps: [cameraEnvironmentGaps.skyFogSceneRouteUnresolved] });
+  it("inherits the level fog under the shared-sky route of the shipped l2.ini and names the unstaged SkyLevel geometry", () => {
+    const environment = computeCameraEnvironment(sources({ frame: frameInZone(1, [3]) }));
     expect(environment.fog.source).toBe("camera-zone");
-  });
-
-  it("inherits the level fog under the shared-sky route", () => {
-    const environment = routed("inherit-level", [3]);
-    expect(environment.skyFog).toEqual({ route: "inherit-level", fog: environment.fog, gaps: [] });
-  });
-
-  it("evaluates the sky zone's own fog under the own-zone route without changing the level fog", () => {
-    const level = routed(null, [3]).fog;
-    const environment = routed("own-zone", [3]);
-    expect(environment.fog).toEqual(level);
-    expect(environment.skyFog.fog).toMatchObject({ source: "terrain-zone-environment", startSourceUnits: 8192, endSourceUnits: 20480 });
-    expect(routed("own-zone", [2]).skyFog.fog).toEqual({ ...FOG_DISABLED, source: "zone-without-fog" });
-    expect(routed("own-zone", [])).toMatchObject({ skyFog: { fog: FOG_UNRESOLVED, gaps: ["sky-fog-zone-count:0"] } });
+    expect(environment.skyFog).toEqual({ route: "inherit-level", fog: environment.fog, gaps: [cameraEnvironmentGaps.sharedSkyLevelGeometryUnstaged] });
   });
 });

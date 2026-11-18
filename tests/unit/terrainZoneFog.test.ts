@@ -15,7 +15,7 @@ const zoneInfo0 = zoneIndexOfActor(tileRecords, "15_22.ZoneInfo0");
 
 function environmentOf(records = decodedFogWorkedCaseRecords(tileRecords), environment = fogEnvironment) {
   return computeCameraEnvironment({ frame: frameInZone(zoneInfo0), cameraSourcePosition: null, referencePawnSourcePosition: null, collision: null, records,
-    fogEnvironment: environment, skySceneRoute: null });
+    fogEnvironment: environment });
 }
 
 function withTerrainFlagRecords(provenance: string, value: unknown) {

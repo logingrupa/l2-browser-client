@@ -92,20 +92,21 @@ describe("L2FogInfo selection by the Q12 answer", () => {
         retentionDistanceDecides: true, orderCanChangeResult: false });
   });
 
-  it("holds the RM-4 rows and keeps the list order, sky scene route and fog curve as named open rows", () => {
+  it("holds the RM-4 rows, the RM-17 shared-sky route and the RM-18 table fog curve, and keeps the list order as a named open row", () => {
     expect(FOG_CONSTANTS.terrainClipRange).toMatchObject({ status: "confirmed-interlude", runtimeDefault: 8 });
     expect(FOG_CONSTANTS.fadeReferencePosition).toMatchObject({ status: "confirmed-interlude", runtimeDefault: "possessed-pawn-location" });
     expect(FOG_CONSTANTS.localListProducer).toMatchObject({ status: "confirmed-interlude", runtimeDefault: "al2foginfo-tick-add-unique" });
     expect(FOG_CONSTANTS.localListRetention).toMatchObject({ status: "confirmed-interlude", interludeEvidence: "Engine.dll 0x106560f0" });
     expect(FOG_CONSTANTS.localListOrder).toMatchObject({ status: "unconfirmed", runtimeDefault: "export-order" });
     expect(FOG_CONSTANTS.localListOrder.provenance).toMatch(/^assumption:/);
-    expect(FOG_CONSTANTS.skySceneRoute).toMatchObject({ status: "unknown", runtimeDefault: null });
+    expect(FOG_CONSTANTS.skySceneRoute).toMatchObject({ status: "confirmed-interlude", runtimeDefault: "inherit-level" });
     expect(FOG_CONSTANTS.viewportActorEnableFlag).toMatchObject({ id: "fog.viewport-actor-enable-flag", status: "unconfirmed", runtimeDefault: true });
     expect(FOG_CONSTANTS.viewportActorEnableFlag.provenance).toMatch(/^assumption:.*\+0x5ac & 0x80000/);
     expect(FOG_CONSTANTS.fadeReferencePosition.provenance).toMatch(/movement pose feet plus the profile collision height/);
     expect(FOG_CONSTANTS.localListRetention.provenance).toMatch(/does not say which position the retention distance is measured from; the runtime measures it from the fade reference pawn/);
     expect(FOG_CONSTANTS.sourcePrecedence.provenance).toMatch(/enabled only when the camera ZoneInfo has bDistanceFog \(\+0x3d8 & 8\) and the viewport actor \+0x5ac & 0x80000/);    expect(FOG_CONSTANTS.sourcePrecedence.runtimeDefault).toEqual(["volume", "local-fog-list", "terrain-zone-environment", "camera-zone"]);
     expect(FOG_CONSTANTS.rangeUnit).toMatchObject({ status: "confirmed-interlude", runtimeDefault: 2048 });
-    expect(FOG_CONSTANTS.factor.provenance).toMatch(/^assumption:/);
+    expect(FOG_CONSTANTS.factor).toMatchObject({ status: "unconfirmed" });
+    expect(FOG_CONSTANTS.factor.provenance).toMatch(/^RM-18 .*the live caps are unresolved/i);
   });
 });

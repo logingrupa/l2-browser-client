@@ -106,7 +106,7 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
   expect(["local-fog-list", "terrain-zone-environment", "camera-zone", "zone-without-fog"]).toContain(levelFog.source);
   if (levelFog.enabled) expect(levelFog.endSourceUnits).toBeGreaterThan(levelFog.startSourceUnits);
   expect(inspection.cameraEnvironment!.gaps).not.toContain("fog-info-reference-pawn-absent");
-  expect(inspection.cameraEnvironment!.skyFog).toMatchObject({ route: null, fog: { enabled: false }, gaps: ["sky-fog-scene-route-unresolved"] });
+  expect(inspection.cameraEnvironment!.skyFog).toEqual({ route: "inherit-level", fog: levelFog, gaps: ["shared-sky-level-geometry-unstaged"] });
   expect(world.mapEmitterPlacements!.gap).toBeNull();
   expect(world.mapEmitterPlacements!.placements.length).toBeGreaterThan(0);
   for (const placement of world.mapEmitterPlacements!.placements) {

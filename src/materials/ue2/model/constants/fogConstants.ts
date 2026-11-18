@@ -3,6 +3,7 @@ import type { FogFamily } from "./blendFactorTypes";
 import { materialNotes } from "./materialNotes";
 
 const fogAnswer = "Q12 replay-verified l2foginfo-runtime.json 77cffb57...c465 (Engine.dll, D3DDrv.dll, Engine.u, Env.int, 20_21.unr lock-equal)";
+const skyFogDepthAnswer = "RM-18 replay-verified sky-fog-depth.json 2078c337...0492 (Engine.dll, Core.dll, D3DDrv.dll, skylevel.unr lock-equal)";
 const fogScopeAnswer = "RM-4 replay-verified fog-draw-scope.json b93571c0...c2ee4 (Engine.dll, Core.dll, D3DDrv.dll, Engine.u, Env.int, 15_22.unr, 20_21.unr lock-equal)";
 
 const materialFogFamilies = {
@@ -41,7 +42,7 @@ const fogConstantRows = {
   factor: {
     id: "fog.factor",
     value: "linear clamp((depth - start) / (end - start), 0, 1) on view depth",
-    provenance: `assumption: ${fogAnswer} finds no D3DRS_FOGTABLEMODE or D3DRS_FOGVERTEXMODE write, so the fog curve is unresolved; the linear ramp follows ${materialNotes} fog.factor`,
+    provenance: `${skyFogDepthAnswer}: with D3DPRASTERCAPS_FOGTABLE (0x100) and WFOG (0x100000) in RasterCaps (+0x41cc) the device sets FOGTABLEMODE (0x23) to 3, D3DFOG_LINEAR, and RANGEFOGENABLE (0x30) to 0, so the factor is linear in eye-space depth; without the table caps it takes vertex fog mode 3 with range fog from FOGRANGE. The live caps are unresolved, the depth semantics follow the D3D9 documentation, and the range variant applies only without table fog`,
     status: "unconfirmed",
     interludeEvidence: null,
     runtimeDefault: "linear clamp((depth - start) / (end - start), 0, 1) on view depth",
@@ -120,17 +121,13 @@ const fogConstantRows = {
   },
   skySceneRoute: {
     id: "fog.sky-scene-route",
-    value: null,
-    provenance: `${fogScopeAnswer}: the sky scene 0x10660000 inherits the level fog through PushState, RenderLevel and PopState when !GIsEditor && GIsL2Seamless && GL2SharedSky, and otherwise runs FLevelSceneNode::Render for the sky zone; the runtime values of GIsL2Seamless and GL2SharedSky are unresolved`,
-    status: "unknown",
-    interludeEvidence: null,
-    runtimeDefault: null,
+    value: "inherit-level",
+    provenance: `${fogScopeAnswer}: the sky scene 0x10660000 inherits the level fog through PushState, RenderLevel and PopState when !GIsEditor && GIsL2Seamless && GL2SharedSky. ${skyFogDepthAnswer} and RM-17 sky-fog-route-and-transition.json 6593fded: the shipped l2.ini (9881523b) sets SharedSky=True and IsL2Seamless=True; IsL2Console clears seamless only until world entry 0x1058a916 sets it back, and IsOnlyL2Console is absent (default 0), so SkyLevel loads at 0x10591691`,
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll FSkySceneNode::Render 0x10660000, world entry 0x1058a916, SkyLevel gate 0x10591691; l2.ini 9881523b",
+    runtimeDefault: "inherit-level",
   },
 } as const satisfies Record<string, ReferenceConstantRow<unknown>>;
 
-export type SkySceneFogRoute = "inherit-level" | "own-zone";
-
-export const FOG_CONSTANTS: Omit<typeof fogConstantRows, "skySceneRoute"> & {
-  readonly skySceneRoute: ReferenceConstantRow<SkySceneFogRoute | null>;
-} = fogConstantRows;
+export const FOG_CONSTANTS = fogConstantRows;
 

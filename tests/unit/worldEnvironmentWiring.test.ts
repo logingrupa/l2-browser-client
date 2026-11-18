@@ -9,9 +9,7 @@ import type { WorldEvent } from "../../src/world/worldTypes";
 import { dayNightTimeTables } from "../support/worldTimeOfDayFixture";
 
 const zoneFog: FogState = { enabled: true, source: "camera-zone", colour: [.5, .5, .5], startSourceUnits: 1000, endSourceUnits: 12000, fogEnd: 12000 };
-const unresolvedSkyRoute = { route: null, fog: FOG_DISABLED, gaps: ["sky-fog-scene-route-unresolved"] };
-const cameraFogOf = (level: FogState, route: "inherit-level" | null = "inherit-level"): CameraEnvironmentFog =>
-  ({ fog: level, skyFog: route === null ? unresolvedSkyRoute : { route, fog: level, gaps: [] } });
+const cameraFogOf = (level: FogState): CameraEnvironmentFog => ({ fog: level, skyFog: { route: "inherit-level", fog: level, gaps: [] } });
 const unstagedTimeOfDay: WorldTimeOfDay = { status: "gap", reason: "environment-time-tables-unstaged", detail: "not staged" };
 const scenes: Scene[] = [];
 afterEach(() => { for (const scene of scenes.splice(0)) { const engine = scene.getEngine(); scene.dispose(); engine.dispose(); } });
@@ -76,37 +74,17 @@ describe("world environment wiring", () => {
       lastRejectedEvent: "environment-time-tables-unstaged" });
   });
 
-  it("sets camera maxZ to fogEnd while fog is on and the sky is fogged by a known route, and keeps the presentation far plane otherwise", () => {
-    expect(cameraFarPlane(cameraFogOf(zoneFog), 480)).toEqual({ maxZ: 120, source: "fog-end" });
+  it("keeps the presentation far plane and names the far-plane source unresolved while the level fog is on, reading the fog every frame", () => {
+    expect(cameraFarPlane(cameraFogOf(zoneFog), 480)).toEqual({ maxZ: 480, source: "far-plane-source-unresolved" });
     expect(cameraFarPlane(cameraFogOf(FOG_DISABLED), 480)).toEqual({ maxZ: 480, source: "presentation" });
     expect(cameraFarPlane(null, 480)).toEqual({ maxZ: 480, source: "presentation" });
     const { environment, camera, setFog } = environmentOn(cameraFogOf(zoneFog));
     environment.update();
-    expect(camera.maxZ).toBe(120);
+    expect(camera.maxZ).toBe(480);
+    expect(environment.inspection().farPlane).toEqual({ maxZ: 480, source: "far-plane-source-unresolved" });
     setFog(cameraFogOf(FOG_DISABLED));
     environment.update();
-    expect(camera.maxZ).toBe(480);
     expect(environment.inspection().farPlane).toEqual({ maxZ: 480, source: "presentation" });
     expect(() => wireWorldEnvironment({ adapter: { subscribe: () => () => {} }, camera, timeOfDay: unstagedTimeOfDay, cameraFog: () => null, presentationFarPlane: 0 })).toThrow(RangeError);
-  });
-
-  it("keeps the presentation far plane while the sky fog route is unresolved, so fogged geometry is never cut off against an unfogged sky", () => {
-    expect(cameraFarPlane(cameraFogOf(zoneFog, null), 480)).toEqual({ maxZ: 480, source: "sky-fog-unresolved" });
-    expect(cameraFarPlane(cameraFogOf(FOG_DISABLED, null), 480)).toEqual({ maxZ: 480, source: "presentation" });
-    const { environment, camera } = environmentOn(cameraFogOf(zoneFog, null));
-    environment.update();
-    expect(camera.maxZ).toBe(480);
-    expect(environment.inspection().farPlane).toEqual({ maxZ: 480, source: "sky-fog-unresolved" });
-  });
-
-  it("reads the level fog on every frame, so a pawn or hour change inside one camera zone moves the far plane", () => {
-    const localFog: FogState = { ...zoneFog, source: "local-fog-list", startSourceUnits: 0, endSourceUnits: 10000, fogEnd: 10000 };
-    const { environment, camera, setFog } = environmentOn(cameraFogOf(zoneFog));
-    environment.update();
-    expect(camera.maxZ).toBe(120);
-    setFog(cameraFogOf(localFog));
-    environment.update();
-    expect(camera.maxZ).toBe(100);
-    expect(environment.inspection().farPlane).toEqual({ maxZ: 100, source: "fog-end" });
   });
 });

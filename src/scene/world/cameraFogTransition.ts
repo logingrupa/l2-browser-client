@@ -91,8 +91,7 @@ export function createCameraFogTransition(fogSpeedSeconds: number): CameraFogTra
       const { next, gap } = step(state ?? seededState(routeSeed(active)), active);
       state = updateFogTransition(next, deltaSeconds);
       const fog = environment.fog.enabled ? transitionedFog(environment.fog, state) : environment.fog;
-      const skyFog = environment.skyFog.route === "inherit-level" ? { ...environment.skyFog, fog } : environment.skyFog;
-      return { ...environment, fog, skyFog, gaps: gap === null ? environment.gaps : [...environment.gaps, gap] };
+      return { ...environment, fog, skyFog: { ...environment.skyFog, fog }, gaps: gap === null ? environment.gaps : [...environment.gaps, gap] };
     },
     inspection: () => ({ state, route, fogSpeedSeconds, previousLocal, previousTerrainZone, lastRestart,
       initialState: { status: "unresolved", reason: fogTransitionInitialStateUnresolvedReason } }),

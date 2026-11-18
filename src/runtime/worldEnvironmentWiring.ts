@@ -1,11 +1,10 @@
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
-import { sourceDistanceToWorld } from "../world/sourceFrame";
 import { inspectWorldTimeOfDay, type WorldTimeOfDay, type WorldTimeOfDayInspection } from "../scene/world/worldTimeOfDay";
 import type { WorldEvent } from "../world/worldTypes";
 import type { NativeEnvironmentManager } from "../environment/model/nativeEnvironmentManager";
 import type { CameraEnvironmentFog } from "../scene/world/cameraEnvironment";
 
-export type CameraFarPlaneSource = "fog-end" | "presentation" | "sky-fog-unresolved";
+export type CameraFarPlaneSource = "presentation" | "far-plane-source-unresolved";
 
 export interface CameraFarPlane {
   readonly maxZ: number;
@@ -40,9 +39,7 @@ export interface WorldEnvironment {
 const serverPacketGap = { producer: "sandbox-command", status: "unresolved", reason: "server-packet-unresolved" } as const;
 export function cameraFarPlane(cameraFog: CameraEnvironmentFog | null, presentationFarPlane: number): CameraFarPlane {
   const levelFog = cameraFog?.fog ?? null;
-  if (levelFog === null || !levelFog.enabled || levelFog.fogEnd === null) return { maxZ: presentationFarPlane, source: "presentation" };
-  if (cameraFog!.skyFog.route === null) return { maxZ: presentationFarPlane, source: "sky-fog-unresolved" };
-  return { maxZ: sourceDistanceToWorld(levelFog.fogEnd), source: "fog-end" };
+  return { maxZ: presentationFarPlane, source: levelFog === null || !levelFog.enabled ? "presentation" : "far-plane-source-unresolved" };
 }
 
 type EnvironmentWorldEvent = Extract<WorldEvent, { readonly type: "server-time" | "environment-ssq-info" | "environment-red-sky" }>;
