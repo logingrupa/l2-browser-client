@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from catalog_store_fixture import minimal_runtime_tile_record_and_files
 from native_assets_lib.gltf import json_bytes
 from native_store import catalog_writer
-from native_store.catalog_writer import NATIVE_RESOURCE_PATH_PATTERN, add_store_file, merge_catalog_slice, read_store_catalog, write_store
+from native_store.catalog_writer import NATIVE_RESOURCE_PATH_PATTERN, StoreFileEntry, add_store_file, merge_catalog_slice, read_store_catalog, write_store
 from native_store.verified_file_writes import CatalogWriteError
 from native_store.interprocess_lock import LOCK_FILE_SUFFIX
 from native_store.merge_lane_store import main_checkout_root
@@ -212,7 +212,7 @@ class LaneCatalogWriterTests(unittest.TestCase):
         add_store_file(files, 'Folder/file.bin', b'first')
         with self.assertRaisesRegex(CatalogWriteError, 'Conflicting store file paths: folder/FILE.bin'):
             add_store_file(files, 'folder/FILE.bin', b'second')
-        self.assertEqual(list(files.values()), [('Folder/file.bin', b'first')])
+        self.assertEqual(list(files.values()), [StoreFileEntry('Folder/file.bin', b'first', hashlib.sha256(b'first').hexdigest())])
 
     def test_write_store_refuses_a_differing_existing_file_before_any_write(self):
         self.stage_model_version_two(self.world_store)
@@ -223,7 +223,8 @@ class LaneCatalogWriterTests(unittest.TestCase):
         add_store_file(files, 'aaa/first.bin', b'new file')
         add_store_file(files, MODEL_VERSION_TWO_ARCHIVE, MODEL_VERSION_TWO_BYTES)
         snapshot = snapshot_tree(self.project)
-        with self.assertRaisesRegex(CatalogWriteError, 'Existing immutable store file differs; preserved'):
+        with self.assertRaisesRegex(CatalogWriteError, 'Existing immutable store file hashes to [a-f0-9]{64} where this publish verified '
+                                    + hashlib.sha256(MODEL_VERSION_TWO_BYTES).hexdigest() + '; preserved'):
             write_store(self.world_store, files, before, json_bytes(dict(catalog, extra=1)))
         self.assertEqual(snapshot_tree(self.project), snapshot)
 
@@ -253,13 +254,13 @@ class LaneCatalogWriterTests(unittest.TestCase):
         catalog, before = read_store_catalog(self.world_store)
         files = {}
         add_store_file(files, MODEL_VERSION_TWO_ARCHIVE, MODEL_VERSION_TWO_BYTES)
-        original_immutable_write = catalog_writer.immutable_write
+        original_immutable_write = catalog_writer.immutable_write_expecting_sha256
 
-        def write_then_change_catalog(path, payload):
-            original_immutable_write(path, payload)
+        def write_then_change_catalog(path, payload, expected_sha256):
+            original_immutable_write(path, payload, expected_sha256)
             (self.world_store / 'catalog.json').write_bytes(b'{"schemaVersion":1,"models":[]}')
 
-        with patch.object(catalog_writer, 'immutable_write', write_then_change_catalog):
+        with patch.object(catalog_writer, 'immutable_write_expecting_sha256', write_then_change_catalog):
             with self.assertRaisesRegex(CatalogWriteError, 'Catalog changed since it was read; preserved'):
                 write_store(self.world_store, files, before, json_bytes(merge_catalog_slice(catalog, 'models', MODEL_VERSION_TWO_RECORD, 4)))
         self.assertEqual((self.world_store / 'catalog.json').read_bytes(), b'{"schemaVersion":1,"models":[]}')

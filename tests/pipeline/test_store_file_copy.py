@@ -16,7 +16,7 @@ from native_store import catalog_writer
 from native_store.catalog_writer import add_store_file, write_store
 from native_store.verified_file_writes import CatalogWriteError, sha256_of_file
 from native_store.pinned_store_verification import VerifiedStoreFile
-from native_store import store_file_copy
+from native_store import store_file_copy, verified_file_writes
 from native_store.store_file_copy import STORE_FILE_COPY_CHUNK_BYTES, StoreFileSource, add_store_file_source, copy_store_files
 from native_store.store_paths import StorePathError
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES
@@ -182,11 +182,21 @@ class StoreFileCopyTests(StoreFileSourcesTestCase):
             self.copy_with_free_bytes(0, None, PINNED_CATALOG_BYTES)
         self.assertEqual(snapshot_tree(self.target_root), snapshot)
 
-    def test_an_existing_destination_with_other_bytes_is_refused_as_write_store_refuses_it(self):
-        relative = STORE_FILES[1][0]
-        self.assert_write_store_and_the_copy_refuse_alike(
-            lambda store_root: write_file(store_root / relative, OTHER_WRITER_BYTES), None, EMPTY_CATALOG_BYTES,
-            lambda store_root: f'Existing immutable store file differs; preserved: {store_root / relative}')
+    def test_an_existing_destination_with_other_bytes_is_refused_by_write_store_and_by_the_copy_each_with_its_own_message(self):
+        relative, payload = STORE_FILES[1]
+        twin_root = self.temporary_root / 'twin' / 'l2'
+        for store_root in (twin_root, self.target_root):
+            write_file(store_root / relative, OTHER_WRITER_BYTES)
+        snapshot = snapshot_tree(self.target_root)
+        with self.assertRaises(CatalogWriteError) as write_store_refusal:
+            write_store(twin_root, self.store_file_payloads(), None, EMPTY_CATALOG_BYTES)
+        with self.assertRaises(CatalogWriteError) as copy_refusal:
+            self.copy_with_free_bytes(AMPLE_FREE_BYTES, None, EMPTY_CATALOG_BYTES)
+        self.assertEqual((str(write_store_refusal.exception), str(copy_refusal.exception)),
+                         (f'Existing immutable store file hashes to {sha256_hex(OTHER_WRITER_BYTES)} where this publish verified '
+                          f'{sha256_hex(payload)}; preserved: {twin_root / relative}',
+                          f'Existing immutable store file differs; preserved: {self.target_root / relative}'))
+        self.assertEqual(snapshot_tree(self.target_root), snapshot)
 
     def test_a_catalog_changed_before_the_first_write_is_refused_as_write_store_refuses_it(self):
         self.assert_write_store_and_the_copy_refuse_alike(
@@ -248,7 +258,7 @@ class StoreFileCopyTests(StoreFileSourcesTestCase):
         self.assertFalse((self.target_root / 'catalog.json').exists())
         self.assertEqual(temporary_file_paths(self.target_root), [])
         with self.assertRaises(CatalogWriteError) as immutable_write_refusal:
-            catalog_writer.immutable_write(destination, first_payload)
+            verified_file_writes.immutable_write(destination, first_payload)
         self.assertEqual(str(immutable_write_refusal.exception), str(copy_refusal.exception))
 
     def test_a_destination_created_with_other_bytes_after_the_destination_check_is_refused_and_never_overwritten(self):

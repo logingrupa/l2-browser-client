@@ -181,8 +181,8 @@ def write_texture_records(output_root, conversions, gap_references, capacity):
             add_store_file(store_files, relative, payload)
     catalog[TEXTURES_CATALOG_SLICE] = sorted(catalog[TEXTURES_CATALOG_SLICE], key=lambda record: record['id'])
     write_store(output_root, store_files, before, canonical_json_bytes(catalog))
-    return [{'path': f'l2/{relative}', 'sha256': hashlib.sha256(payload).hexdigest(), 'bytes': len(payload)}
-            for relative, payload in sorted(store_files.values())]
+    return [{'path': f'l2/{relative}', 'sha256': expected_sha256, 'bytes': len(payload)}
+            for relative, payload, expected_sha256 in sorted(store_files.values())]
 
 
 def window_gap_rows(window_name, unit_key, requests_by_reference, outcomes, gap_bindings, interface_sha256, evidence):

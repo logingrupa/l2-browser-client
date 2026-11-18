@@ -133,7 +133,7 @@ class NpcProfileStagingTests(RuntimeStagingFixture):
         record = json.loads(catalog)['npcProfiles'][0]
         path = self.destination / 'npc-profiles' / record['manifestSha256'] / 'source/npc-selections.json'
         path.write_bytes(b'local corruption retained for review')
-        with self.assertRaisesRegex(ValueError, 'Existing immutable store file differs; preserved'):
+        with self.assertRaisesRegex(ValueError, 'Existing immutable store file hashes to [a-f0-9]{64} where this publish verified [a-f0-9]{64}; preserved'):
             self.stage()
         self.assertEqual(path.read_bytes(), b'local corruption retained for review')
         self.assertEqual((self.destination / 'catalog.json').read_bytes(), catalog)

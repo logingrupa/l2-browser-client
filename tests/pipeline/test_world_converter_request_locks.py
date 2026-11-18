@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
+from native_store.catalog_writer import add_store_file
 from native_store.store_paths import lane_work_root
 from test_world_audio_step import wav_bytes
 from world import exact_sound_sources, minimap_textures, mover_step, static_mesh_step
@@ -51,7 +52,9 @@ class RecordingLock:
 class ConverterRequestLockTests(unittest.TestCase):
     def test_a_static_mesh_conversion_goes_through_the_request_lock(self):
         converter = mock.Mock()
-        store_files = {'a/asset.l2asset': ('a/asset.l2asset', b'archive'), 'a/model.glb': ('a/model.glb', b'model')}
+        store_files = {}
+        add_store_file(store_files, 'a/asset.l2asset', b'archive')
+        add_store_file(store_files, 'a/model.glb', b'model')
         record = {'assetId': 'rock', 'source': {'object': 'Rock.Rock_S'}, 'archive': '/l2/a/asset.l2asset', 'archiveSha256': 'a' * 64,
                   'model': '/l2/a/model.glb', 'modelSha256': 'b' * 64}
         with mock.patch.object(static_mesh_step, 'convert_under_request_lock', return_value={'file': 'converted/asset.l2asset'}) as request_lock, \

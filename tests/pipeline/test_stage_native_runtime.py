@@ -138,7 +138,7 @@ class RuntimeStagingTests(RuntimeStagingFixture):
         catalog = (self.destination / 'catalog.json').read_bytes()
         model = self.destination / self.archive_hash / 'model.glb'
         model.write_bytes(b'local corruption to preserve')
-        with self.assertRaisesRegex(ValueError, 'Existing immutable store file differs; preserved'):
+        with self.assertRaisesRegex(ValueError, 'Existing immutable store file hashes to [a-f0-9]{64} where this publish verified [a-f0-9]{64}; preserved'):
             self.stage()
         self.assertEqual(model.read_bytes(), b'local corruption to preserve')
         self.assertEqual((self.destination / 'catalog.json').read_bytes(), catalog)

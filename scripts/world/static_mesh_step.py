@@ -7,7 +7,7 @@ from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.static_materials import REVIEWED_VERSIONS, static_material_layout_unreviewed_reason
 from native_catalog.ue2 import FormatError, Package
-from native_store.catalog_writer import add_store_file
+from native_store.catalog_writer import StoreFileEntry, add_store_file_entry
 from native_store.verified_file_writes import sha256_hex
 from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_file_publish import publish_store_files
@@ -146,13 +146,13 @@ def with_vertex_streams(converted, outcome):
     payload_sha256 = sha256_hex(outcome.payload)
     relative = vertex_streams_store_path(payload_sha256)
     store_files = dict(converted.store_files)
-    add_store_file(store_files, relative, outcome.payload)
+    add_store_file_entry(store_files, StoreFileEntry(relative, outcome.payload, payload_sha256))
     vertex_streams = {'file': relative, 'sha256': payload_sha256, 'bytes': len(outcome.payload)}
     return ConvertedStaticMesh({**converted.model_record, 'vertexStreams': vertex_streams}, store_files)
 
 
 def model_glb_bytes(converted):
-    return converted.store_files[converted.model_record['model']['file'].casefold()][1]
+    return converted.store_files[converted.model_record['model']['file'].casefold()].payload
 
 
 def convert_static_mesh(converter, request):
@@ -160,8 +160,8 @@ def convert_static_mesh(converter, request):
     store_files, record = converted_model_store_files_and_record(None, Path(result['file']))
     archive_relative, model_relative = record['archive'].removeprefix('/l2/'), record['model'].removeprefix('/l2/')
     model_record = {'id': record['assetId'], 'sourceObject': record['source']['object'],
-                    'archive': {'file': archive_relative, 'sha256': record['archiveSha256'], 'bytes': len(store_files[archive_relative.casefold()][1])},
-                    'model': {'file': model_relative, 'sha256': record['modelSha256'], 'bytes': len(store_files[model_relative.casefold()][1])}}
+                    'archive': {'file': archive_relative, 'sha256': record['archiveSha256'], 'bytes': len(store_files[archive_relative.casefold()].payload)},
+                    'model': {'file': model_relative, 'sha256': record['modelSha256'], 'bytes': len(store_files[model_relative.casefold()].payload)}}
     return ConvertedStaticMesh(model_record, store_files)
 
 
@@ -286,11 +286,11 @@ def write_static_mesh_store_files(project_root, product, mesh_outcomes):
     store_files = {}
     for outcome in mesh_outcomes.values():
         if isinstance(outcome, ConvertedStaticMesh) and outcome.model_record['id'] in model_ids:
-            for relative, payload in outcome.store_files.values():
-                add_store_file(store_files, relative, payload)
+            for entry in outcome.store_files.values():
+                add_store_file_entry(store_files, entry)
     publish_store_files(store_root, store_files)
-    return [{'path': (store_root / relative).relative_to(store_root.parent).as_posix(), 'sha256': sha256_hex(payload), 'bytes': len(payload)}
-            for relative, payload in sorted(store_files.values())]
+    return [{'path': (store_root / relative).relative_to(store_root.parent).as_posix(), 'sha256': expected_sha256, 'bytes': len(payload)}
+            for relative, payload, expected_sha256 in sorted(store_files.values())]
 
 
 def run_static_mesh_step(project_root, client_root, tile_id):

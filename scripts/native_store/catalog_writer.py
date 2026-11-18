@@ -12,7 +12,8 @@ from native_store.native_material_program_pins import (MATERIAL_PROGRAM_FILE_NAM
                                                        native_material_program_directory)
 from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_child_path, refuse_reparse_points,
                                       require_portable_relative_path)
-from native_store.verified_file_writes import CatalogWriteError, immutable_write, replace_file, sha256_hex, sha256_of_file
+from native_store.verified_file_writes import (CatalogWriteError, StorePayloadIntegrityError, immutable_write_expecting_sha256, replace_file,
+                                               sha256_hex, sha256_of_file)
 
 KNOWN_CATALOG_SLICES = ('models', 'textures', 'sections', 'movers', 'npcProfiles', 'playerProfiles',
                         'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles', 'tables', 'windows',
@@ -93,11 +94,21 @@ def store_file_key(relative):
     return key
 
 
+class StoreFileEntry(NamedTuple):
+    relative: str
+    payload: bytes
+    expected_sha256: str
+
+
+def add_store_file_entry(files, entry):
+    key = store_file_key(entry.relative)
+    if key in files and files[key] != entry:
+        raise CatalogWriteError('Conflicting store file paths: ' + entry.relative)
+    files[key] = entry
+
+
 def add_store_file(files, relative, payload):
-    key = store_file_key(relative)
-    if key in files and files[key] != (relative, payload):
-        raise CatalogWriteError('Conflicting store file paths: ' + relative)
-    files[key] = (relative, payload)
+    add_store_file_entry(files, StoreFileEntry(relative, payload, sha256_hex(payload)))
 
 
 def read_current_catalog_bytes(store_root):
@@ -369,14 +380,26 @@ def pinned_file_child_references(reference, payload):
     return child_references
 
 
+def require_payloads_unchanged_since_verification(files):
+    for entry in files.values():
+        payload_sha256 = sha256_hex(entry.payload)
+        if payload_sha256 != entry.expected_sha256:
+            raise StorePayloadIntegrityError(f'Store file {entry.relative} payload changed in memory since verification: it hashes to '
+                                             f'{payload_sha256} where {entry.expected_sha256} was verified')
+
+
 def verify_store_destinations(store_root, files):
+    require_payloads_unchanged_since_verification(files)
     missing_relative_paths = []
-    for relative, payload in files.values():
-        destination = confined_child_path(store_root, relative)
+    for entry in files.values():
+        destination = confined_child_path(store_root, entry.relative)
         if not destination.exists():
-            missing_relative_paths.append(relative)
-        elif sha256_of_file(destination) != sha256_hex(payload):
-            raise CatalogWriteError('Existing immutable store file differs; preserved: ' + str(destination))
+            missing_relative_paths.append(entry.relative)
+            continue
+        existing_sha256 = sha256_of_file(destination)
+        if existing_sha256 != entry.expected_sha256:
+            raise CatalogWriteError(f'Existing immutable store file hashes to {existing_sha256} where this publish verified '
+                                    f'{entry.expected_sha256}; preserved: {destination}')
     return missing_relative_paths
 
 
@@ -391,8 +414,8 @@ def require_catalog_within_byte_limit(catalog_path, after):
 
 
 def write_store_files(store_root, files):
-    for relative, payload in files.values():
-        immutable_write(confined_child_path(store_root, relative), payload)
+    for entry in files.values():
+        immutable_write_expecting_sha256(confined_child_path(store_root, entry.relative), entry.payload, entry.expected_sha256)
 
 
 def write_store(store_root, files, before, after):

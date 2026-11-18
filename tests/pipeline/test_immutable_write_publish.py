@@ -9,9 +9,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from native_store import verified_file_writes
-from native_store.verified_file_writes import CatalogWriteError, immutable_write, replace_file
+from native_store.verified_file_writes import (CatalogWriteError, StorePayloadIntegrityError, immutable_write, immutable_write_expecting_sha256,
+                                               replace_file, sha256_hex)
 
 PAYLOAD = b'the whole payload of one immutable store file'
+PAYLOAD_WITH_ONE_FLIPPED_BYTE = bytes([PAYLOAD[0] ^ 0x01]) + PAYLOAD[1:]
 OTHER_WRITER_PAYLOAD = b'bytes of another writer'
 FILE_NAME = 'asset.l2asset'
 IMMUTABLE_REFUSAL_PREFIX = 'Existing immutable runtime asset is corrupt; preserved: '
@@ -91,11 +93,27 @@ class ImmutableWritePublishTests(unittest.TestCase):
         self.assertIs(caught.exception, link_refusal)
         self.assertFalse(self.destination.exists())
 
-    def test_a_published_file_whose_read_back_differs_is_refused_as_a_runtime_copy(self):
+    def test_a_written_file_whose_read_back_differs_is_refused_as_an_integrity_fault_before_it_gets_its_name(self):
         with mock.patch.object(verified_file_writes, 'sha256_of_file', return_value='0' * 64):
-            with self.assertRaises(CatalogWriteError) as refusal:
+            with self.assertRaises(StorePayloadIntegrityError) as refusal:
                 immutable_write(self.destination, PAYLOAD)
-        self.assertEqual(str(refusal.exception), 'Runtime copy hash differs: ' + str(self.destination))
+        self.assertEqual(str(refusal.exception), f'Written store file hashes to {"0" * 64} where {sha256_hex(PAYLOAD)} was verified; '
+                                                 f'not published: {self.destination}')
+        self.assertFalse(self.destination.exists())
+
+    def test_a_payload_with_one_flipped_byte_against_its_verified_sha256_is_refused_and_no_file_gets_its_name(self):
+        with self.assertRaises(StorePayloadIntegrityError) as refusal:
+            immutable_write_expecting_sha256(self.destination, PAYLOAD_WITH_ONE_FLIPPED_BYTE, sha256_hex(PAYLOAD))
+        self.assertNotIsInstance(refusal.exception, ValueError)
+        self.assertEqual(str(refusal.exception), f'Written store file hashes to {sha256_hex(PAYLOAD_WITH_ONE_FLIPPED_BYTE)} where '
+                                                 f'{sha256_hex(PAYLOAD)} was verified; not published: {self.destination}')
+        self.assertFalse(self.destination.exists())
+
+    def test_an_existing_file_is_compared_with_the_verified_sha256_and_not_with_a_flipped_payload(self):
+        self.folder.mkdir(parents=True)
+        self.destination.write_bytes(PAYLOAD)
+        immutable_write_expecting_sha256(self.destination, PAYLOAD_WITH_ONE_FLIPPED_BYTE, sha256_hex(PAYLOAD))
+        self.assertEqual(self.destination.read_bytes(), PAYLOAD)
 
     def test_replace_file_still_replaces_an_existing_file(self):
         self.folder.mkdir(parents=True)

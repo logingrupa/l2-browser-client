@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import struct
 
@@ -151,8 +150,8 @@ def write_font_record(output_root, font_type, manifest_bytes, texture_files, cap
     for relative, payload in {**texture_files, manifest_relative: manifest_bytes}.items():
         add_store_file(store_files, relative, payload)
     write_store(output_root, store_files, before, canonical_json_bytes(catalog))
-    return record, [{'path': f'l2/{relative}', 'sha256': hashlib.sha256(payload).hexdigest(), 'bytes': len(payload)}
-                    for relative, payload in sorted(store_files.values())]
+    return record, [{'path': f'l2/{relative}', 'sha256': expected_sha256, 'bytes': len(payload)}
+                    for relative, payload, expected_sha256 in sorted(store_files.values())]
 
 
 def read_glyph_table(client_access, entry):

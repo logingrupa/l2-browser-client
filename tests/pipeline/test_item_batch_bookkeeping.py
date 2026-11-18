@@ -171,7 +171,7 @@ class ItemBatchByteIdentityTests(ItemBatchFixture, unittest.TestCase):
 
 class ItemBatchStoreWriteTests(ItemBatchFixture, unittest.TestCase):
     def written_relative_paths_by_call(self):
-        return [sorted(relative for relative, _ in call.args[1].values()) for call in self.write_store.call_args_list]
+        return [sorted(entry.relative for entry in call.args[1].values()) for call in self.write_store.call_args_list]
 
     def test_a_store_with_a_catalog_gets_the_files_of_one_unit_per_call_and_one_catalog_replacement(self):
         stale_refused_record = model_record(item_record_id(3), 'LineageWeapons.long_m00_wp')

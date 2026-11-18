@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from native_assets_lib.class_defaults import ClassDefaultError
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
+from native_store.catalog_writer import StoreFileEntry, add_store_file
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
 from world import static_mesh_step
@@ -89,9 +90,10 @@ def converted_mesh(package, name):
     vertex_streams = f'synthetic vertex streams {package}.{name}'.encode()
     vertex_streams_sha256 = hashlib.sha256(vertex_streams).hexdigest()
     vertex_streams_file = f'static-mesh-vertex-streams/{vertex_streams_sha256}/vertex-streams.json'
-    store_files = {f'{archive_sha256}/asset.l2asset': (f'{archive_sha256}/asset.l2asset', payload),
-                   f'{archive_sha256}/model.glb': (f'{archive_sha256}/model.glb', glb),
-                   vertex_streams_file: (vertex_streams_file, vertex_streams)}
+    store_files = {}
+    for relative, store_payload in ((f'{archive_sha256}/asset.l2asset', payload), (f'{archive_sha256}/model.glb', glb),
+                                    (vertex_streams_file, vertex_streams)):
+        add_store_file(store_files, relative, store_payload)
     record = {'id': f'interlude:{package}.{name}', 'sourceObject': f'{package}.{name}',
               'archive': {'file': f'{archive_sha256}/asset.l2asset', 'sha256': archive_sha256, 'bytes': len(payload)},
               'model': {'file': f'{archive_sha256}/model.glb', 'sha256': hashlib.sha256(glb).hexdigest(), 'bytes': len(glb)},
@@ -232,7 +234,7 @@ class StaticMeshOutcomeTests(unittest.TestCase):
         payload_sha256 = hashlib.sha256(b'{"kind":"sidecar"}').hexdigest()
         relative = f'static-mesh-vertex-streams/{payload_sha256}/vertex-streams.json'
         self.assertEqual(joined.model_record['vertexStreams'], {'file': relative, 'sha256': payload_sha256, 'bytes': 18})
-        self.assertEqual(joined.store_files[relative], (relative, b'{"kind":"sidecar"}'))
+        self.assertEqual(joined.store_files[relative], StoreFileEntry(relative, b'{"kind":"sidecar"}', payload_sha256))
         self.assertNotIn(relative, bare.store_files)
 
     def test_a_vertex_stream_gap_becomes_a_gap_row_of_the_step_that_converted_the_model(self):

@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -13,8 +14,8 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from native_store import catalog_writer, store_file_publish
 from native_store import interprocess_lock as interprocess_lock_module
-from native_store.catalog_writer import STORE_CATALOG_NAME, write_store
-from native_store.verified_file_writes import CatalogWriteError
+from native_store.catalog_writer import STORE_CATALOG_NAME, StoreFileEntry, write_store
+from native_store.verified_file_writes import CatalogWriteError, StorePayloadIntegrityError, sha256_hex
 from native_store.interprocess_lock import STORE_LOCK_KEY_PREFIX, InterprocessLockError, interprocess_lock, lane_lock_folder, lock_file_path
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import StorePathError, lane_store_root, lane_work_root
@@ -39,6 +40,7 @@ OTHER_WRITER_PAYLOAD = b'bytes of another writer'
 CATALOG_BYTES = b'{"schemaVersion": 1, "models": []}'
 WORLD_MODULES_THAT_PUBLISH_STORE_FILES = {'bsp_step', 'material_texture_images', 'minimap_textures', 'native_material_listings', 'static_mesh_step', 'tile_json_resource'}
 WORLD_MODULE_THAT_WRITES_A_PRIVATE_ASSET_FOLDER = 'typed_payload'
+STORE_FILE_WRITE = 'immutable_write_expecting_sha256'
 
 
 def world_modules_naming(name):
@@ -61,7 +63,7 @@ class StoreLockRecordingTestCase(unittest.TestCase):
         self.store_lock_file_path = lock_file_path(lane_lock_folder(lane_work_root(self.project_root, 'world')),
                                                    STORE_LOCK_KEY_PREFIX + self.store_root.as_posix())
         self.locks_held_at_each_call = []
-        self.record_the_held_lock_at_each_call(catalog_writer, 'immutable_write')
+        self.record_the_held_lock_at_each_call(catalog_writer, STORE_FILE_WRITE)
 
     def record_the_held_lock_at_each_call(self, owner, function_name):
         function = getattr(owner, function_name)
@@ -90,18 +92,20 @@ class StoreFilePublishTests(StoreLockRecordingTestCase):
         self.record_the_held_lock_at_each_call(store_file_publish, 'verify_store_destinations')
         files = synthetic_store_files(3)
         publish_store_files(self.store_root, files)
-        self.assert_every_call_held_the_store_lock(['verify_store_destinations', *['immutable_write'] * 3])
-        self.assertEqual(self.published_relative_paths(), sorted(relative for relative, _ in files.values()))
-        for relative, payload in files.values():
-            self.assertEqual((self.store_root / relative).read_bytes(), payload)
+        self.assert_every_call_held_the_store_lock(['verify_store_destinations', *[STORE_FILE_WRITE] * 3])
+        self.assertEqual(self.published_relative_paths(), sorted(entry.relative for entry in files.values()))
+        for entry in files.values():
+            self.assertEqual((self.store_root / entry.relative).read_bytes(), entry.payload)
 
     def test_a_differing_existing_file_is_refused_before_any_file_is_written(self):
         files = synthetic_store_files(2)
-        new_file, existing_file = (relative for relative, _ in files.values())
+        new_file, existing_file = (entry.relative for entry in files.values())
         (self.store_root / existing_file).parent.mkdir()
         (self.store_root / existing_file).write_bytes(OTHER_WRITER_PAYLOAD)
-        with self.assertRaisesRegex(CatalogWriteError, '^Existing immutable store file differs; preserved: '):
+        with self.assertRaises(CatalogWriteError) as refusal:
             publish_store_files(self.store_root, files)
+        self.assertEqual(str(refusal.exception), f'Existing immutable store file hashes to {sha256_hex(OTHER_WRITER_PAYLOAD)} where this publish '
+                                                 f'verified {files[existing_file.casefold()].expected_sha256}; preserved: {self.store_root / existing_file}')
         self.assertEqual(self.published_relative_paths(), [existing_file])
         self.assertEqual((self.store_root / existing_file).read_bytes(), OTHER_WRITER_PAYLOAD)
         self.assertFalse((self.store_root / new_file).parent.exists())
@@ -109,19 +113,62 @@ class StoreFilePublishTests(StoreLockRecordingTestCase):
 
     def test_a_path_that_leaves_the_store_root_is_refused_as_a_store_path_error_and_the_lock_is_left(self):
         with self.assertRaises(StorePathError) as refusal:
-            publish_store_files(self.store_root, {'outside': ('../outside.bin', OTHER_WRITER_PAYLOAD)})
+            publish_store_files(self.store_root, {'outside': StoreFileEntry('../outside.bin', OTHER_WRITER_PAYLOAD, sha256_hex(OTHER_WRITER_PAYLOAD))})
         self.assertEqual(str(refusal.exception), 'Unsafe relative path: ../outside.bin')
         self.assertFalse((self.store_root.parent / 'outside.bin').exists())
         self.assert_every_call_held_the_store_lock([])
+
+    def files_with_one_flipped_byte_in_the_payload_of(self, files, flipped_relative):
+        flipped = files[flipped_relative.casefold()]
+        flipped_payload = bytes([flipped.payload[0] ^ 0x01]) + flipped.payload[1:]
+        return {**files, flipped_relative.casefold(): flipped._replace(payload=flipped_payload)}, flipped_payload
+
+    def assert_refused_as_a_payload_changed_in_memory(self, refusal, relative, flipped_payload, expected_sha256):
+        self.assertNotIsInstance(refusal.exception, ValueError)
+        self.assertEqual(str(refusal.exception), f'Store file {relative} payload changed in memory since verification: it hashes to '
+                                                 f'{sha256_hex(flipped_payload)} where {expected_sha256} was verified')
+
+    def test_a_payload_with_one_flipped_byte_is_refused_before_any_existing_file_is_compared_or_any_file_is_written(self):
+        files = synthetic_store_files(2)
+        existing_file, flipped_file = (entry.relative for entry in files.values())
+        (self.store_root / existing_file).parent.mkdir()
+        (self.store_root / existing_file).write_bytes(files[existing_file.casefold()].payload)
+        flipped_files, flipped_payload = self.files_with_one_flipped_byte_in_the_payload_of(files, flipped_file)
+        with mock.patch.object(catalog_writer, 'sha256_of_file', side_effect=AssertionError('an existing store file was compared')):
+            with self.assertRaises(StorePayloadIntegrityError) as refusal:
+                publish_store_files(self.store_root, flipped_files)
+        self.assert_refused_as_a_payload_changed_in_memory(refusal, flipped_file, flipped_payload, files[flipped_file.casefold()].expected_sha256)
+        self.assertEqual(self.published_relative_paths(), [existing_file])
+        self.assertEqual((self.store_root / existing_file).read_bytes(), files[existing_file.casefold()].payload)
+        self.assert_every_call_held_the_store_lock([])
+
+    def test_the_first_publish_of_a_payload_with_one_flipped_byte_creates_no_file(self):
+        files = synthetic_store_files(1)
+        (relative,) = (entry.relative for entry in files.values())
+        flipped_files, flipped_payload = self.files_with_one_flipped_byte_in_the_payload_of(files, relative)
+        with self.assertRaises(StorePayloadIntegrityError) as refusal:
+            publish_store_files(self.store_root, flipped_files)
+        self.assert_refused_as_a_payload_changed_in_memory(refusal, relative, flipped_payload, files[relative.casefold()].expected_sha256)
+        self.assertEqual(self.published_relative_paths(), [])
+
+    def test_write_store_refuses_a_payload_with_one_flipped_byte_and_writes_no_file_and_no_catalog(self):
+        files = synthetic_store_files(2)
+        flipped_relative = next(iter(files.values())).relative
+        flipped_files, flipped_payload = self.files_with_one_flipped_byte_in_the_payload_of(files, flipped_relative)
+        with self.assertRaises(StorePayloadIntegrityError) as refusal:
+            write_store(self.store_root, flipped_files, None, CATALOG_BYTES)
+        self.assert_refused_as_a_payload_changed_in_memory(refusal, flipped_relative, flipped_payload,
+                                                           files[flipped_relative.casefold()].expected_sha256)
+        self.assertEqual(self.published_relative_paths(), [])
 
     def test_write_store_verifies_writes_and_replaces_the_catalog_under_the_same_lock(self):
         for function_name in ('verify_store_destinations', 'replace_file'):
             self.record_the_held_lock_at_each_call(catalog_writer, function_name)
         files = synthetic_store_files(2)
         written = write_store(self.store_root, files, None, CATALOG_BYTES)
-        self.assert_every_call_held_the_store_lock(['verify_store_destinations', 'immutable_write', 'immutable_write', 'replace_file'])
+        self.assert_every_call_held_the_store_lock(['verify_store_destinations', STORE_FILE_WRITE, STORE_FILE_WRITE, 'replace_file'])
         self.assertEqual(written, {'filesWritten': 3, 'catalogSha256': hashlib.sha256(CATALOG_BYTES).hexdigest()})
-        self.assertEqual(self.published_relative_paths(), sorted([STORE_CATALOG_NAME, *(relative for relative, _ in files.values())]))
+        self.assertEqual(self.published_relative_paths(), sorted([STORE_CATALOG_NAME, *(entry.relative for entry in files.values())]))
 
     def test_a_process_that_holds_another_lock_is_refused_the_store_lock(self):
         with interprocess_lock(lane_lock_folder(lane_work_root(self.project_root, 'world')), 'unit:other'):
@@ -141,7 +188,7 @@ class StoreOutsideALaneTests(unittest.TestCase):
         self.assertEqual(write_store(served_store_root, files, None, CATALOG_BYTES)['filesWritten'], 3)
         publish_store_files(served_store_root, files)
         self.assertEqual(sorted(path.relative_to(project_root).as_posix() for path in project_root.rglob('*') if path.is_file()),
-                         sorted(f'public/l2/{relative}' for relative in [STORE_CATALOG_NAME, *(relative for relative, _ in files.values())]))
+                         sorted(f'public/l2/{relative}' for relative in [STORE_CATALOG_NAME, *(entry.relative for entry in files.values())]))
         self.assertEqual([path.name for path in served_store_root.parent.iterdir()], [served_store_root.name])
         self.assertIsNone(interprocess_lock_module.held_lock_file_path)
 
@@ -151,12 +198,27 @@ class WorldStepStorePublishTests(StoreLockRecordingTestCase):
         store_files = synthetic_store_files(2)
         mesh_outcomes = {'Rock.Rock_S': ConvertedStaticMesh({'id': 'rock'}, store_files), 'Rock.Rock_L': ('gap', 'not converted')}
         outputs = static_mesh_step.write_static_mesh_store_files(self.project_root, {'models': [{'id': 'rock'}]}, mesh_outcomes)
-        self.assert_every_call_held_the_store_lock(['immutable_write'] * 2)
+        self.assert_every_call_held_the_store_lock([STORE_FILE_WRITE] * 2)
         self.assertEqual([output['path'] for output in outputs], [f'l2/{relative}' for relative in self.published_relative_paths()])
+
+    def test_a_static_mesh_payload_that_flips_one_byte_while_it_is_held_is_refused_at_publish_and_creates_no_file(self):
+        store_files = synthetic_store_files(1)
+        ((key, entry),) = store_files.items()
+        held_store_files = {key: entry._replace(payload=bytes([entry.payload[0] ^ 0x01]) + entry.payload[1:])}
+        mesh_outcomes = {'Rock.Rock_S': ConvertedStaticMesh({'id': 'rock'}, held_store_files)}
+        with self.assertRaises(StorePayloadIntegrityError):
+            static_mesh_step.write_static_mesh_store_files(self.project_root, {'models': [{'id': 'rock'}]}, mesh_outcomes)
+        self.assertEqual(self.published_relative_paths(), [])
+
+    def test_the_vertex_streams_entry_expects_the_sha256_its_folder_is_named_by(self):
+        payload = b'synthetic vertex streams'
+        converted = static_mesh_step.with_vertex_streams(ConvertedStaticMesh({'id': 'rock'}, {}), SimpleNamespace(gap_reason=None, payload=payload))
+        (entry,) = converted.store_files.values()
+        self.assertEqual(entry, StoreFileEntry(static_mesh_step.vertex_streams_store_path(sha256_hex(payload)), payload, sha256_hex(payload)))
 
     def test_chunk_bsp_glbs_are_published_under_the_store_lock(self):
         outputs = bsp_step.write_chunk_glbs(self.project_root, {'chunk-0-0': b'first synthetic glb', 'chunk-1-0': b'second synthetic glb'})
-        self.assert_every_call_held_the_store_lock(['immutable_write'] * 2)
+        self.assert_every_call_held_the_store_lock([STORE_FILE_WRITE] * 2)
         self.assertEqual([output['path'] for output in outputs], [f'l2/{relative}' for relative in self.published_relative_paths()])
 
     def test_a_converted_minimap_texture_is_published_under_the_store_lock(self):
@@ -166,25 +228,25 @@ class WorldStepStorePublishTests(StoreLockRecordingTestCase):
         conversion = {'file': str(converted_folder / minimap_textures.TEXTURE_ARCHIVE_NAME), 'sha256': hashlib.sha256(archive).hexdigest()}
         texture_conversion = minimap_textures.MinimapTextureConversion(conversion, synthetic_png_bytes())
         _, _, output = minimap_textures.store_converted_texture(self.store_root, texture_conversion, {'object': 'l2zonename.20_20', 'rule': 'zone-sampler-tile'})
-        self.assert_every_call_held_the_store_lock(['immutable_write'])
+        self.assert_every_call_held_the_store_lock([STORE_FILE_WRITE])
         self.assertEqual(self.published_relative_paths(), [output['path'].removeprefix('l2/')])
 
     def test_a_tile_json_resource_is_published_under_the_store_lock(self):
         _, output = tile_json_resource.write_tile_json_resource(self.store_root, 'tile-movers', 'movers.json', {'tileId': '00_00'})
-        self.assert_every_call_held_the_store_lock(['immutable_write'])
+        self.assert_every_call_held_the_store_lock([STORE_FILE_WRITE])
         self.assertEqual(self.published_relative_paths(), [output['path'].removeprefix('l2/')])
 
     def test_a_tile_resource_bundle_is_published_under_the_store_lock(self):
         files = {tile_json_resource.BUNDLE_MANIFEST_NAME: b'{"kind": "synthetic bundle"}', 'sky.glb': b'synthetic bundle member'}
         _, outputs = tile_json_resource.write_tile_resource_bundle(self.store_root, 'skies', files)
-        self.assert_every_call_held_the_store_lock(['immutable_write'] * 2)
+        self.assert_every_call_held_the_store_lock([STORE_FILE_WRITE] * 2)
         self.assertEqual(self.published_relative_paths(), [output['path'].removeprefix('l2/') for output in outputs])
 
     def test_material_texture_images_are_published_under_the_store_lock(self):
         store_root = lane_store_root(scratch_work_root(self, 'store-file-publish-'), 'world')
         records = material_texture_images.write_material_texture_images(store_root, {'SyntheticMaterials.SkyTexture': MaterialTexturePng(synthetic_png_bytes(), None)})
         self.assert_every_call_held_the_store_lock(
-            ['immutable_write'], lock_file_path(lane_lock_folder(store_root.parent / 'work'), STORE_LOCK_KEY_PREFIX + store_root.as_posix()))
+            [STORE_FILE_WRITE], lock_file_path(lane_lock_folder(store_root.parent / 'work'), STORE_LOCK_KEY_PREFIX + store_root.as_posix()))
         self.assertEqual(self.published_relative_paths(store_root), [record['path'] for record in records])
 
     def test_no_world_step_module_writes_a_shared_store_file_without_the_owner(self):
@@ -230,9 +292,9 @@ class TwoProcessStorePublishTests(unittest.TestCase):
         files = synthetic_store_files(FILE_COUNT_OF_THE_TWO_PROCESS_PUBLISH)
         published = sorted(path.relative_to(self.store_root).as_posix() for path in self.store_root.rglob('*') if path.is_file())
         self.assertEqual(len(files), FILE_COUNT_OF_THE_TWO_PROCESS_PUBLISH)
-        self.assertEqual(published, sorted(relative for relative, _ in files.values()))
-        for relative, payload in files.values():
-            self.assertEqual((self.store_root / relative).read_bytes(), payload)
+        self.assertEqual(published, sorted(entry.relative for entry in files.values()))
+        for entry in files.values():
+            self.assertEqual((self.store_root / entry.relative).read_bytes(), entry.payload)
 
 
 if __name__ == '__main__':
