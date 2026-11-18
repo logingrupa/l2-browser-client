@@ -2,6 +2,7 @@ import copy
 import hashlib
 import json
 from pathlib import Path
+import struct
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -19,10 +20,13 @@ from world import bsp_step
 from world.bsp_model_licensee_rules import BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH, read_bsp_model_licensee_rules
 from world.bsp_step import RAW_MANIFEST_PRODUCT_NAME, bsp_unit_config, tile_level_model_layout
 from world.elbera_reader_cross_check import ElberaCrossCheckError, elbera_level_model_projection
-from world.level_model import LevelModelLayoutError, read_level_model, require_unverified_level_tail_length
+from world.bsp_reader_binding import reviewed_reader
+from world.level_model import LevelModelLayoutError, read_level_model
+from world.level_model_reference import read_level_tail
 from world.reader_cross_check_rows import level_model_reader_fixture, read_cross_check_rows
 from world.reader_licensee_layouts import (LEVEL_MODEL_READER, MAP_ACTOR_CROSS_CHECK_TILES, READER_LICENSEE_LAYOUTS, REVIEWED_PACKAGE_VERSION,
                                            require_reviewed_reader_layout)
+from world.shared_sky_visibility_rules import level_tail_rules, read_shared_sky_visibility_rules
 from world.world_lane_names import WORLD_LANE_NAME
 
 ELIGIBLE_MAP_LICENSEES = (28, 23, 25, 30, 18, 31, 20, 19)
@@ -31,6 +35,7 @@ REVIEWED_LEVEL_MODEL_PAIRS = sorted([*((REVIEWED_PACKAGE_VERSION, licensee) for 
 LEVEL_MODEL_SOURCE = ROOT / 'scripts/world/level_model.py'
 VENDORED_EVIDENCE_SOURCE = 'Elbera vendored BSP reader'
 REAL_CLIENT_ROOT = Path('E:/Lineage2-client')
+SHARED_SKY_VISIBILITY_FIXTURES = ROOT / 'tests/fixtures/environment/shared-sky-visibility-fixtures.json'
 
 
 def level_model_rows(rows):
@@ -85,18 +90,69 @@ class LevelModelReaderGateTests(unittest.TestCase):
             with self.subTest(licensee=licensee):
                 self.assertEqual(record['crossCheck']['tile'], MAP_ACTOR_CROSS_CHECK_TILES[licensee])
 
-    def test_the_shared_sky_level_model_is_cross_checked_on_skylevel_and_keeps_its_level_tail_unverified(self):
-        record = READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][SHARED_SKY_PAIR]
-        self.assertEqual(record['crossCheck'], {'tile': 'skylevel'})
-        self.assertTrue(record['unverifiedLevelTail'].startswith('RM-22: ULevel::Serialize 0x105d07f0'))
-        self.assertEqual(record['differencesFrom123_28'][-1], 'Level tail after the Model reference stays one unverified item')
-        self.assertNotIn('unverifiedLevelTail', READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][(123, 28)])
+    def test_every_level_model_layout_cites_the_rm22_level_tail_rules_and_none_keeps_an_unverified_tail(self):
+        recipe = read_shared_sky_visibility_rules()
+        self.assertEqual(READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][SHARED_SKY_PAIR]['crossCheck'], {'tile': 'skylevel'})
+        for pair, record in READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER].items():
+            with self.subTest(pair=pair):
+                self.assertNotIn('unverifiedLevelTail', record)
+                self.assertIn(recipe['sha256'], [entry['sha256'] for entry in record['evidence']])
 
 
-class UnverifiedLevelTailTests(unittest.TestCase):
-    def test_a_tile_level_model_layout_has_no_tail_length_check(self):
-        require_unverified_level_tail_length(READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][(123, 28)], {'version': 123, 'licenseeVersion': 28},
-                                             {'remainingTailBytes': 99}, '20_21.unr')
+def synthetic_tail_adapter(version, tail_bytes):
+    data = bytes(TAIL_LEVEL_OFFSET) + tail_bytes
+    return SimpleNamespace(file_version=version, data=data, path='synthetic.unr', resolve_ref=lambda reference: None)
+
+
+def synthetic_tail_binding(tail_bytes):
+    return {'levelSerialOffset': 0, 'decodedPrefixBytes': TAIL_LEVEL_OFFSET, 'levelSerialSize': TAIL_LEVEL_OFFSET + len(tail_bytes)}
+
+
+TAIL_LEVEL_OFFSET = 7
+NULL_COMPACT = b'\x00'
+
+
+def synthetic_tail_bytes(legacy_time, string_map_bytes=NULL_COMPACT):
+    return struct.pack('<f', legacy_time) + NULL_COMPACT * (1 + level_tail_rules()['objectReferenceCount']) + string_map_bytes
+
+
+class LevelTailDecodeTests(unittest.TestCase):
+    def test_a_version_123_tail_decodes_its_time_first_deleted_object_references_and_string_map(self):
+        tail_bytes = synthetic_tail_bytes(1.5, b'\x01\x03ab\x00\x02c\x00')
+        tail = read_level_tail(synthetic_tail_adapter(123, tail_bytes), reviewed_reader(), synthetic_tail_binding(tail_bytes), level_tail_rules())
+        self.assertEqual((tail['legacyTime'], tail['firstDeleted'], tail['stringMap'], tail['bytes']), (1.5, 0, [['ab', 'c']], len(tail_bytes)))
+        self.assertEqual(tail['objectReferences'], [0] * level_tail_rules()['objectReferenceCount'])
+        self.assertEqual(tail['unprovenNames'], level_tail_rules()['unprovenNames'])
+
+    def test_a_tail_with_undecoded_bytes_is_refused(self):
+        tail_bytes = synthetic_tail_bytes(1.5) + b'\x00'
+        with self.assertRaisesRegex(FormatError, 'leaves 1 of its'):
+            read_level_tail(synthetic_tail_adapter(123, tail_bytes), reviewed_reader(), synthetic_tail_binding(tail_bytes), level_tail_rules())
+
+    def test_a_version_below_the_obsolete_array_gate_is_refused_as_unresolved(self):
+        tail_bytes = synthetic_tail_bytes(1.5)
+        version = level_tail_rules()['obsoleteArrayBelowVersion'] - 1
+        with self.assertRaisesRegex(FormatError, level_tail_rules()['olderVersionsUnresolved']):
+            read_level_tail(synthetic_tail_adapter(version, tail_bytes), reviewed_reader(), synthetic_tail_binding(tail_bytes), level_tail_rules())
+
+    def test_the_rules_recipe_states_the_rm22_ulevel_serialize_gates(self):
+        rules = level_tail_rules()
+        self.assertEqual((rules['function'], rules['address']), ('ULevel::Serialize', '0x105d07f0'))
+        self.assertLess(rules['stringMapFromVersion'], rules['obsoleteArrayBelowVersion'])
+
+
+@unittest.skipUnless((REAL_CLIENT_ROOT / 'maps/skylevel.unr').is_file(), 'the conversion client E:/Lineage2-client is absent on this host')
+class RealLevelTailTests(unittest.TestCase):
+    def test_the_skylevel_tail_decodes_to_the_rm22_claim_and_every_reviewed_fixture_names_its_decoded_tail(self):
+        claim = json.loads(SHARED_SKY_VISIBILITY_FIXTURES.read_text(encoding='utf-8'))['levelTail']['claim']
+        for (version, licensee), record in READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER].items():
+            fixture = json.loads((ROOT / record['fixture']).read_text(encoding='utf-8'))
+            with self.subTest(pair=(version, licensee)):
+                self.assertNotIn('remainingTailBytes', fixture['levelBinding'])
+                self.assertEqual(fixture['levelBinding']['tail']['stringMap'], [])
+                if (version, licensee) == SHARED_SKY_PAIR:
+                    self.assertIn(f'float32 time{fixture["levelBinding"]["tail"]["legacyTime"]!r}', claim)
+                    self.assertIn(f'with{fixture["levelBinding"]["tail"]["bytes"]} fully decoded bytes', claim)
 
 
 class LevelModelRecordTests(unittest.TestCase):

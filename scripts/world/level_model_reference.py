@@ -67,6 +67,46 @@ def skip_level_url(reader, raw):
     return options
 
 
+def read_level_string(reader):
+    size = reader.compact()
+    if size == 0:
+        return ''
+    width = WIDE_CHARACTER_BYTES if size < 0 else NARROW_CHARACTER_BYTES
+    value = bytes(reader.bytes(abs(size) * width))
+    if value[-width:] != bytes(width):
+        raise FormatError('unterminated Level tail string')
+    return value[:-width].decode('utf-16-le' if width == WIDE_CHARACTER_BYTES else 'latin-1', 'strict')
+
+
+def read_level_object_reference(adapter, reader):
+    value = reader.compact()
+    if value:
+        adapter.resolve_ref(value)
+    return value
+
+
+def read_level_tail(adapter, reader_module, binding, tail_rules):
+    version = adapter.file_version
+    if version < tail_rules['obsoleteArrayBelowVersion'] or version < tail_rules['stringMapFromVersion']:
+        raise FormatError(f'Level tail of package version {version} is unresolved ({tail_rules["olderVersionsUnresolved"]})')
+    start = binding['levelSerialOffset'] + binding['decodedPrefixBytes']
+    end = binding['levelSerialOffset'] + binding['levelSerialSize']
+    raw = adapter.data[start:end]
+    reader = reader_module.Reader(raw, path=str(adapter.path) + ':Level tail')
+    legacy_time = reader.f32()
+    first_deleted = read_level_object_reference(adapter, reader)
+    object_references = [read_level_object_reference(adapter, reader) for _ in range(tail_rules['objectReferenceCount'])]
+    map_count = reader.compact()
+    if map_count < 0 or map_count > len(raw) - reader.pos:
+        raise FormatError(f'invalid Level tail string map count {map_count}')
+    string_map = [[read_level_string(reader), read_level_string(reader)] for _ in range(map_count)]
+    if reader.pos != len(raw):
+        raise FormatError(f'Level tail leaves {len(raw) - reader.pos} of its {len(raw)} bytes undecoded')
+    return {'function': tail_rules['function'], 'address': tail_rules['address'], 'bytes': len(raw), 'legacyTime': legacy_time,
+            'firstDeleted': first_deleted, 'objectReferences': object_references, 'stringMap': string_map,
+            'unprovenNames': tail_rules['unprovenNames']}
+
+
 def read_level_model_reference(adapter, reader_module, rules):
     if adapter.file_version not in reviewed_reader_versions(LEVEL_MODEL_READER):
         raise FormatError(f'unsupported serialized Level layout (requires a package version of {reviewed_reader_versions(LEVEL_MODEL_READER)})')

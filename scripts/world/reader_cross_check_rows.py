@@ -28,7 +28,6 @@ from world.reader_licensee_layouts import (G16_HEIGHTMAP_READER, LEVEL_MODEL_REA
 from world.shared_sky_map import SHARED_SKY_MAP_NAME, SHARED_SKY_MAP_PATH
 from world.terrain_height_texture import read_g16
 from world.tile_chunk_plan import read_locked_map_package_by_path
-from world.unverified_level_tails import write_unverified_level_tail
 from world.world_lane_names import WORLD_LANE_NAME
 
 CROSS_CHECKS_RELATIVE_PATH = 'tests/fixtures/world-readers/cross-checks.json'
@@ -36,7 +35,7 @@ AMBIENT_SOUND_CLASS_OBJECT = 'Engine.AmbientSoundObject'
 TERRAIN_INFO_CLASS_OBJECT = 'Engine.TerrainInfo'
 BOOLEAN_PROPERTY_TYPE = 3
 SKY_ZONE_INFO_CLASS_OBJECT = 'Engine.SkyZoneInfo'
-LEVEL_BINDING_FIXTURE_FIELDS = ('levelSHA256', 'decodedPrefixSHA256', 'decodedPrefixBytes', 'remainingTailBytes', 'remainingTailSHA256')
+LEVEL_BINDING_FIXTURE_FIELDS = ('levelSHA256', 'decodedPrefixSHA256', 'decodedPrefixBytes', 'tail')
 
 
 class ReaderCrossCheckError(ValueError):
@@ -292,8 +291,6 @@ def main(argv=None):
         fixture = reader_fixture(arguments.client, arguments.reader, arguments.version, arguments.licensee, map_name) if row['equal'] else None
         if fixture is not None:
             write_reader_fixture(REPOSITORY_ROOT, arguments.reader, arguments.version, arguments.licensee, fixture)
-            if 'unverifiedLevelTail' in READER_LICENSEE_LAYOUTS[arguments.reader][(arguments.version, arguments.licensee)]:
-                write_unverified_level_tail(REPOSITORY_ROOT, fixture)
     except (OSError, ValueError) as error:
         print(f'World reader cross-check failed: {error}', file=sys.stderr)
         return 1

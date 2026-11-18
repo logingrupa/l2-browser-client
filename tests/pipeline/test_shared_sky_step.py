@@ -269,7 +269,7 @@ class RealClientSharedSkyTests(unittest.TestCase):
         binding = self.snapshot['levelModelBinding']
         self.assertEqual((binding['level']['reference'], binding['model']['reference']),
                          (SHARED_SKY_FIXTURES['levelExportIndex'], SHARED_SKY_FIXTURES['modelExportIndex']))
-        self.assertEqual(binding['remainingTailBytes'], SKYLEVEL_LEVEL_MODEL_FIXTURE['levelBinding']['remainingTailBytes'])
+        self.assertEqual(binding['tail'], SKYLEVEL_LEVEL_MODEL_FIXTURE['levelBinding']['tail'])
         source = self.snapshot['source']
         self.assertEqual((source['modelSha256'], source['modelBytes']), (SKYLEVEL_LEVEL_MODEL_FIXTURE['exportSha256'], SKYLEVEL_LEVEL_MODEL_FIXTURE['exportBytes']))
         counts = SKYLEVEL_LEVEL_MODEL_FIXTURE['counts']

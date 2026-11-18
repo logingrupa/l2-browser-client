@@ -3,11 +3,12 @@ from typing import NamedTuple
 from native_catalog.ue2 import FormatError
 from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 from world.bsp_reader_binding import PackageAdapter, reviewed_reader
-from world.level_model_reference import read_level_model_reference
+from world.level_model_reference import read_level_model_reference, read_level_tail
 from world.reader_licensee_layouts import LEVEL_MODEL_READER, require_reviewed_reader_layout
-from world.unverified_level_tails import reviewed_unverified_level_tail_bytes
+from world.shared_sky_visibility_rules import level_tail_rules
 
 INDEX_NONE = -1
+UNDECODED_TAIL_BINDING_FIELDS = ('remainingTailBytes', 'remainingTailSHA256')
 LEAF_HULL_BOUND_WORDS = 6
 
 
@@ -72,10 +73,16 @@ def read_model_body(adapter, reader_module, export):
     return reader_module._read_model(adapter, export, surface_reads_trailing_integer(adapter.licensee_version))
 
 
+def decoded_level_binding(adapter, reader, prefix_binding):
+    binding = {field: value for field, value in prefix_binding.items() if field not in UNDECODED_TAIL_BINDING_FIELDS}
+    return {**binding, 'tail': read_level_tail(adapter, reader, prefix_binding, level_tail_rules())}
+
+
 def read_level_model_without_layout_gate(package):
     adapter, reader = PackageAdapter(package), reviewed_reader()
     try:
-        export, binding = read_level_model_reference(adapter, reader, read_bsp_model_licensee_rules()['document']['rules'])
+        export, prefix_binding = read_level_model_reference(adapter, reader, read_bsp_model_licensee_rules()['document']['rules'])
+        binding = decoded_level_binding(adapter, reader, prefix_binding)
         model = read_model_body(adapter, reader, export)
         checks = reader.validate_model(model)
     except ValueError as error:
@@ -84,17 +91,6 @@ def read_level_model_without_layout_gate(package):
     return LevelModel(package, adapter, reader, export, binding, model, checks)
 
 
-def require_unverified_level_tail_length(layout, package_summary, binding, filename):
-    if 'unverifiedLevelTail' not in layout:
-        return
-    expected = reviewed_unverified_level_tail_bytes(package_summary['version'], package_summary['licenseeVersion'])
-    if binding['remainingTailBytes'] != expected:
-        raise FormatError(f'{filename} Level tail after the Model reference is {binding["remainingTailBytes"]} bytes, not the reviewed '
-                          f'{expected}; {layout["unverifiedLevelTail"]}')
-
-
 def read_level_model(package):
-    layout = reviewed_level_model_layout(package.summary, package.filename)
-    level = read_level_model_without_layout_gate(package)
-    require_unverified_level_tail_length(layout, package.summary, level.binding, package.filename)
-    return level
+    reviewed_level_model_layout(package.summary, package.filename)
+    return read_level_model_without_layout_gate(package)

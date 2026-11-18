@@ -11,8 +11,36 @@
   "levelSHA256": "d1e813624276bd7ec084c4ba9ce929d5c09f4245a026b63fa222c0e071c878a8",
   "decodedPrefixSHA256": "8cff323647a71b01d2012e444eea0a1c30a17ac2189fdb0d2b1fb615b839b34b",
   "decodedPrefixBytes": 75,
-  "remainingTailBytes": 22,
-  "remainingTailSHA256": "09ab5c1e6fb5a1c59d468a93ebd7ebfadcb6dbe8d00254187a183c7afddb0775"
+  "tail": {
+   "function": "ULevel::Serialize",
+   "address": "0x105d07f0",
+   "bytes": 22,
+   "legacyTime": 859.53173828125,
+   "firstDeleted": 0,
+   "objectReferences": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "stringMap": [],
+   "unprovenNames": [
+    "RM22-TAIL-MAP-NAME",
+    "RM22-TAIL-REFERENCE-ARRAY-NAME"
+   ]
+  }
  },
  "spans": {
   "properties": {

@@ -45,7 +45,7 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package_by_path
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
 from world.tile_step_gap_rows import UnitStepGapRows
-from world.unverified_level_tails import read_unverified_level_tails
+from world.shared_sky_visibility_rules import read_shared_sky_visibility_rules
 from world.world_lane_names import WORLD_LANE_NAME
 
 SHARED_SKY_STEP_ALGORITHM_VERSION = 1
@@ -106,7 +106,7 @@ def shared_sky_ledger(project_root):
 
 def shared_sky_config():
     return {'structPropertyRulesSha256': read_struct_property_tag_rules().sha256, 'levelModelRulesSha256': read_bsp_model_licensee_rules()['sha256'],
-            'polyFlagsSha256': poly_flags_recipe_sha256(), 'unverifiedLevelTailsSha256': read_unverified_level_tails()['sha256']}
+            'polyFlagsSha256': poly_flags_recipe_sha256(), 'sharedSkyVisibilityRulesSha256': read_shared_sky_visibility_rules()['sha256']}
 
 
 def shared_sky_product_path(ledger):

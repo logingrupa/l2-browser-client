@@ -7,6 +7,7 @@ from world.bsp_model_licensee_rules import LICENSEE_GATED_RULE_NAMES, RULE_NAMES
 from world.bsp_reader_binding import READER_SHA as VENDORED_BSP_READER_SHA256
 from world.elbera_reader_cross_check import ELBERA_L2LIB_PINS, ELBERA_UE2PACKAGE_PATH
 from world.shared_sky_map import SHARED_SKY_MAP_NAME
+from world.shared_sky_visibility_rules import read_shared_sky_visibility_rules
 
 G16_HEIGHTMAP_READER = 'g16-heightmap'
 MAP_ACTOR_READER = 'map-actor'
@@ -29,8 +30,8 @@ RM18_SKYLEVEL_DECODE_SOURCE_NAME = 'REA RM-18 sky fog depth answer'
 RM18_SKYLEVEL_DECODE_COMMIT = '2078c337'
 RM18_SKYLEVEL_DECODE_PATH = 'sky-fog-depth-rm18/data/shared-skylevel-data.json'
 RM18_SKYLEVEL_DECODE_SHA256 = '6a7899f97b8678185ec3fa17a2540a78d1277ce4141cdb035a6e765bb9aed33b'
-UNVERIFIED_LEVEL_TAIL_QUESTION = ('RM-22: ULevel::Serialize 0x105d07f0 tests the package Ver; the Ver-gated fields after the Model reference '
-                                  'at package version 118 are not verified, so the tail length is checked and its bytes are not interpreted')
+LEVEL_TAIL_SOURCE_NAME = 'REA RM-22 shared sky nodes answer'
+LEVEL_TAIL_SOURCE_COMMIT = '5275acf9'
 READER_GAP_REASON_TEMPLATES = {
     G16_HEIGHTMAP_READER: ('terrain-height-version-unsupported:{version}', 'terrain-height-licensee-unsupported:{version}/{licensee}'),
     **{reader: ('map-version-unsupported:{version}', 'map-licensee-unsupported:{version}/{licensee}')
@@ -72,6 +73,14 @@ def level_model_rule_minimums_above(licensee_version):
 def level_model_rule_differences(version, licensee_version):
     return [f'{name} at {rule["function"]} {rule["address"]} applies from LicenseeVer {rule["minimumLicensee"]}; '
             f'{version}/{licensee_version} is below it' for name, rule in level_model_rule_minimums_above(licensee_version)]
+
+
+def level_tail_evidence():
+    recipe = read_shared_sky_visibility_rules()
+    tail = recipe['document']['levelTail']
+    return layout_evidence(LEVEL_TAIL_SOURCE_NAME, LEVEL_TAIL_SOURCE_COMMIT, recipe['path'], recipe['sha256'],
+                           f'{tail["function"]} {tail["address"]}: legacy time, FirstDeleted, {tail["objectReferenceCount"]} object references and '
+                           f'the string map from version {tail["stringMapFromVersion"]}')
 
 
 def level_model_rules_evidence():
@@ -128,7 +137,7 @@ def reviewed_reader_layout(reader, licensee_version, cross_check_tile):
         evidence = READER_EVIDENCE[reader]
     elif reader == LEVEL_MODEL_READER:
         record['differencesFrom123_28'] = level_model_rule_differences(REVIEWED_PACKAGE_VERSION, licensee_version)
-        evidence = level_model_rules_evidence() if record['differencesFrom123_28'] else READER_EVIDENCE[reader]
+        evidence = (*(level_model_rules_evidence() if record['differencesFrom123_28'] else READER_EVIDENCE[reader]), level_tail_evidence())
     else:
         record['differencesFrom123_28'] = map_material_export_differences(licensee_version)
         evidence = (*READER_EVIDENCE[reader], *(MATERIAL_PREFIX_EVIDENCE if record['differencesFrom123_28'] else ()))
@@ -141,10 +150,8 @@ def shared_sky_reader_layout(reader):
     container_difference = f'plain UnrealPackage {version}/{licensee_version} tables read by UnrealPackage118, not the Lineage2Ver 123 container'
     record = {'fixture': reader_fixture_path(reader, version, licensee_version), 'crossCheck': {'tile': SHARED_SKY_MAP_NAME}}
     if reader == LEVEL_MODEL_READER:
-        record['differencesFrom123_28'] = [container_difference, *level_model_rule_differences(version, licensee_version),
-                                           'Level tail after the Model reference stays one unverified item']
-        record['unverifiedLevelTail'] = UNVERIFIED_LEVEL_TAIL_QUESTION
-        evidence = (*level_model_rules_evidence(), *SHARED_SKY_PACKAGE_EVIDENCE)
+        record['differencesFrom123_28'] = [container_difference, *level_model_rule_differences(version, licensee_version)]
+        evidence = (*level_model_rules_evidence(), level_tail_evidence(), *SHARED_SKY_PACKAGE_EVIDENCE)
     else:
         record['differencesFrom123_28'] = [container_difference]
         evidence = (*ACTOR_PROPERTY_EVIDENCE, *SHARED_SKY_PACKAGE_EVIDENCE)
