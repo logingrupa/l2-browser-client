@@ -65,13 +65,13 @@ describe("ordinary light contribution and vertex sum 0x10677fa0 (RM-19 actor 121
       expect(staticMeshOrdinaryLightContribution(light.colour, staticMeshOrdinaryLightGain(spotlightCase.scaleGlow), sample.intensity)).toEqual(sample.contributionBGRA);
     });
 
-  it("sums vertices 0 and 1 to BGR 2,3,4 and vertices 2 and 3 to BGR 1,1,2 from the lights whose mask bit is set", () => {
+  it("sums vertices 0 and 1 to BGR 2,3,4 and vertices 2 and 3 to BGR 1,1,2 from the lights whose mask bit is set, leaving alpha to the authored stream", () => {
     const gain = staticMeshOrdinaryLightGain(spotlightCase.scaleGlow);
     const colours = spotlightCase.vertexIndices.map(vertex => {
       const sample = spotlightCase.perLightSamples.find(entry => entry.vertex === vertex)!;
       const lights = spotlightCase.ordinaryEntries.filter(entry => staticMeshVertexVisible(maskBytes(entry.maskHex), vertex))
         .map(entry => cachedLight(spotlightCase, entry.light));
-      return staticMeshOrdinaryVertexColour(lights, gain, sample).slice(0, 3);
+      return staticMeshOrdinaryVertexColour(lights, gain, sample);
     });
     expect(colours).toEqual(spotlightCase.ordinaryBGRA.map(bgra => bgra.slice(0, 3)));
     expect(colours).toEqual([[2, 3, 4], [2, 3, 4], [1, 1, 2], [1, 1, 2]]);
@@ -82,6 +82,6 @@ describe("ordinary light contribution and vertex sum 0x10677fa0 (RM-19 actor 121
     const sample = { worldPosition: [1, 0, 0] as const, worldNormal: [-1, 0, 0] as const };
     const single = staticMeshOrdinaryVertexColour([light], 0.5, sample);
     expect(single[0]).toBeGreaterThan(127);
-    expect(staticMeshOrdinaryVertexColour([light, light], 0.5, sample)).toEqual([255, 255, 255, 0]);
+    expect(staticMeshOrdinaryVertexColour([light, light], 0.5, sample)).toEqual([255, 255, 255]);
   });
 });

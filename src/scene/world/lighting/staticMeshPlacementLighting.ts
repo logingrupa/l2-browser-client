@@ -1,4 +1,4 @@
-import type { BgraBytes } from "../../../environment/model/nativeColourBytes";
+import type { BgrBytes } from "../../../environment/model/nativeColourBytes";
 import type { NativePlane } from "../../../environment/model/nativePlane";
 import {
   staticMeshHourlyEntryBlend, staticMeshHourlyEntryContributions, staticMeshHourlyInstanceColour, staticMeshSampleIntensity, staticMeshVertexVisible,
@@ -31,7 +31,7 @@ export const staticMeshLightingReasons = {
 
 const rgbChannels = 3;
 const normalComponents = 3;
-const nonContributingOrdinaryColour: BgraBytes = [0, 0, 0, 0];
+const nonContributingOrdinaryColour: BgrBytes = [0, 0, 0];
 
 export function staticMeshPlacementLightingJoin(lightLists: StagedLightingInput<ReadonlyMap<number, StaticMeshLightList>>,
   placement: NativeTileChunkPlacement): StaticMeshPlacementLightingJoin {

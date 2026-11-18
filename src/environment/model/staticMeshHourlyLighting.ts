@@ -1,6 +1,6 @@
 import type { Vector3 } from "../../shared/math/vector3";
 import { HOURLY_LIGHTING_CONSTANTS } from "./hourlyLightingEngineConstants";
-import { fColorFromPlane, saturatingAddBgra, type BgraBytes } from "./nativeColourBytes";
+import { bgrOf, fColorFromPlane, saturatingAddBgr, saturatingAddBgra, type BgraBytes, type BgrBytes } from "./nativeColourBytes";
 import { ENVIRONMENT_ENGINE_CONSTANTS } from "./nativeEnvironmentEngineConstants";
 import type { NativePlane } from "./nativePlane";
 import { blendAdjacentHourlyKeys, type HourlyKeyBlend, type RgbBytes } from "./sampleNativeTimeTables";
@@ -72,7 +72,7 @@ export function staticMeshHourlyEntryContributions(blend: HourlyKeyBlend, previo
 }
 
 export function staticMeshHourlyInstanceColour(sampleIntensity: number, entries: readonly StaticMeshHourlyEntryContribution[], staticSunPlane: NativePlane,
-  ordinaryColour: BgraBytes): RgbBytes {
+  ordinaryColour: BgrBytes): RgbBytes {
   let hourlyColour: BgraBytes = [0, 0, 0, 0];
   for (const entry of entries) {
     if (!entry.contributes) continue;
@@ -81,8 +81,8 @@ export function staticMeshHourlyInstanceColour(sampleIntensity: number, entries:
       Math.fround(scale * staticSunPlane[3])];
     hourlyColour = saturatingAddBgra(hourlyColour, fColorFromPlane(scaledPlane));
   }
-  const colour = saturatingAddBgra(ordinaryColour, hourlyColour);
-  return [colour[2], colour[1], colour[0]];
+  const [blue, green, red] = saturatingAddBgr(ordinaryColour, bgrOf(hourlyColour));
+  return [red, green, blue];
 }
 
 export function staticMeshShaderVisibility(previousContributes: boolean, nextContributes: boolean, weight: number): number {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BgraBytes } from "../../src/environment/model/nativeColourBytes";
+import type { BgrBytes } from "../../src/environment/model/nativeColourBytes";
 import type { NativePlane } from "../../src/environment/model/nativePlane";
 import {
   staticMeshHourlyEntryBlend, staticMeshHourlyEntryContributions, staticMeshHourlyInstanceColour, staticMeshSampleIntensity, staticMeshVertexVisible,
@@ -63,9 +63,9 @@ function contributingLights(fixture: OrdinaryIntegratedFixture, vertex: number):
   });
 }
 
-function ordinaryColourOf(fixture: OrdinaryIntegratedFixture, vertex: number): BgraBytes {
+function ordinaryColourOf(fixture: OrdinaryIntegratedFixture, vertex: number): BgrBytes {
   const lights = contributingLights(fixture, vertex);
-  if (lights.length === 0) return [0, 0, 0, 0];
+  if (lights.length === 0) return [0, 0, 0];
   const sample = fixture.perLightSamples.find(entry => entry.vertex === vertex)!;
   return staticMeshOrdinaryVertexColour(lights, staticMeshOrdinaryLightGain(fixture.scaleGlow), sample);
 }
@@ -181,7 +181,7 @@ describe("ordinary term of a whole light list (RM-19)", () => {
 
 describe("final instance colour: ordinary rebuild, then the hourly CPU term saturating-added (RM-19 integrated fixtures)", () => {
   it("gives pillar vertices 0, 2 and 3 RGB 5 and vertex 4 RGB 44, all from the hourly term", () => {
-    expect(pillarCase.vertexIndices.map(vertex => ordinaryColourOf(pillarCase, vertex))).toEqual(pillarCase.vertexIndices.map(() => [0, 0, 0, 0]));
+    expect(pillarCase.vertexIndices.map(vertex => ordinaryColourOf(pillarCase, vertex))).toEqual(pillarCase.vertexIndices.map(() => [0, 0, 0]));
     expect(pillarCase.vertexIndices.map(vertex => finalColourOf(pillarCase, vertex))).toEqual([[5, 5, 5], [5, 5, 5], [5, 5, 5], [44, 44, 44]]);
     expect(pillarCase.finalInstanceBGRA.map(rgbOf)).toEqual([[5, 5, 5], [5, 5, 5], [5, 5, 5], [44, 44, 44]]);
   });
@@ -202,9 +202,9 @@ describe("final instance colour: ordinary rebuild, then the hourly CPU term satu
   it("adds the hourly temporary stream onto the ordinary bytes and saturates at 255", () => {
     const blend = staticMeshHourlyEntryBlend(pillarCase.hourlyEntries.length, pillarCase.hour);
     const entries = staticMeshHourlyEntryContributions(blend, true, true);
-    const hourlyOnly = staticMeshHourlyInstanceColour(1, entries, pillarCase.sunPlane as NativePlane, [0, 0, 0, 0]);
-    expect(staticMeshHourlyInstanceColour(1, entries, pillarCase.sunPlane as NativePlane, [10, 20, 30, 0])).toEqual(
+    const hourlyOnly = staticMeshHourlyInstanceColour(1, entries, pillarCase.sunPlane as NativePlane, [0, 0, 0]);
+    expect(staticMeshHourlyInstanceColour(1, entries, pillarCase.sunPlane as NativePlane, [10, 20, 30])).toEqual(
       [hourlyOnly[0] + 30, hourlyOnly[1] + 20, hourlyOnly[2] + 10]);
-    expect(staticMeshHourlyInstanceColour(1, entries, pillarCase.sunPlane as NativePlane, [250, 250, 250, 0])).toEqual([255, 255, 255]);
+    expect(staticMeshHourlyInstanceColour(1, entries, pillarCase.sunPlane as NativePlane, [250, 250, 250])).toEqual([255, 255, 255]);
   });
 });

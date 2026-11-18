@@ -1,6 +1,6 @@
-import { absoluteFloat32 } from "./lightmapRebuild/nativeFloatOperations";
+import { absoluteFloat32, dotProductFloat32 } from "./lightmapRebuild/nativeFloatOperations";
 import { resolvedResult, type LightmapRebuildResult, type NativeVector3 } from "./lightmapRebuild/lightmapRebuildTypes";
-import { fColorFromPlane, saturatingAddBgra, type BgraBytes } from "./nativeColourBytes";
+import { bgrOf, fColorFromPlane, saturatingAddBgra, type BgraBytes, type BgrBytes } from "./nativeColourBytes";
 import type { NativePlane } from "./nativePlane";
 import { STATIC_MESH_ORDINARY_LIGHTING_CONSTANTS } from "./staticMeshOrdinaryLightingEngineConstants";
 
@@ -32,7 +32,7 @@ export function staticMeshLightSamplerEffect(lightEffect: number): LightmapRebui
 }
 
 function pointAttenuation(distance: number, radius: number, delta: NativeVector3, normal: NativeVector3): number {
-  const dot = Math.fround((delta[1] * normal[1] + normal[0] * delta[0]) + delta[2] * normal[2]);
+  const dot = dotProductFloat32(delta, normal);
   if (dot <= 0 || distance > radius) return 0;
   const unitDistance = Math.fround(distance / radius);
   const falloff = Math.fround((((pointFalloffCubicScale.value * unitDistance) * unitDistance) * unitDistance
@@ -46,7 +46,7 @@ function spotConeRamp(sampler: Extract<StaticMeshLightSampler, { effect: "spot" 
   const inverseConeWidth = Math.fround(1 / (1 - coneCosine));
   const toVertex: NativeVector3 = [Math.fround(-delta[0]), Math.fround(-delta[1]), Math.fround(-delta[2])];
   const { direction } = sampler;
-  const alignment = Math.fround((direction[1] * toVertex[1] + toVertex[0] * direction[0]) + direction[2] * toVertex[2]);
+  const alignment = dotProductFloat32(direction, toVertex);
   if (alignment <= 0 || Math.fround(coneCosine * coneCosine) * distanceSquared >= Math.fround(alignment * alignment)) return 0;
   const bias = Math.fround(inverseConeWidth * coneCosine);
   const ramp = Math.fround((inverseConeWidth * alignment) / distance - bias);
@@ -56,7 +56,7 @@ function spotConeRamp(sampler: Extract<StaticMeshLightSampler, { effect: "spot" 
 export function staticMeshLightSampleIntensity(sampler: StaticMeshLightSampler, sample: StaticMeshVertexSample): number {
   const { position } = sampler, { worldPosition, worldNormal } = sample;
   const delta: NativeVector3 = [Math.fround(position[0] - worldPosition[0]), Math.fround(position[1] - worldPosition[1]), Math.fround(position[2] - worldPosition[2])];
-  const distanceSquared = Math.fround((delta[0] * delta[0] + delta[1] * delta[1]) + delta[2] * delta[2]);
+  const distanceSquared = dotProductFloat32(delta, delta);
   const distance = Math.fround(Math.sqrt(distanceSquared));
   const attenuation = pointAttenuation(distance, sampler.radius, delta, worldNormal);
   if (sampler.effect === "point" || attenuation <= 0) return attenuation;
@@ -72,7 +72,7 @@ export function staticMeshOrdinaryLightContribution(colour: NativePlane, gain: n
   return fColorFromPlane([channel(colour[0]), channel(colour[1]), channel(colour[2]), 0]);
 }
 
-export function staticMeshOrdinaryVertexColour(lights: readonly StaticMeshOrdinaryLight[], gain: number, sample: StaticMeshVertexSample): BgraBytes {
-  return lights.reduce((colour, light) => saturatingAddBgra(colour, staticMeshOrdinaryLightContribution(light.colour, gain,
-    staticMeshLightSampleIntensity(light.sampler, sample))), darkContribution);
+export function staticMeshOrdinaryVertexColour(lights: readonly StaticMeshOrdinaryLight[], gain: number, sample: StaticMeshVertexSample): BgrBytes {
+  return bgrOf(lights.reduce((colour, light) => saturatingAddBgra(colour, staticMeshOrdinaryLightContribution(light.colour, gain,
+    staticMeshLightSampleIntensity(light.sampler, sample))), darkContribution));
 }
