@@ -12,7 +12,7 @@ import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { loadNativeMaterial, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
-import { createNativeSkyPresentation, sharedSkyViewGateUnresolvedReason } from "../../src/scene/world/nativeSkyPresentation";
+import { createNativeSkyPresentation, sharedSkyViewGateUnresolvedReason, sharedSkyVisibilityUnstagedReason } from "../../src/scene/world/nativeSkyPresentation";
 import { swatchTexturePng, syntheticSkyColourModifierProgram, textureImageFor } from "../support/materialProgramFixture";
 import { jsonBytes, sha256Hex } from "../support/nativeTileFixtureStore";
 
@@ -97,7 +97,8 @@ describe("shared sky presentation", () => {
     expect(drawn).toBeInstanceOf(ShaderMaterial);
     expect(drawn?.name).toBe(`UE2 material: ${skyBackgroundRoot}`);
     expect(sky?.inspection()).toMatchObject({ status: "shared-sky", meshes: 1, sourceId: sharedSkySourceId, manifestSha256: skyManifestSha256,
-      drawGate: "always", gaps: [sharedSkyViewGateUnresolvedReason] });
+      drawGate: "always", gaps: [sharedSkyViewGateUnresolvedReason, sharedSkyVisibilityUnstagedReason], skyVisibility: null });
+    expect(scene.getAutoClearDepthStencilSetup(1)).toMatchObject({ autoClear: true, depth: true, stencil: false });
     expect(sky?.inspection().librarySurfaces).toEqual([{ mesh: "shared sky part 0", sourceReference: skyBackgroundRoot,
       programMaterialId: skyBackgroundProgramSha256, status: "library-compiled", reasons: [] }]);
     sky?.dispose();

@@ -15,6 +15,7 @@ export interface NativeSharedSkySource {
   readonly manifestSha256: string;
   readonly glb: NativeSkyBundleFile;
   readonly snapshot: NativeSkyBundleFile;
+  readonly visibility: { readonly asset: NativeSkyBundleFile; readonly payload: NativeSkyBundleFile } | null;
   readonly materialRoots: number;
 }
 
@@ -24,6 +25,8 @@ const maximumSkyBundleFileBytes = 64 * 1024 * 1024;
 const maximumSkyMaterialRoots = 64;
 const skyGlbFileName = "sky.glb";
 const skySnapshotFileName = "sky.json";
+const skyVisibilityFileName = "visibility.json";
+const skyVisibilityPayloadFileName = "payload.bin";
 const sharedSkyManifestLabel = "Native shared sky manifest";
 
 function pinnedSkyBundleFile(files: unknown, fileName: string, manifestResource: string): NativeSkyBundleFile {
@@ -44,8 +47,11 @@ export function parseSharedSkyBundleManifest(input: unknown, manifestResource: s
   if (typeof materialRoots !== "number" || !Number.isSafeInteger(materialRoots) || materialRoots < 1 || materialRoots > maximumSkyMaterialRoots) {
     throw new Error(`${sharedSkyManifestLabel} must count 1 to ${maximumSkyMaterialRoots} material roots.`);
   }
+  const visibilityStaged = isPlainRecord(input.files) && input.files[skyVisibilityFileName] !== undefined;
   return { sourceId: input.id, manifestSha256, materialRoots, glb: pinnedSkyBundleFile(input.files, skyGlbFileName, manifestResource),
-    snapshot: pinnedSkyBundleFile(input.files, skySnapshotFileName, manifestResource) };
+    snapshot: pinnedSkyBundleFile(input.files, skySnapshotFileName, manifestResource),
+    visibility: visibilityStaged ? { asset: pinnedSkyBundleFile(input.files, skyVisibilityFileName, manifestResource),
+      payload: pinnedSkyBundleFile(input.files, skyVisibilityPayloadFileName, manifestResource) } : null };
 }
 
 export async function readSharedSkySource(signal: AbortSignal): Promise<NativeSharedSkySource | null> {

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Constants } from "@babylonjs/core/Engines/constants";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
@@ -82,7 +83,7 @@ describe("sky surfaces bound through the UE2 library", () => {
       signal: new AbortController().signal, ...overrides });
   const backgroundListing = () => parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, pin(backgroundProgramSha256))]));
 
-  it("draws a compiled program through the library without depth write and keeps the glTF material of a diagnostic program with its reasons", async () => {
+  it("draws a compiled program through the library with its own LESS_EQUAL depth state and keeps the glTF material of a diagnostic program with its reasons", async () => {
     const listing = parseNativeSkyMaterialsListing(snapshot([listedMaterial(backgroundRoot, pin(backgroundProgramSha256)),
       listedMaterial(unportedRoot, pin(unportedProgramSha256))]));
     const meshes = [skyMesh(backgroundRoot), skyMesh(unportedRoot)], unportedMaterial = meshes[1]!.material;
@@ -92,7 +93,7 @@ describe("sky surfaces bound through the UE2 library", () => {
     const drawn = meshes[0]!.material as ShaderMaterial;
     expect(drawn).toBeInstanceOf(ShaderMaterial);
     expect(drawn.name).toBe(`UE2 material: ${backgroundRoot}`);
-    expect([drawn.disableDepthWrite, drawn.forceDepthWrite]).toEqual([true, false]);
+    expect([drawn.disableDepthWrite, drawn.forceDepthWrite, drawn.depthFunction]).toEqual([false, false, Constants.LEQUAL]);
     expect(meshes[1]!.material).toBe(unportedMaterial);
     expect(binding.surfaces[1]!.reasons).toEqual(["material-class-unported:Engine.GlowModifier"]);
     expect(scene.materials.some(material => material.name.startsWith("UE2 diagnostic:"))).toBe(false);

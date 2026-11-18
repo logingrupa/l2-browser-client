@@ -135,8 +135,6 @@ async function librarySkySurface(settings: NativeSkyLibrarySettings, mesh: Abstr
   const library = createNativeMaterial(settings.scene, loaded, { sessionSeed: settings.sessionSeed, lighting: "unlit" });
   const inspected = library.inspect();
   if (inspected.status !== "compiled") { library.dispose(); return unbound("library-diagnostic", join.programMaterialId, inspected.reasons); }
-  library.material.disableDepthWrite = true;
-  library.material.forceDepthWrite = false;
   return { mesh, sourceReference, status: "library-compiled", programMaterialId: join.programMaterialId, reasons: [], library,
     colorModifierNodes: colorModifierNodesOf(loaded) };
 }

@@ -1,6 +1,7 @@
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
@@ -10,9 +11,16 @@ import type { NativeMaterialUniforms } from "../../materials/ue2/babylon/materia
 import { validateSectionGlb } from "./loadNativeSection";
 import { readSharedSkySource, type NativeSharedSkySource } from "./nativeSharedSkySource";
 import { bindNativeSkyLibraryMaterials, loadNativeSkyMaterialsListing, type NativeSkyLibraryBinding } from "./nativeSkyLibraryMaterials";
+import { driveNativeSkyVisibility, loadNativeSkyVisibility, type NativeSkyVisibilityDriver } from "./nativeSkyVisibility";
 import type { SkyEnvironmentColourSources } from "./skyEnvironmentColours";
 
 export const sharedSkyViewGateUnresolvedReason = "shared-sky-view-gate-unresolved";
+export const sharedSkyVisibilityUnstagedReason = "shared-sky-visibility-unstaged";
+
+function requireSkyMesh(mesh: AbstractMesh): Mesh {
+  if (!(mesh instanceof Mesh)) throw new Error(`${mesh.name} is not a Mesh, so its sky draw queue cannot be rewritten.`);
+  return mesh;
+}
 
 interface LoadedSharedSky {
   readonly source: NativeSharedSkySource;
@@ -46,7 +54,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
   } catch (error) { container?.dispose(); skyRoot?.dispose(); throw error; }
   const root = skyRoot;
   const skyMeshes = root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0);
-  let libraryBinding: NativeSkyLibraryBinding;
+  let libraryBinding: NativeSkyLibraryBinding, visibilityDriver: NativeSkyVisibilityDriver | null;
   try {
     if (skyMeshes.length !== source.materialRoots || skyMeshes.some(mesh => !mesh.material)) {
       throw new Error(`Shared sky requires one material mesh for each of its ${source.materialRoots} material roots.`);
@@ -54,9 +62,11 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     const listing = await loadNativeSkyMaterialsListing(source.snapshot, signal);
     libraryBinding = await bindNativeSkyLibraryMaterials({ scene, meshes: skyMeshes, listing, sessionSeed: drawNativeSessionSeed(), materialUniforms: skyMaterialUniforms,
       environmentColours, loadProgram: loadNativeMaterial, signal });
+    const visibility = await loadNativeSkyVisibility(source, signal);
+    visibilityDriver = visibility === null ? null : driveNativeSkyVisibility(scene, skyMeshes.map(requireSkyMesh), visibility);
   } catch (error) { container.dispose(); root.dispose(); throw error; }
   const materials = [...new Set(skyMeshes.map(mesh => mesh.material!))];
-  for (const material of materials) { material.fogEnabled = false; material.disableDepthWrite = true; }
+  for (const material of materials) material.fogEnabled = false;
   const skySet = new Set(skyMeshes), worldGroups = new Map<AbstractMesh, number>();
   const rootPosition = root.position.clone();
   const autoClear = { ...scene.getAutoClearDepthStencilSetup(1) };
@@ -67,7 +77,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
   };
   for (const mesh of skyMeshes) { mesh.renderingGroupId = 0; mesh.isPickable = false; mesh.alwaysSelectAsActiveMesh = true; }
   for (const mesh of scene.meshes) drawWorldMeshAfterSkyRoom(mesh);
-  scene.setRenderingAutoClearDepthStencil(1, true, true, true);
+  scene.setRenderingAutoClearDepthStencil(1, true, true, false);
   const meshesNotifiedSinceLastDraw = new Set<AbstractMesh>();
   let meshCountCheckedBeforeDraw = scene.meshes.length;
   const added = scene.onNewMeshAddedObservable.add(mesh => meshesNotifiedSinceLastDraw.add(mesh));
@@ -80,6 +90,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     meshesNotifiedSinceLastDraw.clear();
     root.position.copyFrom(rootPosition).addInPlace(camera.globalPosition);
     root.computeWorldMatrix(true);
+    visibilityDriver?.step();
   });
   const dispose = () => {
     if (disposed) return; disposed = true;
@@ -98,7 +109,10 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     meshes: skyMeshes.length, vertices: skyMeshes.reduce((n, mesh) => n + mesh.getTotalVertices(), 0),
     triangles: skyMeshes.reduce((n, mesh) => n + mesh.getTotalIndices() / 3, 0),
     texturesReady: skyMeshes.every(mesh => mesh.material?.getActiveTextures().every(texture => texture.isReady()) ?? true),
-    mode: "shared SkyLevel drawn on every tile; browser camera-follow background", drawGate: "always", gaps: [sharedSkyViewGateUnresolvedReason],
+    mode: "shared SkyLevel drawn on every tile; browser camera-follow background",
+    drawGate: visibilityDriver === null ? "always" : "native-skylevel-walk",
+    gaps: [sharedSkyViewGateUnresolvedReason, ...(visibilityDriver === null ? [sharedSkyVisibilityUnstagedReason] : visibilityDriver.inspection()?.gaps ?? [])],
+    skyVisibility: visibilityDriver?.inspection() ?? null,
     librarySurfaces: libraryBinding.surfaces, environmentColours: libraryBinding.environmentColours(),
     nativeCloudMotion: "unverified", nativeVisibleParity: "unverified",
   }) };
