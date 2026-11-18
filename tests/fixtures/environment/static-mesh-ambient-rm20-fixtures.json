@@ -1,0 +1,665 @@
+{
+  "schemaVersion": 1,
+  "kind": "rm20-static-mesh-ambient-fixtures",
+  "source": {
+    "file": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap/static-mesh-no-hourly-lighting.json",
+    "sha256": "78a54766eae225e841a975e91e58870ffb35c46062712cd8426fa7b7553cd955",
+    "verification": "C:/laragon/l2b-orchestration/rea-in/20261113-roadmap-verify/verified-static-mesh-no-hourly.md",
+    "paths": [
+      "fixtureDetails.fixtures",
+      "fixtureDetails.zoneAmbientFixtures"
+    ],
+    "method": "Native LocalToWorld, Core FBox.TransformBy and UModel BoxLeaves replayed on 20_20.unr 1beddad2; FGetHSV and FColor replayed; no game launch."
+  },
+  "hourlyStaticMeshAmbientRGB": [
+    120,
+    120,
+    120
+  ],
+  "fixtures": [
+    {
+      "actorExportIndex": 950,
+      "actor": "20_20.StaticMeshActor1914",
+      "mesh": "L2fortress_01_S.fort01_command_in_stair",
+      "hour": 12.2,
+      "environmentType": 0,
+      "localBox": [
+        -600.0,
+        1.058500051498413,
+        -157.02890014648438,
+        600.0,
+        600.0,
+        8.000399589538574
+      ],
+      "localToWorld": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -0.0,
+        0.0,
+        -0.0,
+        0.0,
+        1.0,
+        0.0,
+        11537.0,
+        94987.0,
+        -3304.0,
+        1.0
+      ],
+      "worldBox": [
+        10937.0,
+        94988.0546875,
+        -3461.02880859375,
+        12137.0,
+        95587.0,
+        -3295.99951171875
+      ],
+      "leafIndices": [
+        798,
+        794,
+        792
+      ],
+      "zoneIndices": [
+        1,
+        24
+      ],
+      "runtimeSunAffect": true,
+      "ambientGlow": 0,
+      "zoneMaximumAmbientVector": [
+        0.32118257880210876,
+        0.32118257880210876,
+        0.32118257880210876
+      ],
+      "cachedAmbientBGRA": [
+        81,
+        81,
+        81,
+        0
+      ],
+      "selectedAmbientSource": "StaticMeshAmbient(hour)>>1",
+      "setAmbientRGB": [
+        60,
+        60,
+        60
+      ],
+      "hasInstance": true,
+      "ordinaryEntryCount": 36,
+      "hourlyEntryCount": 0,
+      "secondaryMeshColorsBGRA": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ],
+      "lighting": [
+        {
+          "vertex": 0,
+          "lightingRGB255": [
+            60,
+            60,
+            60
+          ],
+          "textureMultiplierRGB": [
+            0.47058823529411764,
+            0.47058823529411764,
+            0.47058823529411764
+          ]
+        },
+        {
+          "vertex": 1,
+          "lightingRGB255": [
+            60,
+            60,
+            60
+          ],
+          "textureMultiplierRGB": [
+            0.47058823529411764,
+            0.47058823529411764,
+            0.47058823529411764
+          ]
+        }
+      ]
+    },
+    {
+      "actorExportIndex": 1123,
+      "actor": "20_20.StaticMeshActor611",
+      "mesh": "Oren_HED_S.hed_arch11",
+      "hour": 12.2,
+      "environmentType": 0,
+      "localBox": [
+        -62.505001068115234,
+        -46.98109817504883,
+        -88.45469665527344,
+        62.51940155029297,
+        46.98109817504883,
+        116.6884994506836
+      ],
+      "localToWorld": [
+        -1.0,
+        1.2246468525851679e-16,
+        0.0,
+        0.0,
+        -9.797174820681343e-17,
+        -0.800000011920929,
+        -0.0,
+        0.0,
+        -0.0,
+        -0.0,
+        1.0,
+        0.0,
+        17079.76171875,
+        78503.71875,
+        -3972.972900390625,
+        1.0
+      ],
+      "worldBox": [
+        17017.2421875,
+        78466.1328125,
+        -4061.427490234375,
+        17142.267578125,
+        78541.3046875,
+        -3856.284423828125
+      ],
+      "leafIndices": [
+        172
+      ],
+      "zoneIndices": [
+        5
+      ],
+      "runtimeSunAffect": false,
+      "ambientGlow": 0,
+      "zoneMaximumAmbientVector": [
+        0.32118257880210876,
+        0.32118257880210876,
+        0.32118257880210876
+      ],
+      "cachedAmbientBGRA": [
+        81,
+        81,
+        81,
+        0
+      ],
+      "selectedAmbientSource": "renderData.cachedAmbientRGB>>1",
+      "setAmbientRGB": [
+        40,
+        40,
+        40
+      ],
+      "hasInstance": true,
+      "ordinaryEntryCount": 1,
+      "hourlyEntryCount": 0,
+      "secondaryMeshColorsBGRA": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ],
+      "lighting": [
+        {
+          "vertex": 4,
+          "lightingRGB255": [
+            40,
+            40,
+            40
+          ],
+          "textureMultiplierRGB": [
+            0.3137254901960784,
+            0.3137254901960784,
+            0.3137254901960784
+          ]
+        },
+        {
+          "vertex": 5,
+          "lightingRGB255": [
+            40,
+            40,
+            40
+          ],
+          "textureMultiplierRGB": [
+            0.3137254901960784,
+            0.3137254901960784,
+            0.3137254901960784
+          ]
+        }
+      ]
+    },
+    {
+      "actorExportIndex": 1143,
+      "actor": "20_20.StaticMeshActor2208",
+      "mesh": "field_deco_S.corpse.skeleton08",
+      "hour": 12.2,
+      "environmentType": 0,
+      "localBox": [
+        -8.302800178527832,
+        -9.065400123596191,
+        -0.945900022983551,
+        8.697199821472168,
+        7.934599876403809,
+        4.7546000480651855
+      ],
+      "localToWorld": [
+        0.7730104327201843,
+        -0.6343932747840881,
+        0.0,
+        0.0,
+        0.6343932747840881,
+        0.7730104327201843,
+        -0.0,
+        0.0,
+        -0.0,
+        0.0,
+        1.0,
+        0.0,
+        18914.279296875,
+        79558.609375,
+        -4410.20703125,
+        1.0
+      ],
+      "worldBox": [
+        18902.109375,
+        79546.0859375,
+        -4411.15283203125,
+        18926.03515625,
+        79570.0078125,
+        -4405.45263671875
+      ],
+      "leafIndices": [
+        134
+      ],
+      "zoneIndices": [
+        6
+      ],
+      "runtimeSunAffect": false,
+      "ambientGlow": 0,
+      "zoneMaximumAmbientVector": [
+        0.32118257880210876,
+        0.32118257880210876,
+        0.32118257880210876
+      ],
+      "cachedAmbientBGRA": [
+        81,
+        81,
+        81,
+        0
+      ],
+      "selectedAmbientSource": "renderData.cachedAmbientRGB>>1",
+      "setAmbientRGB": [
+        40,
+        40,
+        40
+      ],
+      "hasInstance": true,
+      "ordinaryEntryCount": 0,
+      "hourlyEntryCount": 0,
+      "secondaryMeshColorsBGRA": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ],
+      "lighting": [
+        {
+          "vertex": 0,
+          "lightingRGB255": [
+            40,
+            40,
+            40
+          ],
+          "textureMultiplierRGB": [
+            0.3137254901960784,
+            0.3137254901960784,
+            0.3137254901960784
+          ]
+        },
+        {
+          "vertex": 1,
+          "lightingRGB255": [
+            40,
+            40,
+            40
+          ],
+          "textureMultiplierRGB": [
+            0.3137254901960784,
+            0.3137254901960784,
+            0.3137254901960784
+          ]
+        }
+      ]
+    },
+    {
+      "actorExportIndex": 1155,
+      "actor": "20_20.StaticMeshActor4210",
+      "mesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree05",
+      "hour": 12.2,
+      "environmentType": 0,
+      "localBox": [
+        -405.5484924316406,
+        -461.4518127441406,
+        -26.074100494384766,
+        406.19171142578125,
+        317.33740234375,
+        917.3438110351562
+      ],
+      "localToWorld": [
+        0.4713967442512512,
+        -0.8819212913513184,
+        0.0,
+        0.0,
+        0.8819212913513184,
+        0.4713967442512512,
+        -0.0,
+        0.0,
+        -0.0,
+        0.0,
+        1.0,
+        0.0,
+        24737.990234375,
+        86692.171875,
+        -3512.625,
+        1.0
+      ],
+      "worldBox": [
+        24139.8515625,
+        86116.4140625,
+        -3538.69921875,
+        25209.333984375,
+        87199.421875,
+        -2595.28125
+      ],
+      "leafIndices": [
+        493,
+        490,
+        488,
+        486,
+        483
+      ],
+      "zoneIndices": [
+        1
+      ],
+      "runtimeSunAffect": true,
+      "ambientGlow": 0,
+      "zoneMaximumAmbientVector": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cachedAmbientBGRA": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "selectedAmbientSource": "StaticMeshAmbient(hour)>>1",
+      "setAmbientRGB": [
+        60,
+        60,
+        60
+      ],
+      "hasInstance": false,
+      "ordinaryEntryCount": null,
+      "hourlyEntryCount": null,
+      "secondaryMeshColorsBGRA": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ],
+      "lighting": [
+        {
+          "vertex": 0,
+          "lightingRGB255": [
+            60,
+            60,
+            60
+          ],
+          "textureMultiplierRGB": [
+            0.47058823529411764,
+            0.47058823529411764,
+            0.47058823529411764
+          ]
+        },
+        {
+          "vertex": 1,
+          "lightingRGB255": [
+            60,
+            60,
+            60
+          ],
+          "textureMultiplierRGB": [
+            0.47058823529411764,
+            0.47058823529411764,
+            0.47058823529411764
+          ]
+        }
+      ]
+    },
+    {
+      "actorExportIndex": 922,
+      "actor": "20_20.StaticMeshActor1910",
+      "mesh": "L2fortress_01_S.fort01_command_stair01",
+      "hour": 12.2,
+      "environmentType": 0,
+      "localBox": [
+        -785.0001831054688,
+        -367.55108642578125,
+        -513.0899047851562,
+        -430.0000915527344,
+        454.9999084472656,
+        -102.0103988647461
+      ],
+      "localToWorld": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -0.0,
+        0.0,
+        -0.0,
+        0.0,
+        1.0,
+        0.0,
+        11537.0,
+        94987.0,
+        -2943.0,
+        1.0
+      ],
+      "worldBox": [
+        10752.0,
+        94619.4453125,
+        -3456.08984375,
+        11107.0,
+        95442.0,
+        -3045.010498046875
+      ],
+      "leafIndices": [
+        799,
+        798,
+        797,
+        792
+      ],
+      "zoneIndices": [
+        1,
+        24
+      ],
+      "runtimeSunAffect": true,
+      "ambientGlow": 0,
+      "zoneMaximumAmbientVector": [
+        0.32118257880210876,
+        0.32118257880210876,
+        0.32118257880210876
+      ],
+      "cachedAmbientBGRA": [
+        81,
+        81,
+        81,
+        0
+      ],
+      "selectedAmbientSource": "StaticMeshAmbient(hour)>>1",
+      "setAmbientRGB": [
+        60,
+        60,
+        60
+      ],
+      "hasInstance": true,
+      "ordinaryEntryCount": 25,
+      "hourlyEntryCount": 8,
+      "secondaryMeshColorsBGRA": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ],
+      "lighting": [
+        {
+          "vertex": 0,
+          "lightingRGB255": [
+            60,
+            60,
+            60
+          ],
+          "textureMultiplierRGB": [
+            0.47058823529411764,
+            0.47058823529411764,
+            0.47058823529411764
+          ]
+        },
+        {
+          "vertex": 1,
+          "lightingRGB255": [
+            60,
+            60,
+            60
+          ],
+          "textureMultiplierRGB": [
+            0.47058823529411764,
+            0.47058823529411764,
+            0.47058823529411764
+          ]
+        }
+      ]
+    }
+  ],
+  "zones": [
+    {
+      "zoneIndex": 1,
+      "zoneActor": "20_20.ZoneInfo1",
+      "ambientHue": 0,
+      "ambientSaturation": 255,
+      "ambientBrightness": 0,
+      "sunAffect": true,
+      "ambientVector": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "fallbackColorBGRA": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "zoneIndex": 5,
+      "zoneActor": "20_20.ZoneInfo21",
+      "ambientHue": 0,
+      "ambientSaturation": 255,
+      "ambientBrightness": 40,
+      "sunAffect": false,
+      "ambientVector": [
+        0.32118257880210876,
+        0.32118257880210876,
+        0.32118257880210876
+      ],
+      "fallbackColorBGRA": [
+        81,
+        81,
+        81,
+        0
+      ]
+    },
+    {
+      "zoneIndex": 6,
+      "zoneActor": "20_20.ZoneInfo19",
+      "ambientHue": 0,
+      "ambientSaturation": 255,
+      "ambientBrightness": 40,
+      "sunAffect": false,
+      "ambientVector": [
+        0.32118257880210876,
+        0.32118257880210876,
+        0.32118257880210876
+      ],
+      "fallbackColorBGRA": [
+        81,
+        81,
+        81,
+        0
+      ]
+    },
+    {
+      "zoneIndex": 24,
+      "zoneActor": "20_20.ZoneInfo37",
+      "ambientHue": 0,
+      "ambientSaturation": 255,
+      "ambientBrightness": 40,
+      "sunAffect": false,
+      "ambientVector": [
+        0.32118257880210876,
+        0.32118257880210876,
+        0.32118257880210876
+      ],
+      "fallbackColorBGRA": [
+        81,
+        81,
+        81,
+        0
+      ]
+    }
+  ]
+}

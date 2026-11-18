@@ -120,7 +120,6 @@ def static_mesh_light_list_arrays(light_lists, light_list_fields):
     return [array('SMLL.actorExportIndex', 'int32', [light_list.actor_export_index for light_list in light_lists]),
             array('SMLL.instanceExportIndex', 'int32', [light_list.instance_export_index for light_list in light_lists]),
             array('SMLL.colorCount', 'uint32', [light_list.color_count for light_list in light_lists]),
-            array('SMLL.sunAffect', 'int32', [fields.sun_affect for fields in light_list_fields]),
             array('SMLL.ordinaryInputsResolved', 'int32', [int(is_resolved) for is_resolved in resolved]),
             array('SMLL.scaleGlow', 'float32', [fields.scale_glow if is_resolved else 0.0 for fields, is_resolved in zip(light_list_fields, resolved)]),
             array('SMLL.localToWorld', 'float32', [value for fields, is_resolved in zip(light_list_fields, resolved)
@@ -129,6 +128,15 @@ def static_mesh_light_list_arrays(light_lists, light_list_fields):
             array('SMLL.environmentStart', 'uint32', prefix_starts(len(light_list.environment_lights) for light_list in light_lists)),
             *visibility_entry_arrays('SMSC', scene), array('SMSC.applied', 'int32', [entry.applied for entry in scene]),
             *visibility_entry_arrays('SMEN', environment, environment_hours), array('SMEN.applied', 'int32', [entry.applied for entry in environment])]
+
+
+def static_mesh_ambient_zone_arrays(ambient_zones):
+    return [array('SMAZ.actorExportIndex', 'int32', [row.actor_export_index for row in ambient_zones]),
+            array('SMAZ.resolved', 'int32', [int(row.resolved()) for row in ambient_zones]),
+            array('SMAZ.ambientGlow', 'int32', [row.ambient_glow for row in ambient_zones]),
+            array('SMAZ.unlit', 'int32', [int(row.unlit) for row in ambient_zones]),
+            array('SMAZ.zoneStart', 'uint32', prefix_starts(len(row.zones) for row in ambient_zones)),
+            array('SMAZ.zone', 'int32', [zone for row in ambient_zones for zone in row.zones])]
 
 
 def terrain_lighting_arrays(sectors):

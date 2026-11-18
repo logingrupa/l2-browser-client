@@ -48,6 +48,7 @@
     "lighting-class-chain-unresolved:<class>",
     "terrain-intensity-map-layout-unread:<detail>",
     "static-mesh-ordinary-inputs-unresolved:<detail>",
+    "static-mesh-ambient-zones-unresolved:<detail>",
     "object-gaps:<count>",
     "batch-pending",
     "upstream-step-failed:<step>",

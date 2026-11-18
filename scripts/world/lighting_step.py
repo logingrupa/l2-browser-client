@@ -10,6 +10,7 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.verified_file_writes import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
+from reference_client_guard import require_reference_client
 from world.bsp_lightmaps import read_bsp_lightmaps
 from world.bsp_step import sealed_bsp_chunks
 from world.bsp_visibility_step import tile_node_ranges
@@ -18,9 +19,11 @@ from world.level_model import LevelModelLayoutError, read_level_model
 from world.level_zones import read_level_zones
 from world.light_actors import read_lighting_actors, read_static_mesh_light_lists, reference_client_class_chains
 from world.lightmap_rebuild_inputs import lightmap_rebuild_input_arrays
-from world.lighting_payload import (bsp_lightmap_arrays, lighting_records_array, static_mesh_light_list_arrays, terrain_intensity_map_arrays,
-                                    terrain_lighting_arrays, typed_payload_byte_count)
+from world.lighting_payload import (bsp_lightmap_arrays, lighting_records_array, static_mesh_ambient_zone_arrays, static_mesh_light_list_arrays,
+                                    terrain_intensity_map_arrays, terrain_lighting_arrays, typed_payload_byte_count)
 from world.native_terrain_sectors import native_terrain
+from world.static_mesh_ambient_zones import static_mesh_ambient_zones, static_mesh_ambient_zones_unresolved_reasons
+from world.static_mesh_step import StaticMeshPackages, static_mesh_requests_by_reference
 from world.static_mesh_light_list_fields import static_mesh_light_list_fields, static_mesh_ordinary_inputs_unresolved_reasons
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_placement import ClassDefaults
@@ -34,7 +37,7 @@ from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 from world.error_detail import conversion_failure_reason, first_line_of_error
 
-LIGHTING_STEP_ALGORITHM_VERSION = 9
+LIGHTING_STEP_ALGORITHM_VERSION = 10
 LIGHTING_STEP_NAME = 'lighting'
 LIGHTING_PRODUCT_NAME = 'lighting.json'
 TILE_LIGHTING_FOLDER = 'native-tile-lighting'
@@ -42,7 +45,7 @@ LIGHTING_RECORDS_KIND = 'native-tile-lighting-records'
 LIGHTING_RECORDS_SCHEMA_VERSION = 1
 LIGHTING_RULES_PATH = Path(__file__).resolve().parents[2] / 'recipes' / 'world' / 'lighting-rules.json'
 APPLIED_LIGHTING_RULES = ('lightmap-render-section-texture', 'lightmap-record-layout', 'lightmap-page-layout', 'lightmap-render-vertex-uv',
-                          'bsp-lightmap-slot', 'bsp-section-sun-affect', 'static-mesh-instance-layout', 'terrain-sector-lighting-layout',
+                          'bsp-lightmap-slot', 'bsp-section-sun-affect', 'static-mesh-instance-layout', 'static-mesh-touched-zone-ambient', 'terrain-sector-lighting-layout',
                           'terrain-intensity-map-layout', 'time-slot-center')
 LIGHTING_PAYLOAD_TOO_LARGE_REASON = 'lighting-payload-too-large'
 WATER_VOLUME_UNLINKED_REASON_PREFIX = 'lighting-water-volume-unlinked:'
@@ -60,6 +63,7 @@ class LightingUnit(NamedTuple):
     chunk_plan: dict
     bsp: dict
     collision: dict
+    requests_by_reference: dict
 
 
 def load_lighting_rules():
@@ -85,10 +89,11 @@ def lighting_unit(project_root, tile_id, lock_record):
     collision_fingerprint, collision = sealed_collision(project_root, tile_id, lock_record)
     config = {'chunksFingerprint': chunks_fingerprint, 'bspFingerprint': bsp_fingerprint, 'collisionFingerprint': collision_fingerprint,
               'rulesSha256': sha256_hex(canonical_json_bytes(load_lighting_rules())), 'structPropertyRulesSha256': read_struct_property_tag_rules().sha256}
-    inputs = locked_input_records([tile_map_path(tile_id)])
+    requests_by_reference = static_mesh_requests_by_reference(raw_products)
+    inputs = locked_input_records(sorted({tile_map_path(tile_id), *(request['package'] for request in requests_by_reference.values())}))
     ledger = lighting_ledger(project_root)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
-    return LightingUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, raw_products, chunk_plan, bsp, collision)
+    return LightingUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, raw_products, chunk_plan, bsp, collision, requests_by_reference)
 
 
 def lighting_product_path(ledger, unit_key):
@@ -146,7 +151,7 @@ def lighting_records(actors, zones, water_volumes, rules):
             'waterVolumes': water_volumes, 'rules': rules['rows']}
 
 
-def tile_lighting_payload(package, unit, class_defaults):
+def tile_lighting_payload(package, unit, class_defaults, load_mesh_package):
     level = read_level_model(package)
     model = level.model
     class_chains = reference_client_class_chains(class_defaults)
@@ -163,19 +168,23 @@ def tile_lighting_payload(package, unit, class_defaults):
     water_volumes, water_reasons = water_volume_links(lighting_actors.water_volumes, unit.collision)
     records = lighting_records(lighting_actors, zones, water_volumes, load_lighting_rules())
     light_list_fields = static_mesh_light_list_fields(package, actors, light_lists, class_defaults)
-    arrays = [*bsp_arrays, *rebuild_arrays, *static_mesh_light_list_arrays(light_lists, light_list_fields), *terrain_lighting_arrays(sectors), *intensity_map_arrays,
-              lighting_records_array(records)]
+    ambient_zones = static_mesh_ambient_zones(package, model, actors, class_defaults, unit.requests_by_reference, load_mesh_package)
+    arrays = [*bsp_arrays, *rebuild_arrays, *static_mesh_light_list_arrays(light_lists, light_list_fields), *static_mesh_ambient_zone_arrays(ambient_zones),
+              *terrain_lighting_arrays(sectors), *intensity_map_arrays, lighting_records_array(records)]
     counts = {'bspLightmaps': {**bsp_counts, **rebuild_counts}, 'lights': len(lighting_actors.lights), 'fogInfos': len(lighting_actors.fog_infos),
               'levelInfos': len(lighting_actors.level_infos), 'zones': len(records['zones']),
               'waterVolumes': len(records['waterVolumes']), 'staticMeshLightLists': len(light_lists),
               'staticMeshSceneLights': sum(len(light_list.scene_lights) for light_list in light_lists),
               'staticMeshEnvironmentLights': sum(len(light_list.environment_lights) for light_list in light_lists),
               'staticMeshLightListsOrdinaryInputsUnresolved': sum(not fields.ordinary_inputs_resolved() for fields in light_list_fields),
+              'staticMeshAmbientZoneActors': len(ambient_zones), 'staticMeshAmbientZonesUnresolved': sum(not row.resolved() for row in ambient_zones),
               'terrainSectors': len(sectors), 'terrainSectorLights': sum(len(sector.lights) for sector in sectors),
               'terrainShadowMaps': sum(len(sector.shadow_maps) for sector in sectors), 'terrainIntensityMaps': intensity_map_count}
     chain_reasons = class_chain_unresolved_reasons(lighting_actors.unresolved_classes)
     ordinary_input_reasons = static_mesh_ordinary_inputs_unresolved_reasons(light_list_fields)
-    return arrays, sorted({*reasons, *rebuild_reasons, *water_reasons, *chain_reasons, *intensity_map_reasons, *ordinary_input_reasons}), counts
+    ambient_zone_reasons = static_mesh_ambient_zones_unresolved_reasons(ambient_zones)
+    return arrays, sorted({*reasons, *rebuild_reasons, *water_reasons, *chain_reasons, *intensity_map_reasons, *ordinary_input_reasons,
+                           *ambient_zone_reasons}), counts
 
 
 def run_lighting_step(project_root, client_root, tile_id):
@@ -195,7 +204,7 @@ def run_lighting_step(project_root, client_root, tile_id):
     package = read_locked_map_package(client, tile_id, lock_record)
     class_defaults = ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client))
     try:
-        arrays, reasons, counts = tile_lighting_payload(package, unit, class_defaults)
+        arrays, reasons, counts = tile_lighting_payload(package, unit, class_defaults, StaticMeshPackages(require_reference_client(client)))
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, LIGHTING_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except FormatError as error:

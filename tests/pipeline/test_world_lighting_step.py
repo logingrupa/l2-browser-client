@@ -44,7 +44,6 @@ RULE_FIELDS = {'id', 'value', 'provenance', 'status', 'interludeEvidence', 'runt
 METADATA = {'sourceSha256': '0' * 64, 'converterVersion': 'lighting_step.py:1'}
 SQUARE_UVS = ((0.0, 0.0), (0.25, 0.0), (0.25, 0.25), (0.0, 0.25))
 DB7_EXPECTATIONS_PATH = ROOT / 'tests/fixtures/environment/hourly-lighting-db7-converter-expectations.json'
-RM10_STATIC_FIXTURES_PATH = ROOT / 'tests/fixtures/environment/runtime-lighting-rm10-static-fixtures.json'
 RM19_FIXTURES_PATH = ROOT / 'tests/fixtures/environment/ordinary-static-lighting-rm19-fixtures.json'
 ROTATED_UNIFORM_SCALE_LOCAL_TO_WORLD = (0.0, -1.5, 0.0, 0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 0.0, 13476.25, 111393.5, -11783.75, 1.0)
 SUN_ZONES = (lightmap_zone(False), lightmap_zone(True))
@@ -190,10 +189,10 @@ class LightingActorTests(unittest.TestCase):
         self.assertEqual([(entry.light_reference, entry.visibility_bits, entry.applied) for entry in light_lists[0].scene_lights], list(SCENE_LIGHTS))
         self.assertEqual([(entry.light_reference, entry.visibility_bits, entry.applied) for entry in light_lists[0].environment_lights],
                          list(ENVIRONMENT_LIGHTS))
-        resolved = StaticMeshLightListFields(SUN_AFFECTED, 0.75, ROTATED_UNIFORM_SCALE_LOCAL_TO_WORLD, None)
+        resolved = StaticMeshLightListFields(0.75, ROTATED_UNIFORM_SCALE_LOCAL_TO_WORLD, None)
         named = arrays_by_name(static_mesh_light_list_arrays(light_lists, (resolved,)))
         self.assertEqual((named['SMLL.actorExportIndex'].values, named['SMLL.instanceExportIndex'].values), ((9,), (4,)))
-        self.assertEqual(named['SMLL.sunAffect'].values, (SUN_AFFECTED,))
+        self.assertNotIn('SMLL.sunAffect', named)
         self.assertEqual((named['SMLL.ordinaryInputsResolved'].values, named['SMLL.scaleGlow'].values), ((1,), (0.75,)))
         self.assertEqual((named['SMLL.localToWorld'].type, named['SMLL.localToWorld'].values), ('float32', ROTATED_UNIFORM_SCALE_LOCAL_TO_WORLD))
         self.assertEqual(named['SMLL.colorCount'].values, (len(INSTANCE_COLOURS) // 4,))
@@ -205,36 +204,34 @@ class LightingActorTests(unittest.TestCase):
 
     def test_a_light_list_without_its_scale_glow_or_local_to_world_stages_zeros_and_marks_its_ordinary_inputs_unresolved(self):
         light_lists = read_static_mesh_light_lists(self.package, synthetic_actor_rows())
-        for fields in (StaticMeshLightListFields(SUN_AFFECTED, None, ROTATED_UNIFORM_SCALE_LOCAL_TO_WORLD, 'ScaleGlow unresolved'),
-                       StaticMeshLightListFields(SUN_AFFECTED, 0.75, None, 'Singular static actor scale')):
+        for fields in (StaticMeshLightListFields(None, ROTATED_UNIFORM_SCALE_LOCAL_TO_WORLD, 'ScaleGlow unresolved'),
+                       StaticMeshLightListFields(0.75, None, 'Singular static actor scale')):
             with self.subTest(fields=fields):
                 named = arrays_by_name(static_mesh_light_list_arrays(light_lists, (fields,)))
                 self.assertEqual((named['SMLL.ordinaryInputsResolved'].values, named['SMLL.scaleGlow'].values), ((0,), (0.0,)))
                 self.assertEqual(named['SMLL.localToWorld'].values, (0.0,) * 16)
 
-    def test_each_light_list_takes_the_bsunaffect_and_scaleglow_of_its_actor_and_an_unread_field_stays_unresolved(self):
+    def test_each_light_list_takes_the_scaleglow_of_its_actor_and_an_unread_field_stays_unresolved(self):
         package = mock.Mock(exports=[{'classObject': 'Engine.StaticMeshActor'}] * 3)
         light_lists = [mock.Mock(actor_export_index=index) for index in (1, 2, 3)]
-        fields = [ActorField('bSunAffect', True, 'authored', 'Engine.Actor'), ActorField('ScaleGlow', 0.5, 'authored', 'Engine.Actor'),
-                  ActorField('bSunAffect', False, 'class-default', 'Engine.Actor'), ActorField('ScaleGlow', None, 'ue-zero', 'Engine.Actor'),
-                  ActorField('bSunAffect', None, 'unresolved', None), ActorField('ScaleGlow', None, 'unresolved', None)]
+        fields = [ActorField('ScaleGlow', 0.5, 'authored', 'Engine.Actor'), ActorField('ScaleGlow', None, 'ue-zero', 'Engine.Actor'),
+                  ActorField('ScaleGlow', None, 'unresolved', None)]
         with (mock.patch('world.static_mesh_light_list_fields.serialized_actor_values'),
               mock.patch('world.static_mesh_light_list_fields.resolved_actor_field', side_effect=fields)):
             rows = static_mesh_light_list_fields(package, [], light_lists, None)
-        self.assertEqual([(row.sun_affect, row.scale_glow, row.local_to_world, row.ordinary_inputs_unresolved_detail) for row in rows],
-                         [(SUN_AFFECTED, 0.5, None, 'actor row absent'), (NOT_SUN_AFFECTED, 0.0, None, 'actor row absent'),
-                          (SUN_AFFECT_UNRESOLVED, None, None, 'ScaleGlow unresolved')])
+        self.assertEqual([(row.scale_glow, row.local_to_world, row.ordinary_inputs_unresolved_detail) for row in rows],
+                         [(0.5, None, 'actor row absent'), (0.0, None, 'actor row absent'), (None, None, 'ScaleGlow unresolved')])
 
     def test_a_light_list_whose_local_to_world_does_not_resolve_keeps_the_first_line_of_the_refusal_as_its_gap_reason(self):
         package = mock.Mock(exports=[{'classObject': 'Engine.StaticMeshActor'}] * 2)
         light_lists = [mock.Mock(actor_export_index=index) for index in (1, 2)]
         actors = [{'exportIndex': 1, 'classObject': 'Engine.Mover'}, {'exportIndex': 2, 'classObject': 'Engine.Mover'}]
-        fields = [ActorField('bSunAffect', True, 'authored', 'Engine.Actor'), ActorField('ScaleGlow', 0.5, 'authored', 'Engine.Actor')] * 2
+        fields = [ActorField('ScaleGlow', 0.5, 'authored', 'Engine.Actor')] * 2
         with (mock.patch('world.static_mesh_light_list_fields.serialized_actor_values'),
               mock.patch('world.static_mesh_light_list_fields.resolved_actor_field', side_effect=fields)):
             rows = static_mesh_light_list_fields(package, actors, light_lists, None)
         self.assertEqual([(row.local_to_world, row.ordinary_inputs_resolved()) for row in rows], [(None, False)] * 2)
-        resolved = StaticMeshLightListFields(SUN_AFFECTED, 0.75, ROTATED_UNIFORM_SCALE_LOCAL_TO_WORLD, None)
+        resolved = StaticMeshLightListFields(0.75, ROTATED_UNIFORM_SCALE_LOCAL_TO_WORLD, None)
         self.assertEqual(static_mesh_ordinary_inputs_unresolved_reasons((*rows, resolved)),
                          ['static-mesh-ordinary-inputs-unresolved:Only exact native Engine.StaticMeshActor placements are supported'])
 
@@ -291,20 +288,31 @@ class LightingActorTests(unittest.TestCase):
 class LightingRegistrationTests(unittest.TestCase):
     def test_the_step_kind_and_reasons_are_registered(self):
         self.assertIn(LIGHTING_STEP_NAME, TILE_STEP_NAMES)
-        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 9)
+        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 10)
         self.assertIn('lighting', load_tile_manifest_vocabulary().resource_kinds)
         patterns = load_gap_reason_patterns()
         for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large',
                        'lighting-water-volume-unlinked:<class>', 'lighting-class-chain-unresolved:<class>',
-                       'static-mesh-ordinary-inputs-unresolved:<detail>'):
+                       'static-mesh-ordinary-inputs-unresolved:<detail>', 'static-mesh-ambient-zones-unresolved:<detail>'):
             self.assertIn(reason, patterns)
 
     def test_the_unit_config_holds_the_struct_property_rules_sha256(self):
         with (mock.patch('world.lighting_step.sealed_chunk_plan', return_value=('c' * 64, ROOT, {})),
               mock.patch('world.lighting_step.sealed_bsp_chunks', return_value=('b' * 64, {})),
-              mock.patch('world.lighting_step.sealed_collision', return_value=('d' * 64, {}))):
+              mock.patch('world.lighting_step.sealed_collision', return_value=('d' * 64, {})),
+              mock.patch('world.lighting_step.static_mesh_requests_by_reference', return_value={})):
             config = lighting_unit(ROOT, '20_21', read_tile_map_lock_record('20_21')).config
         self.assertEqual(config['structPropertyRulesSha256'], read_struct_property_tag_rules().sha256)
+
+    def test_the_unit_inputs_lock_every_static_mesh_package_the_tile_requests(self):
+        requests = {'pkg.mesh': {'package': 'staticmeshes/oren_hed_s.usx', 'object': 'pkg.mesh'}}
+        with (mock.patch('world.lighting_step.sealed_chunk_plan', return_value=('c' * 64, ROOT, {})),
+              mock.patch('world.lighting_step.sealed_bsp_chunks', return_value=('b' * 64, {})),
+              mock.patch('world.lighting_step.sealed_collision', return_value=('d' * 64, {})),
+              mock.patch('world.lighting_step.static_mesh_requests_by_reference', return_value=requests)):
+            unit = lighting_unit(ROOT, '20_21', read_tile_map_lock_record('20_21'))
+        self.assertEqual([record['path'] for record in unit.inputs], ['maps/20_21.unr', 'staticmeshes/oren_hed_s.usx'])
+        self.assertEqual(unit.requests_by_reference, requests)
 
     def test_every_rule_row_is_sourced_with_unconfirmed_or_stronger_status_and_every_applied_rule_has_a_row(self):
         rows = load_lighting_rules()['rows']
@@ -366,13 +374,6 @@ class RealClientLightmapTests(unittest.TestCase):
         from world.static_placement import ClassDefaults
         return ClassDefaults(scratch_work_root_with_world_class_default_cache(self.addCleanup, 'lighting-reference-class-defaults-'),
                              ReferenceClientClassScripts(REFERENCE_CLIENT))
-
-    def test_the_rm10_pillar_actor_7732_is_sun_affected(self):
-        from world.light_actors import read_static_mesh_light_list
-        pillar = json.loads(RM10_STATIC_FIXTURES_PATH.read_text(encoding='utf-8'))['pillar']
-        light_list = read_static_mesh_light_list(self.package, pillar['actorExportIndex'], pillar['instanceExportIndex'])
-        class_defaults = self.reference_class_defaults()
-        self.assertEqual(static_mesh_light_list_fields(self.package, [], [light_list], class_defaults)[0].sun_affect, SUN_AFFECTED)
 
     def test_every_rm19_integrated_actor_stages_the_scale_glow_and_float32_local_to_world_the_native_rebuild_read(self):
         from world.light_actors import read_static_mesh_light_list

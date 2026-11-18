@@ -3,9 +3,7 @@ from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
 from world.actor_field_values import UNRESOLVED_PROVENANCE, resolved_actor_field, serialized_actor_values
-from world.bsp_node_sun_affect import NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED, SUN_AFFECTED
 from world.error_detail import first_line_of_error
-from world.level_zones import SUN_AFFECT_FIELD
 from world.static_placement import UE_ZERO_PROVENANCE, resolved_static_values, static_matrix
 
 SCALE_GLOW_FIELD = 'ScaleGlow'
@@ -16,19 +14,12 @@ ACTOR_ROW_ABSENT_DETAIL = 'actor row absent'
 
 
 class StaticMeshLightListFields(NamedTuple):
-    sun_affect: int
     scale_glow: float | None
     local_to_world: tuple | None
     ordinary_inputs_unresolved_detail: str | None
 
     def ordinary_inputs_resolved(self):
         return self.ordinary_inputs_unresolved_detail is None
-
-
-def sun_affect_of_field(field):
-    if field.provenance == UNRESOLVED_PROVENANCE:
-        return SUN_AFFECT_UNRESOLVED
-    return SUN_AFFECTED if field.value is True else NOT_SUN_AFFECTED
 
 
 def scale_glow_of_field(field):
@@ -49,10 +40,10 @@ def native_local_to_world(actor, class_defaults):
     return tuple(value for row in rows for value in row), None
 
 
-def light_list_fields_of(sun_affect, scale_glow, actor, class_defaults):
+def light_list_fields_of(scale_glow, actor, class_defaults):
     local_to_world, local_to_world_detail = native_local_to_world(actor, class_defaults)
     unresolved_detail = SCALE_GLOW_UNRESOLVED_DETAIL if scale_glow is None else local_to_world_detail
-    return StaticMeshLightListFields(sun_affect, scale_glow, local_to_world, unresolved_detail)
+    return StaticMeshLightListFields(scale_glow, local_to_world, unresolved_detail)
 
 
 def static_mesh_light_list_fields(package, actors, light_lists, class_defaults):
@@ -61,9 +52,8 @@ def static_mesh_light_list_fields(package, actors, light_lists, class_defaults):
     for light_list in light_lists:
         export = package.exports[light_list.actor_export_index - 1]
         serialized = serialized_actor_values(package, export)
-        sun_affect = resolved_actor_field(SUN_AFFECT_FIELD, serialized, export['classObject'], class_defaults)
         scale_glow = resolved_actor_field(SCALE_GLOW_FIELD, serialized, export['classObject'], class_defaults)
-        rows.append(light_list_fields_of(sun_affect_of_field(sun_affect), scale_glow_of_field(scale_glow),
+        rows.append(light_list_fields_of(scale_glow_of_field(scale_glow),
                                          actors_by_export_index.get(light_list.actor_export_index), class_defaults))
     return tuple(rows)
 
