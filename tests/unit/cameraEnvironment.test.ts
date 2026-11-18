@@ -5,7 +5,7 @@ import { cameraEnvironmentGaps, computeCameraEnvironment, type CameraEnvironment
 import { collisionWorldFromFixtures, committedMovementRules, fixtureCellId, mixedChunkArrays, waterPhysicsVolume } from "../fixtures/movement/movementCollisionFixtures";
 import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
 import { frameInZone } from "../support/fogWorkedCaseFixture";
-import { tileLightingArrays, tileLightingModel, tileLightingPayload, tileLightingRecordsDocument } from "../support/tileLightingFixture";
+import { fieldRecord, tileLightingArrays, tileLightingModel, tileLightingPayload, tileLightingRecordsDocument } from "../support/tileLightingFixture";
 import { shippedEnvironmentFogRanges } from "../support/worldTimeOfDayFixture";
 
 const records = tileLightingModel().records;
@@ -52,10 +52,23 @@ describe("computeCameraEnvironment", () => {
     const payload = tileLightingPayload(tileLightingArrays(document));
     const flatRecords = decodeTileLighting(payload.assetRecord, payload.payloadBytes).records;
     expect(flatRecords.zones[1]).toEqual({ zoneIndex: 1, fog: { distanceFog: true, terrainZone: false, fog: null },
-      unresolvedReason: "lighting-zone-fog-range-not-increasing:1:100:100" });
+      unresolvedReason: "lighting-zone-fog-range-not-increasing:1:100:100", distanceFogBlendTime: { status: "unstaged", reason: "fog-zone-blend-time-unstaged" } });
     const environment = computeCameraEnvironment(sources({ records: flatRecords }));
     expect(environment.fog).toEqual(FOG_UNRESOLVED);
     expect(environment.gaps).toContain("lighting-zone-fog-range-not-increasing:1:100:100");
+  });
+
+  it("reads a staged DistanceFogBlendTime, names an unresolved one, and routes an ordinary distance fog zone with its blend time", () => {
+    const document = tileLightingRecordsDocument();
+    document.zones[1]!.distanceFog.push(fieldRecord("DistanceFogBlendTime", 2.5, "authored"));
+    document.zones[2]!.distanceFog.push(fieldRecord("DistanceFogBlendTime", null, "unresolved"));
+    const payload = tileLightingPayload(tileLightingArrays(document));
+    const blendRecords = decodeTileLighting(payload.assetRecord, payload.payloadBytes).records;
+    expect(blendRecords.zones[1]!.distanceFogBlendTime).toEqual({ status: "staged", seconds: 2.5 });
+    expect(blendRecords.zones[2]!.distanceFogBlendTime).toEqual({ status: "unstaged", reason: "lighting-zone-fog-unresolved:2:DistanceFogBlendTime" });
+    expect(computeCameraEnvironment(sources({ frame: frameInZone(1), records: blendRecords })).fogRoute).toEqual({ kind: "empty-list",
+      presetPair: [8192, 20480], zone: { kind: "distance-fog-zone", target: { colourBytes: [95, 112, 116], startSourceUnits: 100, endSourceUnits: 20000 },
+        blendTime: { status: "staged", seconds: 2.5 } } });
   });
 
   it("routes a terrain zone to the haze preset even when its unused DistanceFog fields are unresolved or do not increase", () => {
@@ -67,7 +80,8 @@ describe("computeCameraEnvironment", () => {
     colour.value = null;
     const payload = tileLightingPayload(tileLightingArrays(document));
     const terrainRecords = decodeTileLighting(payload.assetRecord, payload.payloadBytes).records;
-    expect(terrainRecords.zones[3]).toEqual({ zoneIndex: 3, unresolvedReason: null, fog: { distanceFog: true, terrainZone: true, fog: null } });
+    expect(terrainRecords.zones[3]).toEqual({ zoneIndex: 3, unresolvedReason: null, fog: { distanceFog: true, terrainZone: true, fog: null },
+      distanceFogBlendTime: { status: "unstaged", reason: "fog-zone-blend-time-unstaged" } });
     expect(computeCameraEnvironment(sources({ frame: frameInZone(3), records: terrainRecords })).fog)
       .toMatchObject({ source: "terrain-zone-environment", startSourceUnits: 8192, endSourceUnits: 20480 });
   });

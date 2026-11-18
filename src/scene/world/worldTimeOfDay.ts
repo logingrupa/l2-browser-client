@@ -48,6 +48,7 @@ export interface RunningWorldTimeOfDay {
   readonly skyBindings: readonly SkyEnvironmentBinding[];
   readonly environmentTypes: readonly number[];
   readonly fogRanges: EnvironmentFogRanges;
+  readonly fogSpeedSeconds: number;
   sample(): WorldEnvironmentSample;
   skyEnvironmentColours(): readonly SkyEnvironmentColour[];
   hazeColour(): SkyEnvironmentColourResult;
@@ -75,12 +76,12 @@ const worldTimeOfDayUnprovidedGap: WorldTimeOfDayGap = { status: "gap", reason: 
   detail: "No world time of day was provided for this scene." };
 
 export function startWorldTimeOfDay(scene: Scene, timeTables: NativeTimeTablesExport, readRealSeconds: ReadRealSeconds): RunningWorldTimeOfDay {
-  const { setup, tables, skyBindings, fogRanges } = timeTables;
+  const { setup, tables, skyBindings, fogRanges, fogSpeedSeconds } = timeTables;
   const manager = createNativeEnvironmentManager({ setup, loadedEnvironmentTypes: new Set(tables.keys()), readRealSeconds });
   const tick = scene.onBeforeRenderObservable.add(() => manager.tick(scene.getEngine().getDeltaTime() / millisecondsPerSecond));
   let disposed = false;
   return {
-    status: "running", manager, skyBindings, fogRanges, environmentTypes: [...tables.keys()].sort((first, second) => first - second),
+    status: "running", manager, skyBindings, fogRanges, fogSpeedSeconds, environmentTypes: [...tables.keys()].sort((first, second) => first - second),
     sample() {
       const snapshot = manager.snapshot();
       return { hour: snapshot.clock.hour, hourSource: snapshot.clock.hourSource, oldType: snapshot.oldType, targetType: snapshot.targetType, weight: snapshot.weight };

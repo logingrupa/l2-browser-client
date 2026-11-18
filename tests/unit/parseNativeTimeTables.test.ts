@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { NativeTimeTablesFormatError, parseNativeTimeTables } from "../../src/environment/parseNativeTimeTables";
 import { readDayNightLoadedTables } from "../support/dayNightFixtures";
-import { shippedEnvironmentFogRanges, shippedEnvironmentSetup, shippedSkyBindings, timeTablesDocument } from "../support/worldTimeOfDayFixture";
+import {
+  shippedEnvironmentFogRanges, shippedEnvironmentSetup, shippedFogSpeedSeconds, shippedSkyBindings, timeTablesDocument,
+} from "../support/worldTimeOfDayFixture";
 
 type TimeTablesDocument = ReturnType<typeof timeTablesDocument>;
 
@@ -25,6 +27,13 @@ describe("parseNativeTimeTables", () => {
     expect(parsed.timeTables.setup).toEqual(shippedEnvironmentSetup);
     expect(parsed.timeTables.skyBindings).toEqual(shippedSkyBindings);
     expect(parsed.timeTables.fogRanges).toEqual(shippedEnvironmentFogRanges);
+    expect(parsed.timeTables.fogSpeedSeconds).toBe(shippedFogSpeedSeconds);
+  });
+
+  it("takes the GL2FogSpeed image value 15 when Env.int [FOG] has no FogSpeed key", () => {
+    const document = changedDocument(changed => { delete (changed.setup.fog as { FogSpeed?: unknown }).FogSpeed; });
+    const parsed = parseNativeTimeTables(document);
+    expect(parsed.status === "complete" && parsed.timeTables.fogSpeedSeconds).toBe(15);
   });
 
   it("returns a missing Env.int [FOG] key as an incomplete export, never a default range", () => {

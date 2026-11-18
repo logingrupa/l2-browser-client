@@ -15,7 +15,7 @@ function pageTexels(rgb565: number): number[] {
   return pageMipEdges.flatMap(edge => solidDxt1Blocks(edge, rgb565));
 }
 
-function fieldRecord(field: string, value: unknown, provenance = "authored") {
+export function fieldRecord(field: string, value: unknown, provenance = "authored") {
   return { declaringClass: "Engine.ZoneInfo", field, provenance, value };
 }
 

@@ -110,6 +110,14 @@ const fogConstantRows = {
     interludeEvidence: "Engine.dll 0x106560f0",
     runtimeDefault: "distance <= AffectRange.Max or distance < TextureDistance",
   },
+  transitionSecondsImageDefault: {
+    id: "fog.transition-seconds-image-default",
+    value: 15,
+    provenance: "RM-17 sky-fog-route-and-transition.json 6593fded, claim audit verified-sky-fog-route-and-transition.md: GL2FogSpeed is the Core.dll 9462f87a export 0x10237370 with the image value 15.0f; Env.int [FOG] FogSpeed replaces it when the key is read (the shipped Env.int has FogSpeed=1)",
+    status: "confirmed-interlude",
+    interludeEvidence: "Core.dll 9462f87a GL2FogSpeed 0x10237370",
+    runtimeDefault: 15,
+  },
   skySceneRoute: {
     id: "fog.sky-scene-route",
     value: null,

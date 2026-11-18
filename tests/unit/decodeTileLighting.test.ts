@@ -62,12 +62,13 @@ describe("decodeTileLighting", () => {
     expect(model.pages[3]).toMatchObject({ texture: 0, slot: 3, slotCount: 8, edge: 8 });
     expect(model.pages[3]!.texels).toHaveLength(32);
     expect(model.nodeRanges.map(range => [range.node, range.texture, range.lightmapCoordinates.length])).toEqual([[10, 0, 8], [11, 1, 6], [12, -1, 0]]);
+    const unstagedBlendTime = { status: "unstaged", reason: "fog-zone-blend-time-unstaged" };
     expect(model.records.zones).toEqual([
-      { zoneIndex: 0, fog: null, unresolvedReason: "lighting-zone-fog-unresolved:0:bDistanceFog" },
-      { zoneIndex: 1, unresolvedReason: null, fog: { distanceFog: true, terrainZone: false,
+      { zoneIndex: 0, fog: null, unresolvedReason: "lighting-zone-fog-unresolved:0:bDistanceFog", distanceFogBlendTime: unstagedBlendTime },
+      { zoneIndex: 1, unresolvedReason: null, distanceFogBlendTime: unstagedBlendTime, fog: { distanceFog: true, terrainZone: false,
         fog: { colourBytes: [95, 112, 116], startSourceUnits: 100, endSourceUnits: 20000 } } },
-      { zoneIndex: 2, unresolvedReason: null, fog: { distanceFog: false, terrainZone: false, fog: null } },
-      { zoneIndex: 3, unresolvedReason: null, fog: { distanceFog: true, terrainZone: true, fog: null } },
+      { zoneIndex: 2, unresolvedReason: null, fog: { distanceFog: false, terrainZone: false, fog: null }, distanceFogBlendTime: unstagedBlendTime },
+      { zoneIndex: 3, unresolvedReason: null, fog: { distanceFog: true, terrainZone: true, fog: null }, distanceFogBlendTime: unstagedBlendTime },
     ]);
     expect(model.records.waterVolumeCount).toBe(1);
     expect(model.records.fogInfos.map(fogInfo => [fogInfo.exportIndex, fogInfo.unresolvedReason, fogInfo.record?.fogRanges.length])).toEqual([[9236, null, 5]]);

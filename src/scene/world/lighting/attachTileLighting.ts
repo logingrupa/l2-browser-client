@@ -8,6 +8,7 @@ import { createPresentationClock } from "../../../shared/presentationClock";
 import { worldPositionToSource } from "../../../world/sourceFrame";
 import type { TileVisibilityFrame } from "../bspVisibility/core/tileVisibilityFrame";
 import { computeCameraEnvironment, type CameraEnvironment, type CameraEnvironmentFog } from "../cameraEnvironment";
+import { createCameraFogTransition, type CameraFogTransitionInspection } from "../cameraFogTransition";
 import { fogReferencePawnFor, type FogReferencePawn } from "../fogReferencePawn";
 import type { NativeTileManifest } from "../nativeTileManifest";
 import { loadStaticMeshMaterialsListing } from "../staticMeshLibraryMaterials";
@@ -38,6 +39,7 @@ export interface HourlyLightingInspection {
 
 export interface TileLightingRuntimeInspection extends TileLightingInspection {
   readonly cameraEnvironment: CameraEnvironment;
+  readonly fogTransition: CameraFogTransitionInspection;
   readonly staticMeshSlots: StaticMeshLibraryInspection;
   readonly terrainLayers: TerrainLayerInspection;
   readonly hourly: HourlyLightingInspection;
@@ -108,10 +110,12 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     return { status: "resolved", ambient: ambient.value, sun: { hour: environment.hour, lightDirection: sun.direction, staticSunPlane: environment.staticMeshLight.value } };
   };
   const referencePawn = fogReferencePawnFor(scene);
-  let cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay, referencePawn);
+  const fogTransition = createCameraFogTransition(timeOfDay.fogSpeedSeconds);
+  let cameraEnvironment = fogTransition.advance(cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay, referencePawn), 0);
   const advance = scene.onBeforeRenderObservable.add(() => {
-    presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
-    cameraEnvironment = cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay, referencePawn);
+    const frameSeconds = scene.getEngine().getDeltaTime() / millisecondsPerSecond;
+    presentationClock.advance(frameSeconds);
+    cameraEnvironment = fogTransition.advance(cameraEnvironmentOf(scene, model, visibility?.frame() ?? null, timeOfDay, referencePawn), Math.fround(frameSeconds));
     const { lightingDirty } = timeOfDay.manager.snapshot();
     terrainVertexLighting.update(lightingDirty, hourlyEnvironment);
     staticMeshBinding.update(lightingDirty);
@@ -149,7 +153,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
       terrainVertexLighting.removeChunk(chunkId);
       staticMeshVisibility.removeChunk(chunkId);
     },
-    inspection: () => ({ ...binding.inspection(), cameraEnvironment, staticMeshSlots: staticMeshBinding.inspection(),
+    inspection: () => ({ ...binding.inspection(), cameraEnvironment, fogTransition: fogTransition.inspection(), staticMeshSlots: staticMeshBinding.inspection(),
       terrainLayers: terrainLayerBinding.inspection(), hourly: hourlyInspection() }),
     dispose() { scene.onBeforeRenderObservable.remove(advance); binding.dispose(); staticMeshBinding.dispose(); terrainLayerBinding.dispose(); },
   };

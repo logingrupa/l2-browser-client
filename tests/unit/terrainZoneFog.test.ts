@@ -32,7 +32,7 @@ describe("15_22 terrain zone fog, the RM-1 enabled call", () => {
     const records = decodedFogWorkedCaseRecords(tileRecords);
     expect(records.fogInfos).toEqual([]);
     expect(records.zones.find(zone => zone.zoneIndex === zoneInfo0)).toEqual({ zoneIndex: zoneInfo0, unresolvedReason: null,
-      fog: { distanceFog: true, terrainZone: true, fog: null } });
+      fog: { distanceFog: true, terrainZone: true, fog: null }, distanceFogBlendTime: { status: "unstaged", reason: "fog-zone-blend-time-unstaged" } });
     expect(decodedFogWorkedCaseRecords(withTerrainFlagRecords("authored", false)).zones.find(zone => zone.zoneIndex === zoneInfo0)!.fog)
       .toEqual({ distanceFog: true, terrainZone: false, fog: { colourBytes: [128, 128, 128], startSourceUnits: 3000, endSourceUnits: 15000 } });
   });
@@ -43,7 +43,8 @@ describe("15_22 terrain zone fog, the RM-1 enabled call", () => {
       startSourceUnits: 8192, endSourceUnits: 20480, fogEnd: 20480 });
     const bgra = [...environment.fog.colour].reverse().map(channel => Math.round(channel * 255));
     expect(bgra).toEqual([224, 203, 188]);
-    expect(environment.gaps).toEqual([cameraEnvironmentGaps.fogTransitionUnported, cameraEnvironmentGaps.volumeQueryUnbound]);
+    expect(environment.gaps).toEqual([cameraEnvironmentGaps.volumeQueryUnbound]);
+    expect(environment.fogRoute).toEqual({ kind: "empty-list", presetPair: [8192, 20480], zone: { kind: "terrain-zone", hazeColour: [188, 203, 224] } });
   });
 
   it("falls back to the ZoneInfo 3000 to 15000 grey 128 without bTerrainZone, and its alpha 0 colour keeps fog enabled", () => {

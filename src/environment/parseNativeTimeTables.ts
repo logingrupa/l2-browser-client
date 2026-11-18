@@ -1,3 +1,4 @@
+import { FOG_CONSTANTS } from "../materials/ue2/model/constants/fogConstants";
 import { FOG_RANGE_SLOT_COUNT, type EnvironmentFogRanges } from "../materials/ue2/model/fog";
 import type { NativeEnvironmentSetup } from "./model/nativeEnvironmentManager";
 import {
@@ -19,6 +20,7 @@ export interface NativeTimeTablesExport {
   readonly tables: NativeEnvironmentTables;
   readonly skyBindings: readonly SkyEnvironmentBinding[];
   readonly fogRanges: EnvironmentFogRanges;
+  readonly fogSpeedSeconds: number;
 }
 
 export type NativeTimeTablesParse =
@@ -117,6 +119,12 @@ function readFogRangeValues(settings: unknown, label: string): number[] {
   return list.map((setting, position) => requireFiniteNumber(settingValue(setting, `${label} ${position + 1}`), `${label} ${position + 1}`));
 }
 
+function readFogSpeedSeconds(setup: JsonRecord): number {
+  const fog = requireRecord(setup.fog, "setup fog");
+  if (fog.FogSpeed === undefined) return FOG_CONSTANTS.transitionSecondsImageDefault.value;
+  return requireFiniteNumber(settingValue(fog.FogSpeed, "setup fog FogSpeed"), "setup fog FogSpeed");
+}
+
 function readFogRanges(setup: JsonRecord): EnvironmentFogRanges {
   const fog = requireRecord(setup.fog, "setup fog");
   return { startRanges: readFogRangeValues(fog.startRanges, "setup fog StartRange"), endRanges: readFogRangeValues(fog.endRanges, "setup fog EndRange") };
@@ -185,5 +193,5 @@ export function parseNativeTimeTables(document: unknown): NativeTimeTablesParse 
   if (unresolved.length > 0) return { status: "incomplete", unresolved: unresolved as string[] };
   const setup = requireRecord(root.setup, "setup");
   return { status: "complete", timeTables: { setup: readSetup(setup), tables: readEnvironmentTables(requireList(root.environmentTypes, "environmentTypes")),
-    skyBindings: readSkyBindings(setup), fogRanges: readFogRanges(setup) } };
+    skyBindings: readSkyBindings(setup), fogRanges: readFogRanges(setup), fogSpeedSeconds: readFogSpeedSeconds(setup) } };
 }

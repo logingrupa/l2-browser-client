@@ -11,7 +11,7 @@ import type { TileVisibilityFrame } from "./bspVisibility/core/tileVisibilityFra
 import type { CollisionWorld } from "./movement/core/collisionWorld";
 import type { MovementNativeRules } from "./movement/core/movementRules";
 import { volumesContaining, type ContainingVolume } from "./movement/core/volumeContainment";
-import type { TileLightingRecords } from "./lighting/tileLightingRecords";
+import { zoneFogBlendTimeUnstagedReason, type TileLightingRecords, type ZoneFogBlendTime } from "./lighting/tileLightingRecords";
 
 export interface CameraEnvironmentCollision {
   readonly world: CollisionWorld;
@@ -40,10 +40,21 @@ export interface SkySceneFog {
   readonly gaps: readonly string[];
 }
 
+export type EmptyListZoneFog =
+  | { readonly kind: "terrain-zone"; readonly hazeColour: FogColourBytes }
+  | { readonly kind: "distance-fog-zone"; readonly target: FogRangeRecord; readonly blendTime: ZoneFogBlendTime }
+  | { readonly kind: "without-fog" };
+
+export type CameraFogRoute =
+  | { readonly kind: "local-list"; readonly target: FogRangeRecord }
+  | { readonly kind: "empty-list"; readonly presetPair: readonly [start: number, end: number]; readonly zone: EmptyListZoneFog }
+  | { readonly kind: "bypass" };
+
 export interface CameraEnvironment {
   readonly cameraZone: number;
   readonly containingVolume: ContainingVolume | null;
   readonly fog: FogState;
+  readonly fogRoute: CameraFogRoute;
   readonly skyFog: SkySceneFog;
   readonly gaps: readonly string[];
 }
@@ -51,7 +62,8 @@ export interface CameraEnvironment {
 export type CameraEnvironmentFog = Pick<CameraEnvironment, "fog" | "skyFog">;
 
 const noCameraZone = -1;
-const transitionedFogSources: ReadonlySet<FogState["source"]> = new Set(["local-fog-list", "terrain-zone-environment"]);
+const byteMaximum = 255;
+const unlistedZoneBlendTime: ZoneFogBlendTime = { status: "unstaged", reason: zoneFogBlendTimeUnstagedReason };
 const unresolvedTerrainZoneEnvironment: TerrainZoneEnvironmentFog = { status: "unresolved" };
 const [baselineRed, baselineGreen, baselineBlue] = ENVIRONMENT_ENGINE_CONSTANTS.fogBaselineColour.value;
 const environmentBaselineColour: FogColourBytes = [baselineRed, baselineGreen, baselineBlue];
@@ -60,7 +72,6 @@ export const cameraEnvironmentGaps = {
   fogInfoReferencePawnAbsent: "fog-info-reference-pawn-absent",
   fogInfoRetentionDistanceUnresolved: "fog-info-retention-distance-unresolved",
   fogInfoListOrderAssumed: "fog-info-list-order-assumed",
-  fogTransitionUnported: "fog-transition-unported",
   skyFogSceneRouteUnresolved: "sky-fog-scene-route-unresolved",
   volumeQueryUnbound: "camera-volume-query-unbound",
   volumeWaterFlagAbsent: "camera-volume-water-flag-absent",
@@ -104,9 +115,25 @@ function fogOfZone(zone: CameraZoneFogRecord | null, zoneIndex: number, list: Lo
   const routesByTerrainFlag = list.status === "empty" && zone !== null && zone.distanceFog;
   if (routesByTerrainFlag && zone.terrainZone === null) gaps.push(`lighting-zone-terrain-flag-unresolved:${zoneIndex}`);
   const environment = routesByTerrainFlag && zone.terrainZone === true ? terrainZoneEnvironment(sources.fogEnvironment, gaps) : unresolvedTerrainZoneEnvironment;
-  const fog = evaluateFogState({ volume: null, localFogList: list, cameraZone: zone, terrainZoneEnvironment: environment });
-  if (transitionedFogSources.has(fog.source)) gaps.push(cameraEnvironmentGaps.fogTransitionUnported);
-  return fog;
+  return evaluateFogState({ volume: null, localFogList: list, cameraZone: zone, terrainZoneEnvironment: environment });
+}
+
+function zoneBlendTime(zoneIndex: number, records: TileLightingRecords): ZoneFogBlendTime {
+  return records.zones.find(record => record.zoneIndex === zoneIndex)?.distanceFogBlendTime ?? unlistedZoneBlendTime;
+}
+
+function fogRouteOf(fog: FogState, zone: CameraZoneFogRecord | null, zoneIndex: number, list: LocalFogList, sources: CameraEnvironmentSources): CameraFogRoute {
+  if (fog.source === "local-fog-list" && list.status === "blended") return { kind: "local-list", target: list.record };
+  const preset = environmentFogBaseline(sources.fogEnvironment.fogRanges, FOG_CONSTANTS.terrainClipRange.runtimeDefault);
+  const emptyList = (emptyListZone: EmptyListZoneFog): CameraFogRoute => ({ kind: "empty-list", presetPair: [preset.startSourceUnits, preset.endSourceUnits],
+    zone: emptyListZone });
+  if (fog.source === "terrain-zone-environment") {
+    return emptyList({ kind: "terrain-zone", hazeColour: [Math.round(fog.colour[0] * byteMaximum), Math.round(fog.colour[1] * byteMaximum),
+      Math.round(fog.colour[2] * byteMaximum)] });
+  }
+  if (fog.source === "camera-zone" && zone?.fog) return emptyList({ kind: "distance-fog-zone", target: zone.fog, blendTime: zoneBlendTime(zoneIndex, sources.records) });
+  if (fog.source === "zone-without-fog" && list.status === "empty") return emptyList({ kind: "without-fog" });
+  return { kind: "bypass" };
 }
 
 function skySceneFog(sources: CameraEnvironmentSources, levelFog: FogState, list: LocalFogList): SkySceneFog {
@@ -136,5 +163,5 @@ export function computeCameraEnvironment(sources: CameraEnvironmentSources): Cam
   const fog = fogOfZone(cameraZoneFog, cameraZone, list, sources, gaps);
   if (sources.records.waterVolumeCount > 0) gaps.push(cameraEnvironmentGaps.waterVolumeUnlinked);
   const containingVolume = cameraVolume(sources, gaps);
-  return { cameraZone, containingVolume, fog, skyFog: skySceneFog(sources, fog, list), gaps };
+  return { cameraZone, containingVolume, fog, fogRoute: fogRouteOf(fog, cameraZoneFog, cameraZone, list, sources), skyFog: skySceneFog(sources, fog, list), gaps };
 }

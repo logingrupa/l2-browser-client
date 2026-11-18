@@ -2,10 +2,15 @@ import type { CameraZoneFogRecord } from "../../../materials/ue2/babylon/materia
 import { decodeFogInfos, type DecodedFogInfo } from "./tileFogInfoRecords";
 import { TileLightingDecodeError } from "./tileLightingDecodeError";
 
+export type ZoneFogBlendTime =
+  | { readonly status: "staged"; readonly seconds: number }
+  | { readonly status: "unstaged"; readonly reason: string };
+
 export interface TileLightingZone {
   readonly zoneIndex: number;
   readonly fog: CameraZoneFogRecord | null;
   readonly unresolvedReason: string | null;
+  readonly distanceFogBlendTime: ZoneFogBlendTime;
 }
 
 export interface TileLightingRecords {
@@ -26,6 +31,8 @@ const unresolvedProvenance = "unresolved";
 const distanceFogEnableField = "bDistanceFog";
 const distanceFogRangeFields = ["DistanceFogColor", "DistanceFogStart", "DistanceFogEnd"] as const;
 const terrainZoneField = "bTerrainZone";
+const blendTimeField = "DistanceFogBlendTime";
+export const zoneFogBlendTimeUnstagedReason = "fog-zone-blend-time-unstaged";
 const fogColourChannels = ["R", "G", "B"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -54,6 +61,14 @@ function readTerrainZone(field: FieldRecord | undefined, label: string): boolean
   return field.value === true;
 }
 
+function readBlendTime(field: FieldRecord | undefined, unresolvedReason: string, label: string): ZoneFogBlendTime {
+  if (field === undefined) return { status: "unstaged", reason: zoneFogBlendTimeUnstagedReason };
+  if (field.provenance === unresolvedProvenance) return { status: "unstaged", reason: unresolvedReason };
+  const seconds = field.value === null ? 0 : field.value;
+  requireRecords(typeof seconds === "number" && Number.isFinite(seconds), `${label} DistanceFogBlendTime is not a number.`);
+  return { status: "staged", seconds };
+}
+
 function readZone(value: unknown, position: number): TileLightingZone {
   const label = `zones[${position}]`;
   requireRecords(isRecord(value) && Number.isSafeInteger(value.zoneIndex) && Array.isArray(value.distanceFog), `${label} has no zoneIndex and distanceFog list.`);
@@ -61,19 +76,21 @@ function readZone(value: unknown, position: number): TileLightingZone {
   const fields = new Map((value.distanceFog as unknown[]).map((entry, index) => readFieldRecord(entry, `${label}.distanceFog[${index}]`)).map(entry => [entry.field, entry]));
   const isUnresolved = (field: string) => fields.get(field) === undefined || fields.get(field)!.provenance === unresolvedProvenance;
   const unresolvedReason = (field: string) => `lighting-zone-fog-unresolved:${zoneIndex}:${field}`;
-  if (isUnresolved(distanceFogEnableField)) return { zoneIndex, fog: null, unresolvedReason: unresolvedReason(distanceFogEnableField) };
+  const distanceFogBlendTime = readBlendTime(fields.get(blendTimeField), unresolvedReason(blendTimeField), label);
+  if (isUnresolved(distanceFogEnableField)) return { zoneIndex, fog: null, unresolvedReason: unresolvedReason(distanceFogEnableField), distanceFogBlendTime };
   const enabled = fields.get(distanceFogEnableField)!.value;
   requireRecords(typeof enabled === "boolean" || enabled === null, `${label} bDistanceFog is not a boolean.`);
   const terrainZone = readTerrainZone(fields.get(terrainZoneField), label);
-  if (enabled !== true) return { zoneIndex, fog: { distanceFog: false, terrainZone, fog: null }, unresolvedReason: null };
-  if (terrainZone !== false) return { zoneIndex, fog: { distanceFog: true, terrainZone, fog: null }, unresolvedReason: null };
-  const zoneWithoutRange = (reason: string): TileLightingZone => ({ zoneIndex, fog: { distanceFog: true, terrainZone, fog: null }, unresolvedReason: reason });
+  if (enabled !== true) return { zoneIndex, fog: { distanceFog: false, terrainZone, fog: null }, unresolvedReason: null, distanceFogBlendTime };
+  if (terrainZone !== false) return { zoneIndex, fog: { distanceFog: true, terrainZone, fog: null }, unresolvedReason: null, distanceFogBlendTime };
+  const zoneWithoutRange = (reason: string): TileLightingZone => ({ zoneIndex, fog: { distanceFog: true, terrainZone, fog: null }, unresolvedReason: reason,
+    distanceFogBlendTime });
   const unresolvedRangeField = distanceFogRangeFields.find(isUnresolved);
   if (unresolvedRangeField !== undefined) return zoneWithoutRange(unresolvedReason(unresolvedRangeField));
   const start = fields.get("DistanceFogStart")!.value, end = fields.get("DistanceFogEnd")!.value;
   requireRecords(typeof start === "number" && typeof end === "number" && Number.isFinite(start) && Number.isFinite(end), `${label} fog range is not two numbers.`);
   if (end <= start) return zoneWithoutRange(`lighting-zone-fog-range-not-increasing:${zoneIndex}:${start}:${end}`);
-  return { zoneIndex, unresolvedReason: null, fog: { distanceFog: true, terrainZone,
+  return { zoneIndex, unresolvedReason: null, distanceFogBlendTime, fog: { distanceFog: true, terrainZone,
     fog: { colourBytes: readFogColourBytes(fields.get("DistanceFogColor")!.value, label), startSourceUnits: start, endSourceUnits: end } } };
 }
 

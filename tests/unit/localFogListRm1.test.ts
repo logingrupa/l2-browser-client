@@ -47,7 +47,7 @@ describe("20_21 local L2FogInfo list at the RM-1 pawn, the RM-1 enabled call", (
         startSourceUnits: 0, endSourceUnits: 10000, fogEnd: 10000 });
       expect(environment.gaps).not.toContain(cameraEnvironmentGaps.fogInfoListOrderAssumed);
       expect(environment.gaps).not.toContain(cameraEnvironmentGaps.fogInfoRetentionDistanceUnresolved);
-      expect(environment.gaps).toContain(cameraEnvironmentGaps.fogTransitionUnported);
+      expect(environment.fogRoute).toEqual({ kind: "local-list", target: { colourBytes: [107, 114, 97], startSourceUnits: 0, endSourceUnits: 10000 } });
     }
     const bgra = [...environmentOf(records).fog.colour].reverse().map(channel => Math.round(channel * 255));
     expect(bgra).toEqual([97, 114, 107]);

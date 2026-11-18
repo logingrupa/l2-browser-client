@@ -20,8 +20,10 @@ export const shippedSkyBindings: readonly SkyEnvironmentBinding[] = [
 
 export const shippedEnvironmentFogRanges: EnvironmentFogRanges = { startRanges: [1, 1.5, 2, 2.5, 4], endRanges: [4, 5, 6, 7, 10] };
 
+export const shippedFogSpeedSeconds = 1;
+
 export function dayNightTimeTables(setup: NativeEnvironmentSetup = shippedEnvironmentSetup): NativeTimeTablesExport {
-  return { setup, tables: readDayNightLoadedTables(), skyBindings: shippedSkyBindings, fogRanges: shippedEnvironmentFogRanges };
+  return { setup, tables: readDayNightLoadedTables(), skyBindings: shippedSkyBindings, fogRanges: shippedEnvironmentFogRanges, fogSpeedSeconds: shippedFogSpeedSeconds };
 }
 
 export function provideDayNightTimeOfDay(scene: Scene, readRealSeconds: ReadRealSeconds = () => 0,
@@ -67,7 +69,7 @@ export function timeTablesDocument(tables: NativeEnvironmentTables = readDayNigh
       timeEnvironmentFiles: [...tables.keys()].map((environmentType, index) => ({ index, ...setting(`TimeEnvFileName${index}`, `timeenv${environmentType}.int`) })),
       fog: { section: "FOG", startRanges: shippedEnvironmentFogRanges.startRanges.map((value, index) => ({ index: index + 1, ...setting(`StartRange${index + 1}`, value) })),
         endRanges: shippedEnvironmentFogRanges.endRanges.map((value, index) => ({ index: index + 1, ...setting(`EndRange${index + 1}`, value) })),
-        FogSpeed: setting("FogSpeed", 1) } },
+        FogSpeed: setting("FogSpeed", shippedFogSpeedSeconds) } },
     environmentTypes, tableCount, rowCount, unresolved: [] as string[], typedComplete: true,
   };
 }
