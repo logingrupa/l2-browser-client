@@ -1,0 +1,1987 @@
+{
+ "schemaVersion": 1,
+ "kind": "rm25-texture-samplers-native",
+ "source": {
+  "report": "texture-samplers.json",
+  "reportSha256": "fc0169fe76524dd3a118474b9211e1b55b182870be3ddf9274d38431d619c1a5",
+  "manifestSha256": "96c23b853520cbc058fd1d96feaa44c5c18e4ef397d566787bbaec3f505e06c9",
+  "question": "RM-25: texture sampler states per stage and uploaded mip levels",
+  "packageReader": "native_assets_lib.texture_mips.build_texture_source"
+ },
+ "configuration": {
+  "l2Ini": {
+   "DetailTextures": "True",
+   "UseTrilinear": "True",
+   "LevelOfAnisotropy": "1",
+   "DetailTexMipBias": "0.8",
+   "DefaultTexMipBias": "-0.5"
+  },
+  "optionIni": {
+   "UseTrilinear": "True",
+   "TextureDetail": "0",
+   "ModelDetail": "0"
+  },
+  "runtimeGlobals": {
+   "GL2UseTrilinear": 1,
+   "GL2TextureDetail": 0,
+   "GL2KeepMinFrameRate": 0
+  },
+  "runtimeGlobalEvidence": "verified-texture-samplers.md: Engine 0x10578490 reads Option.ini [Video] through GConfig into the Core exports at these addresses",
+  "liveRenderDevice": {
+   "UseTrilinear": 1,
+   "LevelOfAnisotropy": 1,
+   "DetailTexMipBias": 0.800000011920929,
+   "DefaultTexMipBias": -0.5
+  }
+ },
+ "liveSummary": [
+  {
+   "token": "20_21-north-rm25-final",
+   "sampleIndex": 0,
+   "role": "sky-background",
+   "boundStages": [
+    {
+     "stage": 0,
+     "texture": "L2_Skies.Textures.WhiteChip",
+     "levelCount": 1,
+     "size": [
+      32,
+      32
+     ],
+     "format": 827611204,
+     "firstSourceMip": 0,
+     "minFilter": 2,
+     "magFilter": 2,
+     "mipFilter": 2,
+     "lodBias": -0.5,
+     "maxMipLevel": 0,
+     "maxAnisotropy": 1,
+     "address": [
+      1,
+      1,
+      1
+     ],
+     "borderColor": 0
+    }
+   ]
+  },
+  {
+   "token": "20_21-north-rm25-final",
+   "sampleIndex": 1,
+   "role": "sky-haze",
+   "boundStages": [
+    {
+     "stage": 0,
+     "texture": "L2_Skies.Textures.WhiteRing",
+     "levelCount": 1,
+     "size": [
+      512,
+      128
+     ],
+     "format": 894720068,
+     "firstSourceMip": 0,
+     "minFilter": 2,
+     "magFilter": 2,
+     "mipFilter": 2,
+     "lodBias": -0.5,
+     "maxMipLevel": 0,
+     "maxAnisotropy": 1,
+     "address": [
+      1,
+      1,
+      1
+     ],
+     "borderColor": 0
+    }
+   ]
+  },
+  {
+   "token": "20_21-north-rm25-final",
+   "sampleIndex": 2,
+   "role": "sky-stars",
+   "boundStages": [
+    {
+     "stage": 0,
+     "texture": "L2_Skies.Textures.StarField_largeStar02",
+     "levelCount": 11,
+     "size": [
+      1024,
+      1024
+     ],
+     "format": 827611204,
+     "firstSourceMip": 0,
+     "minFilter": 2,
+     "magFilter": 2,
+     "mipFilter": 2,
+     "lodBias": -0.5,
+     "maxMipLevel": 0,
+     "maxAnisotropy": 1,
+     "address": [
+      1,
+      1,
+      1
+     ],
+     "borderColor": 0
+    }
+   ]
+  },
+  {
+   "token": "20_21-north-rm25-final",
+   "sampleIndex": 3,
+   "role": "sky-cloud02",
+   "boundStages": [
+    {
+     "stage": 0,
+     "texture": "L2_Skies.Textures.Cloud_Final02",
+     "levelCount": 11,
+     "size": [
+      1024,
+      1024
+     ],
+     "format": 894720068,
+     "firstSourceMip": 0,
+     "minFilter": 2,
+     "magFilter": 2,
+     "mipFilter": 2,
+     "lodBias": -0.5,
+     "maxMipLevel": 0,
+     "maxAnisotropy": 1,
+     "address": [
+      1,
+      1,
+      1
+     ],
+     "borderColor": 0
+    }
+   ]
+  },
+  {
+   "token": "20_21-zone2-wall-rm25",
+   "sampleIndex": 1,
+   "role": "root-bsp-wall",
+   "boundStages": [
+    {
+     "stage": 0,
+     "texture": "dion_curumadungeon_t.cm_dg_etc",
+     "levelCount": 7,
+     "size": [
+      64,
+      64
+     ],
+     "format": 827611204,
+     "firstSourceMip": 0,
+     "minFilter": 2,
+     "magFilter": 2,
+     "mipFilter": 2,
+     "lodBias": -0.5,
+     "maxMipLevel": 0,
+     "maxAnisotropy": 1,
+     "address": [
+      1,
+      1,
+      1
+     ],
+     "borderColor": 0
+    },
+    {
+     "stage": 1,
+     "texture": "FStaticLightMapTexture",
+     "levelCount": 2,
+     "size": [
+      512,
+      512
+     ],
+     "format": 827611204,
+     "firstSourceMip": 0,
+     "minFilter": 2,
+     "magFilter": 2,
+     "mipFilter": 2,
+     "lodBias": -0.5,
+     "maxMipLevel": 0,
+     "maxAnisotropy": 1,
+     "address": [
+      3,
+      3,
+      3
+     ],
+     "borderColor": 0
+    }
+   ]
+  },
+  {
+   "token": "20_21-north-rm25-final",
+   "sampleIndex": 4,
+   "role": "root-static-mesh-candidate",
+   "boundStages": [
+    {
+     "stage": 0,
+     "texture": "cruma_tr_t.Cm_o_wall008",
+     "levelCount": 9,
+     "size": [
+      512,
+      256
+     ],
+     "format": 827611204,
+     "firstSourceMip": 0,
+     "minFilter": 2,
+     "magFilter": 2,
+     "mipFilter": 2,
+     "lodBias": -0.5,
+     "maxMipLevel": 0,
+     "maxAnisotropy": 1,
+     "address": [
+      1,
+      1,
+      1
+     ],
+     "borderColor": 0
+    }
+   ]
+  }
+ ],
+ "liveTextures": [
+  {
+   "texture": "L2_Skies.Textures.WhiteChip",
+   "package": "textures/l2_skies.utx",
+   "packageSha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f",
+   "format": "DXT1",
+   "minLod": null,
+   "storedMipCount": 1,
+   "storedMipDimensions": [
+    [
+     32,
+     32
+    ]
+   ],
+   "live": {
+    "levelCount": 1,
+    "firstSourceMip": 0,
+    "size": [
+     32,
+     32
+    ]
+   }
+  },
+  {
+   "texture": "L2_Skies.Textures.WhiteRing",
+   "package": "textures/l2_skies.utx",
+   "packageSha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f",
+   "format": "DXT5",
+   "minLod": null,
+   "storedMipCount": 1,
+   "storedMipDimensions": [
+    [
+     512,
+     128
+    ]
+   ],
+   "live": {
+    "levelCount": 1,
+    "firstSourceMip": 0,
+    "size": [
+     512,
+     128
+    ]
+   }
+  },
+  {
+   "texture": "L2_Skies.Textures.StarField_largeStar02",
+   "package": "textures/l2_skies.utx",
+   "packageSha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f",
+   "format": "DXT1",
+   "minLod": null,
+   "storedMipCount": 11,
+   "storedMipDimensions": [
+    [
+     1024,
+     1024
+    ],
+    [
+     512,
+     512
+    ],
+    [
+     256,
+     256
+    ],
+    [
+     128,
+     128
+    ],
+    [
+     64,
+     64
+    ],
+    [
+     32,
+     32
+    ],
+    [
+     16,
+     16
+    ],
+    [
+     8,
+     8
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "live": {
+    "levelCount": 11,
+    "firstSourceMip": 0,
+    "size": [
+     1024,
+     1024
+    ]
+   }
+  },
+  {
+   "texture": "L2_Skies.Textures.Cloud_Final02",
+   "package": "textures/l2_skies.utx",
+   "packageSha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f",
+   "format": "DXT5",
+   "minLod": null,
+   "storedMipCount": 11,
+   "storedMipDimensions": [
+    [
+     1024,
+     1024
+    ],
+    [
+     512,
+     512
+    ],
+    [
+     256,
+     256
+    ],
+    [
+     128,
+     128
+    ],
+    [
+     64,
+     64
+    ],
+    [
+     32,
+     32
+    ],
+    [
+     16,
+     16
+    ],
+    [
+     8,
+     8
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "live": {
+    "levelCount": 11,
+    "firstSourceMip": 0,
+    "size": [
+     1024,
+     1024
+    ]
+   }
+  },
+  {
+   "texture": "dion_curumadungeon_t.cm_dg_etc",
+   "package": "textures/dion_curumadungeon_t.utx",
+   "packageSha256": "3def70df6f5d2ffb180dbaad62ead29ca2f782595e859521efad044ff2ddaba5",
+   "format": "DXT1",
+   "minLod": null,
+   "storedMipCount": 7,
+   "storedMipDimensions": [
+    [
+     64,
+     64
+    ],
+    [
+     32,
+     32
+    ],
+    [
+     16,
+     16
+    ],
+    [
+     8,
+     8
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "live": {
+    "levelCount": 7,
+    "firstSourceMip": 0,
+    "size": [
+     64,
+     64
+    ]
+   }
+  },
+  {
+   "texture": "cruma_tr_t.Cm_o_wall008",
+   "package": "textures/cruma_tr_t.utx",
+   "packageSha256": "08f0f7036f3eeabb64659059ed7e8e8c15a72cac8d94cc03007fdee363cb1e01",
+   "format": "DXT1",
+   "minLod": null,
+   "storedMipCount": 9,
+   "storedMipDimensions": [
+    [
+     512,
+     256
+    ],
+    [
+     256,
+     128
+    ],
+    [
+     128,
+     64
+    ],
+    [
+     64,
+     32
+    ],
+    [
+     32,
+     16
+    ],
+    [
+     16,
+     8
+    ],
+    [
+     8,
+     4
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     2,
+     1
+    ]
+   ],
+   "live": {
+    "levelCount": 9,
+    "firstSourceMip": 0,
+    "size": [
+     512,
+     256
+    ]
+   }
+  }
+ ],
+ "fixtures": {
+  "mips": [
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 1024,
+     "height": 1024,
+     "mipCount": 11,
+     "GL2TextureDetail": 0,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 5,
+     "DefaultLOD": 0,
+     "firstMip": 0
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 1024,
+     "height": 1024,
+     "mipCount": 11,
+     "GL2TextureDetail": 1,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 5,
+     "DefaultLOD": 1,
+     "firstMip": 1
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 1024,
+     "height": 1024,
+     "mipCount": 11,
+     "GL2TextureDetail": 2,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 5,
+     "DefaultLOD": 2,
+     "firstMip": 2
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 1024,
+     "height": 1024,
+     "mipCount": 11,
+     "GL2TextureDetail": 5,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 5,
+     "DefaultLOD": 5,
+     "firstMip": 4
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 1024,
+     "height": 1024,
+     "mipCount": 11,
+     "GL2TextureDetail": 0,
+     "GL2KeepMinFrameRate": 1,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 5,
+     "DefaultLOD": 2,
+     "firstMip": 2
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 64,
+     "height": 64,
+     "mipCount": 7,
+     "GL2TextureDetail": 2,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 1,
+     "DefaultLOD": 1,
+     "firstMip": 0
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 32,
+     "height": 32,
+     "mipCount": 6,
+     "GL2TextureDetail": 2,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 0,
+     "DefaultLOD": 0,
+     "firstMip": 0
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 128,
+     "height": 32,
+     "mipCount": 8,
+     "GL2TextureDetail": 2,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 0,
+     "DefaultLOD": 0,
+     "firstMip": 0
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 512,
+     "height": 64,
+     "mipCount": 10,
+     "GL2TextureDetail": 5,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 2,
+     "DefaultLOD": 2,
+     "firstMip": 2
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 64,
+     "height": 64,
+     "mipCount": 7,
+     "GL2TextureDetail": 0,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 2,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 1,
+     "DefaultLOD": 2,
+     "firstMip": 2
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 256,
+     "height": 256,
+     "mipCount": 1,
+     "GL2TextureDetail": 2,
+     "GL2KeepMinFrameRate": 0,
+     "MinLOD": 0,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 0,
+     "DefaultLOD": 0,
+     "firstMip": 0
+    }
+   },
+   {
+    "function": "PostLoad MaxLOD fragment, DefaultLOD, GetFirstMip",
+    "input": {
+     "width": 256,
+     "height": 256,
+     "mipCount": 9,
+     "GL2TextureDetail": 2,
+     "GL2KeepMinFrameRate": 1,
+     "MinLOD": 3,
+     "client": null
+    },
+    "output": {
+     "MaxLOD": 3,
+     "DefaultLOD": 3,
+     "firstMip": 3
+    }
+   },
+   {
+    "function": "DefaultLOD with client category bias",
+    "input": {
+     "LODSet": 1,
+     "clientLODEntry": 77,
+     "PTextureDetailValue": 0,
+     "GL2TextureDetail": 1,
+     "MinLOD": 0,
+     "MaxLOD": 5
+    },
+    "output": {
+     "GetTextureLODBiasReturn": 77,
+     "DefaultLOD": 1
+    }
+   },
+   {
+    "function": "FStaticLightMapTexture.GetFirstMip",
+    "input": {
+     "clientLODSet7Bias": -1,
+     "PTextureDetailValue": 0
+    },
+    "output": {
+     "firstMip": 0
+    }
+   },
+   {
+    "function": "FStaticLightMapTexture.GetFirstMip",
+    "input": {
+     "clientLODSet7Bias": 0,
+     "PTextureDetailValue": 0
+    },
+    "output": {
+     "firstMip": 0
+    }
+   },
+   {
+    "function": "FStaticLightMapTexture.GetFirstMip",
+    "input": {
+     "clientLODSet7Bias": 1,
+     "PTextureDetailValue": 0
+    },
+    "output": {
+     "firstMip": 1
+    }
+   }
+  ],
+  "mipMappings": [
+   {
+    "input": {
+     "width": 1024,
+     "height": 1024,
+     "storedMipCount": 11,
+     "sourceFirstMip": 0,
+     "maxTextureWidth": 4096,
+     "maxTextureHeight": 4096
+    },
+    "effectiveMipCount": 11,
+    "firstMip": 0,
+    "d3dLevelCount": 11,
+    "mapping": [
+     {
+      "sourceMip": 0,
+      "d3dLevel": 0,
+      "width": 1024,
+      "height": 1024
+     },
+     {
+      "sourceMip": 1,
+      "d3dLevel": 1,
+      "width": 512,
+      "height": 512
+     },
+     {
+      "sourceMip": 2,
+      "d3dLevel": 2,
+      "width": 256,
+      "height": 256
+     },
+     {
+      "sourceMip": 3,
+      "d3dLevel": 3,
+      "width": 128,
+      "height": 128
+     },
+     {
+      "sourceMip": 4,
+      "d3dLevel": 4,
+      "width": 64,
+      "height": 64
+     },
+     {
+      "sourceMip": 5,
+      "d3dLevel": 5,
+      "width": 32,
+      "height": 32
+     },
+     {
+      "sourceMip": 6,
+      "d3dLevel": 6,
+      "width": 16,
+      "height": 16
+     },
+     {
+      "sourceMip": 7,
+      "d3dLevel": 7,
+      "width": 8,
+      "height": 8
+     },
+     {
+      "sourceMip": 8,
+      "d3dLevel": 8,
+      "width": 4,
+      "height": 4
+     },
+     {
+      "sourceMip": 9,
+      "d3dLevel": 9,
+      "width": 2,
+      "height": 2
+     },
+     {
+      "sourceMip": 10,
+      "d3dLevel": 10,
+      "width": 1,
+      "height": 1
+     }
+    ]
+   },
+   {
+    "input": {
+     "width": 1024,
+     "height": 1024,
+     "storedMipCount": 11,
+     "sourceFirstMip": 2,
+     "maxTextureWidth": 4096,
+     "maxTextureHeight": 4096
+    },
+    "effectiveMipCount": 11,
+    "firstMip": 2,
+    "d3dLevelCount": 9,
+    "mapping": [
+     {
+      "sourceMip": 2,
+      "d3dLevel": 0,
+      "width": 256,
+      "height": 256
+     },
+     {
+      "sourceMip": 3,
+      "d3dLevel": 1,
+      "width": 128,
+      "height": 128
+     },
+     {
+      "sourceMip": 4,
+      "d3dLevel": 2,
+      "width": 64,
+      "height": 64
+     },
+     {
+      "sourceMip": 5,
+      "d3dLevel": 3,
+      "width": 32,
+      "height": 32
+     },
+     {
+      "sourceMip": 6,
+      "d3dLevel": 4,
+      "width": 16,
+      "height": 16
+     },
+     {
+      "sourceMip": 7,
+      "d3dLevel": 5,
+      "width": 8,
+      "height": 8
+     },
+     {
+      "sourceMip": 8,
+      "d3dLevel": 6,
+      "width": 4,
+      "height": 4
+     },
+     {
+      "sourceMip": 9,
+      "d3dLevel": 7,
+      "width": 2,
+      "height": 2
+     },
+     {
+      "sourceMip": 10,
+      "d3dLevel": 8,
+      "width": 1,
+      "height": 1
+     }
+    ]
+   },
+   {
+    "input": {
+     "width": 512,
+     "height": 128,
+     "storedMipCount": 10,
+     "sourceFirstMip": 0,
+     "maxTextureWidth": 4096,
+     "maxTextureHeight": 4096
+    },
+    "effectiveMipCount": 8,
+    "firstMip": 0,
+    "d3dLevelCount": 8,
+    "mapping": [
+     {
+      "sourceMip": 0,
+      "d3dLevel": 0,
+      "width": 512,
+      "height": 128
+     },
+     {
+      "sourceMip": 1,
+      "d3dLevel": 1,
+      "width": 256,
+      "height": 64
+     },
+     {
+      "sourceMip": 2,
+      "d3dLevel": 2,
+      "width": 128,
+      "height": 32
+     },
+     {
+      "sourceMip": 3,
+      "d3dLevel": 3,
+      "width": 64,
+      "height": 16
+     },
+     {
+      "sourceMip": 4,
+      "d3dLevel": 4,
+      "width": 32,
+      "height": 8
+     },
+     {
+      "sourceMip": 5,
+      "d3dLevel": 5,
+      "width": 16,
+      "height": 4
+     },
+     {
+      "sourceMip": 6,
+      "d3dLevel": 6,
+      "width": 8,
+      "height": 2
+     },
+     {
+      "sourceMip": 7,
+      "d3dLevel": 7,
+      "width": 4,
+      "height": 1
+     }
+    ]
+   },
+   {
+    "input": {
+     "width": 512,
+     "height": 128,
+     "storedMipCount": 10,
+     "sourceFirstMip": 0,
+     "maxTextureWidth": 256,
+     "maxTextureHeight": 256
+    },
+    "effectiveMipCount": 8,
+    "firstMip": 1,
+    "d3dLevelCount": 7,
+    "mapping": [
+     {
+      "sourceMip": 1,
+      "d3dLevel": 0,
+      "width": 256,
+      "height": 64
+     },
+     {
+      "sourceMip": 2,
+      "d3dLevel": 1,
+      "width": 128,
+      "height": 32
+     },
+     {
+      "sourceMip": 3,
+      "d3dLevel": 2,
+      "width": 64,
+      "height": 16
+     },
+     {
+      "sourceMip": 4,
+      "d3dLevel": 3,
+      "width": 32,
+      "height": 8
+     },
+     {
+      "sourceMip": 5,
+      "d3dLevel": 4,
+      "width": 16,
+      "height": 4
+     },
+     {
+      "sourceMip": 6,
+      "d3dLevel": 5,
+      "width": 8,
+      "height": 2
+     },
+     {
+      "sourceMip": 7,
+      "d3dLevel": 6,
+      "width": 4,
+      "height": 1
+     }
+    ]
+   },
+   {
+    "input": {
+     "width": 256,
+     "height": 256,
+     "storedMipCount": 1,
+     "sourceFirstMip": 0,
+     "maxTextureWidth": 4096,
+     "maxTextureHeight": 4096
+    },
+    "effectiveMipCount": 1,
+    "firstMip": 0,
+    "d3dLevelCount": 1,
+    "mapping": [
+     {
+      "sourceMip": 0,
+      "d3dLevel": 0,
+      "width": 256,
+      "height": 256
+     }
+    ]
+   },
+   {
+    "input": {
+     "width": 32,
+     "height": 32,
+     "storedMipCount": 6,
+     "sourceFirstMip": 0,
+     "maxTextureWidth": 4096,
+     "maxTextureHeight": 4096
+    },
+    "effectiveMipCount": 6,
+    "firstMip": 0,
+    "d3dLevelCount": 6,
+    "mapping": [
+     {
+      "sourceMip": 0,
+      "d3dLevel": 0,
+      "width": 32,
+      "height": 32
+     },
+     {
+      "sourceMip": 1,
+      "d3dLevel": 1,
+      "width": 16,
+      "height": 16
+     },
+     {
+      "sourceMip": 2,
+      "d3dLevel": 2,
+      "width": 8,
+      "height": 8
+     },
+     {
+      "sourceMip": 3,
+      "d3dLevel": 3,
+      "width": 4,
+      "height": 4
+     },
+     {
+      "sourceMip": 4,
+      "d3dLevel": 4,
+      "width": 2,
+      "height": 2
+     },
+     {
+      "sourceMip": 5,
+      "d3dLevel": 5,
+      "width": 1,
+      "height": 1
+     }
+    ]
+   }
+  ],
+  "samplers": [
+   {
+    "function": "0x10016960",
+    "name": "SetUseTrilinear",
+    "input": {
+     "UseTrilinear": 0,
+     "mipCapability": 0,
+     "LevelOfAnisotropy": 1,
+     "DefaultTexMipBias": -0.5,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        5,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        6,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        7,
+        0
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        5,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        6,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        7,
+        0
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 0
+    }
+   },
+   {
+    "function": "0x10016960",
+    "name": "SetUseTrilinear",
+    "input": {
+     "UseTrilinear": 0,
+     "mipCapability": 1,
+     "LevelOfAnisotropy": 1,
+     "DefaultTexMipBias": -0.5,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        5,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        6,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        7,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        5,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        6,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        7,
+        1
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 0
+    }
+   },
+   {
+    "function": "0x10016960",
+    "name": "SetUseTrilinear",
+    "input": {
+     "UseTrilinear": 1,
+     "mipCapability": 0,
+     "LevelOfAnisotropy": 1,
+     "DefaultTexMipBias": -0.5,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        6,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        7,
+        0
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        6,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        7,
+        0
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 1
+    }
+   },
+   {
+    "function": "0x10016960",
+    "name": "SetUseTrilinear",
+    "input": {
+     "UseTrilinear": 1,
+     "mipCapability": 1,
+     "LevelOfAnisotropy": 1,
+     "DefaultTexMipBias": -0.5,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        6,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        0,
+        7,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        6,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        1,
+        7,
+        2
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 1
+    }
+   },
+   {
+    "function": "0x100346a0",
+    "name": "ShaderTextureBind",
+    "input": {
+     "UseTrilinear": 1,
+     "mipCapability": 1,
+     "LevelOfAnisotropy": 1,
+     "DefaultTexMipBias": -0.5,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetTexture",
+       "arguments": [
+        3,
+        591749120
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        6,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        10,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        7,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        1,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        2,
+        3
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        3,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        8,
+        0
+       ]
+      },
+      {
+       "api": "SetTextureStageState",
+       "arguments": [
+        3,
+        11,
+        1
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 1
+    }
+   },
+   {
+    "function": "0x100346a0",
+    "name": "ShaderTextureBind",
+    "input": {
+     "UseTrilinear": 0,
+     "mipCapability": 1,
+     "LevelOfAnisotropy": 1,
+     "DefaultTexMipBias": -0.5,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetTexture",
+       "arguments": [
+        3,
+        591749120
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        6,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        10,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        7,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        1,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        2,
+        3
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        3,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        8,
+        0
+       ]
+      },
+      {
+       "api": "SetTextureStageState",
+       "arguments": [
+        3,
+        11,
+        1
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 0
+    }
+   },
+   {
+    "function": "0x100346a0",
+    "name": "ShaderTextureBind",
+    "input": {
+     "UseTrilinear": 1,
+     "mipCapability": 1,
+     "LevelOfAnisotropy": 8,
+     "DefaultTexMipBias": -0.5,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetTexture",
+       "arguments": [
+        3,
+        591749120
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        6,
+        3
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        10,
+        8
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        7,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        1,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        2,
+        3
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        3,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        8,
+        0
+       ]
+      },
+      {
+       "api": "SetTextureStageState",
+       "arguments": [
+        3,
+        11,
+        1
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 1
+    }
+   },
+   {
+    "function": "0x100346a0",
+    "name": "ShaderTextureBind",
+    "input": {
+     "UseTrilinear": 1,
+     "mipCapability": 1,
+     "LevelOfAnisotropy": 8,
+     "DefaultTexMipBias": 0.8,
+     "filter": 1,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetTexture",
+       "arguments": [
+        3,
+        591749120
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        5,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        6,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        10,
+        8
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        7,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        1,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        2,
+        3
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        3,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        8,
+        0
+       ]
+      },
+      {
+       "api": "SetTextureStageState",
+       "arguments": [
+        3,
+        11,
+        1
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 1
+    }
+   },
+   {
+    "function": "0x100346a0",
+    "name": "ShaderTextureBind",
+    "input": {
+     "UseTrilinear": 1,
+     "mipCapability": 1,
+     "LevelOfAnisotropy": 1,
+     "DefaultTexMipBias": 1.75,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetTexture",
+       "arguments": [
+        3,
+        591749120
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        6,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        10,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        7,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        1,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        2,
+        3
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        3,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        8,
+        1
+       ]
+      },
+      {
+       "api": "SetTextureStageState",
+       "arguments": [
+        3,
+        11,
+        1
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 1
+    }
+   },
+   {
+    "function": "0x100346a0",
+    "name": "ShaderTextureBind",
+    "input": {
+     "UseTrilinear": 1,
+     "mipCapability": 1,
+     "LevelOfAnisotropy": 1,
+     "DefaultTexMipBias": -1.75,
+     "filter": 2,
+     "clampUVW": [
+      0,
+      1,
+      0
+     ]
+    },
+    "output": {
+     "calls": [
+      {
+       "api": "SetTexture",
+       "arguments": [
+        3,
+        591749120
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        5,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        6,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        10,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        7,
+        2
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        1,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        2,
+        3
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        3,
+        1
+       ]
+      },
+      {
+       "api": "SetSamplerState",
+       "arguments": [
+        3,
+        8,
+        4294967295
+       ]
+      },
+      {
+       "api": "SetTextureStageState",
+       "arguments": [
+        3,
+        11,
+        1
+       ]
+      }
+     ],
+     "deviceUseTrilinear": 1
+    }
+   }
+  ]
+ }
+}
