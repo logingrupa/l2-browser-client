@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from native_assets_lib.material_program import MaterialProgramError, derive_material_program
 from native_assets_lib.material_texture_mip_chain import native_mip_chain_of_texture_source
-from native_assets_lib.texture_source_reader import UnsupportedTextureSource
+from native_assets_lib.texture_source_reader import DXT1_FORMAT_ID, UnsupportedTextureSource, expected_mip_bytes
 from native_store.store_paths import lane_store_root
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
@@ -39,7 +39,14 @@ def texture_source_of_fixture(texture):
     mips = [{'level': level['level'], 'width': level['width'], 'height': level['height'], 'file': f'native/mip{level["level"]:02d}.bin'}
             for level in texture['mips']]
     files = {mip['file']: fixture_level_payload(level) for mip, level in zip(mips, texture['mips'])}
-    return {'format': {'name': texture['format']}, 'mips': mips}, files
+    return {'format': {'name': texture['format']}, 'mips': mips, 'propertyTags': []}, files
+
+
+def synthetic_dxt1_source(width, height, count, min_lod=None):
+    mips = [{'level': level, 'width': max(1, width >> level), 'height': max(1, height >> level), 'file': f'native/mip{level:02d}.bin'} for level in range(count)]
+    files = {mip['file']: bytes([mip['level']]) * expected_mip_bytes(DXT1_FORMAT_ID, mip['width'], mip['height']) for mip in mips}
+    tags = [] if min_lod is None else [{'name': 'MinLOD', 'type': 2, 'status': 'decoded', 'value': min_lod}]
+    return {'format': {'name': 'DXT1'}, 'mips': mips, 'propertyTags': tags}, files
 
 
 def fixture_texture_png(texture_object):
@@ -68,12 +75,29 @@ class MaterialTextureMipChainPinTests(unittest.TestCase):
     def test_a_dxt3_texture_pins_every_original_level_in_source_order(self):
         texture = native_mip_chain_fixtures()['l2_skies.FlareSet.Sun01']
         pin = material_texture_image_pins({TEXTURE_NODE: fixture_texture_png('l2_skies.FlareSet.Sun01')})[TEXTURE_NODE]
-        self.assertEqual(pin['mips'], {'format': 'DXT3', 'levels': [expected_level_pin(level) for level in texture['mips']]})
+        self.assertEqual(pin['mips'], {'format': 'DXT3', 'firstMip': 0, 'levels': [expected_level_pin(level) for level in texture['mips']]})
 
     def test_a_single_level_dxt1_texture_pins_its_one_original_level(self):
         texture = native_mip_chain_fixtures()['l2_skies.Textures.WhiteChip']
         pin = material_texture_image_pins({TEXTURE_NODE: fixture_texture_png('l2_skies.Textures.WhiteChip')})[TEXTURE_NODE]
-        self.assertEqual(pin['mips'], {'format': 'DXT1', 'levels': [expected_level_pin(texture['mips'][0])]})
+        self.assertEqual(pin['mips'], {'format': 'DXT1', 'firstMip': 0, 'levels': [expected_level_pin(texture['mips'][0])]})
+
+    def test_the_rm25_wall_texture_pins_its_nine_levels_down_to_2x1(self):
+        texture = native_mip_chain_fixtures()['cruma_tr_t.Cm_o_wall008']
+        pin = material_texture_image_pins({TEXTURE_NODE: fixture_texture_png('cruma_tr_t.Cm_o_wall008')})[TEXTURE_NODE]
+        self.assertEqual(pin['mips'], {'format': 'DXT1', 'firstMip': 0, 'levels': [expected_level_pin(level) for level in texture['mips']]})
+        self.assertEqual(len(pin['mips']['levels']), 9)
+
+    def test_a_512_by_128_source_stops_at_its_smaller_dimension(self):
+        chain = native_mip_chain_of_texture_source(synthetic_dxt1_source(512, 128, 10))
+        self.assertEqual((chain.first_mip, [(level.width, level.height) for level in chain.levels][-1], len(chain.levels)), (0, (4, 1), 8))
+
+    def test_a_min_lod_2_source_publishes_from_its_third_level(self):
+        source = synthetic_dxt1_source(64, 64, 7, min_lod=2)
+        chain = native_mip_chain_of_texture_source(source)
+        pin = material_texture_image_pins({TEXTURE_NODE: MaterialTexturePng(synthetic_png_bytes(), chain)})[TEXTURE_NODE]['mips']
+        self.assertEqual((pin['firstMip'], [(level['width'], level['height']) for level in pin['levels']]), (2, [(16, 16), (8, 8), (4, 4), (2, 2), (1, 1)]))
+        self.assertEqual(chain.levels[0].payload, source[1]['native/mip02.bin'])
 
     def test_an_rgba8_texture_pins_its_native_uncompressed_levels(self):
         pin = material_texture_image_pins({TEXTURE_NODE: fixture_texture_png('l2_skies.Textures.mongebg')})[TEXTURE_NODE]
@@ -157,6 +181,17 @@ class MaterialProgramMipChainCheckTests(unittest.TestCase):
         pin = copy.deepcopy(self.sun_pin())
         pin['mips']['levels'][0]['format'] = 'DXT3'
         self.assert_refused(pin, 'members')
+
+    def test_a_level_past_the_smaller_dimension_is_refused(self):
+        pin = material_texture_image_pins({TEXTURE_NODE: fixture_texture_png('cruma_tr_t.Cm_o_wall008')})[TEXTURE_NODE]
+        past_sha256 = 'a' * 64
+        pin['mips']['levels'].append({'width': 1, 'height': 1, 'bytes': 8, 'sha256': past_sha256, 'path': f'/l2/native-materials/texture-mips/{past_sha256}/level.bin'})
+        self.assert_refused(pin, 'halve')
+
+    def test_a_first_mip_that_is_not_a_level_index_is_refused(self):
+        pin = self.sun_pin()
+        pin['mips']['firstMip'] = -1
+        self.assert_refused(pin, 'firstMip')
 
     def test_an_empty_chain_is_refused(self):
         pin = self.sun_pin()

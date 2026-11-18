@@ -169,7 +169,7 @@ class SkyProgramTextureImageTests(unittest.TestCase):
         self.assertEqual(gap_reasons, [])
         self.assertEqual([node['image'] for node in program['nodes']],
                          [{'path': f'/l2/native-materials/textures/{png_sha256}/texture.png', 'sha256': png_sha256, 'bytes': len(png),
-                           'mips': {'format': 'DXT1', 'levels': level_pins}}])
+                           'mips': {'format': 'DXT1', 'firstMip': 0, 'levels': level_pins}}])
 
     def test_a_sky_texture_the_library_refuses_keeps_a_null_image_and_its_gap_reason(self):
         program, products, gap_reasons = self.texture_root_program(package_118_bytes(format_id=UNREVIEWED_FORMAT))

@@ -1,5 +1,6 @@
 import hashlib
 import io
+import json
 from typing import NamedTuple
 
 import PIL
@@ -123,8 +124,9 @@ def sky_texture_products_by_node(package, graph):
 
 def sky_texture_native_source(receipt, files):
     stem = sky_texture_file_stem(receipt['sourceReference'])
-    mips = [{**mip, 'file': f'{stem}.mip{mip["level"]}.bin'} for mip in receipt['mips']]
-    return {'format': receipt['format'], 'mips': mips}, files
+    metadata = json.loads(files[f'{stem}.native.json'])
+    mips = [{**mip, 'file': f'{stem}.mip{mip["level"]}.bin'} for mip in metadata['mips']]
+    return {'format': metadata['format'], 'mips': mips, 'propertyTags': metadata['propertyTags']}, files
 
 
 def sky_texture_pngs_by_node(products):
