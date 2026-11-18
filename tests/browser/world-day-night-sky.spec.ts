@@ -1,8 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { readDayNightFixtureRows } from "../support/dayNightFixtures";
 import { collectBrowserErrors } from "./browserErrors";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
-import { captureStoreName, captureStoreRequirement, captureTileId, captureTileRecord, captureTileRequirement, openCaptureTile } from "./captureTileRoute";
+import {
+  captureStoreName, captureStoreRequirement, captureStoreTileRecord, captureStoreTileRequirement, captureTileId, captureTileRecord, captureTileRequirement,
+  openCaptureStoreTile, openCaptureTile,
+} from "./captureTileRoute";
+import { rm1ReferencePawn20_21 } from "./rm1ReferencePawns";
 import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
 interface SkyColourEntry { readonly setupKey: string; readonly objectName: string; readonly section: string }
@@ -26,6 +32,10 @@ interface TimeOfDayReading {
 const serverGameMinutes = [0, 360, 720, 1080];
 const minutesPerHour = 60;
 const transitionGameMinutes = 720;
+const skyBoxSetupKey = "SKYBOX";
+const localFogSettleTimeout = 60_000;
+const { localSkyOverride } = JSON.parse(readFileSync(resolve("tests/fixtures/environment/shared-sky-rm21-fixtures.json"), "utf8")) as
+  { readonly localSkyOverride: { readonly finalRGB: { readonly SkyColor: readonly number[] } } };
 
 test.skip(process.env.NATIVE_STORE_ROOT !== captureStoreName, captureStoreRequirement);
 test.skip(captureTileRecord === null, captureTileRequirement);
@@ -89,6 +99,30 @@ test.describe("desktop", () => {
     }
     await openTimeOfDayGroup(page, "click");
     await page.screenshot({ path: "test-results/world-day-night-sky-desktop.png" });
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe("desktop local fog sky", () => {
+  test.use({ viewport: desktopViewport });
+  test("writes the RM-21 composed SKYBOX colour 132,146,131 over the time table at the 20_21 RM-1 reference pawn and hour", async ({ page }) => {
+    test.skip(captureStoreTileRecord(rm1ReferencePawn20_21.tileId) === null, captureStoreTileRequirement(rm1ReferencePawn20_21.tileId));
+    test.setTimeout(360_000);
+    const errors = collectBrowserErrors(page);
+    await openCaptureStoreTile(page, rm1ReferencePawn20_21.tileId);
+    await page.evaluate(({ position, heading, gameMinutes }) => {
+      window.__nativeSlice!.dispatch({ type: "teleport-local", position, heading });
+      window.__nativeSlice!.dispatch({ type: "set-server-time", gameMinutes });
+    }, { position: rm1ReferencePawn20_21.referencePawnSourcePosition, heading: rm1ReferencePawn20_21.referencePawnHeadingUnits,
+      gameMinutes: rm1ReferencePawn20_21.gameMinutes });
+    const skyBoxWrite = async () => {
+      const entry = (await readAfterNextFrames(page)).written.find(candidate => candidate.setupKey === skyBoxSetupKey);
+      return entry === undefined ? null : { localFogInfoCount: entry.localFogInfoCount, writtenRgb: entry.writtenRgb, source: entry.materialColourSource,
+        reason: entry.reason };
+    };
+    await expect.poll(skyBoxWrite, { message: rm1ReferencePawn20_21.referenceCapture, timeout: localFogSettleTimeout, intervals: [500] })
+      .toEqual({ localFogInfoCount: 2, writtenRgb: localSkyOverride.finalRGB.SkyColor, source: "environment-write", reason: null });
+    await page.screenshot({ path: "test-results/world-day-night-sky-20_21-local-fog-desktop.png" });
     expect(errors).toEqual([]);
   });
 });

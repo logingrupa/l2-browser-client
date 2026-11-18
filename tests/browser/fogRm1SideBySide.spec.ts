@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { rm1ReferencePawn15_22, rm1ReferencePawn20_21, type Rm1ReferencePawn } from "./rm1ReferencePawns";
 import { environmentTimeTablesRequirement, environmentTimeTablesStaged } from "./stagedEnvironmentTimeTables";
 
 interface PinnedRecord { readonly id: string; readonly manifest: string }
@@ -20,12 +21,7 @@ interface FogInspection {
   readonly farPlaneSource: string | null;
 }
 
-interface Rm1EnabledFogCall {
-  readonly tileId: "15_22" | "20_21";
-  readonly referenceCapture: string;
-  readonly referencePawnSourcePosition: { readonly x: number; readonly y: number; readonly z: number };
-  readonly referencePawnHeadingUnits: number;
-  readonly gameMinutes: number;
+interface Rm1EnabledFogCall extends Rm1ReferencePawn {
   readonly source: string;
   readonly colourBytes: readonly [number, number, number];
   readonly startSourceUnits: number;
@@ -41,12 +37,9 @@ const tileLoadTimeout = 300_000;
 const fogSettleTimeout = 60_000;
 
 const rm1EnabledFogCalls: readonly Rm1EnabledFogCall[] = [
-  { tileId: "20_21", referenceCapture: "RM-1 reference-map-captures-rm1.json 20_21 shots[0] playerLocation, playerRotation and gameHour 12.30 in whole minutes",
-    referencePawnSourcePosition: { x: 9181.810546875, y: 119378.65625, z: -3673.308349609375 }, referencePawnHeadingUnits: 0,
-    gameMinutes: 738, source: "local-fog-list", colourBytes: [107, 114, 97], startSourceUnits: 0, endSourceUnits: 10000, needsTerrainZoneFlag: false },
-  { tileId: "15_22", referenceCapture: "RM-1 reference-map-captures-rm1.json 15_22 shots[0] playerLocation, playerRotation and gameHour 12.078 in whole minutes",
-    referencePawnSourcePosition: { x: -144885.09375, y: 137792.125, z: -3300 }, referencePawnHeadingUnits: 2675,
-    gameMinutes: 725, source: "terrain-zone-environment", colourBytes: [188, 203, 224], startSourceUnits: 8192, endSourceUnits: 20480, needsTerrainZoneFlag: true },
+  { ...rm1ReferencePawn20_21, source: "local-fog-list", colourBytes: [107, 114, 97], startSourceUnits: 0, endSourceUnits: 10000, needsTerrainZoneFlag: false },
+  { ...rm1ReferencePawn15_22, source: "terrain-zone-environment", colourBytes: [188, 203, 224], startSourceUnits: 8192, endSourceUnits: 20480,
+    needsTerrainZoneFlag: true },
 ];
 
 const readJson = <Value>(path: string): Value => JSON.parse(readFileSync(path, "utf8")) as Value;
