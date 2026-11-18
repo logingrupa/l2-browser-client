@@ -2,7 +2,7 @@ import type { BgraBytes } from "../../environment/model/nativeColourBytes";
 import type { FogColourBytes, FogRangeRecord, FogState } from "../../materials/ue2/model/fog";
 import {
   setFogTransitionColourTarget, setFogTransitionDuration, setFogTransitionRangeTarget, snapshotFogTransition, updateFogTransition, type FogTransitionState,
-} from "../../materials/ue2/model/fogTransition";
+} from "../../environment/model/fogTransition";
 import type { CameraEnvironment, CameraFogRoute } from "./cameraEnvironment";
 
 export type FogTransitionRestartDuration = "FogSpeed" | "DistanceFogBlendTime" | "fog-zone-blend-time-unstaged";

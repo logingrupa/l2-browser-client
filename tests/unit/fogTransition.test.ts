@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { BgraBytes } from "../../src/environment/model/nativeColourBytes";
 import {
   setFogTransitionColourTarget, setFogTransitionDuration, setFogTransitionRangeTarget, snapshotFogTransition, updateFogTransition, type FogTransitionState,
-} from "../../src/materials/ue2/model/fogTransition";
+} from "../../src/environment/model/fogTransition";
 
 interface FixtureState {
   readonly targetColorBGRA: BgraBytes;
