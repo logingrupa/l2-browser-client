@@ -68,7 +68,7 @@ function pillarMesh(scene: Scene, name: string): Mesh {
   material.metadata = { gltf: { extras: { nativeSectionIndex: 0, nativeSourceReference: slotObject } } };
   const mesh = new Mesh(name, scene);
   Object.assign(new VertexData(), { positions: Array.from({ length: pillar.vertexCount * 3 }, (_, index) => index),
-    uvs: Array.from({ length: pillar.vertexCount * 2 }, () => 0), indices: Array.from({ length: pillar.vertexCount }, (_, index) => index) }).applyToMesh(mesh);
+    uvs: Array.from({ length: pillar.vertexCount * 2 }, () => 0), indices: Uint32Array.from({ length: pillar.vertexCount }, (_, index) => index) }).applyToMesh(mesh);
   mesh.material = material;
   mesh._internalMetadata = { gltf: { pointers: ["/meshes/0/primitives/0"] } };
   return mesh;
@@ -168,6 +168,8 @@ describe("static mesh hourly instance colour drawn per placement (RM-10)", () =>
     expect(sibling.geometry).toBe(template.geometry);
     expect(lit.geometry!.getVertexBuffer(VertexBuffer.PositionKind)!.getWrapperBuffer()).toBe(template.geometry!.getVertexBuffer(VertexBuffer.PositionKind)!.getWrapperBuffer());
     expect(template.geometry!.isVerticesDataPresent(instanceColourAttributeName)).toBe(false);
+    expect(lit.geometry!.getIndices()).toBeInstanceOf(Uint32Array);
+    expect(lit.geometry!.getIndices()).not.toBe(template.geometry!.getIndices());
     lit.dispose();
     expect(template.geometry!.getVertexBuffer(VertexBuffer.PositionKind)!.getWrapperBuffer().getBuffer()).not.toBeNull();
     expect(sibling.geometry!.getTotalVertices()).toBe(pillar.vertexCount);

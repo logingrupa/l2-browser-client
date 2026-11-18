@@ -30,7 +30,7 @@ export function createStaticMeshInstanceColourGeometry(mesh: Mesh, nativeVertice
   const colourBuffer = new VertexBuffer(engine, colours, instanceColourAttributeName, { updatable: true, useBytes: true, stride: rgbaBytes,
     size: rgbaBytes, type: VertexBuffer.UNSIGNED_BYTE, normalized: true });
   geometry.setVerticesBuffer(colourBuffer, vertexCount);
-  geometry.setIndices(Array.from(indices), vertexCount);
+  geometry.setIndices(indices.slice(), vertexCount);
   geometry.applyToMesh(mesh);
   return {
     mesh,
