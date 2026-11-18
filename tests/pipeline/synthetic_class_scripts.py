@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 import shutil
 import tempfile
 from types import SimpleNamespace
 
-from native_assets_lib.class_defaults import CLASS_DEFAULT_CACHE_FOLDER_NAME
+from native_assets_lib.class_defaults import CLASS_DEFAULT_CACHE_FOLDER_NAME, DECOMPILE_WORK_FOLDER_NAME
 from native_catalog.ue2 import FormatError
+from world.declared_property_types import DECOMPILE_DEFAULTS_NAME
 
 TEST_SCRATCH_ROOT = Path(__file__).resolve().parents[2] / 'artifacts' / 'test-scratch'
 WORLD_CLASS_DEFAULT_CACHE = Path(__file__).resolve().parents[2] / 'artifacts' / 'lane-store' / 'world' / 'work' / CLASS_DEFAULT_CACHE_FOLDER_NAME
+WORLD_DECOMPILED_CLASSES = WORLD_CLASS_DEFAULT_CACHE / DECOMPILE_WORK_FOLDER_NAME
 
 
 def synthetic_import_table(qualified_imports):
@@ -80,3 +83,14 @@ def link_world_class_default_cache(work_root):
 
 def scratch_work_root_with_world_class_default_cache(add_cleanup, prefix):
     return link_world_class_default_cache(scratch_folder(add_cleanup, prefix))
+
+
+def link_world_decompiled_class_scripts(work_root, class_objects):
+    for class_object in class_objects:
+        source_folder = WORLD_DECOMPILED_CLASSES / class_object
+        source_script = json.loads((source_folder / DECOMPILE_DEFAULTS_NAME).read_text(encoding='utf-8'))['sourceScript']
+        target_folder = Path(work_root) / CLASS_DEFAULT_CACHE_FOLDER_NAME / DECOMPILE_WORK_FOLDER_NAME / class_object
+        for relative_path in (DECOMPILE_DEFAULTS_NAME, source_script):
+            (target_folder / relative_path).parent.mkdir(parents=True, exist_ok=True)
+            os.link(source_folder / relative_path, target_folder / relative_path)
+    return Path(work_root)

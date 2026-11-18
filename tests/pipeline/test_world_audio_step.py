@@ -12,11 +12,13 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(Path(__file__).parent))
 from native_assets_lib.world_ambience import FIELDS
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import UnitLedger
 from reference_client_guard import ReferenceClientLockError
+from synthetic_class_scripts import scratch_work_root
 import world.exact_sound_sources as exact_sound_sources
 import world.world_audio_step as world_audio_step
 from world.ambient_sound_inventory import AmbientEmitterUnreadable, ambient_emitter_row, inventory_ambient_sounds
@@ -332,7 +334,7 @@ class RealClientAudioTests(unittest.TestCase):
         staged = json.loads(staged_bytes)
         lock_record = read_tile_map_lock_record('20_20')
         gaps = TileStepGapRows('20_20', WORLD_AUDIO_STEP_NAME, {'path': 'maps/20_20.unr', 'sha256': lock_record['eSha256']}, EVIDENCE)
-        bundles, coverage, _ = convert_tile_audio(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), '20_20', lock_record,
+        bundles, coverage, _ = convert_tile_audio(scratch_work_root(self, 'audio-project-'), REFERENCE_CLIENT.resolve(), '20_20', lock_record,
                                                   raw_unit_fingerprint(REPOSITORY_ROOT, '20_20', lock_record)[1], tile_music.pinned_music_encoder(), gaps)
         self.assertEqual(gaps.rows(), [])
         self.assertEqual({key: coverage['ambience'][key] for key in staged['coverage']}, staged['coverage'])

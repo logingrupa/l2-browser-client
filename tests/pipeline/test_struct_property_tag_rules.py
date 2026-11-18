@@ -11,8 +11,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, BatchPreflightRefusedError, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock, require_reference_client
-from synthetic_class_scripts import WORLD_CLASS_DEFAULT_CACHE, scratch_work_root_with_world_class_default_cache
-from world.declared_property_types import PropertyScope, declared_property_types
+from synthetic_class_scripts import (WORLD_CLASS_DEFAULT_CACHE, WORLD_DECOMPILED_CLASSES, link_world_decompiled_class_scripts,
+                                     scratch_work_root_with_world_class_default_cache)
+from world.declared_property_types import DECOMPILE_DEFAULTS_NAME, PropertyScope, declared_property_types
 from world.map_actor_properties import actor_properties
 from world.raw_map_step import read_tile_map_lock_record
 from world.static_placement import ClassDefaults
@@ -108,7 +109,8 @@ def real_client_skip_reason():
         return 'the conversion client E:/Lineage2-client is absent on this host'
     if not REFERENCE_CLIENT_LOCK_PATH.is_file():
         return 'the reference client lock is absent'
-    missing = [name for name in ORACLE_CLASS_SCRIPTS if not (WORLD_CLASS_DEFAULT_CACHE / f'{name}.json').is_file()]
+    missing = [name for name in ORACLE_CLASS_SCRIPTS
+               if not ((WORLD_CLASS_DEFAULT_CACHE / f'{name}.json').is_file() and (WORLD_DECOMPILED_CLASSES / name / DECOMPILE_DEFAULTS_NAME).is_file())]
     if missing:
         return f'the class-default cache of the world lane lacks: {missing}'
     return None
@@ -144,7 +146,8 @@ class RealMapOracleTests(unittest.TestCase):
         cls.tile_id = Path(cls.oracles['map']).stem
         cls.package = read_locked_map_package(REAL_CLIENT_ROOT, cls.tile_id, read_tile_map_lock_record(cls.tile_id))
         cls.class_scripts = ReferenceClientClassScripts(REAL_CLIENT_ROOT)
-        class_work_root = scratch_work_root_with_world_class_default_cache(cls.addClassCleanup, 'struct-oracle-class-defaults-')
+        class_work_root = link_world_decompiled_class_scripts(
+            scratch_work_root_with_world_class_default_cache(cls.addClassCleanup, 'struct-oracle-class-defaults-'), ORACLE_CLASS_SCRIPTS)
         cls.declared_types = declared_property_types(ClassDefaults(class_work_root, cls.class_scripts))
 
     def oracle_export(self, object_name):
