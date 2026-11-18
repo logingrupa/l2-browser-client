@@ -3,10 +3,12 @@ from typing import NamedTuple
 from native_store.canonical_json import canonical_json_bytes
 from world.bsp_lightmaps import LIGHTMAP_PAGE_MIPS, NO_LIGHTMAP, node_lightmap_texture, node_lightmap_uvs
 from world.bsp_node_sun_affect import SUN_AFFECT_UNRESOLVED, SUN_AFFECTED, node_range_sun_affect
+from world.static_mesh_light_list_fields import LOCAL_TO_WORLD_COMPONENTS
 from world.typed_payload import BYTES_PER_ELEMENT_OF_TYPE, TYPED_PAYLOAD_ALIGNMENT, TypedPayloadArray
 
 HOURS_PER_DAY = 24
 NODE_RANGE_FIELDS = ('chunk', 'node', 'primitive', 'firstIndex', 'indexCount')
+UNRESOLVED_LOCAL_TO_WORLD = (0.0,) * LOCAL_TO_WORLD_COMPONENTS
 
 
 class LightmapNodeRange(NamedTuple):
@@ -107,17 +109,22 @@ def visibility_entry_arrays(group, entries, hours=None):
     return arrays
 
 
-def static_mesh_light_list_arrays(light_lists, light_list_sun_affect):
-    if len(light_list_sun_affect) != len(light_lists):
-        raise ValueError(f'{len(light_list_sun_affect)} sun affect values for {len(light_lists)} static mesh light lists')
+def static_mesh_light_list_arrays(light_lists, light_list_fields):
+    if len(light_list_fields) != len(light_lists):
+        raise ValueError(f'{len(light_list_fields)} actor field rows for {len(light_lists)} static mesh light lists')
     scene = [entry for light_list in light_lists for entry in light_list.scene_lights]
     environment = [entry for light_list in light_lists for entry in light_list.environment_lights]
     environment_hours = [slot_center_hour(slot, len(light_list.environment_lights))
                          for light_list in light_lists for slot in range(len(light_list.environment_lights))]
+    resolved = [fields.ordinary_inputs_resolved() for fields in light_list_fields]
     return [array('SMLL.actorExportIndex', 'int32', [light_list.actor_export_index for light_list in light_lists]),
             array('SMLL.instanceExportIndex', 'int32', [light_list.instance_export_index for light_list in light_lists]),
             array('SMLL.colorCount', 'uint32', [light_list.color_count for light_list in light_lists]),
-            array('SMLL.sunAffect', 'int32', light_list_sun_affect),
+            array('SMLL.sunAffect', 'int32', [fields.sun_affect for fields in light_list_fields]),
+            array('SMLL.ordinaryInputsResolved', 'int32', [int(is_resolved) for is_resolved in resolved]),
+            array('SMLL.scaleGlow', 'float32', [fields.scale_glow if is_resolved else 0.0 for fields, is_resolved in zip(light_list_fields, resolved)]),
+            array('SMLL.localToWorld', 'float32', [value for fields, is_resolved in zip(light_list_fields, resolved)
+                                                   for value in (fields.local_to_world if is_resolved else UNRESOLVED_LOCAL_TO_WORLD)]),
             array('SMLL.sceneStart', 'uint32', prefix_starts(len(light_list.scene_lights) for light_list in light_lists)),
             array('SMLL.environmentStart', 'uint32', prefix_starts(len(light_list.environment_lights) for light_list in light_lists)),
             *visibility_entry_arrays('SMSC', scene), array('SMSC.applied', 'int32', [entry.applied for entry in scene]),
