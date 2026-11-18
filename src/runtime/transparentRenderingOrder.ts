@@ -4,6 +4,11 @@ import { RenderingManager } from "@babylonjs/core/Rendering/renderingManager";
 import type { NativeEmitterMeshMetadata } from "../effects/particles/render/particleMaterialBinding";
 
 const installedScenes = new WeakSet<Scene>();
+const queueRankOfSubMesh = new WeakMap<SubMesh, number>();
+
+export function setSubMeshQueueRank(subMesh: SubMesh, rank: number): void {
+  queueRankOfSubMesh.set(subMesh, rank);
+}
 
 function emitterOrdinalOf(subMesh: SubMesh): number | null {
   const metadata: unknown = subMesh.getMesh().metadata;
@@ -13,6 +18,8 @@ function emitterOrdinalOf(subMesh: SubMesh): number | null {
 }
 
 export function compareTransparentSubMeshes(first: SubMesh, second: SubMesh): number {
+  const firstRank = queueRankOfSubMesh.get(first), secondRank = queueRankOfSubMesh.get(second);
+  if (firstRank !== undefined && secondRank !== undefined) return firstRank - secondRank;
   if (first._distanceToCamera !== second._distanceToCamera) return first._distanceToCamera > second._distanceToCamera ? -1 : 1;
   const firstOrdinal = emitterOrdinalOf(first), secondOrdinal = emitterOrdinalOf(second);
   if (firstOrdinal === null || secondOrdinal === null || firstOrdinal === secondOrdinal) return 0;
