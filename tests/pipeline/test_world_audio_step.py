@@ -243,7 +243,7 @@ class MusicJoinTests(unittest.TestCase):
     def test_every_written_audio_manifest_is_a_world_audio_resource(self):
         manifests = [{'kind': kind, 'resource': f'/l2/world-audio/{character * 64}/manifest.json', 'sha256': character * 64, 'bytes': 10}
                      for kind, character in (('native-map-music', 'b'), ('native-map-ambience', 'a'))]
-        resources = tile_resources(None, None, None, None, None, {'manifests': manifests, 'gapRows': []})
+        resources = tile_resources(None, None, None, None, {'manifests': manifests, 'gapRows': []})
         self.assertEqual([(resource['kind'], resource['manifestSha256']) for resource in resources], [('world-audio', 'a' * 64), ('world-audio', 'b' * 64)])
         for reason in ('music-join-unresolved:6', 'music-volume-unreadable', 'music-format-unsupported:1/22050', 'music-derivative-encoder-unpinned'):
             self.assertTrue(is_listed_reason(reason, load_gap_reason_patterns(ROOT)), reason)

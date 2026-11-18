@@ -12,7 +12,6 @@ from world.minimap_step import MINIMAP_STEP_NAME, current_minimap_receipt, minim
 from world.mover_step import MOVER_STEP_NAME, mover_ledger, sealed_mover_unit_config
 from world.raw_map_step import (RAW_STEP_NAME, raw_map_ledger, raw_map_unit, raw_map_unit_fingerprint, read_map_lock_record, read_tile_map_lock_record,
                                 require_tile_id, tile_unit_key)
-from world.sky_step import SKY_STEP_NAME, sky_ledger, sky_unit_config
 from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME, static_mesh_materials_ledger, static_mesh_materials_unit_config
 from world.static_mesh_step import STATIC_MESH_STEP_NAME, static_mesh_ledger, static_mesh_unit
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, TerrainChunkStepError, sealed_terrain_chunks, terrain_step_ledger, terrain_unit
@@ -113,10 +112,6 @@ def bsp_seal_is_current(project_root, unit_key, ledger):
     return receipt_matches_locked_input_config(sealed_bsp_unit_config, project_root, unit_key, ledger)
 
 
-def sky_seal_is_current(project_root, unit_key, ledger):
-    return receipt_matches_locked_input_config(sky_unit_config, project_root, unit_key, ledger)
-
-
 def current_world_audio_unit_config(project_root, tile_id, lock_record):
     return world_audio_unit_config(project_root, tile_id, lock_record, pinned_music_encoder())
 
@@ -164,7 +159,6 @@ TILE_STEP_SEAL_CHECKS = {
     COLLISION_STEP_NAME: TileStepSealCheck(collision_ledger, collision_seal_is_current, (ChunkPlanStepError,)),
     MAP_EMITTER_STEP_NAME: TileStepSealCheck(map_emitter_ledger, map_emitter_seal_is_current, (ChunkPlanStepError,)),
     BSP_VISIBILITY_STEP_NAME: TileStepSealCheck(bsp_visibility_ledger, bsp_visibility_seal_is_current, (ChunkPlanStepError,)),
-    SKY_STEP_NAME: TileStepSealCheck(sky_ledger, sky_seal_is_current, (ChunkPlanStepError,)),
     WORLD_AUDIO_STEP_NAME: TileStepSealCheck(world_audio_ledger, world_audio_seal_is_current, (ChunkPlanStepError,)),
     LIGHTING_STEP_NAME: TileStepSealCheck(lighting_ledger, lighting_seal_is_current, (ChunkPlanStepError,)),
     MINIMAP_STEP_NAME: TileStepSealCheck(minimap_ledger, minimap_seal_is_current, (UpstreamUnitPendingError,)),

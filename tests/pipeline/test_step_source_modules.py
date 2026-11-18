@@ -70,8 +70,8 @@ class LedgerConverterSourcesTests(unittest.TestCase):
         self.work_root = Path(temporary_directory.name).resolve() / 'artifacts' / 'lane-store' / 'world' / 'work'
 
     def test_the_fingerprint_and_the_version_check_cover_the_step_converter_sources(self):
-        ledger = UnitLedger(self.work_root, 'sky', 1)
-        self.assertEqual(ledger.converter_sources_sha256, step_converter_sources_sha256('world', 'sky'))
+        ledger = UnitLedger(self.work_root, 'shared-sky', 1)
+        self.assertEqual(ledger.converter_sources_sha256, step_converter_sources_sha256('world', 'shared-sky'))
         self.assertNotEqual(ledger.converter_sources_sha256, UnitLedger(self.work_root, 'meshes', 1).converter_sources_sha256)
         self.assertEqual(ledger.unit_fingerprint([FIRST_INPUT_SHA256], SYNTHETIC_CONFIG), sha256_of_bytes(canonical_json_bytes(
             {'algorithmVersion': 1, 'config': SYNTHETIC_CONFIG, 'converterSourcesSha256': ledger.converter_sources_sha256,

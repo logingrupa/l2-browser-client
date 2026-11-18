@@ -8,8 +8,7 @@ RUNTIME_TILE_SOURCE_SHA256 = 'b' * 64
 RUNTIME_TILE_CHUNK_ID = 'chunk-0-0'
 RUNTIME_TILE_MANIFEST_PATH_TEMPLATE = '/l2/tiles/{sha256}/tile.json'
 RUNTIME_TILE_CHUNK_MANIFEST_PATH_TEMPLATE = '/l2/maps/{sha256}/native-tile-chunk-runtime/manifest.json'
-RUNTIME_TILE_RESOURCE_PATH_TEMPLATES = {'native-tile-collision': '/l2/maps/{sha256}/native-tile-collision/asset.json',
-                                        'sky': '/l2/skies/{sha256}/manifest.json'}
+RUNTIME_TILE_RESOURCE_PATH_TEMPLATES = {'native-tile-collision': '/l2/maps/{sha256}/native-tile-collision/asset.json'}
 
 
 def write_store_catalog(store_root, catalog):

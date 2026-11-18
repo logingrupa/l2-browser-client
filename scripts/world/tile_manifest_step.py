@@ -17,7 +17,6 @@ from world.map_emitter_step import MAP_EMITTER_STEP_NAME, sealed_map_emitters, t
 from world.minimap_step import MINIMAP_STEP_NAME, sealed_minimap, tile_minimap_row
 from world.mover_step import MOVER_STEP_NAME, sealed_movers, tile_mover_row
 from world.native_material_listings import surface_materials_listing, unique_native_material_files
-from world.sky_step import SKY_STEP_NAME, sealed_sky, tile_sky_row
 from world.world_audio_step import WORLD_AUDIO_STEP_NAME, sealed_world_audio, tile_world_audio_row
 from world.raw_map_step import read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME, sealed_static_mesh_materials, tile_static_mesh_materials_row
@@ -28,10 +27,10 @@ from world.tile_chunk_plan import chunk_plan_ledger
 from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
-TILE_MANIFEST_STEP_ALGORITHM_VERSION = 15
+TILE_MANIFEST_STEP_ALGORITHM_VERSION = 16
 TILE_MANIFEST_STEP_NAME = 'manifest'
 TILE_CATALOG_CAPACITY = 163
-PENDING_TILE_STEPS = ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'sky', 'audio', 'lighting', 'minimap',
+PENDING_TILE_STEPS = ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'audio', 'lighting', 'minimap',
                       'terrain-material', 'static-mesh-materials')
 PENDING_CHUNK_STEPS = ('meshes', 'bsp', 'collision', 'terrain-material')
 PENDING_STATUS = 'pending'
@@ -41,7 +40,6 @@ NATIVE_TILE_COLLISION_KIND = 'native-tile-collision'
 TILE_MOVERS_RESOURCE_KIND = 'movers'
 TILE_BSP_VISIBILITY_RESOURCE_KIND = 'bsp-visibility'
 TILE_MAP_EMITTERS_RESOURCE_KIND = 'map-emitters'
-TILE_SKY_RESOURCE_KIND = 'sky'
 TILE_WORLD_AUDIO_RESOURCE_KIND = 'world-audio'
 TILE_LIGHTING_RESOURCE_KIND = 'lighting'
 TILE_MINIMAP_RESOURCE_KIND = 'minimap'
@@ -100,11 +98,11 @@ def chunk_terrain_gap_rows(tile_id, chunk_record, chunk_plan_entry, source_ident
                           {**source_identity, 'object': chunk_plan_entry['sectorObjects'][0]}, evidence)]
 
 
-def pending_steps_after_sealed(steps, static_meshes, bsp, collision=None, movers=None, bsp_visibility=None, map_emitters=None, sky=None,
+def pending_steps_after_sealed(steps, static_meshes, bsp, collision=None, movers=None, bsp_visibility=None, map_emitters=None,
                                world_audio=None, lighting=None, minimap=None, static_mesh_materials=None, terrain_material=None):
     sealed = {name for name, product in ((STATIC_MESH_STEP_NAME, static_meshes), (BSP_STEP_NAME, bsp), (COLLISION_STEP_NAME, collision),
                                          (MOVER_STEP_NAME, movers), (BSP_VISIBILITY_STEP_NAME, bsp_visibility),
-                                         (MAP_EMITTER_STEP_NAME, map_emitters), (SKY_STEP_NAME, sky),
+                                         (MAP_EMITTER_STEP_NAME, map_emitters),
                                          (WORLD_AUDIO_STEP_NAME, world_audio), (LIGHTING_STEP_NAME, lighting), (MINIMAP_STEP_NAME, minimap),
                                          (STATIC_MESH_MATERIALS_STEP_NAME, static_mesh_materials), (TERRAIN_MATERIAL_STEP_NAME, terrain_material))
               if product is not None}
@@ -161,10 +159,10 @@ def build_tile_chunk_manifest(tile_id, chunk_record, chunk_plan_entry, source_id
     return validate_tile_chunk_manifest(manifest)
 
 
-def tile_level_gap_rows(tile_id, source_identity, evidence, static_meshes, bsp, collision, movers, bsp_visibility=None, map_emitters=None, sky=None,
+def tile_level_gap_rows(tile_id, source_identity, evidence, static_meshes, bsp, collision, movers, bsp_visibility=None, map_emitters=None,
                         world_audio=None, lighting=None, minimap=None, static_mesh_materials=None, terrain_material=None):
     rows = pending_step_rows(tile_id, pending_steps_after_sealed(PENDING_TILE_STEPS, static_meshes, bsp, collision, movers, bsp_visibility, map_emitters,
-                                                                 sky, world_audio, lighting, minimap, static_mesh_materials, terrain_material),
+                                                                 world_audio, lighting, minimap, static_mesh_materials, terrain_material),
                              source_identity, evidence)
     if static_meshes is not None and static_meshes['gapRows']:
         rows.append(tile_static_mesh_row(tile_id, source_identity, static_meshes['gapRows'], evidence))
@@ -178,8 +176,6 @@ def tile_level_gap_rows(tile_id, source_identity, evidence, static_meshes, bsp, 
         rows.append(tile_bsp_visibility_row(tile_id, source_identity, bsp_visibility['gapRows'], evidence))
     if map_emitters is not None and map_emitters['gapRows']:
         rows.append(tile_map_emitter_row(tile_id, source_identity, map_emitters['gapRows'], evidence))
-    if sky is not None and sky['gapRows']:
-        rows.append(tile_sky_row(tile_id, source_identity, sky['gapRows'], evidence))
     if world_audio is not None and world_audio['gapRows']:
         rows.append(tile_world_audio_row(tile_id, source_identity, world_audio['gapRows'], evidence))
     if lighting is not None and lighting['gapRows']:
@@ -197,7 +193,7 @@ def pinned_tile_resource(kind, record):
     return {'kind': kind, 'manifest': record['resource'], 'manifestSha256': record['sha256'], 'manifestBytes': record['bytes']}
 
 
-def tile_resources(collision, movers, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None, minimap=None,
+def tile_resources(collision, movers, bsp_visibility=None, map_emitters=None, world_audio=None, lighting=None, minimap=None,
                    surface_materials=None, static_mesh_materials=None, terrain_material=None):
     resources = []
     if collision is not None:
@@ -211,8 +207,6 @@ def tile_resources(collision, movers, bsp_visibility=None, map_emitters=None, sk
         resources.append(pinned_tile_resource(TILE_BSP_VISIBILITY_RESOURCE_KIND, bsp_visibility['resource']))
     if map_emitters is not None and map_emitters['manifest'] is not None:
         resources.append(pinned_tile_resource(TILE_MAP_EMITTERS_RESOURCE_KIND, map_emitters['manifest']))
-    if sky is not None and sky['manifest'] is not None:
-        resources.append(pinned_tile_resource(TILE_SKY_RESOURCE_KIND, sky['manifest']))
     if world_audio is not None:
         resources.extend(pinned_tile_resource(TILE_WORLD_AUDIO_RESOURCE_KIND, manifest) for manifest in world_audio['manifests'])
     if lighting is not None:
@@ -229,16 +223,16 @@ def tile_resources(collision, movers, bsp_visibility=None, map_emitters=None, sk
 
 
 def build_tile_manifest(tile_id, source_identity, chunk_plan, chunk_manifest_records, evidence, static_meshes=None, bsp=None, collision=None,
-                        movers=None, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None, minimap=None,
+                        movers=None, bsp_visibility=None, map_emitters=None, world_audio=None, lighting=None, minimap=None,
                         surface_materials=None, static_mesh_materials=None, terrain_material=None):
     manifest = {'kind': TILE_MANIFEST_KIND, 'schemaVersion': TILE_MANIFEST_SCHEMA_VERSION, 'tileId': tile_id,
                 'sourceMap': tile_map_path(tile_id), 'sourceSha256': source_identity['sha256'],
                 'frame': {field: chunk_plan['frame'][field] for field in FRAME_FIELDS}, 'anchor': dict(chunk_plan['anchor']),
                 'chunks': list(chunk_manifest_records),
-                'resources': tile_resources(collision, movers, bsp_visibility, map_emitters, sky, world_audio, lighting, minimap, surface_materials,
+                'resources': tile_resources(collision, movers, bsp_visibility, map_emitters, world_audio, lighting, minimap, surface_materials,
                                             static_mesh_materials, terrain_material),
                 'gaps': sorted_by_step(tile_level_gap_rows(tile_id, source_identity, evidence, static_meshes, bsp, collision, movers, bsp_visibility,
-                                                           map_emitters, sky, world_audio, lighting, minimap, static_mesh_materials, terrain_material))}
+                                                           map_emitters, world_audio, lighting, minimap, static_mesh_materials, terrain_material))}
     return validate_tile_manifest(manifest)
 
 
@@ -247,7 +241,7 @@ def pinned_manifest_entry(relative_path, payload):
 
 
 def tile_store_files(tile_id, source_identity, chunk_plan, terrain_records, terrain_glbs_by_chunk, evidence, static_meshes=None, bsp=None,
-                     collision=None, movers=None, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None,
+                     collision=None, movers=None, bsp_visibility=None, map_emitters=None, world_audio=None, lighting=None,
                      minimap=None, static_mesh_materials=None, terrain_material=None):
     if chunk_plan['anchor'] is None:
         raise TileManifestStepError(f'chunk plan of tile {tile_id} has no anchor; a tile without an anchor gets no manifest')
@@ -269,13 +263,13 @@ def tile_store_files(tile_id, source_identity, chunk_plan, terrain_records, terr
         files[chunk_path] = chunk_payload
         chunk_manifest_records.append({'chunkId': chunk_plan_entry['chunkId'], **pinned_manifest_entry(chunk_path, chunk_payload)})
     surface_materials = None
-    material_files = unique_native_material_files(tile_id, [product['materialFiles'] for product in (bsp, sky) if product is not None])
+    material_files = unique_native_material_files(tile_id, [] if bsp is None else [bsp['materialFiles']])
     if material_files:
         listing_path, listing_payload = surface_materials_listing(tile_id, material_files)
         files[listing_path] = listing_payload
         surface_materials = {'resource': '/l2/' + listing_path, 'sha256': sha256_hex(listing_payload), 'bytes': len(listing_payload)}
     tile_payload = canonical_json_bytes(build_tile_manifest(tile_id, source_identity, chunk_plan, chunk_manifest_records, evidence, static_meshes,
-                                                            bsp, collision, movers, bsp_visibility, map_emitters, sky, world_audio, lighting,
+                                                            bsp, collision, movers, bsp_visibility, map_emitters, world_audio, lighting,
                                                             minimap, surface_materials, static_mesh_materials, terrain_material))
     tile_path = tile_manifest_store_path(sha256_hex(tile_payload))
     files[tile_path] = tile_payload
@@ -310,7 +304,7 @@ def sealed_tile_manifest_upstream(project_root, tile_id, lock_record):
     return {STATIC_MESH_STEP_NAME: sealed_static_meshes(project_root, tile_id, lock_record), BSP_STEP_NAME: sealed_bsp_chunks(project_root, tile_id, lock_record),
             COLLISION_STEP_NAME: sealed_collision(project_root, tile_id, lock_record), MOVER_STEP_NAME: sealed_movers(project_root, tile_id, lock_record),
             BSP_VISIBILITY_STEP_NAME: sealed_bsp_visibility(project_root, tile_id, lock_record),
-            MAP_EMITTER_STEP_NAME: sealed_map_emitters(project_root, tile_id, lock_record), SKY_STEP_NAME: sealed_sky(project_root, tile_id, lock_record),
+            MAP_EMITTER_STEP_NAME: sealed_map_emitters(project_root, tile_id, lock_record),
             WORLD_AUDIO_STEP_NAME: sealed_world_audio(project_root, tile_id, lock_record),
             LIGHTING_STEP_NAME: sealed_lighting(project_root, tile_id, lock_record), MINIMAP_STEP_NAME: sealed_minimap(project_root, tile_id, lock_record),
             STATIC_MESH_MATERIALS_STEP_NAME: sealed_static_mesh_materials(project_root, tile_id, lock_record),
@@ -323,7 +317,7 @@ def tile_manifest_unit_config(terrain_unit, sealed_upstream):
             'meshesFingerprint': fingerprints[STATIC_MESH_STEP_NAME], 'bspFingerprint': fingerprints[BSP_STEP_NAME],
             'collisionFingerprint': fingerprints[COLLISION_STEP_NAME], 'moversFingerprint': fingerprints[MOVER_STEP_NAME],
             'bspVisibilityFingerprint': fingerprints[BSP_VISIBILITY_STEP_NAME], 'emittersFingerprint': fingerprints[MAP_EMITTER_STEP_NAME],
-            'skyFingerprint': fingerprints[SKY_STEP_NAME], 'audioFingerprint': fingerprints[WORLD_AUDIO_STEP_NAME],
+            'audioFingerprint': fingerprints[WORLD_AUDIO_STEP_NAME],
             'lightingFingerprint': fingerprints[LIGHTING_STEP_NAME], 'minimapFingerprint': fingerprints[MINIMAP_STEP_NAME],
             'staticMeshMaterialsFingerprint': fingerprints[STATIC_MESH_MATERIALS_STEP_NAME],
             'terrainMaterialFingerprint': fingerprints[TERRAIN_MATERIAL_STEP_NAME]}

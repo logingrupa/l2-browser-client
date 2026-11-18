@@ -16,7 +16,7 @@ from native_store.verified_file_writes import CatalogWriteError, immutable_write
 
 KNOWN_CATALOG_SLICES = ('models', 'textures', 'sections', 'movers', 'npcProfiles', 'playerProfiles',
                         'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles', 'tables', 'windows',
-                        'materialPrograms', 'fonts', 'environments')
+                        'materialPrograms', 'fonts', 'environments', 'skies')
 NATIVE_RESOURCE_PATH_PATTERN = re.compile(r'^\/l2\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$')
 MAXIMUM_CATALOG_BYTES = 32 * 1024 * 1024
 MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
@@ -42,6 +42,9 @@ FONT_MANIFEST_MAXIMUM_BYTES = 1_000_000
 ENVIRONMENT_RECORD_ID_PATTERN = re.compile(r'^interlude$')
 ENVIRONMENT_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/environments/(?P<sha256>[a-f0-9]{64})/manifest\.json$')
 ENVIRONMENT_MANIFEST_MAXIMUM_BYTES = 1_000_000
+SKY_RECORD_ID_PATTERN = re.compile(r'^skylevel$')
+SKY_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/skies/(?P<sha256>[a-f0-9]{64})/manifest\.json$')
+SKY_MANIFEST_MAXIMUM_BYTES = 1_000_000
 PINNED_MANIFEST_RECORD_FIELDS = ('id', 'manifest', 'manifestSha256', 'manifestBytes')
 TABLE_RECORD_FIELDS = (*PINNED_MANIFEST_RECORD_FIELDS, 'recordCount', 'sourceSha256')
 NATIVE_RESOURCE_PREFIX = '/l2/'
@@ -76,6 +79,7 @@ PINNED_MANIFEST_RECORD_SHAPES = {
     'fonts': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, FONT_RECORD_ID_PATTERN, FONT_MANIFEST_PATH_PATTERN, FONT_MANIFEST_MAXIMUM_BYTES),
     'environments': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, ENVIRONMENT_RECORD_ID_PATTERN, ENVIRONMENT_MANIFEST_PATH_PATTERN,
                                               ENVIRONMENT_MANIFEST_MAXIMUM_BYTES),
+    'skies': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, SKY_RECORD_ID_PATTERN, SKY_MANIFEST_PATH_PATTERN, SKY_MANIFEST_MAXIMUM_BYTES),
 }
 
 

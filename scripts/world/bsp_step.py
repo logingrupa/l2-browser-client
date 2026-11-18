@@ -10,7 +10,7 @@ from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
-from world.bsp_chunk_geometry import (BSP_POLY_FLAGS_PATH, BspPolygonError, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb, chunk_bsp_record,
+from world.bsp_chunk_geometry import (BspPolygonError, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb, chunk_bsp_record,
                                       drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon)
 from world.bsp_lightmaps import lightmap_texture_of_record, read_bsp_lightmaps
 from world.bsp_material_mapping_size import surface_material_identities
@@ -45,10 +45,6 @@ def bsp_ledger(project_root):
 
 def chunk_bsp_store_path(glb_sha256):
     return f'maps/{glb_sha256}/{CHUNK_BSP_FOLDER}/{CHUNK_BSP_RESOURCE_NAME}'
-
-
-def poly_flags_recipe_sha256():
-    return sha256_hex(canonical_json_bytes(json.loads(BSP_POLY_FLAGS_PATH.read_text(encoding='utf-8'))))
 
 
 def tile_level_model_layout(raw_products):

@@ -1,14 +1,19 @@
+from pathlib import Path
+import sys
+
+SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
 import argparse
+from collections import Counter
 import hashlib
 import json
-import sys
-from pathlib import Path
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPOSITORY_ROOT / 'scripts'))
 from world.export_day_night_fixtures import DEFAULT_OUTPUT_DIRECTORY, read_pinned_json, require, require_output_directory_inside_fixtures
 
 SHARED_SKY_PASSES_SHA256 = '7cc8a82e1d5e222d6a652127768bcdad5aab25e53caa598f51d65d0603b95e22'
+SHARED_SKYLEVEL_DECODE_SHA256 = '6a7899f97b8678185ec3fa17a2540a78d1277ce4141cdb035a6e765bb9aed33b'
 FIXTURES_OUTPUT_NAME = 'shared-sky-rm21-fixtures.json'
 LOCAL_SKY_OVERRIDE_PART = 'materials/local-sky-override-part.json'
 PASS_STATE_PART = 'passes/passes-part.json'
@@ -18,6 +23,9 @@ FRAME_BUFFER_BLENDING_FUNCTION = 'FinalBlend framebuffer branch0x1000f4e2'
 KEPT_ACTOR_FIELDS = ('actor', 'exportIndex', 'referencePoint', 'hour', 'selectedTimes', 'nativeSpatialWeight', 'nativeHourWeight', 'runningRGB')
 KEPT_CROSS_CHECK_FIELDS = ('map', 'hour', 'materialRGB', 'fogRGB', 'depth', 'fogWeight', 'unquantizedRGB', 'observedRGB')
 KEPT_PASS_OUTPUT_FIELDS = ('srcBlend', 'destBlend', 'fogOverride', 'fogBGRA')
+KEPT_MATERIAL_FIELDS = ('object', 'exportIndex', 'authoredOrDefaultColorBGRA', 'AlphaBlend', 'RenderTwoSided', 'shaderOutputBlending', 'hasOpacity',
+                        'referencedBySharedSkyBSP')
+KEPT_PIXEL_GEOMETRY_FIELDS = ('nodeIndex', 'surfaceIndex', 'pointIndices', 'cameraDepth')
 OUTPUT_BLENDING_COUNT = 7
 FRAME_BUFFER_BLENDING_COUNT = 9
 
@@ -60,31 +68,65 @@ def fog_cross_check(fixtures):
     return kept_fields(matches[0], KEPT_CROSS_CHECK_FIELDS, FOG_CROSS_CHECK_KIND)
 
 
-def shared_sky_fixtures_document(answer):
+def sky_zone_of_decode(decode):
+    sky_zones = [zone for zone in decode['zones'] if zone['actor'] is not None and zone['actor'].endswith('.SkyZoneInfo0')]
+    require(len(sky_zones) == 1, f'the RM-18 skylevel decode holds {len(sky_zones)} SkyZoneInfo0 zones, not 1')
+    actor = next((actor for actor in decode['actors'] if actor['exportIndex'] == sky_zones[0]['actorIndex']), None)
+    require(actor is not None and 'Location' in actor['values'], 'the RM-18 skylevel decode holds no Location of its SkyZoneInfo0 actor')
+    return {'zoneIndex': sky_zones[0]['zoneIndex'], 'actor': actor['object'], 'exportIndex': actor['exportIndex'], 'location': actor['values']['Location'],
+            'drawScale': actor['values'].get('DrawScale'), 'serializesRotation': 'Rotation' in actor['values']}
+
+
+def decoded_node_points(decode, node_index):
+    node = decode['nodes'][node_index]
+    require(node['nodeIndex'] == node_index, f'the RM-18 skylevel decode node list is not indexed by node at {node_index}')
+    return {'nodeIndex': node_index, 'surfaceIndex': node['surfaceIndex'], 'material': node['material'], 'zones': node['zones'],
+            'points': [{'pointIndex': vertex['pointIndex'], 'position': vertex['position']} for vertex in node['vertices']]}
+
+
+def shared_skylevel(answer, decode):
+    pixel_geometry = kept_fields(answer['pixelGeometry'], KEPT_PIXEL_GEOMETRY_FIELDS, 'RM-21 pixelGeometry')
+    require(answer['transform']['skyEye'] == sky_zone_of_decode(decode)['location'], 'the RM-21 sky eye differs from the RM-18 SkyZoneInfo0 Location')
+    return {'source': {'file': 'sky-fog-depth-rm18/data/shared-skylevel-data.json', 'sha256': SHARED_SKYLEVEL_DECODE_SHA256,
+                       'mapSha256': decode['source']['fileSha256']},
+            'levelExportIndex': decode['levelExportIndex'], 'modelExportIndex': decode['modelExportIndex'], 'zoneCount': len(decode['zones']),
+            'surfaceCount': len(decode['surfaces']), 'nodeCount': len(decode['nodes']),
+            'skyZone': sky_zone_of_decode(decode), 'skyZoneNodeCount': sum(1 for node in decode['nodes'] if 1 in node['zones']),
+            'surfaceCountsByMaterial': dict(sorted(Counter(surface['material'] for surface in decode['surfaces']).items())),
+            'pixelGeometry': pixel_geometry, 'pixelNode': decoded_node_points(decode, pixel_geometry['nodeIndex']),
+            'usesSkyDrawScale': answer['transform']['usesSkyDrawScale'],
+            'materials': [kept_fields(material, KEPT_MATERIAL_FIELDS, f'RM-21 material {position}') for position, material in enumerate(answer['materials'])]}
+
+
+def shared_sky_fixtures_document(answer, decode):
     fixtures = answer.get('fixtures')
     require(isinstance(fixtures, list) and fixtures, 'the RM-21 answer holds no fixtures')
     return {'schemaVersion': 1, 'kind': 'shared-sky-rm21-fixtures', 'source': {'file': 'shared-sky-render-passes.json', 'sha256': SHARED_SKY_PASSES_SHA256},
             'localSkyOverride': local_sky_override(fixtures), 'fogCrossCheck': fog_cross_check(fixtures),
             'outputBlendingPasses': pass_states(fixtures, OUTPUT_BLENDING_FUNCTION, 'outputBlending', OUTPUT_BLENDING_COUNT),
-            'frameBufferBlendingPasses': pass_states(fixtures, FRAME_BUFFER_BLENDING_FUNCTION, 'frameBufferBlending', FRAME_BUFFER_BLENDING_COUNT)}
+            'frameBufferBlendingPasses': pass_states(fixtures, FRAME_BUFFER_BLENDING_FUNCTION, 'frameBufferBlending', FRAME_BUFFER_BLENDING_COUNT),
+            'sharedSkyLevel': shared_skylevel(answer, decode)}
 
 
-def write_shared_sky_fixtures(answer_path, output_directory=DEFAULT_OUTPUT_DIRECTORY):
+def export_shared_sky_fixtures(answer_path, decode_path, output_directory=DEFAULT_OUTPUT_DIRECTORY):
     output = require_output_directory_inside_fixtures(output_directory)
     answer = read_pinned_json(answer_path, SHARED_SKY_PASSES_SHA256, 'the RM-21 shared sky render passes answer')
-    data = (json.dumps(shared_sky_fixtures_document(answer), indent=1, ensure_ascii=True) + '\n').encode('utf-8')
+    decode = read_pinned_json(decode_path, SHARED_SKYLEVEL_DECODE_SHA256, 'the RM-18 shared skylevel decode')
+    data = (json.dumps(shared_sky_fixtures_document(answer, decode), indent=1, ensure_ascii=True) + '\n').encode('utf-8')
     output.mkdir(parents=True, exist_ok=True)
     (output / FIXTURES_OUTPUT_NAME).write_bytes(data)
     return {FIXTURES_OUTPUT_NAME: hashlib.sha256(data).hexdigest()}
 
 
 def main(arguments):
-    parser = argparse.ArgumentParser(description='Write the RM-21 shared sky local colour, pass state and fog fixtures into tests/fixtures/environment.')
+    parser = argparse.ArgumentParser(description='Write the RM-21 shared sky local colour, pass state, fog and skylevel fixtures into '
+                                                 'tests/fixtures/environment.')
     parser.add_argument('--answer', required=True)
+    parser.add_argument('--skylevel-decode', required=True)
     parser.add_argument('--output-directory', default=str(DEFAULT_OUTPUT_DIRECTORY))
     options = parser.parse_args(arguments)
     try:
-        written = write_shared_sky_fixtures(options.answer, options.output_directory)
+        written = export_shared_sky_fixtures(options.answer, options.skylevel_decode, options.output_directory)
     except (OSError, ValueError) as error:
         print(str(error), file=sys.stderr)
         return 1

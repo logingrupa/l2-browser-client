@@ -14,7 +14,7 @@ from native_assets_lib.texture_package_118 import PACKAGE_118_LICENSEE, PACKAGE_
 from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from ue2_package_fixture import compact, package_bytes, tag
-from world import pinned_image_decoder, sky_materials, sky_step
+from world import pinned_image_decoder, sky_materials, sky_root_conversion
 from world.sky_materials import SkyTextureUnsupported, native_texture_source, sky_material_program, sky_texture_pngs_by_node, \
     sky_texture_products_by_node
 
@@ -176,9 +176,9 @@ class SkyProgramTextureImageTests(unittest.TestCase):
         self.assertEqual((products, gap_reasons), ({}, [f'sky-texture-format-unsupported:{UNREVIEWED_FORMAT}']))
         self.assertEqual([node['image'] for node in program['nodes']], [None])
 
-    def test_the_sky_step_writes_its_programs_through_the_one_program_record_writer(self):
+    def test_the_sky_root_conversion_writes_its_programs_through_the_one_program_record_writer(self):
         self.assertFalse(hasattr(sky_materials, 'write_sky_material_program'))
-        self.assertIs(sky_step.write_material_program_record, write_material_program_record)
+        self.assertIs(sky_root_conversion.write_material_program_record, write_material_program_record)
 
 
 if __name__ == '__main__':

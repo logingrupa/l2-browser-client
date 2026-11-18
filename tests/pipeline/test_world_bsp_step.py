@@ -55,7 +55,7 @@ def two_square_model(**second):
 
 class LevelModelTests(unittest.TestCase):
     def test_a_package_outside_the_vendored_layout_is_a_gap_ready_refusal(self):
-        for summary, reason in (({'version': 118, 'licenseeVersion': 28}, 'map-version-unsupported:118'),
+        for summary, reason in (({'version': 111, 'licenseeVersion': 28}, 'map-version-unsupported:111'),
                                 ({'version': 123, 'licenseeVersion': 24}, 'map-licensee-unsupported:123/24')):
             with self.assertRaises(LevelModelLayoutError) as caught:
                 read_level_model(SimpleNamespace(summary=summary, filename='00_00.unr'))
@@ -237,23 +237,20 @@ class SurfaceMaterialsResourceTests(unittest.TestCase):
         graph = json.dumps({'package': {'file': 'SyntheticMaterials.utx', 'sha256': 'b' * 64}}).encode()
         self.payloads = {f'native-materials/{program_sha256}/graph.json': graph,
                          f'native-materials/{program_sha256}/program.json': b'{"kind": "ue2-material-program"}',
-                         f'native-materials/textures/{"c" * 64}/texture.png': synthetic_png_bytes(),
-                         f'native-materials/textures/{"d" * 64}/texture.png': synthetic_png_bytes() + b'sky'}
+                         f'native-materials/textures/{"c" * 64}/texture.png': synthetic_png_bytes()}
         for relative, payload in self.payloads.items():
             (self.store_root / relative).parent.mkdir(parents=True, exist_ok=True)
             (self.store_root / relative).write_bytes(payload)
         self.records = {relative: material_file(relative, payload) for relative, payload in self.payloads.items()}
         self.plan, self.terrain_records, self.terrain_glbs = synthetic_tile(TILE_ID, 1, 1)
 
-    def tile_files(self, bsp_files, sky_files):
+    def tile_files(self, bsp_files):
         bsp = {'chunks': {'chunk-0-0': {'resource': None, 'sha256': None, 'gapRows': []}}, 'gapRows': [], 'materialFiles': bsp_files}
-        sky = {'manifest': None, 'gapRows': [], 'materialFiles': sky_files}
-        return tile_store_files(TILE_ID, SOURCE_IDENTITY, self.plan, self.terrain_records, self.terrain_glbs, EVIDENCE, bsp=bsp, sky=sky)
+        return tile_store_files(TILE_ID, SOURCE_IDENTITY, self.plan, self.terrain_records, self.terrain_glbs, EVIDENCE, bsp=bsp)
 
-    def test_the_tile_manifest_pins_one_listing_the_store_walk_follows_to_every_material_file_of_its_bsp_and_sky(self):
+    def test_the_tile_manifest_pins_one_listing_the_store_walk_follows_to_every_material_file_of_its_bsp(self):
         paths = sorted(self.records)
-        bsp_files, sky_files = [self.records[path] for path in paths[:3]], [self.records[path] for path in paths[1:]]
-        files, record = self.tile_files(bsp_files, sky_files)
+        files, record = self.tile_files([self.records[path] for path in paths])
         tile = json.loads(files[record['manifest'].removeprefix('/l2/')])
         [resource] = [resource for resource in tile['resources'] if resource['kind'] == 'surface-materials']
         listing_payload = files[resource['manifest'].removeprefix('/l2/')]
@@ -270,14 +267,14 @@ class SurfaceMaterialsResourceTests(unittest.TestCase):
         self.assertTrue({path.casefold() for path in self.payloads} <= set(verified))
 
     def test_a_tile_without_material_files_pins_no_listing(self):
-        files, record = self.tile_files([], [])
+        files, record = self.tile_files([])
         tile = json.loads(files[record['manifest'].removeprefix('/l2/')])
         self.assertNotIn('surface-materials', [resource['kind'] for resource in tile['resources']])
 
     def test_a_material_file_named_with_two_pins_is_refused(self):
         path = sorted(self.records)[0]
         with self.assertRaisesRegex(NativeMaterialListingError, 'two different pins'):
-            self.tile_files([self.records[path]], [{**self.records[path], 'bytes': 1}])
+            self.tile_files([self.records[path], {**self.records[path], 'bytes': 1}])
 
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')

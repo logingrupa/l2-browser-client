@@ -21,7 +21,6 @@ from world.level_model import read_level_model
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
 from world.light_actors import ClassChains, reference_client_class_chains
 from world.raw_map_step import read_tile_map_lock_record
-from world.sky_step import sealed_sky
 from world.static_placement import ClassDefaults
 from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_chunk_plan import ChunkPlanStepError, read_locked_map_package
@@ -170,23 +169,20 @@ class RealMapZoneInputTests(unittest.TestCase):
             raise unittest.SkipTest(f'the real-map zone input check waits for the batch preflight: {error}')
         run_at_below_normal_priority()
 
-    def test_the_outdoor_and_sky_zone_sets_of_20_21_equal_the_sealed_bsp_and_sky_products(self):
+    def test_the_outdoor_and_sky_zone_sets_of_20_21_equal_the_sealed_bsp_product(self):
         lock_record = read_tile_map_lock_record(REAL_TILE_ID)
         try:
             _, bsp = sealed_bsp_chunks(ROOT, REAL_TILE_ID, lock_record)
-            _, sky = sealed_sky(ROOT, REAL_TILE_ID, lock_record)
         except ChunkPlanStepError as error:
             self.skipTest(f'the raw and chunk plan units of {REAL_TILE_ID} are not sealed in this lane: {error}')
-        if bsp is None or sky is None:
-            self.skipTest(f'the bsp and sky units of {REAL_TILE_ID} are not sealed in this lane')
+        if bsp is None:
+            self.skipTest(f'the bsp unit of {REAL_TILE_ID} is not sealed in this lane')
         package = read_locked_map_package(REAL_CLIENT_ROOT, REAL_TILE_ID, lock_record)
         class_defaults = ClassDefaults(scratch_work_root_with_world_class_default_cache(self.addCleanup, 'level-zones-class-defaults-'),
                                        ReferenceClientClassScripts(REAL_CLIENT_ROOT))
         zones = read_level_zones(package, read_level_model(package), class_defaults, reference_client_class_chains(class_defaults))
         self.assertEqual(sorted(outdoor_zone_indices(zones)), bsp['outdoorZones'])
         self.assertEqual(sorted(sky_zone_indices(zones)), bsp['skyZones'])
-        self.assertEqual(len(sky['skyZones']), 1)
-        self.assertTrue(set(sky['skyZones']) <= sky_zone_indices(zones))
 
 
 if __name__ == '__main__':

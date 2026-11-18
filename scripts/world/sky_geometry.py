@@ -2,9 +2,9 @@ import math
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
-from world.bsp_chunk_geometry import node_texture_coordinates
+from world.bsp_chunk_geometry import fan_triangle_indices, is_drawn_polygon_node, node_texture_coordinates
 from world.gltf_builder import GLTF_UNSIGNED_INTEGER_COMPONENT, GltfBuilder
-from world.terrain_coordinates import cross, dot, f32, subtract
+from world.terrain_coordinates import f32
 
 NATIVE_UNIT_TO_METRE_SCALE = 0.01
 GLTF_REPEAT_WRAP = 10497
@@ -27,20 +27,20 @@ class SkyRootSurface(NamedTuple):
     mapping_size: tuple
 
 
-def sky_zone_material_nodes(material_of_surface, model, zone_index):
+def sky_zone_material_nodes(material_of_surface, model, zone_index, flags):
     for node_index, node in enumerate(model.nodes):
-        if zone_index in node.i_zone:
+        if zone_index in node.i_zone and is_drawn_polygon_node(model, node, flags):
             yield node_index, material_of_surface[node.i_surf]
 
 
-def sky_zone_node_indices(material_of_surface, model, zone_index, material_identity):
-    return [node_index for node_index, identity in sky_zone_material_nodes(material_of_surface, model, zone_index)
+def sky_zone_node_indices(material_of_surface, model, zone_index, flags, material_identity):
+    return [node_index for node_index, identity in sky_zone_material_nodes(material_of_surface, model, zone_index, flags)
             if identity.casefold() == material_identity.casefold()]
 
 
-def sky_zone_material_identities(material_of_surface, model, zone_index):
+def sky_zone_material_identities(material_of_surface, model, zone_index, flags):
     identities = []
-    for _, identity in sky_zone_material_nodes(material_of_surface, model, zone_index):
+    for _, identity in sky_zone_material_nodes(material_of_surface, model, zone_index, flags):
         if identity.casefold() not in {known.casefold() for known in identities}:
             identities.append(identity)
     return identities
@@ -66,10 +66,7 @@ def append_node(part, package, model, node_index, mapping_size):
         part['positions'].extend(f32(point[axis] * NATIVE_UNIT_TO_METRE_SCALE) for axis in SOURCE_TO_BROWSER_AXES)
         part['normals'].extend(f32(normal[axis]) for axis in SOURCE_TO_BROWSER_AXES)
     part['uvs'].extend(value for coordinates in node_texture_coordinates(model, surface, points, mapping_size) for value in coordinates)
-    for corner in range(1, len(points) - 1):
-        if dot(cross(subtract(points[corner], points[0]), subtract(points[corner + 1], points[0])), normal) <= 0:
-            raise FormatError(f'sky node {node_index} fan triangle {corner} is degenerate or wound against its plane')
-        part['indices'].extend((start, start + corner + 1, start + corner))
+    part['indices'].extend(fan_triangle_indices(points, normal, start, node_index))
     part['nodeRanges'].append({'node': node_index, 'surface': node.i_surf, 'vertexStart': start, 'vertexCount': len(points),
                                'indexStart': first_index, 'indexCount': len(part['indices']) - first_index, 'nativePositions': points,
                                'nativePlane': list(node.plane), 'nativeTextureBase': list(base), 'nativeTextureU': list(texture_u),
@@ -78,13 +75,13 @@ def append_node(part, package, model, node_index, mapping_size):
                                'renderVertexOffset': node.i_vert_offset, 'lightMap': node.i_light_map})
 
 
-def build_sky_zone_parts(package, material_of_surface, model, zone_index, root_surfaces):
+def build_sky_zone_parts(package, material_of_surface, model, zone_index, flags, root_surfaces):
     parts = []
     for root in root_surfaces:
         part = {'sourceMaterial': root.source_material, 'mapReference': root.map_reference, 'positions': [], 'normals': [], 'uvs': [],
                 'indices': [], 'nodeRanges': [], 'texture': root.texture, 'mappingSize': list(root.mapping_size),
                 'authoredColorRGBA': root.authored_color_rgba, 'alphaBlend': root.alpha_blend, 'renderTwoSided': root.render_two_sided, 'alphaSource': root.alpha_source}
-        for node_index in sky_zone_node_indices(material_of_surface, model, zone_index, root.map_reference):
+        for node_index in sky_zone_node_indices(material_of_surface, model, zone_index, flags, root.map_reference):
             append_node(part, package, model, node_index, root.mapping_size)
         parts.append(part)
     return parts

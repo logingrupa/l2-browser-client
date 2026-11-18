@@ -20,11 +20,12 @@ from world.committed_world_data import REPOSITORY_ROOT, require_committed_destin
 WORLD_ORACLE_RELATIVE_PATH = 'recipes/world/oracle/20_20/expected.json'
 WORLD_ORACLE_SCHEMA_VERSION = 1
 DEFAULT_STORE_ROOT = REPOSITORY_ROOT / 'public' / 'l2'
-SKY_PIN_SOURCE_PATH = REPOSITORY_ROOT / 'src' / 'scene' / 'world' / 'nativeSkyPresentation.ts'
 SECTION_RECORD_ID = 'map-20-20-section'
 MOVERS_RECORD_ID = 'map-20-20-movers'
 ENVIRONMENT_RECORD_ID = 'interlude'
 ENVIRONMENTS_SLICE_NAME = 'environments'
+SHARED_SKY_RECORD_ID = 'skylevel'
+SKIES_SLICE_NAME = 'skies'
 WORLD_AUDIO_RECORD_IDS = ('map-20-20-ambience', 'map-20-20-music')
 STEP_SOUND_RECORD_IDS = ('stepsound-deco-grass-20-20', 'stepsound-surfaces')
 WORLD_AUDIO_SLICE_NAME = 'worldAudio'
@@ -95,13 +96,6 @@ def catalog_record(catalog, slice_name, record_id):
     return records[0]
 
 
-def typescript_pin(source_path, field_name):
-    matches = re.findall(rf'\b{field_name}: "([^"]+)"', Path(source_path).read_text(encoding='utf-8'))
-    if len(matches) != 1:
-        raise WorldOracleError(f'{Path(source_path).name} must pin {field_name} exactly once, found {len(matches)}')
-    return matches[0]
-
-
 def record_id(record):
     return record['id']
 
@@ -142,22 +136,26 @@ def section_oracle(store_root, catalog):
     }
 
 
-def sky_oracle(store_root):
-    manifest_sha256 = typescript_pin(SKY_PIN_SOURCE_PATH, 'manifestSha256')
-    source_id = typescript_pin(SKY_PIN_SOURCE_PATH, 'sourceId')
-    manifest = read_pinned_json(store_root, f'skies/{manifest_sha256}/{MANIFEST_FILE_NAME}', manifest_sha256)
-    if manifest.get('id') != source_id:
-        raise WorldOracleError(f'sky manifest id {manifest.get("id")!r} differs from the pinned sourceId {source_id}')
-    return {'manifestSha256': manifest_sha256, 'sourceId': source_id,
+ABSENT_SKY_ORACLE = {'manifestSha256': None, 'sourceId': None, 'files': []}
+ABSENT_ENVIRONMENT_ORACLE = {'manifestSha256': None, 'files': []}
+
+
+def has_catalog_record(catalog, slice_name, record_id):
+    return any(isinstance(record, dict) and record.get('id') == record_id for record in catalog.get(slice_name, []))
+
+
+def sky_oracle(store_root, catalog):
+    if not has_catalog_record(catalog, SKIES_SLICE_NAME, SHARED_SKY_RECORD_ID):
+        return ABSENT_SKY_ORACLE
+    record = catalog_record(catalog, SKIES_SLICE_NAME, SHARED_SKY_RECORD_ID)
+    manifest = read_pinned_json(store_root, store_relative_path(record['manifest']), record['manifestSha256'])
+    return {'manifestSha256': record['manifestSha256'], 'sourceId': manifest['id'],
             'files': [{'path': path, 'sha256': manifest['files'][path]['sha256'], 'bytes': manifest['files'][path]['bytes']}
                       for path in sorted(manifest['files'])]}
 
 
-ABSENT_ENVIRONMENT_ORACLE = {'manifestSha256': None, 'files': []}
-
-
 def environment_oracle(store_root, catalog):
-    if not any(isinstance(record, dict) and record.get('id') == ENVIRONMENT_RECORD_ID for record in catalog.get(ENVIRONMENTS_SLICE_NAME, [])):
+    if not has_catalog_record(catalog, ENVIRONMENTS_SLICE_NAME, ENVIRONMENT_RECORD_ID):
         return ABSENT_ENVIRONMENT_ORACLE
     record = catalog_record(catalog, ENVIRONMENTS_SLICE_NAME, ENVIRONMENT_RECORD_ID)
     manifest_relative_path = store_relative_path(record['manifest'])
@@ -218,7 +216,7 @@ def freeze_world_oracle(store_root):
     catalog = decode_json_object(catalog_payload, CATALOG_FILE_NAME)
     try:
         oracle = {'schemaVersion': WORLD_ORACLE_SCHEMA_VERSION, 'catalogSha256': sha256_hex(catalog_payload),
-                  'section': section_oracle(store_root, catalog), 'sky': sky_oracle(store_root), 'environment': environment_oracle(store_root, catalog),
+                  'section': section_oracle(store_root, catalog), 'sky': sky_oracle(store_root, catalog), 'environment': environment_oracle(store_root, catalog),
                   'movers': movers_oracle(store_root, catalog),
                   'worldAudio': pinned_manifest_oracles(store_root, catalog, WORLD_AUDIO_SLICE_NAME, WORLD_AUDIO_RECORD_IDS),
                   'stepSounds': pinned_manifest_oracles(store_root, catalog, STEP_SOUND_SLICE_NAME, STEP_SOUND_RECORD_IDS)}

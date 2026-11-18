@@ -359,15 +359,18 @@ class SyntheticWorldTile:
         self.program_sha256 = sha256_hex(self.program)
         program_pins = [native_material_program_pin(self.program_sha256)] if program_pins is None else program_pins
         self.sky_members = {'sky.glb': synthetic_glb_with_materials([{'name': 'sky'}]), 'WhiteCloud.png': b'synthetic sky texture bytes'}
-        sky_manifest = json_bytes({'schemaVersion': 1, 'kind': 'native-tile-sky', 'layout': {'files': {'sky.json': 'evidence text, not a pin'}},
-                                   'files': {name: {'bytes': len(payload), 'sha256': sha256_hex(payload)} for name, payload in self.sky_members.items()}})
-        self.sky_folder = f'skies/{sha256_hex(sky_manifest)}'
+        self.sky_manifest = json_bytes({'schemaVersion': 1, 'kind': 'native-shared-sky-bundle', 'layout': {'files': {'sky.json': 'evidence text, not a pin'}},
+                                        'files': {name: {'bytes': len(payload), 'sha256': sha256_hex(payload)} for name, payload in self.sky_members.items()}})
+        self.sky_folder = f'skies/{sha256_hex(self.sky_manifest)}'
+        self.sky_record = {'id': 'skylevel', 'manifest': f'/l2/{self.sky_folder}/manifest.json', 'manifestSha256': sha256_hex(self.sky_manifest),
+                           'manifestBytes': len(self.sky_manifest)}
         self.bsp_glb = synthetic_glb_with_materials([{'name': 'surface', 'extras': {'nativeMaterialProgram': pin}} for pin in program_pins])
         self.bsp_relative = f'native-tile-chunk-bsp/{sha256_hex(self.bsp_glb)}/bsp.glb'
         chunk_manifest = json_bytes({'bsp': {'resource': f'/l2/{self.bsp_relative}', 'sha256': sha256_hex(self.bsp_glb)}})
         collision_manifest = json_bytes({'tileId': '15_20'})
         self.record, self.tile_files = runtime_tile_record_and_files('15_20', chunk_manifest,
-                                                                     {'native-tile-collision': collision_manifest, 'sky': sky_manifest})
+                                                                     {'native-tile-collision': collision_manifest})
+        write_file(store_root / self.sky_folder / 'manifest.json', self.sky_manifest)
         for resource_path, payload in self.tile_files.items():
             write_file(store_root / resource_path[len(NATIVE_RESOURCE_PREFIX):], payload)
         for name, payload in self.sky_members.items():
@@ -376,14 +379,14 @@ class SyntheticWorldTile:
         write_file(store_root / f'native-materials/{self.program_sha256}/program.json', self.program)
 
     def catalog(self, source_catalog_sha256=None):
-        catalog = {'schemaVersion': 1, 'models': [], 'tiles': [self.record]}
+        catalog = {'schemaVersion': 1, 'models': [], 'tiles': [self.record], 'skies': [self.sky_record]}
         if source_catalog_sha256 is not None:
             catalog['sourceCatalogSha256'] = source_catalog_sha256
         return catalog
 
     def runtime_relative_paths(self):
         return sorted([*(resource_path[len(NATIVE_RESOURCE_PREFIX):] for resource_path in self.tile_files),
-                       *(f'{self.sky_folder}/{name}' for name in self.sky_members), self.bsp_relative,
+                       *(f'{self.sky_folder}/{name}' for name in (*self.sky_members, 'manifest.json')), self.bsp_relative,
                        f'native-materials/{self.program_sha256}/program.json'])
 
 
@@ -392,12 +395,12 @@ class WorldTileRuntimePinTests(TemporaryStoreTestCase):
         super().setUp()
         self.store_root = self.temporary_root / 'lane' / 'l2'
 
-    def test_the_walk_reaches_sky_bundle_files_named_by_a_files_map_and_material_programs_named_by_glb_extras(self):
+    def test_the_walk_reaches_shared_sky_bundle_files_named_by_a_files_map_and_material_programs_named_by_glb_extras(self):
         tile = SyntheticWorldTile(self.store_root)
         verified_store_file_by_key = verify_pinned_store_files(self.store_root, tile.catalog(), POOLED_WALK_WORKER_COUNT)
         self.assertEqual(sorted(relative for relative, _ in verified_store_file_by_key.values()), tile.runtime_relative_paths())
 
-    def test_the_merge_copies_the_sky_glb_and_the_material_program_the_browser_fetches(self):
+    def test_the_merge_copies_the_shared_sky_glb_and_the_material_program_the_browser_fetches(self):
         tile = SyntheticWorldTile(self.store_root)
         write_file(self.store_root / 'catalog.json', json_bytes(tile.catalog(sha256_hex(GOLDEN_CATALOG_BYTES))))
         target_root = self.temporary_root / 'target' / 'l2'

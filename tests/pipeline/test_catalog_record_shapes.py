@@ -34,7 +34,7 @@ SKILL_EFFECT_COMPONENT_PATTERN = re.compile(r'^interlude:skill:(\d+):level:(\d+)
 LEGACY_SECTION_TILE_PATTERN = re.compile(r'^map-(\d{2})-(\d{2})-section$')
 FIRST_WORLD_VOCABULARY = {'schemaVersion': 1, 'listVersion': 1, 'resourceKinds': [], 'maskUvRules': []}
 MOVERS_VOCABULARY = {'schemaVersion': 1, 'listVersion': 2, 'resourceKinds': ['movers'], 'maskUvRules': []}
-FOUR_KIND_VOCABULARY = {'schemaVersion': 1, 'listVersion': 5, 'resourceKinds': ['movers', 'sky', 'world-audio', 'minimap'], 'maskUvRules': []}
+FOUR_KIND_VOCABULARY = {'schemaVersion': 1, 'listVersion': 5, 'resourceKinds': ['movers', 'map-emitters', 'world-audio', 'minimap'], 'maskUvRules': []}
 FILE_IMPORT_REFUSAL_SCRIPT = '''
 import builtins, io, pathlib, sys
 import copy, hashlib, json, math, os, re, stat, tempfile, typing
@@ -251,7 +251,7 @@ class TileManifestVocabularyTests(unittest.TestCase):
 
     def test_four_kind_shape_accepts_every_kind_in_kind_and_manifest_order(self):
         vocabulary = load_tile_manifest_vocabulary(write_vocabulary_root(self, FOUR_KIND_VOCABULARY))
-        resources = [pinned_resource('minimap', SHA256_A), pinned_resource('movers', SHA256_A), pinned_resource('sky', SHA256_A),
+        resources = [pinned_resource('map-emitters', SHA256_A), pinned_resource('minimap', SHA256_A), pinned_resource('movers', SHA256_A),
                      pinned_resource('world-audio', SHA256_A), pinned_resource('world-audio', SHA256_B)]
         manifest = changed(GOLDEN_TILE_MANIFEST, resources=resources)
         self.assertEqual(validate_tile_manifest(manifest, vocabulary), manifest)
@@ -312,12 +312,15 @@ class TileManifestValidationTests(unittest.TestCase):
                               'twice'),
             'two minimap resources': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('minimap', SHA256_A), pinned_resource('minimap', SHA256_B)]),
                                       'lists more than one minimap resource'),
-            'two sky resources': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('sky', SHA256_A), pinned_resource('sky', SHA256_A)]),
-                                  'lists more than one sky resource'),
-            'sky outside its template': (changed(GOLDEN_TILE_MANIFEST, resources=[changed(pinned_resource('sky', SHA256_A), manifest=f'/l2/{SHA256_A}/x.json')]),
-                                         r'sky resource manifest path must match \^/l2/skies/'),
-            'sky under another kind folder': (changed(GOLDEN_TILE_MANIFEST, resources=[
-                changed(pinned_resource('sky', SHA256_A), manifest=pinned_resource('minimap', SHA256_A)['manifest'])]), 'sky resource manifest path must match'),
+            'two map emitter resources': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('map-emitters', SHA256_A),
+                                                                                   pinned_resource('map-emitters', SHA256_A)]),
+                                          'lists more than one map-emitters resource'),
+            'map emitters outside their template': (changed(GOLDEN_TILE_MANIFEST, resources=[
+                changed(pinned_resource('map-emitters', SHA256_A), manifest=f'/l2/{SHA256_A}/x.json')]),
+                r'map-emitters resource manifest path must match \^/l2/map\\-emitters/'),
+            'map emitters under another kind folder': (changed(GOLDEN_TILE_MANIFEST, resources=[
+                changed(pinned_resource('map-emitters', SHA256_A), manifest=pinned_resource('minimap', SHA256_A)['manifest'])]),
+                'map-emitters resource manifest path must match'),
             'other tile gap': (changed(GOLDEN_TILE_MANIFEST, gaps=[changed(GOLDEN_CHUNK_MANIFEST['gaps'][0], key='tile:00_01')]),
                                'must be keyed tile:00_00'),
             'extra key': (changed(GOLDEN_TILE_MANIFEST, models=[]), 'must hold exactly'),

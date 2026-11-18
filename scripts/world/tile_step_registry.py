@@ -8,7 +8,6 @@ from world.map_emitter_step import MAP_EMITTER_STEP_NAME, run_map_emitter_step
 from world.minimap_step import MINIMAP_STEP_NAME, run_minimap_step
 from world.mover_step import MOVER_STEP_NAME, run_mover_step
 from world.raw_map_step import RAW_STEP_NAME, run_raw_map_step
-from world.sky_step import SKY_STEP_NAME, run_sky_step
 from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME, run_static_mesh_materials_step
 from world.static_mesh_step import STATIC_MESH_STEP_NAME, run_static_mesh_step
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, run_terrain_chunk_step
@@ -26,7 +25,7 @@ def source_tile_step_runners():
             TERRAIN_MATERIAL_STEP_NAME: run_terrain_material_step,
             BSP_STEP_NAME: run_bsp_step, MOVER_STEP_NAME: run_mover_step,
             COLLISION_STEP_NAME: run_collision_step, MAP_EMITTER_STEP_NAME: run_map_emitter_step,
-            BSP_VISIBILITY_STEP_NAME: run_bsp_visibility_step, SKY_STEP_NAME: run_sky_step,
+            BSP_VISIBILITY_STEP_NAME: run_bsp_visibility_step,
             WORLD_AUDIO_STEP_NAME: run_world_audio_step, LIGHTING_STEP_NAME: run_lighting_step,
             MINIMAP_STEP_NAME: run_minimap_step}
 

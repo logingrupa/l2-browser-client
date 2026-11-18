@@ -7,9 +7,9 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from world import sky_step
+from world import sky_root_conversion
 from world.bsp_material_mapping_size import MAPPING_SIZE_ZERO_REASON, MaterialMappingSize
-from world.sky_step import SkyRootConversion
+from world.sky_root_conversion import SkyRootConversion
 
 SKY_MATERIAL = 'Sky_T.Shaders.Haze'
 SKY_TEXTURE = 'Sky_T.Textures.Ring'
@@ -33,14 +33,14 @@ class SkyRootMappingSizeTests(unittest.TestCase):
                         'write_material_texture_images': mock.Mock(return_value=[]),
                         'single_graph_texture_export': mock.Mock(return_value={'object': SKY_TEXTURE})}
         for name, replacement in replacements.items():
-            patcher = mock.patch.object(sky_step, name, replacement)
+            patcher = mock.patch.object(sky_root_conversion, name, replacement)
             patcher.start()
             self.addCleanup(patcher.stop)
         self.gaps = mock.Mock()
         self.conversion = SkyRootConversion('client', 'store', 'work', self.gaps)
 
     def converted_root(self, mapping_outcome):
-        with mock.patch.object(sky_step, 'mapping_size_outcome', return_value=mapping_outcome) as outcome:
+        with mock.patch.object(sky_root_conversion, 'mapping_size_outcome', return_value=mapping_outcome) as outcome:
             root = self.conversion.convert(SKY_MATERIAL)
         self.assertEqual(outcome.call_args.args[:2], (SKY_MATERIAL, self.conversion.packages))
         return root

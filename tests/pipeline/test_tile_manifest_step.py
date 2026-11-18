@@ -59,7 +59,7 @@ def lane_store_fixture_tile():
 
 
 UPSTREAM_PRODUCT_FUNCTIONS = {'meshes': 'sealed_static_meshes', 'bsp': 'sealed_bsp_chunks', 'collision': 'sealed_collision', 'movers': 'sealed_movers',
-                              'bsp-visibility': 'sealed_bsp_visibility', 'emitters': 'sealed_map_emitters', 'sky': 'sealed_sky', 'audio': 'sealed_world_audio',
+                              'bsp-visibility': 'sealed_bsp_visibility', 'emitters': 'sealed_map_emitters', 'audio': 'sealed_world_audio',
                               'lighting': 'sealed_lighting', 'minimap': 'sealed_minimap', 'static-mesh-materials': 'sealed_static_mesh_materials',
                               'terrain-material': 'sealed_terrain_material'}
 
@@ -81,7 +81,7 @@ def sealed_upstream_products(chunk_ids):
                           'gapRows': []},
             'movers': {'manifest': None, 'gapRows': []},
             'bsp-visibility': {'resource': pinned_resource('/l2/maps/<sha256>/native-tile-bsp-visibility/asset.json', 'visibility'), 'gapRows': []},
-            'emitters': {'manifest': None, 'gapRows': []}, 'sky': {'manifest': None, 'materialFiles': [], 'gapRows': []},
+            'emitters': {'manifest': None, 'gapRows': []},
             'audio': {'manifests': [], 'gapRows': []},
             'lighting': {'resource': pinned_resource('/l2/maps/<sha256>/native-tile-lighting/asset.json', 'lighting'), 'gapRows': []},
             'minimap': {'manifest': pinned_resource('/l2/maps/<sha256>/native-tile-minimap/manifest.json', 'minimap'), 'gapRows': []},
@@ -180,8 +180,8 @@ class TileManifestTests(unittest.TestCase):
             tile_store_files(REAL_TILE_ID, REAL_SOURCE_IDENTITY, plan, list(reversed(records)), glbs, EVIDENCE)
 
     def test_the_step_constants(self):
-        self.assertEqual((TILE_MANIFEST_STEP_ALGORITHM_VERSION, TILE_CATALOG_CAPACITY), (15, 163))
-        self.assertEqual(PENDING_TILE_STEPS, ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'sky', 'audio', 'lighting', 'minimap',
+        self.assertEqual((TILE_MANIFEST_STEP_ALGORITHM_VERSION, TILE_CATALOG_CAPACITY), (16, 163))
+        self.assertEqual(PENDING_TILE_STEPS, ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'audio', 'lighting', 'minimap',
                                               'terrain-material', 'static-mesh-materials'))
 
 

@@ -17,7 +17,7 @@ from world.freeze_world_oracle import (WORLD_ORACLE_RELATIVE_PATH, WorldOracleEr
 SHARED_STORE_ROOT = ROOT / 'public' / 'l2'
 COMMITTED_ORACLE_PATH = ROOT / WORLD_ORACLE_RELATIVE_PATH
 IDENTITY_MATRIX = [1.0, 0.0, 0.0, 0, 0.0, 1.0, 0.0, 0, 0.0, 0.0, 1.0, 0, 1.5, -2.25, 3.0, 1]
-SYNTHETIC_SKY_SOURCE_ID = 'interlude:99_99.Model1.SkyZoneInfo0'
+SYNTHETIC_SKY_SOURCE_ID = 'interlude:skylevel.Model1.SkyZoneInfo0'
 
 
 def json_payload(document):
@@ -61,6 +61,8 @@ class SyntheticOracleStore:
                                                                  'sky.glb': {'sha256': fake_hash('sky-glb'), 'bytes': 8}}}
         self.sky_payload = json_payload(sky_manifest)
         self.write(f'skies/{sha256_hex(self.sky_payload)}/manifest.json', self.sky_payload)
+        self.sky_record = {'id': 'skylevel', 'manifest': f'/l2/skies/{sha256_hex(self.sky_payload)}/manifest.json',
+                           'manifestSha256': sha256_hex(self.sky_payload), 'manifestBytes': len(self.sky_payload)}
         conversion_payload = json_payload({'kind': 'synthetic-environment-conversion'})
         environment_manifest_payload = json_payload({
             'conversionManifest': {'file': 'conversion-manifest.json', 'sha256': sha256_hex(conversion_payload), 'bytes': len(conversion_payload)},
@@ -87,7 +89,6 @@ class SyntheticOracleStore:
         self.write_pinned_manifest('animationAudio', 'stepsound-deco-grass-20-20', 'native-stepsound-deco-grass', 'step-sounds',
                                    {'layers': [{'file': 'deco.bin', 'sha256': fake_hash('deco'), 'bytes': 9}]})
         self.write_catalog()
-        self.write_pins(test_case)
 
     def write_pinned_manifest(self, slice_name, record_id, kind, folder, manifest, manifest_bytes=None):
         payload = json_payload(manifest)
@@ -127,18 +128,10 @@ class SyntheticOracleStore:
                           'manifest': f'/l2/maps/{self.section_sha256}/map-section-runtime/manifest.json'}],
             'movers': [{'id': 'map-20-20-movers', 'manifestSha256': self.movers_sha256, 'manifest': f'/l2/movers/{self.movers_sha256}/movers.json',
                         'sourceMapSha256': fake_hash('map'), 'terrainSha256': fake_hash('terrain')}],
-            'worldAudio': [], 'animationAudio': [], 'environments': [self.environment_record]}
+            'worldAudio': [], 'animationAudio': [], 'environments': [self.environment_record], 'skies': [self.sky_record]}
         for slice_name, record in self.pinned_manifest_records.values():
             catalog[slice_name].append(record)
         self.write('catalog.json', json_payload(catalog))
-
-    def write_pins(self, test_case):
-        sky_pins = self.folder / 'nativeSkyPresentation.ts'
-        sky_pins.write_text(f'export const nativeSkySource = {{\n  manifestSha256: "{sha256_hex(self.sky_payload)}",\n'
-                            f'  sourceId: "{SYNTHETIC_SKY_SOURCE_ID}",\n}} as const;\n', encoding='utf-8')
-        patcher = patch.object(world_oracle, 'SKY_PIN_SOURCE_PATH', sky_pins)
-        patcher.start()
-        test_case.addCleanup(patcher.stop)
 
 
 class SyntheticWorldOracleTests(unittest.TestCase):
@@ -176,6 +169,11 @@ class SyntheticWorldOracleTests(unittest.TestCase):
         _, music_record = self.store.pinned_manifest_records['map-20-20-music']
         self.assertEqual((oracle['worldAudio'][1]['manifestSha256'], oracle['worldAudio'][1]['manifestBytes']),
                          (music_record['manifestSha256'], music_record['manifestBytes']))
+
+    def test_a_catalog_without_the_shared_sky_record_freezes_an_absent_sky(self):
+        self.store.sky_record = {**self.store.sky_record, 'id': 'other'}
+        self.store.write_catalog()
+        self.assertEqual(freeze_world_oracle(self.store.root)['sky'], {'manifestSha256': None, 'sourceId': None, 'files': []})
 
     def test_a_catalog_without_the_environments_record_freezes_an_absent_environment(self):
         self.store.environment_record = {**self.store.environment_record, 'id': 'other'}
@@ -288,9 +286,9 @@ class CommittedWorldOracleTests(unittest.TestCase):
                           len(section['unsupportedRuntimeMaterialIds'])), ('2e73654e', 62, 157, 1, 1))
         self.assertEqual([bsp['id'] for bsp in section['bsp']], ['interlude:20_20.Model798.Brush397', 'interlude:20_20.Model798.Brush610.ceiling',
                                                                  'interlude:20_20.Model798.Brush610.floor', 'interlude:20_20.Model798.Brush610.walls'])
-        self.assertEqual((self.oracle['sky']['manifestSha256'][:8], self.oracle['environment'],
+        self.assertEqual((self.oracle['sky']['manifestSha256'], self.oracle['environment'],
                           self.oracle['movers']['manifestSha256'][:8], len(self.oracle['movers']['moverIds']), len(self.oracle['movers']['modelIds'])),
-                         ('f7a0b5ef', {'manifestSha256': None, 'files': []}, '0de5d083', 8, 2))
+                         (None, {'manifestSha256': None, 'files': []}, '0de5d083', 8, 2))
         pinned_manifests = self.oracle['worldAudio'] + self.oracle['stepSounds']
         self.assertEqual([(record['recordId'], record['manifestSha256'][:8], record['manifestBytes'], record['pinnedFileCount'], record['pinnedFileBytes'])
                           for record in pinned_manifests],

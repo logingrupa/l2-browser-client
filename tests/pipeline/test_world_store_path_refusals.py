@@ -16,11 +16,11 @@ from support.synthetic_texture_sources import use_synthetic_textures_without_a_n
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
-from world import material_texture_images, sky_step, surface_material_programs
+from world import material_texture_images, sky_root_conversion, surface_material_programs
 from world.bsp_material_mapping_size import MAPPING_SIZE_ZERO_REASON
 from world.bsp_step import BSP_STEP_NAME, bsp_ledger, run_bsp_step
 from world.bsp_surface_materials import convert_surface_material
-from world.sky_step import SkyRootConversion
+from world.sky_root_conversion import SkyRootConversion
 from world.tile_step_current_seals import TILE_STEP_SEAL_CHECKS
 from world.tile_step_workers import TileStepRun
 
@@ -94,7 +94,7 @@ class SkyMaterialStorePathRefusalTests(unittest.TestCase):
                         'sky_texture_pngs_by_node': mock.Mock(return_value={}), 'sky_material_program': mock.Mock(return_value={}),
                         'write_material_program_record': mock.Mock(return_value=({}, [])), 'write_material_texture_images': mock.Mock(return_value=[])}
         for name, replacement in replacements.items():
-            patcher = mock.patch.object(sky_step, name, replacement)
+            patcher = mock.patch.object(sky_root_conversion, name, replacement)
             patcher.start()
             self.addCleanup(patcher.stop)
         self.gaps = mock.Mock()
@@ -102,14 +102,14 @@ class SkyMaterialStorePathRefusalTests(unittest.TestCase):
 
     def test_a_store_path_refusal_while_a_sky_material_is_published_is_raised_and_adds_no_gap_row(self):
         for publisher_name, refusal in PUBLISH_REFUSALS:
-            with self.subTest(publisher=publisher_name), mock.patch.object(sky_step, publisher_name, side_effect=refusal):
+            with self.subTest(publisher=publisher_name), mock.patch.object(sky_root_conversion, publisher_name, side_effect=refusal):
                 with self.assertRaises(StorePathError) as raised:
                     self.conversion.convert(SKY_MATERIAL)
                 self.assertIs(raised.exception, refusal)
         self.gaps.add.assert_not_called()
 
     def test_a_conversion_refusal_that_is_no_store_path_refusal_stays_a_failed_gap_row(self):
-        with mock.patch.object(sky_step, 'write_material_program_record', side_effect=ValueError('synthetic conversion refusal')):
+        with mock.patch.object(sky_root_conversion, 'write_material_program_record', side_effect=ValueError('synthetic conversion refusal')):
             self.assertIsNone(self.conversion.convert(SKY_MATERIAL))
         self.gaps.add.assert_called_once_with('failed', 'decode-failed:ValueError:synthetic conversion refusal', SKY_MATERIAL)
 

@@ -462,5 +462,231 @@
     0
    ]
   }
- ]
+ ],
+ "sharedSkyLevel": {
+  "source": {
+   "file": "sky-fog-depth-rm18/data/shared-skylevel-data.json",
+   "sha256": "6a7899f97b8678185ec3fa17a2540a78d1277ce4141cdb035a6e765bb9aed33b",
+   "mapSha256": "5ecfe78912a21f15783b78aee1b9d9542781ef11bb8a8c813868959f5157152f"
+  },
+  "levelExportIndex": 68,
+  "modelExportIndex": 61,
+  "zoneCount": 2,
+  "surfaceCount": 1372,
+  "nodeCount": 4970,
+  "skyZone": {
+   "zoneIndex": 1,
+   "actor": "skylevel.SkyZoneInfo0",
+   "exportIndex": 13,
+   "location": [
+    324.68359375,
+    264435.34375,
+    24536.03125
+   ],
+   "drawScale": 0.05000000074505806,
+   "serializesRotation": false
+  },
+  "skyZoneNodeCount": 4861,
+  "surfaceCountsByMaterial": {
+   "L2_Skies.Shaders.Cloud_Final01_sh": 18,
+   "L2_Skies.Shaders.Cloud_Final02_sh": 648,
+   "L2_Skies.Shaders.Cloud_Final03_sh": 192,
+   "L2_Skies.Shaders.Cloud_Final10_sh": 32,
+   "L2_Skies.Shaders.HazeRing_Final": 45,
+   "L2_Skies.Shaders.SkybackgroundColor": 5,
+   "L2_Skies.Shaders.StarField_Final01": 432
+  },
+  "pixelGeometry": {
+   "nodeIndex": 6,
+   "surfaceIndex": 3,
+   "pointIndices": [
+    1326,
+    1325,
+    1332,
+    1331
+   ],
+   "cameraDepth": 571.34375
+  },
+  "pixelNode": {
+   "nodeIndex": 6,
+   "surfaceIndex": 3,
+   "material": "L2_Skies.Shaders.SkybackgroundColor",
+   "zones": [
+    0,
+    1
+   ],
+   "points": [
+    {
+     "pointIndex": 1326,
+     "position": [
+      -117.0,
+      263864.0,
+      24534.5
+     ]
+    },
+    {
+     "pointIndex": 1325,
+     "position": [
+      -117.0,
+      263864.0,
+      25187.5
+     ]
+    },
+    {
+     "pointIndex": 1332,
+     "position": [
+      715.0,
+      263864.0,
+      25187.5
+     ]
+    },
+    {
+     "pointIndex": 1331,
+     "position": [
+      715.0,
+      263864.0,
+      24534.5
+     ]
+    }
+   ]
+  },
+  "usesSkyDrawScale": false,
+  "materials": [
+   {
+    "object": "l2_skies.Shaders.Cloud_Final10_sh",
+    "exportIndex": 62,
+    "authoredOrDefaultColorBGRA": [
+     151,
+     192,
+     255,
+     255
+    ],
+    "AlphaBlend": true,
+    "RenderTwoSided": false,
+    "shaderOutputBlending": 3,
+    "hasOpacity": false,
+    "referencedBySharedSkyBSP": true
+   },
+   {
+    "object": "l2_skies.Shaders.Cloud_Final01_sh",
+    "exportIndex": 63,
+    "authoredOrDefaultColorBGRA": [
+     151,
+     192,
+     255,
+     255
+    ],
+    "AlphaBlend": true,
+    "RenderTwoSided": false,
+    "shaderOutputBlending": 0,
+    "hasOpacity": true,
+    "referencedBySharedSkyBSP": true
+   },
+   {
+    "object": "l2_skies.Shaders.Cloud_Final03_sh",
+    "exportIndex": 65,
+    "authoredOrDefaultColorBGRA": [
+     151,
+     192,
+     255,
+     255
+    ],
+    "AlphaBlend": true,
+    "RenderTwoSided": false,
+    "shaderOutputBlending": 0,
+    "hasOpacity": true,
+    "referencedBySharedSkyBSP": true
+   },
+   {
+    "object": "l2_skies.Shaders.StarField_Final01",
+    "exportIndex": 66,
+    "authoredOrDefaultColorBGRA": [
+     255,
+     255,
+     255,
+     255
+    ],
+    "AlphaBlend": true,
+    "RenderTwoSided": true,
+    "shaderOutputBlending": 3,
+    "hasOpacity": false,
+    "referencedBySharedSkyBSP": true
+   },
+   {
+    "object": "l2_skies.Shaders.Cloud_Final02_sh",
+    "exportIndex": 67,
+    "authoredOrDefaultColorBGRA": [
+     151,
+     192,
+     255,
+     255
+    ],
+    "AlphaBlend": true,
+    "RenderTwoSided": false,
+    "shaderOutputBlending": 0,
+    "hasOpacity": true,
+    "referencedBySharedSkyBSP": true
+   },
+   {
+    "object": "l2_skies.Shaders.HazeRing_Final",
+    "exportIndex": 76,
+    "authoredOrDefaultColorBGRA": [
+     149,
+     228,
+     255,
+     255
+    ],
+    "AlphaBlend": true,
+    "RenderTwoSided": false,
+    "shaderOutputBlending": 0,
+    "hasOpacity": true,
+    "referencedBySharedSkyBSP": true
+   },
+   {
+    "object": "l2_skies.Shaders.SkybackgroundColor",
+    "exportIndex": 77,
+    "authoredOrDefaultColorBGRA": [
+     206,
+     150,
+     0,
+     255
+    ],
+    "AlphaBlend": false,
+    "RenderTwoSided": false,
+    "shaderOutputBlending": null,
+    "hasOpacity": false,
+    "referencedBySharedSkyBSP": true
+   },
+   {
+    "object": "l2_skies.Shaders.Cloud_Final",
+    "exportIndex": 78,
+    "authoredOrDefaultColorBGRA": [
+     151,
+     192,
+     255,
+     255
+    ],
+    "AlphaBlend": true,
+    "RenderTwoSided": false,
+    "shaderOutputBlending": 0,
+    "hasOpacity": true,
+    "referencedBySharedSkyBSP": false
+   },
+   {
+    "object": "l2_skies.Shaders.StarField_Final02",
+    "exportIndex": 81,
+    "authoredOrDefaultColorBGRA": [
+     102,
+     102,
+     102,
+     255
+    ],
+    "AlphaBlend": true,
+    "RenderTwoSided": true,
+    "shaderOutputBlending": 3,
+    "hasOpacity": false,
+    "referencedBySharedSkyBSP": false
+   }
+  ]
+ }
 }

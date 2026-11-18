@@ -10,7 +10,7 @@ from native_catalog.ue2 import FormatError
 from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE, ActorField
 from world.level_actors import level_actor_exports, level_info_export
 from world.level_zones import read_level_zones, sky_zone_indices
-from world.sky_zone_selection import SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON, select_sky_zone
+from world.sky_zone_selection import select_shared_sky_zone
 
 SKY_CLASS = 'Engine.SkyZoneInfo'
 CLASS_PARENTS = {'Engine.SkyZoneInfo': ('Engine.SkyZoneInfo', 'Engine.ZoneInfo'), 'Engine.ZoneInfo': ('Engine.ZoneInfo',),
@@ -50,54 +50,34 @@ def level_with_model_zones(exports, model_zones):
     return SimpleNamespace(model=SimpleNamespace(zones=model_zones), binding=level_of(exports).binding)
 
 
-def zone(index, actor_name):
-    return SimpleNamespace(zone_index=index, actor=None if actor_name is None else f'Map.{actor_name}')
+def zones_of(exports, model_zones):
+    with mock.patch('world.level_zones.serialized_actor_values', lambda package, export: export['fields']), \
+            mock.patch('world.level_zones.resolved_actor_field', resolved_field):
+        return read_level_zones(SimpleNamespace(exports=exports), level_with_model_zones(exports, model_zones), None, SyntheticClassChains())
 
 
-class SkyZoneSelectionTests(unittest.TestCase):
-    def select(self, exports, zones, references=None):
-        package = SimpleNamespace(exports=exports)
-        with mock.patch('world.sky_zone_selection.serialized_actor_values', lambda package, export: export['fields']), \
-                mock.patch('world.sky_zone_selection.resolved_actor_field', resolved_field):
-            return select_sky_zone(package, level_of(exports, references), zones, None, SyntheticClassChains())
+class SharedSkyZoneSelectionTests(unittest.TestCase):
+    def select(self, exports, model_zones):
+        return select_shared_sky_zone(SimpleNamespace(exports=exports), zones_of(exports, model_zones), SyntheticClassChains())
 
-    def test_the_last_sky_in_level_actor_order_wins_and_its_zone_is_used(self):
-        exports = [actor('LevelInfo0', 'Engine.LevelInfo'), actor('SkyZoneInfo0', SKY_CLASS), actor('Light0', 'Engine.Light'), actor('SkyZoneInfo1', SKY_CLASS)]
-        selection = self.select(exports, [zone(0, None), zone(1, 'SkyZoneInfo1'), zone(2, 'SkyZoneInfo0')], references=[1, 0, 4, 3, 2])
+    def test_the_zones_are_walked_from_the_last_down_and_the_first_sky_zone_actor_wins(self):
+        exports = [actor('LevelInfo0', 'Engine.LevelInfo'), actor('SkyZoneInfo0', SKY_CLASS), actor('ZoneInfo0', 'Engine.ZoneInfo'),
+                   actor('SkyZoneInfo1', SKY_CLASS)]
+        selection = self.select(exports, [model_zone(0), model_zone(4), model_zone(2), model_zone(3)])
         self.assertEqual((selection.zone_index, selection.actor['object'], selection.gap_reason), (2, 'Map.SkyZoneInfo0', None))
 
-    def test_a_subclass_of_sky_zone_info_is_a_sky_candidate(self):
-        exports = [actor('SkyZoneInfo0', SKY_CLASS), actor('CustomSky0', 'Map.CustomSkyZone')]
-        selection = self.select(exports, [zone(0, 'SkyZoneInfo0'), zone(1, 'CustomSky0')])
-        self.assertEqual((selection.zone_index, selection.gap_reason), (1, None))
+    def test_a_subclass_of_sky_zone_info_casts_to_a_sky_zone(self):
+        exports = [actor('CustomSky0', 'Map.CustomSkyZone')]
+        self.assertEqual(self.select(exports, [model_zone(0), model_zone(1)])[0], 1)
 
-    def test_when_no_sky_is_eligible_in_some_detail_mode_the_last_sky_stays_linked(self):
-        exports = [actor('SkyZoneInfo0', SKY_CLASS, bHighDetail=True), actor('SkyZoneInfo1', SKY_CLASS, bSuperHighDetail=True)]
-        selection = self.select(exports, [zone(0, 'SkyZoneInfo0'), zone(1, 'SkyZoneInfo1')])
-        self.assertEqual((selection.zone_index, selection.gap_reason), (None, SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON))
-        only_high = self.select([actor('SkyZoneInfo0', SKY_CLASS, bSuperHighDetail=True)], [zone(0, 'SkyZoneInfo0')])
-        self.assertEqual((only_high.zone_index, only_high.gap_reason), (0, None))
+    def test_an_unknown_zone_actor_class_above_the_sky_zone_stops_the_walk_with_a_gap(self):
+        exports = [actor('SkyZoneInfo0', SKY_CLASS), actor('Mystery0', 'Game.Mystery')]
+        self.assertEqual(self.select(exports, [model_zone(0), model_zone(1), model_zone(2)]),
+                         (None, None, 'sky-zone-class-unresolved:Game.Mystery'))
 
-    def test_detail_flags_that_change_the_choice_between_detail_modes_are_a_gap(self):
-        exports = [actor('SkyZoneInfo0', SKY_CLASS), actor('SkyZoneInfo1', SKY_CLASS, bHighDetail=True)]
-        selection = self.select(exports, [zone(0, 'SkyZoneInfo0'), zone(1, 'SkyZoneInfo1')])
-        self.assertEqual((selection.zone_index, selection.gap_reason), (None, SKY_ZONE_DETAIL_MODE_UNRESOLVED_REASON))
-
-    def test_detail_flags_that_every_detail_mode_agrees_on_select_one_sky(self):
-        exports = [actor('SkyZoneInfo0', SKY_CLASS, bSuperHighDetail=True), actor('SkyZoneInfo1', SKY_CLASS)]
-        selection = self.select(exports, [zone(0, 'SkyZoneInfo0'), zone(1, 'SkyZoneInfo1')])
-        self.assertEqual((selection.zone_index, selection.gap_reason), (1, None))
-
-    def test_a_sky_without_a_zone_slot_an_unread_detail_flag_or_an_unknown_actor_class_is_a_gap(self):
-        self.assertEqual(self.select([actor('SkyZoneInfo0', SKY_CLASS)], [zone(0, None)]).gap_reason, 'sky-zone-actor-zone-count:0')
-        self.assertEqual(self.select([actor('SkyZoneInfo0', SKY_CLASS)], [zone(0, 'SkyZoneInfo0'), zone(1, 'SkyZoneInfo0')]).gap_reason,
-                         'sky-zone-actor-zone-count:2')
-        self.assertEqual(self.select([actor('SkyZoneInfo0', SKY_CLASS, bHighDetail='unresolved')], [zone(0, 'SkyZoneInfo0')]).gap_reason,
-                         'sky-zone-detail-field-unresolved:Map.SkyZoneInfo0.bHighDetail')
-        self.assertEqual(self.select([actor('Mystery0', 'Game.Mystery')], [zone(0, None)]).gap_reason, 'sky-zone-class-unresolved:Game.Mystery')
-
-    def test_a_level_without_a_sky_selects_nothing_and_names_no_gap(self):
-        self.assertEqual(self.select([actor('LevelInfo0', 'Engine.LevelInfo')], [zone(0, None)]), (None, None, None))
+    def test_a_level_without_a_sky_zone_selects_nothing_and_names_no_gap(self):
+        exports = [actor('LevelInfo0', 'Engine.LevelInfo'), actor('ZoneInfo0', 'Engine.ZoneInfo')]
+        self.assertEqual(self.select(exports, [model_zone(0), model_zone(2)]), (None, None, None))
 
     def test_a_level_needs_exactly_one_actors_array_at_0x38(self):
         with self.assertRaisesRegex(FormatError, 'names 0 Actors arrays at 0x38'):
@@ -105,24 +85,16 @@ class SkyZoneSelectionTests(unittest.TestCase):
 
 
 class SkyZoneRuleAgreementTests(unittest.TestCase):
-    def test_a_sky_zone_subclass_is_both_the_selected_sky_and_a_sky_zone_of_the_level(self):
+    def test_the_selected_shared_sky_zone_is_a_sky_zone_of_the_level(self):
         exports = [actor('LevelInfo0', 'Engine.LevelInfo'), actor('CustomSky0', 'Map.CustomSkyZone'), actor('ZoneInfo0', 'Engine.ZoneInfo')]
-        package = SimpleNamespace(exports=exports)
-        with mock.patch('world.level_zones.serialized_actor_values', lambda package, export: export['fields']), \
-                mock.patch('world.level_zones.resolved_actor_field', resolved_field), \
-                mock.patch('world.sky_zone_selection.serialized_actor_values', lambda package, export: export['fields']), \
-                mock.patch('world.sky_zone_selection.resolved_actor_field', resolved_field):
-            zones = read_level_zones(package, level_with_model_zones(exports, [model_zone(0), model_zone(2), model_zone(3)]), None, SyntheticClassChains())
-            selection = select_sky_zone(package, level_of(exports), zones, None, SyntheticClassChains())
+        zones = zones_of(exports, [model_zone(0), model_zone(2), model_zone(3)])
+        selection = select_shared_sky_zone(SimpleNamespace(exports=exports), zones, SyntheticClassChains())
         self.assertEqual((selection.zone_index, selection.gap_reason), (1, None))
         self.assertEqual(sky_zone_indices(zones), frozenset({selection.zone_index}))
 
     def test_a_zone_actor_of_an_unknown_class_is_an_unresolved_zone_and_not_a_sky_zone(self):
         exports = [actor('Mystery0', 'Game.Mystery', bSunAffect=True)]
-        with mock.patch('world.level_zones.serialized_actor_values', lambda package, export: export['fields']), \
-                mock.patch('world.level_zones.resolved_actor_field', resolved_field):
-            zones = read_level_zones(SimpleNamespace(exports=exports), level_with_model_zones(exports, [model_zone(0), model_zone(1)]), None,
-                                     SyntheticClassChains())
+        zones = zones_of(exports, [model_zone(0), model_zone(1)])
         self.assertEqual([(zone.sky, zone.unresolved) for zone in zones], [(False, True), (False, True)])
 
 

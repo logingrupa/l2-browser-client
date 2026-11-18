@@ -6,7 +6,7 @@ WORLD_STEP_SOURCE_MODULES = {
     'meshes': ('world.static_mesh_step',), 'static-mesh-materials': ('world.static_mesh_materials_step',),
     'terrain-material': ('world.terrain_material_step',), 'bsp': ('world.bsp_step',), 'movers': ('world.mover_step',),
     'collision': ('world.collision_step',), 'emitters': ('world.map_emitter_step',), 'bsp-visibility': ('world.bsp_visibility_step',),
-    'sky': ('world.sky_step',), 'audio': ('world.world_audio_step',), 'lighting': ('world.lighting_step',),
+    'shared-sky': ('world.shared_sky_step',), 'audio': ('world.world_audio_step',), 'lighting': ('world.lighting_step',),
     'minimap': ('world.minimap_step',), 'manifest': ('world.tile_manifest_step',), 'environment': ('world.environment_step',),
     'class-defaults': ('world.mover_class_defaults',), 'minimap-route': ('world.minimap_route_step',),
 }

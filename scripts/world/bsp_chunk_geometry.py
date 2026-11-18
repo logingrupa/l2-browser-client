@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
+from native_store.canonical_json import canonical_json_bytes
 from native_store.native_material_program_pins import NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD
+from native_store.verified_file_writes import sha256_hex
 from world.gltf_builder import GltfBuilder
 from world.static_placement_plan import chunk_for_origin
 from world.terrain_coordinates import f32
@@ -74,6 +76,10 @@ def load_bsp_poly_flags(path=BSP_POLY_FLAGS_PATH):
     return BspPolyFlags(skip_mask, unlit_mask)
 
 
+def poly_flags_recipe_sha256():
+    return sha256_hex(canonical_json_bytes(json.loads(BSP_POLY_FLAGS_PATH.read_text(encoding='utf-8'))))
+
+
 def unsigned_flags(value):
     return value & UNSIGNED_32_BIT_MASK
 
@@ -86,10 +92,13 @@ def polygon_centroid_xy(points):
     return sum(point[0] for point in points) / len(points), sum(point[1] for point in points) / len(points)
 
 
+def is_drawn_polygon_node(model, node, flags):
+    return node.num_vertices >= MINIMUM_POLYGON_VERTICES and not unsigned_flags(model.surfs[node.i_surf].flags) & flags.visual_skip_mask
+
+
 def drawn_node_indices(model, flags, sky_zones):
     return [index for index, node in enumerate(model.nodes)
-            if node.num_vertices >= MINIMUM_POLYGON_VERTICES and not unsigned_flags(model.surfs[node.i_surf].flags) & flags.visual_skip_mask
-            and not any(zone in sky_zones for zone in node.i_zone)]
+            if is_drawn_polygon_node(model, node, flags) and not any(zone in sky_zones for zone in node.i_zone)]
 
 
 def assign_nodes_to_chunks(model, node_indices, rectangles):
