@@ -34,7 +34,7 @@ SECTOR_RANGE_FIELDS = ('firstColumn', 'lastColumn', 'firstRow', 'lastRow')
 TERRAIN_COMPONENT_FIELDS = ('resource', 'sha256', 'maskUvRule')
 COMPONENT_RESOURCE_FIELDS = ('resource', 'sha256')
 MODEL_FIELDS = ('id', 'archive', 'archiveSha256', 'vertexStreams', 'placements')
-VERTEX_STREAMS_FIELDS = ('file', 'sha256', 'bytes')
+VERTEX_STREAMS_FIELDS = ('resource', 'sha256', 'bytes')
 VERTEX_STREAMS_GAP_FIELDS = ('gapReason',)
 VERTEX_STREAMS_MAXIMUM_BYTES = 16 * 1024 * 1024
 PLACEMENT_FIELDS = ('id', 'modelId', 'sourceActor', 'exportIndex', 'sourceMesh', 'matrix', 'materialOverrides', 'collision')
@@ -311,7 +311,7 @@ def require_vertex_streams(vertex_streams, label):
             raise TileManifestError(f'{label} gapReason must be a non-empty string: {vertex_streams["gapReason"]!r}')
         return
     require_exact_keys(vertex_streams, VERTEX_STREAMS_FIELDS, label)
-    require_pinned_path(vertex_streams['file'], vertex_streams['sha256'], VERTEX_STREAMS_PATH_PATTERN, TileManifestError, label)
+    require_pinned_path(vertex_streams['resource'], vertex_streams['sha256'], VERTEX_STREAMS_PATH_PATTERN, TileManifestError, label)
     require_byte_length(vertex_streams['bytes'], VERTEX_STREAMS_MAXIMUM_BYTES, TileManifestError, label)
 
 

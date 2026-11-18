@@ -334,7 +334,7 @@ class StaticMeshAssignmentTests(unittest.TestCase):
         product = static_meshes_product(TILE_ID, self.chunk_plan, self.assignment(), synthetic_outcomes())
         sidecar = synthetic_outcomes()['Rock_S.Rock'].model_record['vertexStreams']
         self.assertEqual(product['chunks']['chunk-0-0']['models'][0]['vertexStreams'],
-                         {'file': '/l2/' + sidecar['file'], 'sha256': sidecar['sha256'], 'bytes': sidecar['bytes']})
+                         {'resource': '/l2/' + sidecar['file'], 'sha256': sidecar['sha256'], 'bytes': sidecar['bytes']})
 
     def test_a_placed_model_without_vertex_streams_adds_one_listed_gap_row_naming_the_model(self):
         outcomes = synthetic_outcomes()

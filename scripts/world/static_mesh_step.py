@@ -28,7 +28,7 @@ from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-STATIC_MESH_STEP_ALGORITHM_VERSION = 6
+STATIC_MESH_STEP_ALGORITHM_VERSION = 7
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
 STATIC_MESH_REQUESTS_PRODUCT_NAME = 'static-mesh-requests.json'
@@ -252,7 +252,7 @@ def chunk_model_records(placements, models_by_id):
 def chunk_vertex_streams_record(vertex_streams):
     if 'gapReason' in vertex_streams:
         return {'gapReason': vertex_streams['gapReason']}
-    return {'file': '/l2/' + vertex_streams['file'], 'sha256': vertex_streams['sha256'], 'bytes': vertex_streams['bytes']}
+    return {'resource': '/l2/' + vertex_streams['file'], 'sha256': vertex_streams['sha256'], 'bytes': vertex_streams['bytes']}
 
 
 def vertex_stream_gap_rows(tile_id, step_name, source_identity, evidence, models):

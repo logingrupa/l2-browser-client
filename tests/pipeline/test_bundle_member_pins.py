@@ -22,6 +22,8 @@ from native_store import pinned_store_verification
 from native_store.pinned_store_verification import verify_pinned_store_files
 from native_store.store_paths import StorePathError, lane_store_root
 from native_store.write_lane_catalog import write_lane_catalog
+from world.static_mesh_step import chunk_model_records
+from world.static_mesh_vertex_streams import StaticMeshVertexStreams, vertex_streams_document, vertex_streams_store_path
 
 GOLDEN_ROOT = ROOT / 'tests' / 'fixtures' / 'golden'
 GOLDEN_CATALOG_BYTES = (GOLDEN_ROOT / 'l2' / 'catalog.json').read_bytes()
@@ -422,6 +424,42 @@ class WorldTileRuntimePinTests(TemporaryStoreTestCase):
             {'id': 'interlude:sky:synthetic', 'manifest': f'/l2/{folder}/manifest.json', 'manifestSha256': sha256_hex(manifest_bytes)}]}
         self.assert_every_walk_refuses(CatalogWriteError, "bundle file map entry 'sky.glb' must hold only sha256 and bytes",
                                        self.store_root, catalog)
+
+
+class ChunkVertexStreamsPinTests(TemporaryStoreTestCase):
+    def setUp(self):
+        super().setUp()
+        self.store_root = self.temporary_root / 'lane' / 'l2'
+        streams = StaticMeshVertexStreams(sections=(), positions=((0.0, 0.0, 0.0),), normals=((0.0, 0.0, 1.0),), primary_colours=b'\x01\x02\x03\x04',
+                                          primary_revision=1, alternate_colours=b'\x05\x06\x07\x08', alternate_revision=1, first_uvs=((0.0, 0.0),),
+                                          indices=())
+        package_record = {'path': 'staticmeshes/Rock_S.usx', 'sha256': '6' * 64}
+        self.sidecar = json_bytes(vertex_streams_document('Rock_S.Rock', package_record, streams, [{'mesh': 0, 'primitive': 0, 'nativeVertices': [0]}]))
+        self.sidecar_relative = vertex_streams_store_path(sha256_hex(self.sidecar))
+        self.archive = b'synthetic static mesh archive'
+        self.archive_relative = f'{sha256_hex(self.archive)}/asset.l2asset'
+        model = {'id': 'interlude:Rock_S.Rock', 'sourceObject': 'Rock_S.Rock',
+                 'archive': {'file': self.archive_relative, 'sha256': sha256_hex(self.archive), 'bytes': len(self.archive)},
+                 'vertexStreams': {'file': self.sidecar_relative, 'sha256': sha256_hex(self.sidecar), 'bytes': len(self.sidecar)}}
+        chunk_manifest = json_bytes({'models': chunk_model_records([{'id': 'placement-0', 'modelId': model['id'], 'exportIndex': 10}], {model['id']: model})})
+        self.record, self.tile_files = runtime_tile_record_and_files('15_20', chunk_manifest, {})
+        for resource_path, payload in self.tile_files.items():
+            write_file(self.store_root / resource_path[len(NATIVE_RESOURCE_PREFIX):], payload)
+        write_file(self.store_root / self.archive_relative, self.archive)
+        write_file(self.store_root / self.sidecar_relative, self.sidecar)
+
+    def test_the_walk_verifies_the_vertex_streams_sidecar_a_chunk_model_record_pins(self):
+        catalog = {'schemaVersion': 1, 'models': [], 'tiles': [self.record]}
+        self.assert_every_walk_verifies(self.store_root, catalog)
+        verified_store_file_by_key = verify_pinned_store_files(self.store_root, catalog, POOLED_WALK_WORKER_COUNT)
+        self.assertEqual(sorted(relative for relative, _ in verified_store_file_by_key.values()),
+                         sorted([*(resource_path[len(NATIVE_RESOURCE_PREFIX):] for resource_path in self.tile_files),
+                                 self.archive_relative, self.sidecar_relative]))
+
+    def test_the_walk_refuses_a_sidecar_whose_bytes_differ_from_the_chunk_pin(self):
+        write_file(self.store_root / self.sidecar_relative, self.sidecar + b' ')
+        self.assert_every_walk_refuses(CatalogWriteError, f'SHA-256 differs from its pin .*: {self.sidecar_relative}', self.store_root,
+                                       {'schemaVersion': 1, 'models': [], 'tiles': [self.record]})
 
 
 if __name__ == '__main__':

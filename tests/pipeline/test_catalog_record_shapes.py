@@ -367,7 +367,7 @@ class TileManifestValidationTests(unittest.TestCase):
             'captured mask rule': (changed(GOLDEN_CHUNK_MANIFEST, terrain=changed(terrain, maskUvRule='captured')), "maskUvRule 'captured'"),
             'model archive SHA differs': (changed(GOLDEN_CHUNK_MANIFEST, models=[model]), 'differs from its pin'),
             'vertex streams outside their folder': (changed(GOLDEN_CHUNK_MANIFEST, models=[changed(chunk_model([chunk_placement(model_id)]),
-                vertexStreams={'file': f'/l2/{SHA256_A}/vertex-streams.json', 'sha256': SHA256_A, 'bytes': 10})]), 'vertexStreams path must match'),
+                vertexStreams={'resource': f'/l2/{SHA256_A}/vertex-streams.json', 'sha256': SHA256_A, 'bytes': 10})]), 'vertexStreams path must match'),
             'vertex streams gap without a reason': (changed(GOLDEN_CHUNK_MANIFEST, models=[changed(chunk_model([chunk_placement(model_id)]),
                 vertexStreams={'gapReason': ''})]), 'gapReason must be a non-empty string'),
             'bsp short sha256': (changed(GOLDEN_CHUNK_MANIFEST, bsp={'resource': f'/l2/{SHA256_A}/asset.l2asset', 'sha256': 'abc'}),
