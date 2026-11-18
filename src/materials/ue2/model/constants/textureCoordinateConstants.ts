@@ -3,7 +3,7 @@ import { materialNotes, texOscillatorTriggeredReplay } from "./materialNotes";
 
 const oscillatorEvidence = `Engine.dll 4dd2f63c UTexOscillatorTriggered::GetMatrix 0x1030b94c jumps to 0x105e1270, which calls UTexOscillator::GetMatrix 0x1030e98f, body 0x105df780; Engine.u 9b04ff5c; ${texOscillatorTriggeredReplay}`;
 const pannerForm = { translation: "1024 * frac(dir * t * PanRate / 1024), dir = (cos(Pitch) cos(Yaw), cos(Pitch) sin(Yaw))", wrapPeriod: 1024 } as const;
-const chainOrderEvidence =`D3DDrv.dll 05622dde 0x10011ca0 visits the outer modifier before its Material at +0x578 and accumulates identity (0x10007630) * current.GetMatrix(t) on the CPU path; ${texOscillatorTriggeredReplay}`;
+const chainOrderEvidence = `D3DDrv.dll 05622dde 0x10011ca0 visits the outer modifier before its Material at +0x578 and accumulates identity (0x10007630) * current.GetMatrix(t) on the CPU path; ${texOscillatorTriggeredReplay}`;
 
 export const TEXTURE_COORDINATE_CONSTANTS = {
   chainOrder: {
