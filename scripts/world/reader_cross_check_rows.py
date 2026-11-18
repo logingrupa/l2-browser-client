@@ -25,6 +25,7 @@ from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import raw_map_recipe, read_map_lock_record, read_tile_map_lock_record, tile_map_path
 from world.reader_licensee_layouts import (G16_HEIGHTMAP_READER, LEVEL_MODEL_READER, MAP_ACTOR_READER, READER_LICENSEE_LAYOUTS,
                                            REVIEWED_PACKAGE_VERSION, TERRAIN_INFO_READER, reader_cross_check_map, reader_fixture_path)
+from world.shared_sky_map import SHARED_SKY_MAP_NAME, SHARED_SKY_MAP_PATH
 from world.terrain_height_texture import read_g16
 from world.tile_chunk_plan import read_locked_map_package_by_path
 from world.unverified_level_tails import write_unverified_level_tail
@@ -126,8 +127,12 @@ def require_package_licensee(package, version, licensee, map_name):
                                     f'{package.summary["version"]}/{package.summary["licenseeVersion"]}, not {version}/{licensee}')
 
 
+def cross_check_map_path(map_name):
+    return SHARED_SKY_MAP_PATH if map_name == SHARED_SKY_MAP_NAME else tile_map_path(map_name)
+
+
 def locked_map_package(client, map_name):
-    map_path = tile_map_path(map_name)
+    map_path = cross_check_map_path(map_name)
     return read_locked_map_package_by_path(client, map_path, read_map_lock_record(map_path))
 
 
@@ -141,7 +146,7 @@ def heightmap_decodes(access, sources, tile_id, licensee):
 
 
 def map_decodes(client, access, map_name, version, licensee, reader):
-    relative_path = tile_map_path(map_name)
+    relative_path = cross_check_map_path(map_name)
     map_package = locked_map_package(client, map_name)
     require_package_licensee(map_package, version, licensee, map_name)
     if reader == MAP_ACTOR_READER:
@@ -159,7 +164,7 @@ def our_level_model_projection(level):
 
 
 def level_model_decodes(client, access, map_name, version, licensee):
-    relative_path = tile_map_path(map_name)
+    relative_path = cross_check_map_path(map_name)
     map_package = locked_map_package(client, map_name)
     require_package_licensee(map_package, version, licensee, map_name)
     ours = theirs = refusal = None
@@ -200,7 +205,7 @@ def node_flag_histogram(checks):
 
 def level_model_reader_fixture(client, version, licensee, map_name):
     access = require_reference_client(client)
-    relative_path = tile_map_path(map_name)
+    relative_path = cross_check_map_path(map_name)
     map_package = locked_map_package(client, map_name)
     require_package_licensee(map_package, version, licensee, map_name)
     level = read_level_model_without_layout_gate(map_package)
@@ -228,7 +233,7 @@ def sky_zone_actor_location(package, actor_export, relative_path):
 
 def map_actor_reader_fixture(client, version, licensee, map_name):
     access = require_reference_client(client)
-    relative_path = tile_map_path(map_name)
+    relative_path = cross_check_map_path(map_name)
     map_package = locked_map_package(client, map_name)
     require_package_licensee(map_package, version, licensee, map_name)
     _, package_sha256 = access.require_equal_file_with_sha256(relative_path)
