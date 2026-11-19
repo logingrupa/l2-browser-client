@@ -1,0 +1,595 @@
+{
+ "schemaVersion": 1,
+ "kind": "sky-texrotator-rm29-fixtures",
+ "source": {
+  "report": "sky-texrotator.json",
+  "reportSha256": "945cce254c60281ecc885bc838d867c8d1546340319bc11efaf6eaf9a9d5c601",
+  "manifest": "sky-texrotator-rm29/manifest.json",
+  "manifestSha256": "d6a2bdcb2c0adfb886a54225be131f03523d8a9d54e4fdf5b29e154c1e0867c3",
+  "question": "RM-29: UTexRotator for the shared sky stars",
+  "fixtureMethod": "Original instructions in Unicorn, x87 control word 0x027f; native Core GMath initialization, CRT feature globals at mapped-file initial state; only USize/VSize virtual calls stubbed to 256/128 for synthetic cases and 1024/1024 for captured TexRotator1. No game launch.",
+  "precision": "53-bit x87 significand, round-to-nearest-even",
+  "controlWord": "0x027f"
+ },
+ "objectLayout": [
+  {
+   "offset": "0x584",
+   "name": "TexRotationType",
+   "type": "uint8"
+  },
+  {
+   "offset": "0x588",
+   "name": "Rotation",
+   "type": "int32 Pitch,Yaw,Roll"
+  },
+  {
+   "offset": "0x594",
+   "name": "ConstantRotation legacy bit 0",
+   "type": "uint32"
+  },
+  {
+   "offset": "0x598",
+   "name": "UOffset",
+   "type": "float32"
+  },
+  {
+   "offset": "0x59c",
+   "name": "VOffset",
+   "type": "float32"
+  },
+  {
+   "offset": "0x5a0",
+   "name": "OscillationRate",
+   "type": "int32 Pitch,Yaw,Roll"
+  },
+  {
+   "offset": "0x5ac",
+   "name": "OscillationAmplitude",
+   "type": "int32 Pitch,Yaw,Roll"
+  },
+  {
+   "offset": "0x5b8",
+   "name": "OscillationPhase",
+   "type": "int32 Pitch,Yaw,Roll"
+  },
+  {
+   "offset": "0x5c4",
+   "name": "Matrix",
+   "type": "16 float32, row-major"
+  }
+ ],
+ "sineTable": {
+  "file": "sky-texrotator-rm29/matrix/gmath-sin-cw027f.bin",
+  "sha256": "9893d14bd21e5c4194832659571b30363ddfb08d468ed662a4b6d5ae172262dc",
+  "entries": 16384
+ },
+ "constants": [
+  {
+   "name": "oscillation divisor",
+   "file": "Engine.dll",
+   "fileSha256": "4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08",
+   "virtualAddress": "0x108d2378",
+   "bytesHex": "00000000e0ffef40",
+   "float64": 65535.0
+  },
+  {
+   "name": "oscillation two pi",
+   "file": "Engine.dll",
+   "fileSha256": "4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08",
+   "virtualAddress": "0x108a88b0",
+   "bytesHex": "182d4454fb211940",
+   "float64": 6.283185307179586
+  },
+  {
+   "name": "GMath pi",
+   "file": "Core.dll",
+   "fileSha256": "9462f87a5e77d21865e2e00264efd44df25feb47aa78f8a72e9cf66ce4e919bf",
+   "virtualAddress": "0x101d4558",
+   "bytesHex": "182d4454fb210940",
+   "float64": 3.141592653589793
+  },
+  {
+   "name": "GMath inverse table length",
+   "file": "Core.dll",
+   "fileSha256": "9462f87a5e77d21865e2e00264efd44df25feb47aa78f8a72e9cf66ce4e919bf",
+   "virtualAddress": "0x101d5e38",
+   "bytesHex": "000000000000103f",
+   "float64": 6.103515625e-05
+  }
+ ],
+ "capturedRotators": [
+  {
+   "object": "L2_Skies.Shaders.TexRotator1",
+   "firstCaptureSequence": 2,
+   "eventCount": 636,
+   "timeBytesHex": "a2f43642",
+   "timeIsLevelInfoTimeSeconds": true,
+   "inputs": {
+    "TexRotationType": 1,
+    "Rotation": {
+     "Pitch": 0,
+     "Yaw": 0,
+     "Roll": 0
+    },
+    "ConstantRotation": 0,
+    "UOffset": 512.0,
+    "VOffset": 512.0,
+    "OscillationRate": {
+     "Pitch": 0,
+     "Yaw": 0,
+     "Roll": 0
+    },
+    "OscillationAmplitude": {
+     "Pitch": 0,
+     "Yaw": 0,
+     "Roll": 0
+    },
+    "OscillationPhase": {
+     "Pitch": 0,
+     "Yaw": 0,
+     "Roll": 0
+    }
+   },
+   "resolvedSize": [
+    1024,
+    1024
+   ],
+   "matrixBytesHex": "0000803f000000000000000000000000000000000000803f000000000000000000000000000000000000803f000000000000000000000000000000000000803f"
+  },
+  {
+   "object": "FX_E_T.WaterSurfaceShaderSet.ocn_rot",
+   "firstCaptureSequence": 640,
+   "eventCount": 1,
+   "timeBytesHex": "a2f43642",
+   "timeIsLevelInfoTimeSeconds": true,
+   "inputs": {
+    "TexRotationType": 0,
+    "Rotation": {
+     "Pitch": 0,
+     "Yaw": 4096,
+     "Roll": 0
+    },
+    "ConstantRotation": 0,
+    "UOffset": 0.0,
+    "VOffset": 0.0,
+    "OscillationRate": {
+     "Pitch": 0,
+     "Yaw": 0,
+     "Roll": 0
+    },
+    "OscillationAmplitude": {
+     "Pitch": 0,
+     "Yaw": 0,
+     "Roll": 0
+    },
+    "OscillationPhase": {
+     "Pitch": 0,
+     "Yaw": 0,
+     "Roll": 0
+    }
+   },
+   "resolvedSize": null,
+   "matrixBytesHex": "5e836c3f15efc33e000000000000000015efc3be5e836c3f000000800000000000000080000000000000803f000000000000000000000000000000000000803f"
+  }
+ ],
+ "fixtures": [
+  {
+   "mode": 0,
+   "Rotation": [
+    0,
+    16384,
+    0
+   ],
+   "timeBytesHex": "00000000",
+   "offsets": [
+    0,
+    0
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    0,
+    16384,
+    0
+   ],
+   "matrixBytesHex": "32310d250000803f0000000000000000000080bf32310d25000000800000000000000080000000000000803f000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 0,
+   "Rotation": [
+    0,
+    16384,
+    0
+   ],
+   "timeBytesHex": "00006442",
+   "offsets": [
+    128,
+    64
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    0,
+    16384,
+    0
+   ],
+   "matrixBytesHex": "32310d250000803f0000000000000000000080bf32310d2500000000000000000000803f000000000000803f000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 0,
+   "Rotation": [
+    16384,
+    0,
+    0
+   ],
+   "timeBytesHex": "00000000",
+   "offsets": [
+    128,
+    64
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    16384,
+    0,
+    0
+   ],
+   "matrixBytesHex": "0000003f0000003f0000803f00000000000000000000803f00000000000000000000a0bf000040bf000000bf000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 0,
+   "Rotation": [
+    0,
+    0,
+    16384
+   ],
+   "timeBytesHex": "00000000",
+   "offsets": [
+    128,
+    64
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    0,
+    0,
+    16384
+   ],
+   "matrixBytesHex": "0000803f000000000000000000000000000000bf000000bf000080bf00000000000080be0000a03f0000003f000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 1,
+   "Rotation": [
+    0,
+    1000,
+    0
+   ],
+   "timeBytesHex": "0000a03f",
+   "offsets": [
+    128,
+    64
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    0,
+    1250,
+    0
+   ],
+   "matrixBytesHex": "722b7e3fc075f43d0000000000000000c075f4bd722b7e3f0000000000000000188d813d50d165bd0000803f000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 1,
+   "Rotation": [
+    111,
+    -777,
+    97
+   ],
+   "timeBytesHex": "000090bf",
+   "offsets": [
+    0,
+    0
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    65412,
+    874,
+    65427
+   ],
+   "matrixBytesHex": "7e167f3f5e01ab3d2fc642bc000000003fbfaabd0b187f3fd3e92f3c00000000f8c5503c3b0c1fbc97f77f3f000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 1,
+   "Rotation": [
+    0,
+    65535,
+    0
+   ],
+   "timeBytesHex": "0000803f",
+   "offsets": [
+    0,
+    0
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    0,
+    65535,
+    0
+   ],
+   "matrixBytesHex": "ffff7f3fda0fc9b90000000000000000da0fc939ffff7f3f000000800000000000000080000000000000803f000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 2,
+   "Rotation": [
+    100,
+    200,
+    300
+   ],
+   "timeBytesHex": "0000803e",
+   "offsets": [
+    128,
+    64
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    65535,
+    32768,
+    -65535
+   ],
+   "amplitude": [
+    4000,
+    8000,
+    16000
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    4100,
+    5856,
+    -15700
+   ],
+   "matrixBytesHex": "0834793fdded2e3f851dc43e0000000010ced13d362ea03e9ff76b3f0000000000bd183b91b5a9bf1c8417bf000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 2,
+   "Rotation": [
+    100,
+    200,
+    300
+   ],
+   "timeBytesHex": "000080be",
+   "offsets": [
+    0,
+    0
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    65535,
+    32768,
+    -65535
+   ],
+   "amplitude": [
+    4000,
+    8000,
+    16000
+   ],
+   "phase": [
+    0,
+    1,
+    -1
+   ],
+   "effectiveRotation": [
+    -3900,
+    -5456,
+    16300
+   ],
+   "matrixBytesHex": "02724e3fe419eebed602bbbe0000000066f09fbeb5fb413ef44d6ebf00000000e988003f72625d3f6fa8f53b000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 255,
+   "Rotation": [
+    1000,
+    2000,
+    3000
+   ],
+   "timeBytesHex": "0000c642",
+   "offsets": [
+    0,
+    0
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    1000,
+    2000,
+    3000
+   ],
+   "matrixBytesHex": "74277a3f9a40423e830cc43d00000000bdd51fbe434f723fb99290be0000000019a213be199f853e445b743f000000000000000000000000000000000000803f"
+  },
+  {
+   "mode": 1,
+   "Rotation": [
+    0,
+    0,
+    0
+   ],
+   "timeBytesHex": "0080f642",
+   "offsets": [
+    512,
+    512
+   ],
+   "resolvedSize": [
+    256,
+    128
+   ],
+   "rate": [
+    0,
+    0,
+    0
+   ],
+   "amplitude": [
+    0,
+    0,
+    0
+   ],
+   "phase": [
+    0,
+    0,
+    0
+   ],
+   "effectiveRotation": [
+    0,
+    0,
+    0
+   ],
+   "matrixBytesHex": "0000803f000000000000000000000000000000000000803f000000000000000000000000000000000000803f000000000000000000000000000000000000803f"
+  }
+ ]
+}
