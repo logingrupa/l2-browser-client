@@ -240,6 +240,7 @@ describe("TexRotator rules beyond the RM-29 fixtures", () => {
     }
     expect(TEXTURE_COORDINATE_CONSTANTS.rotatorModeOrdinals.provenance).toMatch(/Core\.dll 9462f87a .*0x1033fe34.*Engine\.dll 4dd2f63c .*0x11d8b2ec/);
     expect(JSON.stringify(TEXTURE_COORDINATE_CONSTANTS)).not.toContain("TexRotatorTruncationRange");
+    expect(TEXTURE_COORDINATE_CONSTANTS.rotatorMatrixForm.provenance).toMatch(/53-bit .*D3DDrv\.dll 05622dde .*D3DCREATE_FPU_PRESERVE .*0x1001DC26.*0x027f/);
     expect(ROTATOR_RULE_BY_USE["texture-rotator"]).toMatchObject({ status: "confirmed-interlude", runtimeDefault: "sine-table", value: "sine-table" });
     expect(ROTATOR_CONSTANTS.sineTableLength.runtimeDefault).toBe(fixtures.sineTable.entries);
   });
