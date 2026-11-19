@@ -63,10 +63,9 @@ function receiverColour0(receiver: LightGateFixtureReceiver): number[][] {
 }
 
 describe("static mesh light cache gate, dyn +0x24 = bDynamicLight and dyn +0x28 = !bDynamicLight && (bLightChanged || bDeleteMe) (RM-19 0x10677fa0, 0x10679960)", () => {
-  it.each([[false, false, false], [true, false, false], [false, true, false], [false, false, true], [true, true, true]])(
-    "bDynamicLight %s, bLightChanged %s, bDeleteMe %s", (dynamicLight, lightChanged, deleteMe) => {
-      const dynamicCacheFlag = dynamicLight, changedCacheFlag = !dynamicLight && (lightChanged || deleteMe);
-      expect(staticMeshLightCacheExcluded(flagOwner([dynamicLight, lightChanged, deleteMe]))).toEqual({ status: "resolved", value: dynamicCacheFlag || changedCacheFlag });
+  it.each([[false, false, false, false], [true, false, false, true], [false, true, false, true], [false, false, true, true], [true, true, true, true]])(
+    "bDynamicLight %s, bLightChanged %s, bDeleteMe %s excludes the cache: %s", (dynamicLight, lightChanged, deleteMe, excluded) => {
+      expect(staticMeshLightCacheExcluded(flagOwner([dynamicLight, lightChanged, deleteMe]))).toEqual({ status: "resolved", value: excluded });
     });
 });
 
@@ -86,7 +85,7 @@ describe("RM-26 arches and the wall5383 addendum on 20_20, whose lights all auth
     });
 
   it.each(document.rm26Receivers.map(receiver => [receiver.exportIndex, receiver] as const))(
-    "export %i keeps no ordinary light over all its vertices, and would read light colours if bLightChanged were clear", (_, receiver) => {
+    "export %i keeps no ordinary light over all its vertices, and its lights pass the cache gate once bLightChanged is clear", (_, receiver) => {
       expect(resolveStaticMeshOrdinaryTerm(receiverFullList(receiver), receiverRecords(receiver), rebuildEnvironmentAtHourSix)).toEqual({ status: "resolved", value: [] });
       const cleared = resolveStaticMeshOrdinaryTerm(receiverFullList(receiver),
         receiverRecords(receiver, record => ({ ...record, fields: new Map([...record.fields, ["bLightChanged", { provenance: "authored", value: false }]]) })),
