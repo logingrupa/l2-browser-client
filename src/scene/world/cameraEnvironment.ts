@@ -4,8 +4,9 @@ import type { RgbBytes } from "../../environment/model/sampleNativeTimeTables";
 import { FOG_CONSTANTS } from "../../materials/ue2/model/constants/fogConstants";
 import {
   environmentFogPreset, evaluateFogState, evaluateLocalFogList, type CameraZoneFogRecord, type EnvironmentFogRanges,
-  type FogColourBytes, type FogRangeRecord, type FogState, type LocalFogList, type TerrainZoneEnvironmentFog, type WeightedFogInfo,
+  type FogRangeRecord, type FogState, type LocalFogList, type TerrainZoneEnvironmentFog,
 } from "../../materials/ue2/model/fog";
+import type { FogColourBytes, WeightedFogInfo } from "../../shared/fogInfoHourlyColours";
 import type { Vector3 } from "../../shared/math/vector3";
 import type { TileVisibilityFrame } from "./bspVisibility/core/tileVisibilityFrame";
 import type { CollisionWorld } from "./movement/core/collisionWorld";

@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ENVIRONMENT_ENGINE_CONSTANTS } from "../../src/environment/model/nativeEnvironmentEngineConstants";
 import { FOG_CONSTANTS } from "../../src/materials/ue2/model/constants/fogConstants";
-import { evaluateLocalFogList, fogInfoColourAtHour, fogInfoWeight, fogRangeSlot, type L2FogInfoRecord } from "../../src/materials/ue2/model/fog";
+import { evaluateLocalFogList, fogInfoWeight, fogRangeSlot } from "../../src/materials/ue2/model/fog";
 import { environmentFogBaseline } from "../../src/scene/world/cameraEnvironment";
 import { decodeFogInfos } from "../../src/scene/world/lighting/tileFogInfoRecords";
+import { fogInfoColourAtHour, type L2FogInfoRecord } from "../../src/shared/fogInfoHourlyColours";
 import { convertedEnvironmentFogRanges } from "../support/fogWorkedCaseFixture";
 import { fogInfo9236Record } from "../support/tileLightingFixture";
 

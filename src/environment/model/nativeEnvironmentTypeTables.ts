@@ -8,6 +8,7 @@ export const scaleSections = ["SunScale", "MoonScale"] as const;
 export type BlackStartColourSection = typeof blackStartColourSections[number];
 export type SkyLayerColourSection = typeof skyLayerColourSections[number];
 export type NativeTimeColourSection = BlackStartColourSection | SkyLayerColourSection;
+export type SkyEnvironmentSection = "SkyBoxColor" | SkyLayerColourSection;
 export type HsvLightSection = typeof hsvLightSections[number];
 export type ScaleSection = typeof scaleSections[number];
 

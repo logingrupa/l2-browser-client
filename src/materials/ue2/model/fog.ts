@@ -1,7 +1,9 @@
 import type { FogFamily } from "./constants/blendFactorTypes";
 import { FOG_CONSTANTS } from "./constants/fogConstants";
+import {
+  fogInfoColourAtHour, interpolateFogColourBytes, type FogColourBytes, type FogRangeBounds, type FogSourcePosition, type L2FogInfoRecord, type WeightedFogInfo,
+} from "../../../shared/fogInfoHourlyColours";
 
-export type FogColourBytes = readonly [number, number, number];
 export type FogSourceName = "volume" | "local-fog-list" | "terrain-zone-environment" | "camera-zone";
 
 export interface FogRangeRecord {
@@ -40,36 +42,6 @@ export interface FogState {
   readonly endSourceUnits: number;
 }
 
-export interface FogRangeBounds {
-  readonly min: number;
-  readonly max: number;
-}
-
-export interface FogInfoColourKey {
-  readonly time: number;
-  readonly fogColourBytes: FogColourBytes;
-  readonly skyColourBytes: FogColourBytes;
-  readonly cloudColourBytes: readonly FogColourBytes[];
-  readonly hazeRingColourBytes: readonly FogColourBytes[];
-}
-
-type FogInfoColourMember =(key: FogInfoColourKey) => FogColourBytes | undefined;
-
-export interface FogSourcePosition {
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-}
-
-export interface L2FogInfoRecord {
-  readonly exportIndex: number;
-  readonly sourceLocation: FogSourcePosition;
-  readonly affectRange: FogRangeBounds;
-  readonly textureDistance: number;
-  readonly fogRanges: readonly FogRangeBounds[];
-  readonly colours: readonly FogInfoColourKey[];
-}
-
 export interface EnvironmentFogRanges {
   readonly startRanges: readonly number[];
   readonly endRanges: readonly number[];
@@ -79,11 +51,6 @@ export interface LocalFogListInputs {
   readonly hour: number;
   readonly terrainClipRange: number;
   readonly referencePosition: FogSourcePosition;
-}
-
-export interface WeightedFogInfo {
-  readonly fogInfo: L2FogInfoRecord;
-  readonly weight: number;
 }
 
 export interface LocalFogListEvaluation {
@@ -98,9 +65,7 @@ export const FOG_UNRESOLVED: FogState = { ...FOG_DISABLED, source: "unresolved" 
 const FOG_ZONE_WITHOUT_FOG: FogState = { ...FOG_DISABLED, source: "zone-without-fog" };
 export const FOG_RANGE_SLOT_COUNT = 5;
 
-const hoursPerDay = 24;
 const fogRangeSlotFloors = [5, 6, 7, 8] as const;
-const unmatchedHourColour: FogColourBytes = [0, 0, 0];
 
 function requireFogRange(record: FogRangeRecord, source: FogSourceName): void {
   if (!record.colourBytes.every(channel => Number.isInteger(channel) && channel >= 0 && channel <= 255)) {
@@ -137,44 +102,6 @@ export function evaluateFogState(inputs: FogInputs): FogState {
 export function fogRangeSlot(terrainClipRange: number): number {
   const slot = fogRangeSlotFloors.findIndex(floor => terrainClipRange < floor);
   return slot < 0 ? fogRangeSlotFloors.length : slot;
-}
-
-export function interpolateFogColourBytes(from: FogColourBytes, to: FogColourBytes, weight: number): FogColourBytes {
-  return [Math.trunc(from[0] + weight * (to[0] - from[0])), Math.trunc(from[1] + weight * (to[1] - from[1])), Math.trunc(from[2] + weight * (to[2] - from[2]))];
-}
-
-interface FogInfoHourPair {
-  readonly first: FogInfoColourKey;
-  readonly second: FogInfoColourKey;
-  readonly weight: number;
-}
-
-export function fogInfoHourPair(colours: readonly FogInfoColourKey[], hour: number): FogInfoHourPair | null {
-  const nativeHour = Math.fround(hour);
-  const normalisedHour = ((nativeHour % hoursPerDay) + hoursPerDay) % hoursPerDay;
-  for (let index = 0; index < colours.length; index++) {
-    const first = colours[index]!, second = colours[(index + 1) % colours.length]!;
-    const secondTime = index + 1 === colours.length ? second.time + hoursPerDay : second.time;
-    if (first.time <= normalisedHour && normalisedHour <= secondTime) {
-      return { first, second, weight: Math.fround((nativeHour - first.time) / (secondTime - first.time)) };
-    }
-  }
-  return null;
-}
-
-export function fogInfoMemberAtHour(colours: readonly FogInfoColourKey[], hour: number, member: FogInfoColourMember): FogColourBytes | null {
-  const pair = fogInfoHourPair(colours, hour);
-  if (pair === null) return null;
-  const from = member(pair.first), to = member(pair.second);
-  return from === undefined || to === undefined ? null : interpolateFogColourBytes(from, to, pair.weight);
-}
-
-export function fogInfoScalarMemberAtHour(colours: readonly FogInfoColourKey[], hour: number, member: (key: FogInfoColourKey) => FogColourBytes): FogColourBytes {
-  return fogInfoMemberAtHour(colours, hour, member) ?? unmatchedHourColour;
-}
-
-export function fogInfoColourAtHour(colours: readonly FogInfoColourKey[], hour: number): FogColourBytes {
-  return fogInfoScalarMemberAtHour(colours, hour, key => key.fogColourBytes);
 }
 
 export function fogInfoWeight(affectRange: FogRangeBounds, distance: number, colourCount: number): number {

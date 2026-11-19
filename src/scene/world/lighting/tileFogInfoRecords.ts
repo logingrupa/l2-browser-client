@@ -1,5 +1,5 @@
-import type { FogColourBytes, FogInfoColourKey, FogRangeBounds, L2FogInfoRecord } from "../../../materials/ue2/model/fog";
 import { FOG_RANGE_SLOT_COUNT } from "../../../materials/ue2/model/fog";
+import type { FogColourBytes, FogInfoColourKey, FogRangeBounds, L2FogInfoRecord } from "../../../shared/fogInfoHourlyColours";
 import { isJsonRecord, readLightingFields, requireLightingRecords, ueZeroFieldProvenance, unresolvedFieldProvenance, type LightingFieldValue } from "./lightingFieldRecords";
 
 export interface DecodedFogInfo {

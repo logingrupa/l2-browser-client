@@ -3,11 +3,9 @@ import { FOG_RANGE_SLOT_COUNT, type EnvironmentFogRanges } from "../materials/ue
 import type { NativeEnvironmentSetup } from "./model/nativeEnvironmentManager";
 import {
   blackStartColourSections, hsvLightSections, scaleSections, skyLayerColourSections,
-  type NativeEnvironmentTables, type NativeEnvironmentTypeTables, type NativeTimeColourSection, type SkyLayerColourSection,
+  type NativeEnvironmentTables, type NativeEnvironmentTypeTables, type NativeTimeColourSection, type SkyEnvironmentSection, type SkyLayerColourSection,
 } from "./model/nativeEnvironmentTypeTables";
 import type { NativeTimeColourRow, NativeTimeHsvRow, NativeTimeScaleRow } from "./model/sampleNativeTimeTables";
-
-export type SkyEnvironmentSection = "SkyBoxColor" | SkyLayerColourSection;
 
 export interface SkyEnvironmentBinding {
   readonly setupKey: string;

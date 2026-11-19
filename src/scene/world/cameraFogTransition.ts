@@ -1,5 +1,6 @@
 import type { BgraBytes } from "../../environment/model/nativeColourBytes";
-import type { FogColourBytes, FogRangeRecord, FogState } from "../../materials/ue2/model/fog";
+import type { FogRangeRecord, FogState } from "../../materials/ue2/model/fog";
+import type { FogColourBytes } from "../../shared/fogInfoHourlyColours";
 import {
   setFogTransitionColourTarget, setFogTransitionDuration, setFogTransitionRangeTarget, snapshotFogTransition, updateFogTransition, type FogTransitionState,
 } from "../../environment/model/fogTransition";

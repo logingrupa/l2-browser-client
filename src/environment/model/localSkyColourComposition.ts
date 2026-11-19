@@ -1,7 +1,7 @@
 import {
   fogInfoMemberAtHour, fogInfoScalarMemberAtHour, interpolateFogColourBytes, type FogColourBytes, type FogInfoColourKey, type WeightedFogInfo,
-} from "../../materials/ue2/model/fog";
-import type { SkyEnvironmentSection } from "../parseNativeTimeTables";
+} from "../../shared/fogInfoHourlyColours";
+import type { SkyEnvironmentSection } from "./nativeEnvironmentTypeTables";
 import type { RgbBytes } from "./sampleNativeTimeTables";
 
 type FogInfoSkyColourReader = (colours: readonly FogInfoColourKey[], hour: number) => FogColourBytes | null;
