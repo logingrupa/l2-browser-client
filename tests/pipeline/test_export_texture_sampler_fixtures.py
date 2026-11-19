@@ -8,9 +8,10 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+from reference_client_guard import ReferenceClientLockError
 from world import export_texture_sampler_fixtures
 from world.export_day_night_fixtures import DayNightFixtureError
-from world.export_texture_sampler_fixtures import (TEXTURE_SAMPLERS_MANIFEST_SHA256, TEXTURE_SAMPLERS_REPORT_SHA256, live_texture_package_path,
+from world.export_texture_sampler_fixtures import (TEXTURE_SAMPLERS_MANIFEST_SHA256, TEXTURE_SAMPLERS_REPORT_SHA256, live_texture, live_texture_package_path,
                                                    pinned_texture_samplers_report)
 
 FIXTURES_FILE = ROOT / 'tests' / 'fixtures' / 'rm25' / 'texture-samplers-native.json'
@@ -58,6 +59,11 @@ class LiveTexturePackagePathTests(unittest.TestCase):
     def test_the_package_is_the_lowercased_first_name_under_textures(self):
         self.assertEqual(live_texture_package_path('L2_Skies.Textures.WhiteChip'), 'textures/l2_skies.utx')
         self.assertEqual(live_texture_package_path('cruma_tr_t.Cm_o_wall008'), 'textures/cruma_tr_t.utx')
+
+    def test_a_client_root_without_the_lock_equal_engine_library_is_refused_before_a_package_is_read(self):
+        with tempfile.TemporaryDirectory() as client_root:
+            with self.assertRaisesRegex(ReferenceClientLockError, 'has no system/Engine.dll'):
+                live_texture(client_root, {}, 'L2_Skies.Textures.WhiteChip', {})
 
 
 class PinnedReportTests(unittest.TestCase):

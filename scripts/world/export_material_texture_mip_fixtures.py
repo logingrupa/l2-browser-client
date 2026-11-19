@@ -11,6 +11,7 @@ import json
 
 from native_assets_lib.texture_mips import build_texture_source
 from native_assets_lib.texture_package_118 import read_unreal_package
+from reference_client_guard import require_reference_client
 from world.export_day_night_fixtures import FIXTURES_ROOT, require, require_output_directory_inside_fixtures, rows_per_line_json
 
 DEFAULT_OUTPUT_DIRECTORY = FIXTURES_ROOT / 'material-textures'
@@ -39,11 +40,12 @@ def native_mip_chain_fixture(package, package_path, texture_object):
 
 
 def native_mip_chain_fixtures_document(client_root):
+    client_access = require_reference_client(client_root)
     packages = {}
     textures = []
     for package_path, texture_object in FIXTURE_TEXTURES:
         if package_path not in packages:
-            source_path = Path(client_root) / package_path
+            source_path = client_access.require_equal_file(package_path)
             packages[package_path] = read_unreal_package(source_path.read_bytes(), source_path.name)
         textures.append(native_mip_chain_fixture(packages[package_path], package_path, texture_object))
     return {'schemaVersion': 2, 'kind': 'native-texture-mip-chain-fixtures', 'source': {'reader': 'native_assets_lib.texture_mips.build_texture_source'},
@@ -64,6 +66,7 @@ def main(arguments):
     parser.add_argument('--output-directory', default=str(DEFAULT_OUTPUT_DIRECTORY))
     options = parser.parse_args(arguments)
     try:
+        require_reference_client(options.client_root)
         written = export_material_texture_mip_fixtures(options.client_root, options.output_directory)
     except (OSError, ValueError) as error:
         print(str(error), file=sys.stderr)

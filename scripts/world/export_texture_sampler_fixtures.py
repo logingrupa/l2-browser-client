@@ -12,6 +12,7 @@ import json
 from native_assets_lib.material_texture_mip_chain import texture_min_lod
 from native_assets_lib.texture_mips import build_texture_source
 from native_assets_lib.texture_package_118 import read_unreal_package
+from reference_client_guard import require_reference_client
 from world.export_day_night_fixtures import FIXTURES_ROOT, read_pinned_json, require, require_output_directory_inside_fixtures
 
 TEXTURE_SAMPLERS_REPORT_SHA256 = 'fc0169fe76524dd3a118474b9211e1b55b182870be3ddf9274d38431d619c1a5'
@@ -77,7 +78,7 @@ def texture_export_named(package, texture_name):
 def live_texture(client_root, packages, texture_name, stage):
     relative_path = live_texture_package_path(texture_name)
     if relative_path not in packages:
-        package_path = Path(client_root) / relative_path
+        package_path = require_reference_client(client_root).require_equal_file(relative_path)
         packages[relative_path] = read_unreal_package(package_path.read_bytes(), package_path.name)
     package = packages[relative_path]
     metadata, _ = build_texture_source(package, texture_export_named(package, texture_name))
@@ -113,6 +114,7 @@ def main(arguments):
     parser.add_argument('--output-directory', default=str(DEFAULT_OUTPUT_DIRECTORY))
     options = parser.parse_args(arguments)
     try:
+        require_reference_client(options.client_root)
         written = export_texture_sampler_fixtures(options.delivery_root, options.client_root, options.output_directory)
     except (OSError, ValueError, KeyError) as error:
         print(str(error), file=sys.stderr)
