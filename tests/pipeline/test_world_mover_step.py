@@ -35,8 +35,7 @@ ORACLE_PATH = ROOT / 'recipes' / 'world' / 'oracle' / '20_20' / 'expected.json'
 SERVED_STORE = ROOT / 'public' / 'l2'
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
 MOVER_CLASS_EVIDENCE = LANE_FOLDER / 'work' / 'class__Engine.Mover' / 'class-defaults' / 'products'
-ORACLE_COLOUR_STREAM_GAP_REASON = 'static-mesh-colour-stream-layout-unreviewed:123/28'
-ORACLE_COLOUR_STREAM_GAP_OBJECTS = ('l2fortress_02_s.Fort02_indoor', 'l2fortress_02_s.fort02_wall_door')
+SEALED_PRODUCT_GAP_REASON = 'static-mesh-colour-stream-layout-unreviewed:123/0'
 SLOT_ROWS = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 30.0, 1.0]]
 OPEN_ROWS = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 166.0, 1.0]]
 
@@ -334,7 +333,7 @@ class SealedMoverUnitTests(unittest.TestCase):
         lane_folder = Path(temporary.name)
         step_directory = lane_folder / 'work' / 'tile__20_20' / MOVER_STEP_NAME
         (step_directory / 'products').mkdir(parents=True)
-        (step_directory / 'products' / 'movers.json').write_text(json.dumps({'gapRows': [{'reason': ORACLE_COLOUR_STREAM_GAP_REASON}]}),
+        (step_directory / 'products' / 'movers.json').write_text(json.dumps({'gapRows': [{'reason': SEALED_PRODUCT_GAP_REASON}]}),
                                                                  encoding='utf-8')
         ledger = SimpleNamespace(lane_folder=lane_folder, is_sealed=lambda unit_key, fingerprint: True,
                                  unit_step_directory=lambda unit_key: step_directory, begin=mock.Mock(side_effect=AssertionError('sealed unit begun')))
@@ -345,7 +344,7 @@ class SealedMoverUnitTests(unittest.TestCase):
                                  mover_unit=mock.Mock(return_value=unit), read_locked_map_package=mock.Mock(side_effect=AssertionError('map read'))):
             row = run_mover_step(lane_folder, lane_folder / 'client', '20_20')
         self.assertEqual((row['key'], row['step'], row['status'], row['reason'], row['evidence']),
-                         ('tile:20_20', MOVER_STEP_NAME, 'gap', ORACLE_COLOUR_STREAM_GAP_REASON, 'work/tile__20_20/movers/receipt.json'))
+                         ('tile:20_20', MOVER_STEP_NAME, 'gap', SEALED_PRODUCT_GAP_REASON, 'work/tile__20_20/movers/receipt.json'))
         self.assertEqual(row['sourceIdentity'], {'path': 'maps/20_20.unr', 'sha256': 'e' * 64})
         ledger.begin.assert_not_called()
 
@@ -365,8 +364,7 @@ class OracleMoverSubsetTests(unittest.TestCase):
         self.assertEqual(sorted(mover['id'] for mover in manifest['movers']), sorted(oracle['moverIds']))
         self.assertEqual([model['id'] for model in manifest['models']], oracle['modelIds'])
         self.assertEqual(product['exportCount'], 8)
-        self.assertEqual([(row['step'], row['status'], row['reason'], row['sourceIdentity']['object']) for row in product['gapRows']],
-                         [(MOVER_STEP_NAME, 'gap', ORACLE_COLOUR_STREAM_GAP_REASON, model_object) for model_object in ORACLE_COLOUR_STREAM_GAP_OBJECTS])
+        self.assertEqual(product['gapRows'], [])
         served_by_id = {mover['id']: mover for mover in served['movers']}
         for mover in manifest['movers']:
             reference = served_by_id[mover['id']]
