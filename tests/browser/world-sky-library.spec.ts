@@ -1,16 +1,24 @@
 import { expect, test, type Page } from "@playwright/test";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { decodeNativeStorePng } from "../../src/assets/native/decodeNativeStorePng";
 import { buildDisplayGammaTable, defaultDisplayGammaSettings } from "../../src/materials/ue2/model/displayGamma";
 import { desktopViewport } from "./browserViewports";
 
 interface SkyCatalogRecord { readonly id: string; readonly manifest: string }
 interface SkySnapshot {
-  readonly parts: readonly { readonly sourceMaterial: string; readonly authoredColorRGBA: readonly number[] }[];
+  readonly parts: readonly { readonly sourceMaterial: string }[];
   readonly materials: readonly { readonly root: string; readonly program: { readonly programSha256: string } | null }[];
 }
 interface SkySurfaceInspection { readonly sourceReference: string | null; readonly status: string; readonly programMaterialId: string | null }
+interface SkyEnvironmentColourWrite {
+  readonly setupKey: string;
+  readonly materialNode: string | null;
+  readonly tableRgb: readonly number[] | null;
+  readonly localFogInfoCount: number;
+  readonly writtenRgb: readonly number[] | null;
+  readonly materialColourSource: string;
+  readonly reason: string | null;
+}
 interface CameraInspection { readonly target: number[]; readonly alpha: number; readonly upperBetaLimit: number | null; readonly lowerRadiusLimit: number | null }
 
 const laneName = "world";
@@ -21,7 +29,6 @@ const laneStoreFile = (path: string) => resolve(laneStore, path.replace(/^\/l2\/
 const readJson = <Value>(path: string): Value => JSON.parse(readFileSync(path, "utf8")) as Value;
 const evidenceFolder = resolve("artifacts/ui-evidence");
 const tileLoadTimeout = 300_000;
-const skyRegion = { left: 300, right: 1100, top: 0, bottom: 200 };
 const displayGammaTable = buildDisplayGammaTable(defaultDisplayGammaSettings());
 const colourByteMaximum = 255;
 const displayedByte = (byte: number) => Math.round(displayGammaTable[byte]! * colourByteMaximum);
@@ -35,6 +42,8 @@ function sharedSkySnapshot(): SkySnapshot | null {
 
 const skySurfaces = (page: Page) => page.evaluate(() =>
   (window.__nativeSlice?.snapshot().nativeSky?.librarySurfaces ?? null) as SkySurfaceInspection[] | null);
+const skyEnvironmentColourWrites = (page: Page) => page.evaluate(() =>
+  (window.__nativeSlice?.snapshot().nativeSky?.environmentColours ?? []) as readonly SkyEnvironmentColourWrite[]);
 
 async function lookAtHorizonFromTarget(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -44,22 +53,11 @@ async function lookAtHorizonFromTarget(page: Page): Promise<void> {
   await page.evaluate(() => new Promise<void>(resolveFrames => requestAnimationFrame(() => requestAnimationFrame(() => resolveFrames()))));
 }
 
-function mostFrequentRegionColour(rgba: Uint8Array, width: number): readonly number[] {
-  const counts = new Map<string, number>();
-  for (let y = skyRegion.top; y < skyRegion.bottom; y++) {
-    for (let x = skyRegion.left; x < skyRegion.right; x++) {
-      const offset = (y * width + x) * 4, key = `${rgba[offset]},${rgba[offset + 1]},${rgba[offset + 2]}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-  }
-  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]![0].split(",").map(Number);
-}
-
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=world");
 
 test.describe("desktop", () => {
   test.use({ viewport: desktopViewport });
-  test(`draws the shared sky surfaces on tile ${tileId} through the UE2 library so its authored background colour passes the display gamma ramp once at 1440 x 900`, async ({ page }) => {
+  test(`draws the shared sky surfaces on tile ${tileId} through the UE2 library with the time-of-day background colour written into its ColorModifier at 1440 x 900`, async ({ page }) => {
     const snapshot = sharedSkySnapshot();
     test.skip(snapshot === null, "the world lane store has no shared skylevel sky; run scripts/world/shared_sky_step.py");
     test.setTimeout(tileLoadTimeout + 60_000);
@@ -73,15 +71,14 @@ test.describe("desktop", () => {
       expect(surface.programMaterialId).toBe(programOfRoot.get(surface.sourceReference!.toLowerCase()));
     }
     await lookAtHorizonFromTarget(page);
+    const backgroundWrite = (await skyEnvironmentColourWrites(page)).find(write => write.materialNode?.toLowerCase() === skyBackgroundRoot.toLowerCase());
+    expect(backgroundWrite, `${skyBackgroundRoot} is bound to a time-of-day sky colour`).toBeDefined();
+    expect(backgroundWrite).toMatchObject({ materialColourSource: "environment-write", reason: null, localFogInfoCount: 0 });
+    expect(backgroundWrite!.writtenRgb, `${skyBackgroundRoot} without a local L2FogInfo shows its time table colour`).toEqual(backgroundWrite!.tableRgb);
     mkdirSync(evidenceFolder, { recursive: true });
-    const screenshot = await page.screenshot({ path: resolve(evidenceFolder, `world-sky-library-${tileId}-horizon-desktop.png`) });
-    const pixels = await decodeNativeStorePng(new Uint8Array(screenshot), new AbortController().signal);
-    const authored = snapshot!.parts.find(part => part.sourceMaterial === skyBackgroundRoot)!.authoredColorRGBA;
-    const expected = authored.slice(0, 3).map(displayedByte);
-    const measured = mostFrequentRegionColour(pixels.rgba, pixels.width);
-    writeFileSync(resolve(evidenceFolder, `world-sky-library-${tileId}-inspection.json`),
-      JSON.stringify({ librarySurfaces: await skySurfaces(page), authoredBackgroundRgba: authored, expectedDisplayedRgb: expected, measuredSkyRgb: measured }, null, 2));
-    expect(measured).toEqual(expected);
+    await page.screenshot({ path: resolve(evidenceFolder, `world-sky-library-${tileId}-horizon-desktop.png`) });
+    writeFileSync(resolve(evidenceFolder, `world-sky-library-${tileId}-inspection.json`), JSON.stringify({ librarySurfaces: await skySurfaces(page),
+      backgroundWrite, backgroundDisplayedRgb: backgroundWrite!.writtenRgb!.map(displayedByte) }, null, 2));
     expect(pageErrors).toEqual([]);
   });
 });
