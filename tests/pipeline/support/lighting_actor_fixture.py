@@ -30,7 +30,8 @@ SYNTHETIC_CHAINS = {
 }
 ACTOR_LIGHT_DEFAULTS = {'Location': (None, 'ue-zero', ACTOR_CLASS), 'Rotation': (None, 'ue-zero', ACTOR_CLASS),
                         'bDynamicLight': (None, 'ue-zero', ACTOR_CLASS), 'bDirectional': (None, 'ue-zero', ACTOR_CLASS),
-                        'bSunAffect': (None, 'ue-zero', ACTOR_CLASS), 'bDeleteMe': (None, 'ue-zero', ACTOR_CLASS)}
+                        'bSunAffect': (None, 'ue-zero', ACTOR_CLASS), 'bDeleteMe': (None, 'ue-zero', ACTOR_CLASS),
+                        'bLightChanged': (None, 'ue-zero', ACTOR_CLASS)}
 LIGHTING_CLASS_DEFAULTS = SyntheticActorClassDefaults({
     LIGHT_CLASS: {**ACTOR_LIGHT_DEFAULTS, 'LightType': (1, 'class-default', LIGHT_CLASS), 'LightEffect': (None, 'ue-zero', LIGHT_CLASS),
                   'LightBrightness': (64.0, 'class-default', LIGHT_CLASS)},

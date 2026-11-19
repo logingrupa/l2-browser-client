@@ -26,7 +26,7 @@ from world.collision_step import volume_records
 from world.bsp_lightmaps import LIGHTMAP_ATLAS_EDGE, NO_LIGHTMAP, node_lightmap_texture, read_bsp_lightmaps
 from world.bsp_node_sun_affect import NOT_SUN_AFFECTED, SUN_AFFECT_UNRESOLVED, SUN_AFFECTED
 from world.tile_step_registry import TILE_STEP_NAMES
-from world.light_actors import ClassChains, LightingActor, read_lighting_actors, read_static_mesh_light_lists
+from world.light_actors import ClassChains, LightingActor, read_lighting_actors, read_static_mesh_light_lists, reference_client_class_chains
 from world.lighting_payload import bsp_lightmap_arrays, static_mesh_light_list_arrays, terrain_lighting_arrays, typed_payload_byte_count
 from world.lighting_step import (APPLIED_LIGHTING_RULES, LIGHTING_STEP_ALGORITHM_VERSION, LIGHTING_STEP_NAME, class_chain_unresolved_reasons,
                                  lighting_unit, load_lighting_rules, water_volume_links)
@@ -177,7 +177,7 @@ class LightingActorTests(unittest.TestCase):
         self.assertEqual(field_rows(lights[0]), [('LightType', 1, 'class-default'), ('LightEffect', None, 'ue-zero'),
                                                  ('LightBrightness', 56.0, 'authored'), ('Location', None, 'ue-zero'),
                                                  ('Rotation', None, 'ue-zero'), ('bDynamicLight', None, 'ue-zero'), ('bDirectional', None, 'ue-zero'),
-                                                 ('bSunAffect', None, 'ue-zero'), ('bDeleteMe', None, 'ue-zero')])
+                                                 ('bSunAffect', None, 'ue-zero'), ('bDeleteMe', None, 'ue-zero'), ('bLightChanged', None, 'ue-zero')])
         self.assertEqual(field_rows(fog_infos[0]), [('AffectRange', None, 'ue-zero'), ('FogRange1', None, 'ue-zero'), ('Location', None, 'ue-zero')])
         self.assertEqual(field_rows(level_infos[0]), [('Brightness', 1.0, 'class-default')])
         self.assertEqual(lights[0].to_record()['fields'][2], {'field': 'LightBrightness', 'value': 56.0, 'provenance': 'authored',
@@ -288,7 +288,7 @@ class LightingActorTests(unittest.TestCase):
 class LightingRegistrationTests(unittest.TestCase):
     def test_the_step_kind_and_reasons_are_registered(self):
         self.assertIn(LIGHTING_STEP_NAME, TILE_STEP_NAMES)
-        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 10)
+        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 11)
         self.assertIn('lighting', load_tile_manifest_vocabulary().resource_kinds)
         patterns = load_gap_reason_patterns()
         for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large',
@@ -322,6 +322,29 @@ class LightingRegistrationTests(unittest.TestCase):
                 self.assertTrue(row['provenance'])
                 self.assertIn(row['status'], SHARED_STATUSES - {'unknown'})
         self.assertLessEqual(set(APPLIED_LIGHTING_RULES), {row['id'] for row in rows})
+
+
+def reference_class_defaults(test_case, prefix):
+    from native_assets_lib.class_defaults import ReferenceClientClassScripts
+    from synthetic_class_scripts import scratch_work_root_with_world_class_default_cache
+    from world.static_placement import ClassDefaults
+    return ClassDefaults(scratch_work_root_with_world_class_default_cache(test_case.addCleanup, prefix), ReferenceClientClassScripts(REFERENCE_CLIENT))
+
+
+def light_cache_flag_lights(package, model, class_defaults, export_indices):
+    actors = [{key: package.exports[index - 1][key] for key in ('exportIndex', 'object', 'classObject')} for index in export_indices]
+    lights = read_lighting_actors(package, model, actors, reference_client_class_chains(class_defaults)).lights
+    return {light.export_index: next((field.value, field.provenance) for field in light.fields if field.field == 'bLightChanged') for light in lights}
+
+
+@unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')
+class RealClientLightCacheFlagTests(unittest.TestCase):
+    def test_the_20_20_scene_lights_55_128_and_123_of_the_rm26_arches_author_bLightChanged_true(self):
+        from world.level_model import read_level_model
+        from world.tile_chunk_plan import read_locked_map_package
+        package = read_locked_map_package(REFERENCE_CLIENT, '20_20', read_tile_map_lock_record('20_20'))
+        lights = light_cache_flag_lights(package, read_level_model(package).model, reference_class_defaults(self, 'light-cache-flags-20-20-'), (55, 128, 123))
+        self.assertEqual(lights, {55: (True, 'authored'), 128: (True, 'authored'), 123: (True, 'authored')})
 
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')
@@ -368,17 +391,10 @@ class RealClientLightmapTests(unittest.TestCase):
         self.assertEqual([{'light': entry.light_reference, 'maskHex': entry.visibility_bits.hex(), 'flag': entry.applied}
                           for entry in light_list.environment_lights], expected['environmentLights'])
 
-    def reference_class_defaults(self):
-        from native_assets_lib.class_defaults import ReferenceClientClassScripts
-        from synthetic_class_scripts import scratch_work_root_with_world_class_default_cache
-        from world.static_placement import ClassDefaults
-        return ClassDefaults(scratch_work_root_with_world_class_default_cache(self.addCleanup, 'lighting-reference-class-defaults-'),
-                             ReferenceClientClassScripts(REFERENCE_CLIENT))
-
     def test_every_rm19_integrated_actor_stages_the_scale_glow_and_float32_local_to_world_the_native_rebuild_read(self):
         from world.light_actors import read_static_mesh_light_list
         from world.map_actor_properties import TRANSFORMS, actor_properties, decode_property, explicit_properties
-        class_defaults = self.reference_class_defaults()
+        class_defaults = reference_class_defaults(self, 'lighting-reference-class-defaults-')
         for fixture in json.loads(RM19_FIXTURES_PATH.read_text(encoding='utf-8'))['integrated']:
             with self.subTest(actor=fixture['actorExportIndex']):
                 light_list = read_static_mesh_light_list(self.package, fixture['actorExportIndex'], fixture['instanceExportIndex'])
@@ -392,6 +408,11 @@ class RealClientLightmapTests(unittest.TestCase):
                 self.assertEqual(named['SMLL.ordinaryInputsResolved'].values, (1,))
                 self.assertEqual(staged['SMLL.scaleGlow'], (fixture['scaleGlow'],))
                 self.assertEqual(list(staged['SMLL.localToWorld']), fixture['localToWorld'])
+
+    def test_the_20_21_lights_297_and_321_resolve_bLightChanged_false_from_the_class_default(self):
+        lights = light_cache_flag_lights(self.package, self.model, reference_class_defaults(self, 'light-cache-flags-20-21-'), (297, 321))
+        self.assertEqual({export_index: light_changed for export_index, (light_changed, _) in lights.items()}, {297: None, 321: None})
+        self.assertEqual({provenance for _, provenance in lights.values()}, {'ue-zero'})
 
     def test_every_lit_node_of_20_21_has_uvs_inside_its_record_rectangle(self):
         from world.lighting_payload import lightmap_node_ranges
