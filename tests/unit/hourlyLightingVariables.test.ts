@@ -89,7 +89,7 @@ describe("hourly lighting developer variables", () => {
       .toBe("compressed child bc1-native-levels; rebuilt composite rgba8-single-mip-rebuilt");
     expect(byName("lighting.staticMesh.ambient")).toMatchObject({ status: "native" });
     expect(byName("lighting.staticMesh.visibility")).toMatchObject({ status: "native",
-      value: `1 of 1 placements hourly; ${staticMeshVisibilityProbeActor} vertex 0 0.5 (entries 3 > 4 at 0.5)` });
+      value: `1 of 1 placements with hourly masks; ${staticMeshVisibilityProbeActor} vertex 0 mask visibility 0.5 (entries 3 > 4 at 0.5), before the light cache gate` });
     expect(byName("lighting.actor.ambient")).toMatchObject({ status: "native" });
     expect(byName("lighting.device.finalShaderColour")).toMatchObject({ value: "d3d-programmable-composition", status: "unverified" });
     expect(byName("lighting.unresolved").value.split(", ")).toHaveLength(18);

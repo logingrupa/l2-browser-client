@@ -110,8 +110,8 @@ function meshAndDeviceReadings(lighting: TileLightingRuntimeInspection): Record<
       if (visibility.gap !== null) return unverifiedReading(visibility.gap);
       const probe = visibility.placements.find(placement => placement.sourceActor === staticMeshVisibilityProbeActor);
       const probeText = probe === undefined ? `${staticMeshVisibilityProbeActor} not placed`
-        : `${staticMeshVisibilityProbeActor} vertex 0 ${probe.vertexZeroVisibility} (entries ${probe.entryBlend.index} > ${probe.entryBlend.nextIndex} at ${probe.entryBlend.weight})`;
-      return nativeReading(`${visibility.placements.length} of ${visibility.placementCount} placements hourly; ${probeText}`);
+        : `${staticMeshVisibilityProbeActor} vertex 0 mask visibility ${probe.vertexZeroVisibility} (entries ${probe.entryBlend.index} > ${probe.entryBlend.nextIndex} at ${probe.entryBlend.weight}), before the light cache gate`;
+      return nativeReading(`${visibility.placements.length} of ${visibility.placementCount} placements with hourly masks; ${probeText}`);
     },
     "lighting.staticMesh.colour0": () => {
       const lit = lighting.staticMeshSlots.lighting;
