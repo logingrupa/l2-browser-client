@@ -10,6 +10,7 @@ import { drawNativeSessionSeed } from "../../assets/native/nativeSessionSeed";
 import { loadNativeMaterial } from "../../materials/ue2/babylon/loadNativeMaterial";
 import type { NativeMaterialUniforms } from "../../materials/ue2/babylon/material";
 import { indexNone } from "./bspVisibility/core/bspNodeArrays";
+import { BLEND_CONSTANTS } from "../../materials/ue2/model/constants/blendConstants";
 import { sharedSkyVisibilityRules, type SharedSkyDepthClear } from "./bspVisibility/sharedSkyVisibilityRules";
 import { validateSectionGlb } from "./loadNativeSection";
 import { readSharedSkySource, type NativeSharedSkySource } from "./nativeSharedSkySource";
@@ -104,7 +105,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     visibilityDriver = visibility === null ? null : driveNativeSkyVisibility(scene, partMeshes, visibility);
   } catch (error) { container.dispose(); root.dispose(); throw error; }
   const materials = [...new Set(skyMeshes.map(mesh => mesh.material!))];
-  for (const material of materials) material.fogEnabled = false;
+  for (const material of materials) { material.fogEnabled = false; material.backFaceCulling = BLEND_CONSTANTS.sharedSkyBackFaceCulling.runtimeDefault; }
   skyMeshes.forEach((mesh, index) => { if (libraryBinding.surfaces[index]!.status !== "library-compiled") mesh.material!.disableDepthWrite = true; });
   const skySet = new Set(skyMeshes), worldGroups = new Map<AbstractMesh, number>();
   const rootPosition = root.position.clone();

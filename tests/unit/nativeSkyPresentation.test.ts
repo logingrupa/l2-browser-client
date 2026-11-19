@@ -17,6 +17,7 @@ import {
   sharedSkyVisibilityUnstagedReason, worldGroupDepthClear, type SharedSkyViewTrigger,
 } from "../../src/scene/world/nativeSkyPresentation";
 import { sharedSkyVisibilityRules } from "../../src/scene/world/bspVisibility/sharedSkyVisibilityRules";
+import { BLEND_CONSTANTS } from "../../src/materials/ue2/model/constants/blendConstants";
 import { swatchTexturePng, syntheticSkyColourModifierProgram, textureImageFor } from "../support/materialProgramFixture";
 import { jsonBytes, sha256Hex } from "../support/nativeTileFixtureStore";
 
@@ -182,6 +183,17 @@ describe("shared sky presentation", () => {
     const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null, null);
     const [library, gltf] = ["shared sky part 0", "shared sky part 1"].map(name => scene.meshes.find(mesh => mesh.name === name)!.material!);
     expect([library!.disableDepthWrite, gltf!.disableDepthWrite]).toEqual([false, true]);
+    sky?.dispose();
+  });
+
+  it("leaves back face rejection of every sky material to the node walk, so the back-facing two-sided haze ring band draws as native", async () => {
+    sharedSkyStore({ materialRoots: 2, listedMaterials: [listedSkyBackground] });
+    vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => containerWithMeshes(scene, 2, [skyBackgroundRoot, "l2_skies.Shaders.Unlisted"]));
+    vi.mocked(loadNativeMaterial).mockImplementation(async materialId => loadedSkyBackgroundProgram(materialId));
+    const sky = await createNativeSkyPresentation(scene, new AbortController().signal, null, null, null);
+    const materials = ["shared sky part 0", "shared sky part 1"].map(name => scene.meshes.find(mesh => mesh.name === name)!.material!);
+    expect(materials.map(material => material.backFaceCulling)).toEqual([BLEND_CONSTANTS.sharedSkyBackFaceCulling.runtimeDefault, BLEND_CONSTANTS.sharedSkyBackFaceCulling.runtimeDefault]);
+    expect(BLEND_CONSTANTS.sharedSkyBackFaceCulling.runtimeDefault).toBe(false);
     sky?.dispose();
   });
 

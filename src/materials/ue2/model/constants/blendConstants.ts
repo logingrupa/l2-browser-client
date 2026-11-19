@@ -137,4 +137,12 @@ export const BLEND_CONSTANTS = {
     interludeEvidence: null,
     runtimeDefault: "depth write only for FB_Overwrite, OB_Normal without Opacity and OB_Masked; a FinalBlend ZWrite overrides",
   },
+  sharedSkyBackFaceCulling: {
+    id: "blend.shared-sky-back-face-culling",
+    value: false,
+    provenance: "RM-22 shared-sky-nodes.json 5275acf9...0fd4: the sky node walk 0x10689fd0 drops a back-facing node unless its flags hold 0x4000100 or 0x80000, and every accepted node is drawn; RM-21 shared-sky-render-passes pixels20_21.json: the final haze run (draws 645-678) holds 25 back-facing two-sided haze nodes and moves (720,5) from 175,155,129 to 168,150,125, so native rasterises them",
+    status: "unconfirmed",
+    interludeEvidence: null,
+    runtimeDefault: false,
+  },
 } as const satisfies Record<string, ReferenceConstantRow<unknown>>;
