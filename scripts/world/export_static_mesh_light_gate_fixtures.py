@@ -14,7 +14,7 @@ from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from world.export_day_night_fixtures import DEFAULT_OUTPUT_DIRECTORY, read_pinned_json, require, require_output_directory_inside_fixtures
 from world.light_actors import read_static_mesh_light_list
 from world.map_actor_properties import TRANSFORMS, actor_properties, decode_property, explicit_properties
-from world.raw_map_step import read_tile_map_lock_record
+from world.raw_map_step import read_tile_map_lock_record, tile_map_path
 from world.static_mesh_light_list_fields import static_mesh_light_list_fields
 from world.static_placement import ClassDefaults
 from world.tile_chunk_plan import read_locked_map_package
@@ -28,8 +28,8 @@ FIXTURES_OUTPUT_NAME = 'static-mesh-light-gate-fixtures.json'
 LIGHT_CACHE_FLAG_FIELDS = ('bDynamicLight', 'bLightChanged', 'bDeleteMe')
 AUTHORED_PROVENANCE = 'map-property-tag'
 CLASS_DEFAULT_PROVENANCE = 'package-class-default'
-RM26_MAP_NAME = '20_20.unr'
-RM26_TILE = '20_20'
+MAP_PACKAGE_FOLDER = 'maps'
+MAP_PACKAGE_SUFFIX = '.unr'
 EXPECTED_RM26_SAMPLE_COUNT = 7
 EXPECTED_RM27_VERTEX_COUNT = 3
 
@@ -67,10 +67,15 @@ def rm19_light_cache_flags(fixture_inputs, integrated_fixtures):
             + [rm19_light_cache_flag_record(lights_by_export_index[light], lights_by_export_index[light]['class']) for light in referenced])
 
 
-def rm26_map_sha256(report):
-    matches = [source['fileSha256'] for source in report['sources'] if PureWindowsPath(source['file']).name.casefold() == RM26_MAP_NAME]
-    require(len(matches) == 1, f'the RM-26 report pins {len(matches)} copies of {RM26_MAP_NAME}')
-    return matches[0]
+def is_map_package_source(source):
+    path = PureWindowsPath(source['file'])
+    return path.parent.name.casefold() == MAP_PACKAGE_FOLDER and path.suffix.casefold() == MAP_PACKAGE_SUFFIX
+
+
+def rm26_map_source(report):
+    matches = [source for source in report['sources'] if is_map_package_source(source)]
+    require(len(matches) == 1, f'the RM-26 report pins {len(matches)} map packages')
+    return PureWindowsPath(matches[0]['file']).stem, matches[0]['fileSha256']
 
 
 def live_receiver(sample, sun_affect_field):
@@ -99,28 +104,28 @@ def addendum_entry_rows(addendum, kind):
     return [{'light': item['light']['objectIndex'], 'maskHex': item['maskHex'], 'applied': item['applied']} for item in arrays[0]['items']]
 
 
-def map_light_cache_flags(package, light_reference, class_defaults_by_class):
+def map_light_cache_flags(package, map_file_name, light_reference, class_defaults_by_class):
     export = package.exports[light_reference - 1]
     defaults = class_defaults_by_class.get(export['classObject'])
     require(defaults is not None, f'RM-19 pins no class default flags for {export["classObject"]} (light {light_reference})')
-    authored = {prop['name']: prop.get('value') for prop in (decode_property(package, tag, RM26_MAP_NAME) for tag in actor_properties(package, export)[0])
+    authored = {prop['name']: prop.get('value') for prop in (decode_property(package, tag, map_file_name) for tag in actor_properties(package, export)[0])
                 if prop['name'] in LIGHT_CACHE_FLAG_FIELDS}
     fields = [{'field': field, 'provenance': AUTHORED_PROVENANCE, 'value': authored[field]} if field in authored
               else {'field': field, 'provenance': CLASS_DEFAULT_PROVENANCE, 'value': defaults[field]} for field in LIGHT_CACHE_FLAG_FIELDS]
     return {'exportIndex': light_reference, 'object': export['object'], 'actorClass': export['classObject'], 'fields': fields}
 
 
-def static_mesh_actor_row(package, actor_export_index):
+def static_mesh_actor_row(package, map_file_name, actor_export_index):
     export = package.exports[actor_export_index - 1]
-    properties = [decode_property(package, tag, RM26_MAP_NAME) for tag in actor_properties(package, export)[0]]
+    properties = [decode_property(package, tag, map_file_name) for tag in actor_properties(package, export)[0]]
     return {'exportIndex': export['exportIndex'], 'classObject': export['classObject'], 'sourceTransform': explicit_properties(properties, TRANSFORMS)}
 
 
-def rm26_receivers(package, receivers, addendum, class_defaults, class_defaults_by_class):
+def rm26_receivers(package, map_file_name, receivers, addendum, class_defaults, class_defaults_by_class):
     rows = []
     for receiver in receivers:
         light_list = read_static_mesh_light_list(package, receiver['exportIndex'], receiver['instanceExportIndex'])
-        (fields,) = static_mesh_light_list_fields(package, [static_mesh_actor_row(package, receiver['exportIndex'])], [light_list], class_defaults)
+        (fields,) = static_mesh_light_list_fields(package, [static_mesh_actor_row(package, map_file_name, receiver['exportIndex'])], [light_list], class_defaults)
         require(fields.ordinary_inputs_resolved(), f'static mesh actor {receiver["exportIndex"]} ScaleGlow or LocalToWorld is unresolved')
         ordinary, hourly = light_entry_rows(light_list.scene_lights), light_entry_rows(light_list.environment_lights)
         if receiver['exportIndex'] == addendum['packageData']['actor']['exportIndex']:
@@ -129,7 +134,7 @@ def rm26_receivers(package, receivers, addendum, class_defaults, class_defaults_
         references = sorted({entry['light'] for entry in ordinary + hourly if entry['light'] != 0})
         rows.append({**receiver, 'vertexCount': light_list.color_count, 'scaleGlow': fields.scale_glow, 'localToWorld': list(fields.local_to_world),
                      'ordinaryEntries': ordinary, 'hourlyEntries': hourly,
-                     'lights': [map_light_cache_flags(package, reference, class_defaults_by_class) for reference in references]})
+                     'lights': [map_light_cache_flags(package, map_file_name, reference, class_defaults_by_class) for reference in references]})
     return rows
 
 
@@ -143,24 +148,26 @@ def rm27_normal_fixture(report):
 
 
 def static_mesh_light_gate_fixtures_document(fixture_inputs, integrated_fixtures, report, addendum, normal_report, package, class_defaults):
-    map_sha256 = rm26_map_sha256(report)
-    require(package.source_hash == map_sha256, f'{RM26_MAP_NAME} sha256 {package.source_hash} differs from the RM-26 pin {map_sha256}')
+    map_tile, map_sha256 = rm26_map_source(report)
+    map_path = tile_map_path(map_tile)
+    require(package.source_hash == map_sha256, f'{map_path} sha256 {package.source_hash} differs from the RM-26 pin {map_sha256}')
     class_defaults_by_class = light_cache_flag_defaults(fixture_inputs)
     return {'schemaVersion': 1, 'kind': 'static-mesh-light-gate-fixtures',
             'source': {'rm19FixtureInputs': pinned_source('20261113-roadmap/ordinary-static-lighting-rm19/data/fixture-inputs.json', RM19_FIXTURE_INPUTS_SHA256),
                        'rm19IntegratedFixtures': pinned_source('20261113-roadmap/ordinary-static-lighting-rm19/rebuild/integrated-native-fixtures.json',
                                                                RM19_INTEGRATED_FIXTURES_SHA256),
                        'rm26Report': pinned_source('20261113-roadmap/static-mesh-lod.json', RM26_REPORT_SHA256),
-                       'rm26Map': pinned_source(f'maps/{RM26_MAP_NAME}', map_sha256),
+                       'rm26Map': pinned_source(map_path, map_sha256),
                        'wall5383Addendum': pinned_source('20261113-roadmap/static-mesh-lod-wall5383.json', WALL5383_ADDENDUM_SHA256),
                        'rm27Report': pinned_source('20261113-roadmap/static-mesh-normal-transform.json', RM27_REPORT_SHA256)},
             'rm19LightCacheFlags': rm19_light_cache_flags(fixture_inputs, integrated_fixtures),
-            'rm26Receivers': rm26_receivers(package, rm26_live_receivers(report, addendum), addendum, class_defaults, class_defaults_by_class),
+            'rm26Receivers': rm26_receivers(package, PureWindowsPath(map_path).name, rm26_live_receivers(report, addendum), addendum, class_defaults, class_defaults_by_class),
             'rm27Normals': rm27_normal_fixture(normal_report)}
 
 
-def read_rm26_map_package(client):
-    return read_locked_map_package(Path(client), RM26_TILE, read_tile_map_lock_record(RM26_TILE))
+def read_rm26_map_package(client, report):
+    map_tile, _ = rm26_map_source(report)
+    return read_locked_map_package(Path(client), map_tile, read_tile_map_lock_record(map_tile))
 
 
 def reference_class_defaults(client, class_default_work_root):
@@ -169,13 +176,14 @@ def reference_class_defaults(client, class_default_work_root):
 
 def export_static_mesh_light_gate_fixtures(paths, client, class_default_work_root, output_directory=DEFAULT_OUTPUT_DIRECTORY):
     output = require_output_directory_inside_fixtures(output_directory)
+    rm26_report = read_pinned_json(paths['rm26Report'], RM26_REPORT_SHA256, 'the RM-26 report')
     document = static_mesh_light_gate_fixtures_document(
         read_pinned_json(paths['rm19FixtureInputs'], RM19_FIXTURE_INPUTS_SHA256, 'the RM-19 fixture inputs'),
         read_pinned_json(paths['rm19IntegratedFixtures'], RM19_INTEGRATED_FIXTURES_SHA256, 'the RM-19 integrated fixtures'),
-        read_pinned_json(paths['rm26Report'], RM26_REPORT_SHA256, 'the RM-26 report'),
+        rm26_report,
         read_pinned_json(paths['wall5383Addendum'], WALL5383_ADDENDUM_SHA256, 'the wall5383 addendum'),
         read_pinned_json(paths['rm27Report'], RM27_REPORT_SHA256, 'the RM-27 report'),
-        read_rm26_map_package(client), reference_class_defaults(client, class_default_work_root))
+        read_rm26_map_package(client, rm26_report), reference_class_defaults(client, class_default_work_root))
     data = (json.dumps(document, indent=1, ensure_ascii=True) + '\n').encode('utf-8')
     output.mkdir(parents=True, exist_ok=True)
     (output / FIXTURES_OUTPUT_NAME).write_bytes(data)

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from world.export_day_night_fixtures import DayNightFixtureError
 from world.export_static_mesh_light_gate_fixtures import (RM19_FIXTURE_INPUTS_SHA256, RM19_INTEGRATED_FIXTURES_SHA256, RM26_REPORT_SHA256, RM27_REPORT_SHA256,
-                                                          WALL5383_ADDENDUM_SHA256, light_cache_flag_defaults, rm26_live_receivers, rm26_map_sha256)
+                                                          WALL5383_ADDENDUM_SHA256, light_cache_flag_defaults, rm26_live_receivers, rm26_map_source)
 
 FIXTURES_FILE = ROOT / 'tests' / 'fixtures' / 'environment' / 'static-mesh-light-gate-fixtures.json'
 FIXTURES_FILE_SHA256 = '760b2ed0f7ac8aec030d0cc761fe88c66166e96d76dcfb5144625cd982d1cdad'
@@ -46,9 +46,17 @@ class StaticMeshLightGateFixturesDocumentTests(unittest.TestCase):
         with self.assertRaisesRegex(DayNightFixtureError, 'two Engine.Light defaults for bLightChanged'):
             light_cache_flag_defaults({'lights': [light, conflicting], 'sun': sun})
 
-    def test_a_report_without_one_20_20_map_pin_or_seven_live_samples_is_refused(self):
-        with self.assertRaisesRegex(DayNightFixtureError, 'pins 0 copies'):
-            rm26_map_sha256({'sources': []})
+    def test_the_map_tile_and_pin_come_from_the_one_maps_package_the_report_pins(self):
+        sources = [{'file': r'C:\Lineage2-client\system\Engine.dll', 'fileSha256': 'e' * 64},
+                   {'file': r'C:\Lineage2-client\Maps\20_20.unr', 'fileSha256': 'a' * 64}]
+        self.assertEqual(rm26_map_source({'sources': sources}), ('20_20', 'a' * 64))
+
+    def test_a_report_without_one_maps_package_pin_or_seven_live_samples_is_refused(self):
+        with self.assertRaisesRegex(DayNightFixtureError, 'pins 0 map packages'):
+            rm26_map_source({'sources': []})
+        two_maps = [{'file': rf'C:\Lineage2-client\Maps\{tile}.unr', 'fileSha256': 'a' * 64} for tile in ('20_20', '20_21')]
+        with self.assertRaisesRegex(DayNightFixtureError, 'pins 2 map packages'):
+            rm26_map_source({'sources': two_maps})
         with self.assertRaisesRegex(DayNightFixtureError, 'holds 1 live samples'):
             rm26_live_receivers({'liveSamples': [{}]}, {})
 
