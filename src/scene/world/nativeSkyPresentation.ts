@@ -156,7 +156,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     mode: viewTrigger === null ? "shared SkyLevel drawn on every tile; browser camera-follow background"
       : "shared SkyLevel drawn when the main view selects a FakeBackdrop node; browser camera-follow background",
     drawGate: viewTrigger === null ? "always" : "fakebackdrop-trigger", drawn, triggerNode: mainView?.sharedSkyTriggerNode ?? indexNone,
-    gaps: [...viewGateGaps(viewTrigger, mainView), ...(visibilityDriver === null ? [sharedSkyVisibilityUnstagedReason] : visibilityDriver.inspection()?.gaps ?? [])],
+    gaps: [...viewGateGaps(viewTrigger, mainView), ...(visibilityDriver === null ? [sharedSkyVisibilityUnstagedReason] : visibilityDriver.gaps())],
     skyVisibility: visibilityDriver?.inspection() ?? null,
     librarySurfaces: libraryBinding.surfaces, environmentColours: libraryBinding.environmentColours(),
     nativeCloudMotion: "unverified", nativeVisibleParity: "unverified",

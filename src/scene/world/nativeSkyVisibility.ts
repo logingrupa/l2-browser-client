@@ -32,12 +32,12 @@ export interface NativeSkyVisibilityInspection {
   readonly runParts: readonly number[];
   readonly orderWrites: number;
   readonly unstagedAcceptedNodes: readonly number[];
-  readonly gaps: readonly string[];
 }
 
 export interface NativeSkyVisibilityDriver {
   step(drawn: boolean): void;
   inspection(): NativeSkyVisibilityInspection | null;
+  gaps(): string[];
 }
 
 export const skyMaterialSortingUnresolvedReason = "sky-material-requires-sorting-unresolved";
@@ -92,9 +92,10 @@ function poseKey(pose: ViewPose): string {
     pose.viewportHeight].map(Math.fround).join(",");
 }
 
-function skyFrameGaps(loaded: LoadedNativeSkyVisibility, frame: SkyLevelVisibilityFrame): string[] {
+export function sharedSkyVisibilityGaps(skyZoneIndex: number, frame: SkyLevelVisibilityFrame | null): string[] {
+  if (frame === null) return [sharedSkyMatrixConstructionUnreplayedReason];
   return [sharedSkyMatrixConstructionUnreplayedReason,
-    ...(frame.sceneZone === loaded.skyZoneIndex ? [] : [`${sharedSkySceneZoneDiffersReason}:${frame.sceneZone}`]),
+    ...(frame.sceneZone === skyZoneIndex ? [] : [`${sharedSkySceneZoneDiffersReason}:${frame.sceneZone}`]),
     ...(frame.unstagedAcceptedNodes.length === 0 ? [] : [`${sharedSkyAcceptedNodeUnstagedReason}:${frame.unstagedAcceptedNodes.length}`]),
     ...frame.unresolvedSortingParts.map(part => `${skyMaterialSortingUnresolvedReason}:${part}`)];
 }
@@ -121,8 +122,8 @@ export function driveNativeSkyVisibility(scene: Scene, meshes: readonly SkyPartM
       const accepted = [...latest.acceptedNodes];
       return { drawn: drawnLast, sceneZone: latest.sceneZone, acceptedNodes: accepted.length,
         acceptedSurfaces: new Set(accepted.map(node => loaded.model.nodeSurface[node])).size, draws: latest.draws.length, runs: latest.runs.length,
-        runParts: latest.runs.map(run => run.part), orderWrites: queue.orderWrites, unstagedAcceptedNodes: latest.unstagedAcceptedNodes,
-        gaps: skyFrameGaps(loaded, latest) };
+        runParts: latest.runs.map(run => run.part), orderWrites: queue.orderWrites, unstagedAcceptedNodes: latest.unstagedAcceptedNodes };
     },
+    gaps: () => sharedSkyVisibilityGaps(loaded.skyZoneIndex, latest),
   };
 }
