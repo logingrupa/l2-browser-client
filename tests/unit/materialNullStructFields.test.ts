@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readBooleanField, readColourField, readNumberField, readRotatorField } from "../../src/materials/ue2/model/materialFieldValues";
 import { MaterialProgramError, parseMaterialProgram, programNode, type MaterialProgram } from "../../src/materials/ue2/model/materialProgram";
-import { texRotatorAngle, textureCoordinateModifierMatrix } from "../../src/materials/ue2/model/modifiers";
+import { textureCoordinateModifierMatrix } from "../../src/materials/ue2/model/modifiers";
 import { createRandomStream } from "../../src/shared/random";
 import {
   enumValue, field, nodeReference, programOf, rawStruct, reviewedNode, swatchTextureNode, swatchTexturePng, textureImageFor, type FixtureProgramField,
@@ -64,10 +64,9 @@ describe("struct fields the store serves as null at UE zero", () => {
       const served = programNode(oceanRotatorProgram(rotationType, servedNullStruct), oceanRotatorId);
       const explicit = programNode(oceanRotatorProgram(rotationType, explicitZeroStruct), oceanRotatorId);
       for (const levelSeconds of levelSecondsSamples) {
-        expect(texRotatorAngle(served, levelSeconds)).toBe(texRotatorAngle(explicit, levelSeconds));
         expect(textureCoordinateModifierMatrix(served, oceanContext(levelSeconds))).toEqual(textureCoordinateModifierMatrix(explicit, oceanContext(levelSeconds)));
       }
-      expect(texRotatorAngle(served, 3)).toBe(texRotatorAngle(served, 0));
+      expect(textureCoordinateModifierMatrix(served, oceanContext(3))).toEqual(textureCoordinateModifierMatrix(served, oceanContext(0)));
     }
   });
 });

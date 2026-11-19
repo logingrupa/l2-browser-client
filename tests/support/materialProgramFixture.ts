@@ -65,7 +65,7 @@ const runtimeReadFieldsDeclaredByReferenceClass: Readonly<Record<string, readonl
   "Engine.ConstantColor": ["Color"],
   "Engine.FadeColor": ["Color1", "Color2", "FadePeriod", "FadePhase", "ColorFadeType"],
   "Engine.TexPanner": ["Material", "PanDirection", "PanRate"],
-  "Engine.TexRotator": [...textureCoordinateModifierReadFields, "TexRotationType", "Rotation", "OscillationRate", "OscillationAmplitude", "OscillationPhase"],
+  "Engine.TexRotator": [...textureCoordinateModifierReadFields, "TexRotationType", "ConstantRotation", "Rotation", "OscillationRate", "OscillationAmplitude", "OscillationPhase"],
   "Engine.TexOscillator": oscillatorReadFields,
   "Engine.TexOscillatorTriggered": [...oscillatorReadFields, "StopAfterPeriod"],
   "Engine.TexScaler": [...textureCoordinateModifierReadFields, "UScale", "VScale"],

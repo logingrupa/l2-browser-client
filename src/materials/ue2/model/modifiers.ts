@@ -1,8 +1,9 @@
 import { rotatorUnitsToRadians } from "../../../shared/math/rotator";
 import { randomRange, type RandomStream } from "../../../shared/random";
 import { TEXTURE_COORDINATE_CONSTANTS } from "./constants/textureCoordinateConstants";
-import { readColourField, readEnumName, readNumberField, readRotatorField, type ColourUnits, type RotatorUnits } from "./materialFieldValues";
+import { readColourField, readEnumName, readNumberField, readRotatorField, type ColourUnits } from "./materialFieldValues";
 import { MaterialProgramError, programNode, type MaterialProgram, type MaterialProgramNode } from "./materialProgram";
+import { texRotatorRowMajorMatrix } from "./texRotatorMatrix";
 
 export type TextureCoordinateMatrix = readonly [number, number, number, number, number, number];
 
@@ -14,14 +15,12 @@ export interface TextureCoordinateContext {
 }
 
 export type TextureCoordinateEvaluation =
-  | { readonly status: "evaluated"; readonly matrix: TextureCoordinateMatrix }
+  | { readonly status: "evaluated"; readonly matrix: TextureCoordinateMatrix; readonly carriesThirdColumn?: true }
   | { readonly status: "unported"; readonly reason: string };
 
 export const IDENTITY_TEXTURE_COORDINATE_MATRIX: TextureCoordinateMatrix = [1, 0, 0, 0, 1, 0];
 
 const fullTurn = 2 * Math.PI;
-const rotatorComponent = TEXTURE_COORDINATE_CONSTANTS.rotatorComponent.runtimeDefault;
-const rotatorOscillationUnitsPerTurn = TEXTURE_COORDINATE_CONSTANTS.rotatorOscillationUnitsPerTurn.runtimeDefault;
 const triggeredOscillatorStartTriggeredTime = TEXTURE_COORDINATE_CONSTANTS.triggeredOscillatorStartState.runtimeDefault;
 const pannerWrapPeriod = TEXTURE_COORDINATE_CONSTANTS.pannerForm.runtimeDefault.wrapPeriod;
 
@@ -33,12 +32,6 @@ export function multiplyTextureCoordinateMatrices(outer: TextureCoordinateMatrix
 
 function fraction(value: number): number {
   return value - Math.floor(value);
-}
-
-const rotatorComponentKeys = { Pitch: "pitch", Yaw: "yaw", Roll: "roll" } as const satisfies Record<string, keyof RotatorUnits>;
-
-function rotatorPlaneAngleUnits(rotator: RotatorUnits): number {
-  return rotator[rotatorComponentKeys[rotatorComponent]];
 }
 
 function centreOf(node: MaterialProgramNode, context: TextureCoordinateContext): readonly [number, number] {
@@ -57,31 +50,14 @@ export function texPannerMatrix(node: MaterialProgramNode, levelSeconds: number)
   return [1, 0, pannerWrappedShift(Math.cos(pitch) * Math.cos(yaw), distance), 0, 1, pannerWrappedShift(Math.cos(pitch) * Math.sin(yaw), distance)];
 }
 
-function rotationAbout(angle: number, centreU: number, centreV: number): TextureCoordinateMatrix {
-  const cosine = Math.cos(angle), sine = Math.sin(angle);
-  return [cosine, -sine, centreU - cosine * centreU + sine * centreV, sine, cosine, centreV - sine * centreU - cosine * centreV];
-}
+export const texRotatorThirdColumnGap = "material-feature-unported:TexRotatorThirdColumn";
 
-export function texRotatorAngle(node: MaterialProgramNode, levelSeconds: number): number | null {
-  const rotation = rotatorUnitsToRadians(rotatorPlaneAngleUnits(readRotatorField(node, "Rotation")));
-  switch (readEnumName(node, "TexRotationType")) {
-    case "TR_FixedRotation": return rotation;
-    case "TR_ConstantlyRotating": return rotation * levelSeconds;
-    case "TR_OscillatingRotation": {
-      const amplitude = rotatorUnitsToRadians(rotatorPlaneAngleUnits(readRotatorField(node, "OscillationAmplitude")));
-      const rate = rotatorPlaneAngleUnits(readRotatorField(node, "OscillationRate")) / rotatorOscillationUnitsPerTurn;
-      const phase = rotatorPlaneAngleUnits(readRotatorField(node, "OscillationPhase")) / rotatorOscillationUnitsPerTurn;
-      return rotation + amplitude * Math.sin(fullTurn * (fraction(levelSeconds * rate) + phase));
-    }
-    default: return null;
-  }
-}
-
-export function texRotatorMatrix(node: MaterialProgramNode, context: TextureCoordinateContext): TextureCoordinateEvaluation {
-  const angle = texRotatorAngle(node, context.levelSeconds);
-  if (angle === null) return { status: "unported", reason: "material-feature-unported:TexRotationType" };
-  const [centreU, centreV] = centreOf(node, context);
-  return { status: "evaluated", matrix: rotationAbout(angle, centreU, centreV) };
+function texRotatorMatrix(node: MaterialProgramNode, context: TextureCoordinateContext): TextureCoordinateEvaluation {
+  const evaluation = texRotatorRowMajorMatrix(node, context);
+  if (evaluation.status === "unported") return evaluation;
+  const rows = evaluation.rowMajorMatrix;
+  const matrix: TextureCoordinateMatrix = [rows[0]!, rows[4]!, rows[8]!, rows[1]!, rows[5]!, rows[9]!];
+  return rows[2] === 0 && rows[6] === 0 && rows[10] === 1 ? { status: "evaluated", matrix } : { status: "evaluated", matrix, carriesThirdColumn: true };
 }
 
 function oscillationOffset(node: MaterialProgramNode, axis: "U" | "V", oscillationType: string, context: TextureCoordinateContext): number | null {
@@ -149,9 +125,10 @@ export function textureCoordinateModifierMatrix(node: MaterialProgramNode, conte
 
 export function textureCoordinateChainMatrix(program: MaterialProgram, outerFirstModifierIds: readonly string[], context: TextureCoordinateContext): TextureCoordinateEvaluation {
   let combined = IDENTITY_TEXTURE_COORDINATE_MATRIX;
-  for (const modifierId of outerFirstModifierIds) {
+  for (const [position, modifierId] of outerFirstModifierIds.entries()) {
     const evaluation = textureCoordinateModifierMatrix(programNode(program, modifierId), context);
     if (evaluation.status === "unported") return evaluation;
+    if (evaluation.carriesThirdColumn && position < outerFirstModifierIds.length - 1) return { status: "unported", reason: texRotatorThirdColumnGap };
     combined = multiplyTextureCoordinateMatrices(evaluation.matrix, combined);
   }
   return { status: "evaluated", matrix: combined };

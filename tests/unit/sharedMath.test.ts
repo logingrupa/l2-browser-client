@@ -126,15 +126,17 @@ describe("rotator rules", () => {
     expect(largestDifferenceUnits).toBe(3);
   });
 
-  it("names one rule per use, each an unconfirmed constants row with provenance, and cites Core.dll for the corrected sine table", () => {
+  it("names one rule per use, unconfirmed except the RM-29 texture rotator, and cites Core.dll for the corrected sine table", () => {
     expect(Object.fromEntries(Object.entries(ROTATOR_RULE_BY_USE).map(([use, row]) => [use, row.runtimeDefault]))).toEqual({
       "particle-revolution": "sine-table",
       "camera-direction": "sine-table",
-      "texture-rotator": "exact",
+      "texture-rotator": "sine-table",
       placement: "sine-table",
     });
     expect(ROTATOR_CONSTANTS.sineTableLength).toMatchObject({ status: "corrected-interlude", interludeEvidence: expect.stringContaining("FGlobalMath::FGlobalMath 0x1014D330") });
-    for (const row of [...Object.values(ROTATOR_RULE_BY_USE), ROTATOR_CONSTANTS.unitsPerTurn]) {
+    expect(ROTATOR_RULE_BY_USE["texture-rotator"]).toMatchObject({ status: "confirmed-interlude", interludeEvidence: expect.stringContaining("FRotationMatrix 0x105263f0") });
+    const unconfirmedRules = Object.entries(ROTATOR_RULE_BY_USE).filter(([use]) => use !== "texture-rotator").map(([, row]) => row);
+    for (const row of [...unconfirmedRules, ROTATOR_CONSTANTS.unitsPerTurn]) {
       expect(row.status).toBe("unconfirmed");
       expect(row.provenance.length).toBeGreaterThan(0);
       expect(row.interludeEvidence).toBeNull();

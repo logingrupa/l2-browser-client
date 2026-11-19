@@ -54,11 +54,11 @@ export const ROTATOR_RULE_BY_USE = {
   },
   "texture-rotator": {
     id: "uv.rotator-conversion",
-    value: "exact",
-    provenance: ".planning/reference/lineage2js/01-materials-fog.md uv.rotator-conversion: exact units * pi / 32768 until the Core.dll SinTab re-derivation; lineage2js shader-mesh-static.vs:407-416",
-    status: "unconfirmed",
-    interludeEvidence: null,
-    runtimeDefault: "exact",
+    value: "sine-table",
+    provenance: "RM-29 sky-texrotator.json 945cce25...c601, claim audit verified-sky-texrotator.md: UTexRotator::GetMatrix 0x105e0c00 builds FRotationMatrix 0x105263f0, which reads the FGlobalMath table at (a >> 2) & 16383 and cosine at a + 16384; the native table dump gmath-sin-cw027f.bin 9893d14b equals this table at every entry",
+    status: "confirmed-interlude",
+    interludeEvidence: "Engine.dll 4dd2f63c FRotationMatrix 0x105263f0 from UTexRotator::GetMatrix 0x105e0c00; Core.dll 9462f87a FGlobalMath 0x1014d330",
+    runtimeDefault: "sine-table",
   },
   placement: {
     id: "placement.rotator-conversion",

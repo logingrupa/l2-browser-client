@@ -1,8 +1,11 @@
 import type { ReferenceConstantRow } from "../../../../shared/referenceConstant";
-import { materialNotes, texOscillatorTriggeredReplay } from "./materialNotes";
+import { materialNotes, skyTexRotatorReplay, texOscillatorTriggeredReplay } from "./materialNotes";
 
 const oscillatorEvidence = `Engine.dll 4dd2f63c UTexOscillatorTriggered::GetMatrix 0x1030b94c jumps to 0x105e1270, which calls UTexOscillator::GetMatrix 0x1030e98f, body 0x105df780; Engine.u 9b04ff5c; ${texOscillatorTriggeredReplay}`;
 const pannerForm = { translation: "1024 * frac(dir * t * PanRate / 1024), dir = (cos(Pitch) cos(Yaw), cos(Pitch) sin(Yaw))", wrapPeriod: 1024 } as const;
+const rotatorEvidence = `Engine.dll 4dd2f63c UTexRotator::GetMatrix 0x105e0c00, FRotationMatrix 0x105263f0, UTexRotator::PostLoad 0x1034b6d0; Core.dll 9462f87a FMatrix::operator* 0x10111240, FGlobalMath 0x1014d330; ${skyTexRotatorReplay}`;
+const rotatorMatrixForm = "M = R(E) when UOffset = VOffset = 0, else (T(-u0, -v0) * R(E)) * T(u0, v0), u0 = f32(UOffset / USize), v0 = f32(VOffset / VSize); uv' = [u, v, 1, 0] * M";
+const rotatorModeOrdinals = { constantlyRotating: 1, oscillating: 2 } as const;
 const chainOrderEvidence = `D3DDrv.dll 05622dde 0x10011ca0 visits the outer modifier before its Material at +0x578 and accumulates identity (0x10007630) * current.GetMatrix(t) on the CPU path; ${texOscillatorTriggeredReplay}`;
 
 export const TEXTURE_COORDINATE_CONSTANTS = {
@@ -22,21 +25,29 @@ export const TEXTURE_COORDINATE_CONSTANTS = {
     interludeEvidence: "Engine.dll 4dd2f63c UTexPanner::GetMatrix 0x105df3e0",
     runtimeDefault: pannerForm,
   },
-  rotatorComponent: {
-    id: "uv.rotator-component",
-    value: "Yaw",
-    provenance: `${materialNotes} TexRotator: Fixed uses Rotation; which rotator component turns the texture plane is not stated in the notes`,
-    status: "unknown",
-    interludeEvidence: null,
-    runtimeDefault: "Yaw",
+  rotatorMatrixForm: {
+    id: "uv.rotator-matrix",
+    value: rotatorMatrixForm,
+    provenance: `${skyTexRotatorReplay}: UTexRotator::GetMatrix (thunk 0x1030c29d) builds FRotationMatrix 0x105263f0 from all three effective components through the GMath table, S(a) = tab[(a >> 2) & 16383], C(a) = S(a + 16384), each element one float32 store; a nonzero UOffset or VOffset pivots by u0 = f32(UOffset / USize), v0 = f32(VOffset / VSize) through the virtual size calls +0x78 and +0x7c and M = (T(-u0, -v0) * R) * T(u0, v0) with FMatrix::operator* 0x10111240 storing float32 per element; the result at +0x5c4 applies to the row vector [u, v, 1, 0] and D3DDrv sends it unchanged with COUNT2, which is the u' = a u + b v + c projection of elements 0, 4, 8 and 1, 5, 9; a Pitch or Roll leaves a third column that a following modifier would multiply, so that composition stays named as material-feature-unported:TexRotatorThirdColumn, and a truncation outside int32, where the uncaptured CRT SSE2 flag picks between the x87 and SSE2 _ftol2 paths, as material-feature-unported:TexRotatorTruncationRange`,
+    status: "confirmed-interlude",
+    interludeEvidence: rotatorEvidence,
+    runtimeDefault: rotatorMatrixForm,
   },
-  rotatorOscillationUnitsPerTurn: {
-    id: "uv.rotator-oscillation-units",
+  rotatorModeOrdinals: {
+    id: "uv.rotator-modes",
+    value: rotatorModeOrdinals,
+    provenance: `${skyTexRotatorReplay}: GetMatrix compares the byte TexRotationType at +0x584 with 1 (E = trunc(Rotation * T) & 0xffff through FRotator::operator* 0x1010df60) and 2 (oscillating); every other byte uses Rotation unchanged, fixture mode 255 included; UTexRotator::PostLoad 0x1034b6d0 clears ConstantRotation bit 0 at +0x594 and sets mode 1; T is the float32 LevelInfo.TimeSeconds the D3D caller 0x10011f10 passes, the panner's levelSeconds`,
+    status: "confirmed-interlude",
+    interludeEvidence: rotatorEvidence,
+    runtimeDefault: rotatorModeOrdinals,
+  },
+  rotatorOscillationDivisor: {
+    id: "uv.rotator-oscillation-divisor",
     value: 65535,
-    provenance: `${materialNotes} TexRotator Oscillating adds A * sin(2*pi*(frac(t * rate / 65535) + phase)); the notes list the 65535 divisor and the unscaled phase under Do not copy (shader-mesh-static.vs:415-416), so the runtime divides rate and phase by the 65536 units per turn until a swatch decides`,
-    status: "unknown",
-    interludeEvidence: null,
-    runtimeDefault: 65536,
+    provenance: `${skyTexRotatorReplay}: oscillating mode stores c = f32(Rate * T / 65535) (float64 65535 at 0x108d2378), r = ((c - appFloor(c)) + Phase) * 2 pi (0x108a88b0) as float64, then E = Rotation + trunc(f32(appSin(r) * Amplitude)) with int32 wrap; Phase adds whole cycles unscaled`,
+    status: "confirmed-interlude",
+    interludeEvidence: rotatorEvidence,
+    runtimeDefault: 65535,
   },
   oscillatorPanForm: {
     id: "uv.oscillator-pan",

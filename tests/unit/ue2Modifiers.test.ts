@@ -84,24 +84,6 @@ describe("texture coordinate modifiers", () => {
       runtimeDefault: { wrapPeriod: 1024 } });
   });
 
-  it("TexRotator turns about UOffset / USize for fixed, constant and oscillating rotation", () => {
-    const rotatorNode = (rotationType: string, extra: FixtureProgramField[]) => programWith([modifier("Synthetic.Rotator", "Engine.TexRotator", [
-      field("TexRotationType", enumValue(0, rotationType)), field("Rotation", rotator(0, 8192, 0), "authored", "raw"),
-      field("UOffset", 2), field("VOffset", 2), ...extra])]);
-    const quarterTurn = Math.PI / 4;
-    const fixed = evaluated(rotatorNode("TR_FixedRotation", []), "Synthetic.Rotator", 3);
-    expect(transformedCoordinates(fixed, 0.5, 0.5).map(value => Number(value.toFixed(12)))).toEqual([0.5, 0.5]);
-    expectMatrix(fixed, [Math.cos(quarterTurn), -Math.sin(quarterTurn), 0.5 - 0.5 * Math.cos(quarterTurn) + 0.5 * Math.sin(quarterTurn),
-      Math.sin(quarterTurn), Math.cos(quarterTurn), 0.5 - 0.5 * Math.sin(quarterTurn) - 0.5 * Math.cos(quarterTurn)]);
-    const constant = evaluated(rotatorNode("TR_ConstantlyRotating", []), "Synthetic.Rotator", 2);
-    expect(constant[3]).toBeCloseTo(Math.sin(quarterTurn * 2), 9);
-    const oscillating = evaluated(rotatorNode("TR_OscillatingRotation", [
-      field("OscillationAmplitude", rotator(0, 4096, 0), "authored", "raw"), field("OscillationRate", rotator(0, 16384, 0), "authored", "raw"),
-      field("OscillationPhase", rotator(0, 0, 0), "authored", "raw")]), "Synthetic.Rotator", 1);
-    const angle = quarterTurn + (Math.PI / 8) * Math.sin(2 * Math.PI * 0.25);
-    expect(oscillating[3]).toBeCloseTo(Math.sin(angle), 9);
-  });
-
   it("TexOscillator pans, stretches about UOffset / USize and stretch-repeats by its closed forms", () => {
     const program = programWith([modifier("Synthetic.Oscillator", "Engine.TexOscillator", [
       field("UOscillationType", enumValue(0, "OT_Pan")), field("UOscillationRate", 0.5), field("UOscillationPhase", 0.125), field("UOscillationAmplitude", 0.2),
@@ -188,7 +170,10 @@ const coldOceanVOffsetAtHalfSecond = 0.044550326;
 const resetTriggeredTime = -1;
 const db2OrderChildFixtureColumnMatrix: TextureCoordinateMatrix = [0.75, 0.5, 0, -0.5, 0.75, 0];
 const db2OrderNativeResultColumnMatrix: TextureCoordinateMatrix = [0.75, 0.5, 0.02377641201019287, -0.5, 0.75, 0.03566461801528931];
-const oceanRotatorAuthoredCachedRows = [[0.9238795042037964, 0.3826834261417389, 0], [-0.3826834261417389, 0.9238795042037964, 0], [0, 0, 1]] as const;
+const capturedOceanRotatorMatrixBytesHex = (JSON.parse(readFileSync(resolve("tests/fixtures/environment/sky-texrotator-fixtures.json"), "utf8")) as {
+  capturedRotators: { object: string; matrixBytesHex: string }[] }).capturedRotators.find(row => row.object === "FX_E_T.WaterSurfaceShaderSet.ocn_rot")!.matrixBytesHex;
+const capturedOceanRotatorElements = Array.from(new Float32Array(Uint8Array.from(Buffer.from(capturedOceanRotatorMatrixBytesHex, "hex")).buffer));
+const capturedOceanRotatorRows = [0, 1, 2].map(row => capturedOceanRotatorElements.slice(row * 4, row * 4 + 3));
 
 function oceanProgram(overrides: FixtureProgramField[] = []): MaterialProgram {
   return programWith([
@@ -256,13 +241,13 @@ describe("TexOscillatorTriggered in its untriggered state", () => {
     expect(Math.abs(reversed[2] - db2OrderNativeResultColumnMatrix[2])).toBeGreaterThan(1e-3);
   });
 
-  it("composes ocean-s with ocn_rot's authored cached M in row vectors, which is not traced TexRotator output", () => {
+  it("composes ocean-s with ocn_rot's live RM-29 GetMatrix output in row vectors", () => {
     const program = oceanProgram();
     const chain = textureCoordinateChainMatrix(program, [oceanSId, oceanRotatorId], oceanContext(0));
     if (chain.status !== "evaluated") throw new Error(chain.reason);
     const oceanRows = [[1, 0, 0], [0, 1, 0], [0, coldOceanVOffsetAtStart, 1]];
-    const nativeOrder = rowVectorProduct(oceanRows, oceanRotatorAuthoredCachedRows);
-    const reversedOrder = rowVectorProduct(oceanRotatorAuthoredCachedRows, oceanRows);
+    const nativeOrder = rowVectorProduct(oceanRows, capturedOceanRotatorRows);
+    const reversedOrder = rowVectorProduct(capturedOceanRotatorRows, oceanRows);
     for (const [u, v] of [[0, 0], [1, 0], [0.25, 0.75]] as const) {
       const actual = transformedCoordinates(chain.matrix, u, v);
       const expected = rowVectorTransform(nativeOrder, u, v);
