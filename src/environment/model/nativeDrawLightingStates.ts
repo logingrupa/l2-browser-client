@@ -61,7 +61,7 @@ export const hourlyLightingUnresolvedItems = [
   { id: "rm10-static-live-branch", surface: "staticMesh", reason: "RM-10 captured no live GL2Shader, device caps, cache flags, selected LOD or extra dynamic light list, so the CPU fixture branch is not proved to be the drawn one" },
   { id: "rm10-live-device-state", surface: "staticMesh", reason: "RM-10 observed no live capability branch, stage number, active lights, material fallback, material source state or GPU precision; the fixed-function equations are a conditional API reading" },
   { id: "rm10-final-gpu-colour", surface: "staticMesh", reason: "RM-10 proves the CPU instance colour only; the programmable shader output and device quantization of the final textured RGB are not observed" },
-  { id: "static-mesh-light-changed-clearing", surface: "staticMesh", reason: "RM-20 normal-play-lightchanged-clearing and first-render needsOrdinary are unresolved: COLOR0 uses the RM-19 rebuild, not the serialized cache (950 retained 60 vs cleared 71,69,68)" },
+  { id: "static-mesh-light-changed-clearing", surface: "staticMesh", reason: "RM-20 normal-play-lightchanged-clearing and first-render needsOrdinary are unresolved: COLOR0 uses the RM-19 rebuild gated on bLightChanged as staged, not the serialized cache; RM-26 and RM-27 saw dyn +0x28 kept at 1, but no capture proves nothing clears it later (950 retained 60 vs cleared 71,69,68)" },
 ] as const;
 
 export const staticMeshDrawnComposition = {

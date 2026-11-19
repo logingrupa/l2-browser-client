@@ -24,7 +24,9 @@ import { parseStaticMeshMaterialsListing } from "../../src/scene/world/staticMes
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
 import { maskBytes, readStaticMeshLightingFixtures, type StaticMeshLightingFixture } from "../support/staticMeshLightingFixtures";
 import { rebuildEnvironmentAtHourSix } from "../support/lightmapRebuildFixture";
-import { integratedFixtureOf, ordinaryFixtureLightRecord, readOrdinaryStaticLightingFixtures, stagedOrdinarySubsetOf } from "../support/ordinaryStaticLightingFixtures";
+import {
+  integratedFixtureOf, ordinaryFixtureLightRecord, readOrdinaryStaticLightingFixtures, rm19SunLightRecord, stagedOrdinarySubsetOf,
+} from "../support/ordinaryStaticLightingFixtures";
 import { staticMeshOrdinaryLightRecords, type StaticMeshOrdinaryLightRecords } from "../../src/scene/world/lighting/staticMeshOrdinaryLights";
 import { staticMeshPlacementSurfacesFixture } from "../support/staticMeshPlacementFixture";
 import { readStaticMeshAmbientFixtures, staticMeshAmbientFixtureOf, type StaticMeshAmbientFixture } from "../support/staticMeshAmbientFixtures";
@@ -67,7 +69,7 @@ function pillarList(fields: Partial<StaticMeshLightList> = {}): StaticMeshLightL
 const sunOnlyPillarList = () => pillarList({ ordinaryMasks: [] });
 
 function lightRecords(lights = ordinaryPillarCase.ordinaryLights): StaticMeshOrdinaryLightRecords {
-  return staticMeshOrdinaryLightRecords({ levelInfos: [levelInfo], lights: lights.map(light => ordinaryFixtureLightRecord(light)) });
+  return staticMeshOrdinaryLightRecords({ levelInfos: [levelInfo], lights: [...lights.map(light => ordinaryFixtureLightRecord(light)), rm19SunLightRecord()] });
 }
 
 function frameOf(fixture: StaticMeshLightingFixture): StaticMeshHourlyLightingFrame {
@@ -240,8 +242,6 @@ describe("static mesh hourly instance colour drawn per placement (RM-10)", () =>
   it.each<[string, StaticMeshLightList, Partial<NativeTileChunkPlacement>, string]>([
     ["a model without a vertex stream sidecar", pillarList({ ordinaryMasks: [] }),
       { vertexStreams: { status: "gap", reason: "static-mesh-vertex-streams-unstaged" } }, "static-mesh-vertex-streams-unstaged"],
-    ["a non-uniform DrawScale3D", pillarList({ ordinaryMasks: [], ordinaryInputs: { status: "staged",
-      value: { scaleGlow: 1, localToWorld: Float32Array.from([1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]) } } }), {}, "static-mesh-normal-transform-unresolved"],
     ["a list whose ScaleGlow or LocalToWorld did not resolve", pillarList({ ordinaryInputs: { status: "unstaged", reason: "static-mesh-ordinary-inputs-unresolved" } }),
       {}, "static-mesh-ordinary-inputs-unresolved"],
     ["a payload without SMLL.localToWorld", pillarList({ ordinaryInputs: { status: "unstaged", reason: "hourly-lighting-input-unstaged:SMLL.localToWorld" } }),

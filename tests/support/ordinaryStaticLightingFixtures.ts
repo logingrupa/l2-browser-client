@@ -3,6 +3,7 @@ import type { NativeVector3 } from "../../src/environment/model/lightmapRebuild/
 import type { StaticMeshLightList, StaticMeshLightMask } from "../../src/scene/world/lighting/decodeHourlyLightingInputs";
 import { parseStaticMeshVertexStreams, type StaticMeshVertexStreams } from "../../src/scene/world/lighting/loadStaticMeshVertexStreams";
 import type { TileLightActorRecord } from "../../src/scene/world/lighting/lightmapRebuildActors";
+import { lightGateRecord, readStaticMeshLightGateFixtures, rm19LightCacheFlagsOf } from "./staticMeshLightGateFixtures";
 import { maskBytes } from "./staticMeshLightingFixtures";
 
 export interface OrdinarySampleIntensityFixture {
@@ -100,23 +101,33 @@ export interface OrdinaryStagedSubset {
 
 const bitsPerByte = 8;
 
-function subsetMask(fixture: OrdinaryIntegratedFixture, maskHex: string): Uint8Array {
-  const full = maskBytes(maskHex), subset = new Uint8Array(Math.ceil(fixture.vertexIndices.length / bitsPerByte));
-  fixture.vertexIndices.forEach((vertex, position) => {
+export function subsetVisibility(maskHex: string, vertexIndices: readonly number[]): Uint8Array {
+  const full = maskBytes(maskHex), subset = new Uint8Array(Math.ceil(vertexIndices.length / bitsPerByte));
+  vertexIndices.forEach((vertex, position) => {
     if ((full[Math.floor(vertex / bitsPerByte)]! >> (vertex % bitsPerByte)) & 1) subset[Math.floor(position / bitsPerByte)]! |= 1 << (position % bitsPerByte);
   });
   return subset;
 }
 
+const lightGateDocument = readStaticMeshLightGateFixtures();
+const sunLightClass = "Engine.NMovableSunLight";
+
 export function ordinaryFixtureLightRecord(light: OrdinaryFixtureLight, overrides: Readonly<Record<string, unknown>> = {}): TileLightActorRecord {
   const fields = new Map(light.fields.map(field => [field.field, { provenance: field.provenance, value: field.value }]));
+  for (const flag of rm19LightCacheFlagsOf(lightGateDocument, light.exportIndex).fields) fields.set(flag.field, { provenance: flag.provenance, value: flag.value });
   for (const [field, value] of Object.entries(overrides)) fields.set(field, { provenance: "authored", value });
   return { exportIndex: light.exportIndex, object: light.object, actorClass: light.actorClass, fields };
 }
 
+export function rm19SunLightRecord(): TileLightActorRecord {
+  const sun = lightGateDocument.rm19LightCacheFlags.find(light => light.actorClass === sunLightClass);
+  if (sun === undefined) throw new Error("The light gate fixtures hold no RM-19 sun light.");
+  return lightGateRecord(sun);
+}
+
 export function stagedOrdinarySubsetOf(fixture: OrdinaryIntegratedFixture, hourlyEntries = fixture.hourlyEntries): OrdinaryStagedSubset {
   const masks = (entries: readonly OrdinaryFixtureMaskEntry[]): StaticMeshLightMask[] =>
-    entries.map(entry => ({ light: entry.light, visibility: subsetMask(fixture, entry.maskHex) }));
+    entries.map(entry => ({ light: entry.light, visibility: subsetVisibility(entry.maskHex, fixture.vertexIndices) }));
   const list: StaticMeshLightList = { actorExportIndex: fixture.actorExportIndex, instanceExportIndex: fixture.instanceExportIndex,
     vertexCount: fixture.vertexIndices.length,
     ordinaryInputs: { status: "staged", value: { scaleGlow: fixture.scaleGlow, localToWorld: Float32Array.from(fixture.localToWorld) } },

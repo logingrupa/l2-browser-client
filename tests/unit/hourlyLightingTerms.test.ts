@@ -33,6 +33,8 @@ describe("hourlyLightingTerms", () => {
       composition: staticMeshDrawnComposition });
     expect(terms.staticMesh.colour0.condition).toMatch(/^inferred from the D3D9 fixed-function contract \(RM-10\), not GPU output/);
     expect(terms.staticMesh.colour0.condition).toContain("not the serialized cache (static-mesh-light-changed-clearing)");
+    expect(terms.staticMesh.colour0.condition).toContain("a light with bDynamicLight, bLightChanged or bDeleteMe (dyn +0x24 or +0x28) adds nothing");
+    expect(terms.staticMesh.colour0.condition).not.toContain("uniform scale");
     expect(terms.staticMesh.colour1).toMatchObject({ drawn: "white", reasons: ["static-mesh-colour-selector-unresolved", "d3d-device-live-state"] });
     expect(terms.dynamicLights).toEqual({ applied: false, reasons: ["d3d-device-live-state", "ma-temporal-light-types"] });
     expect(terms.device.modulationOperation).toMatchObject({ imageDefaultOpcode: 5, status: "unresolved", reason: "d3d-device-live-state" });

@@ -8,6 +8,7 @@ import type { StaticMeshLightList } from "./decodeHourlyLightingInputs";
 import { resolveLightActorColour } from "./lightActorColour";
 import type { LightActorRecords, TileLevelInfoRecord, TileLightActorRecord } from "./lightmapRebuildActors";
 import { allFieldsResolved, readBooleanField, readByteField, readNumberField, readRotatorField, readVectorField, type RebuildFieldOwner, type RebuildFieldResult } from "./rebuildFieldReaders";
+import { nullLightReference, staticMeshLightCacheExcluded, staticMeshMaskSetsAnyVertex } from "./staticMeshLightCacheGate";
 import { rebuildLevelBrightness, type RebuildLightEnvironment } from "./rebuildShadowLights";
 
 export type StaticMeshOrdinaryLightState =
@@ -31,15 +32,7 @@ export const staticMeshOrdinaryLightReasons = {
 } as const;
 
 const darkLight: StaticMeshOrdinaryLightState = { contributes: false };
-const nullLightReference = 0;
-const bitsPerByte = 8;
 const modulatedLightType = DYNAMIC_LIGHT_CONSTANTS.lightTypeMultipliers.value.modulated;
-
-function maskSetsAnyVertex(visibility: Uint8Array, vertexCount: number): boolean {
-  const wholeBytes = Math.floor(vertexCount / bitsPerByte), trailingBits = vertexCount % bitsPerByte;
-  if (visibility.subarray(0, wholeBytes).some(byte => byte !== 0)) return true;
-  return trailingBits > 0 && (visibility[wholeBytes]! & ((1 << trailingBits) - 1)) !== 0;
-}
 
 function lightOwner(actor: TileLightActorRecord): RebuildFieldOwner {
   return { fields: actor.fields, reasonPrefix: "static-mesh-ordinary-light", label: `light ${actor.object}` };
@@ -64,6 +57,9 @@ function lightSampler(owner: RebuildFieldOwner): RebuildFieldResult<StaticMeshLi
 export function resolveStaticMeshOrdinaryLight(actor: TileLightActorRecord, levelBrightness: number, environment: RebuildLightEnvironment):
   RebuildFieldResult<StaticMeshOrdinaryLightState> {
   const owner = lightOwner(actor);
+  const excluded = staticMeshLightCacheExcluded(owner);
+  if (excluded.status !== "resolved") return excluded;
+  if (excluded.value) return resolvedResult(darkLight);
   const authored = allFieldsResolved({ lightType: readByteField(owner, "LightType"), timeLight: readBooleanField(owner, "bTimeLight"),
     sunlightColour: readBooleanField(owner, "bSunlightColor") });
   if (authored.status !== "resolved") return authored;
@@ -71,9 +67,6 @@ export function resolveStaticMeshOrdinaryLight(actor: TileLightActorRecord, leve
   const colour = resolveLightActorColour(owner, authored.value.lightType, levelBrightness, environment);
   if (colour.status !== "resolved") return colour;
   if (colourIsDark(colour.value)) return resolvedResult(darkLight);
-  const cacheFlags = allFieldsResolved({ dynamicLight: readBooleanField(owner, "bDynamicLight"), deleteMe: readBooleanField(owner, "bDeleteMe") });
-  if (cacheFlags.status !== "resolved") return cacheFlags;
-  if (cacheFlags.value.dynamicLight || cacheFlags.value.deleteMe) return resolvedResult(darkLight);
   if (authored.value.lightType === modulatedLightType) return { status: "unresolved", reason: staticMeshOrdinaryLightReasons.lightType7TimeSeconds };
   const sampler = lightSampler(owner);
   if (sampler.status !== "resolved") return sampler;
@@ -89,7 +82,7 @@ export function resolveStaticMeshOrdinaryTerm(list: StaticMeshLightList, records
   let levelBrightness: RebuildFieldResult<number> | null = null;
   const contributing: StaticMeshOrdinaryMaskLight[] = [];
   for (const mask of list.ordinaryMasks) {
-    if (mask.light === nullLightReference || !maskSetsAnyVertex(mask.visibility, list.vertexCount)) continue;
+    if (mask.light === nullLightReference || !staticMeshMaskSetsAnyVertex(mask.visibility, list.vertexCount)) continue;
     const actor = records.lightsByExportIndex.get(mask.light);
     if (actor === undefined) return { status: "unresolved", reason: `${staticMeshOrdinaryLightReasons.recordAbsentPrefix}${mask.light}` };
     levelBrightness ??= rebuildLevelBrightness(records.levelInfos);

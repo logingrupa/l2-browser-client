@@ -7,6 +7,18 @@ export interface NativeLocalToWorld {
   readonly origin: Vector3;
 }
 
+const matrixRowStride = 4;
+const originRow = 3;
+
+function matrixRow(rowMajorMatrix: ArrayLike<number>, row: number): Vector3 {
+  const start = row * matrixRowStride;
+  return { x: rowMajorMatrix[start]!, y: rowMajorMatrix[start + 1]!, z: rowMajorMatrix[start + 2]! };
+}
+
+export function staticMeshLocalToWorldFromRowMajorMatrix(rowMajorMatrix: ArrayLike<number>): NativeLocalToWorld {
+  return { rows: [matrixRow(rowMajorMatrix, 0), matrixRow(rowMajorMatrix, 1), matrixRow(rowMajorMatrix, 2)], origin: matrixRow(rowMajorMatrix, originRow) };
+}
+
 export function staticMeshWorldPosition(localToWorld: NativeLocalToWorld, localPosition: Vector3): Vector3 {
   const [xAxis, yAxis, zAxis] = localToWorld.rows, { origin } = localToWorld;
   return {

@@ -3,18 +3,13 @@ import type { NativePlane } from "../../src/environment/model/nativePlane";
 import {
   staticMeshHourlyEntryBlend, staticMeshHourlyEntryContributions, staticMeshHourlyInstanceColour, staticMeshSampleIntensity, staticMeshVertexVisible,
 } from "../../src/environment/model/staticMeshHourlyLighting";
-import { staticMeshWorldNormal, type NativeLocalToWorldRows } from "../../src/environment/model/staticMeshLocalToWorld";
+import { staticMeshLocalToWorldFromRowMajorMatrix, staticMeshWorldNormal } from "../../src/environment/model/staticMeshLocalToWorld";
 import type { Vector3 } from "../../src/shared/math/vector3";
 import { maskBytes, readStaticMeshLightingFixtures, type StaticMeshLightingFixture } from "../support/staticMeshLightingFixtures";
 
 const { pillar, fixtures } = readStaticMeshLightingFixtures();
 const hourlyMasks = pillar.hourlyMasks.map(mask => maskBytes(mask.maskHex));
 const ordinaryMask = pillar.ordinaryMasks.map(mask => maskBytes(mask.maskHex)).reduce((union, mask) => union.map((byte, index) => byte | mask[index]!));
-
-function localToWorldRows(matrix: readonly number[]): NativeLocalToWorldRows {
-  const row = (start: number): Vector3 => ({ x: matrix[start]!, y: matrix[start + 1]!, z: matrix[start + 2]! });
-  return [row(0), row(4), row(8)];
-}
 
 function nativeNormal(vertex: number): Vector3 {
   return { x: pillar.nativeNormals[vertex * 3]!, y: pillar.nativeNormals[vertex * 3 + 1]!, z: pillar.nativeNormals[vertex * 3 + 2]! };
@@ -25,7 +20,7 @@ function direction(fixture: StaticMeshLightingFixture): Vector3 {
 }
 
 function sampleIntensityOf(fixture: StaticMeshLightingFixture, vertex: number): number {
-  return staticMeshSampleIntensity(staticMeshWorldNormal(localToWorldRows(fixture.matrix), nativeNormal(vertex)), direction(fixture));
+  return staticMeshSampleIntensity(staticMeshWorldNormal(staticMeshLocalToWorldFromRowMajorMatrix(fixture.matrix).rows, nativeNormal(vertex)), direction(fixture));
 }
 
 function vertexColour(fixture: StaticMeshLightingFixture, vertex: number, sampleIntensity = sampleIntensityOf(fixture, vertex),
