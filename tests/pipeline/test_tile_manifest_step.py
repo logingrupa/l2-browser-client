@@ -278,6 +278,28 @@ class RunTileManifestStepTests(unittest.TestCase):
         with self.sealed_terrain(), self.assertRaisesRegex(ValueError, 'differs; preserved'):
             run_tile_manifest_step(self.project_root, REAL_TILE_ID, self.store_root)
 
+    def test_an_earlier_tile_record_whose_manifest_holds_a_retired_resource_kind_is_replaced(self):
+        with self.sealed_terrain():
+            run_tile_manifest_step(self.project_root, REAL_TILE_ID, self.store_root)
+        catalog_path = self.store_root / 'catalog.json'
+        catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
+        current_record = copy.deepcopy(catalog['tiles'][0])
+        current_manifest = json.loads((self.store_root / current_record['manifest'].removeprefix('/l2/')).read_bytes())
+        retired_sky_resource = {'kind': 'sky', 'manifest': '/l2/skies/' + '0' * 64 + '/manifest.json', 'manifestBytes': 1, 'manifestSha256': '0' * 64}
+        earlier_payload = json.dumps({**current_manifest, 'resources': [*current_manifest['resources'], retired_sky_resource]}).encode('utf-8')
+        earlier_sha256 = hashlib.sha256(earlier_payload).hexdigest()
+        earlier_path = self.store_root / 'tiles' / earlier_sha256 / 'tile.json'
+        earlier_path.parent.mkdir(parents=True)
+        earlier_path.write_bytes(earlier_payload)
+        catalog['tiles'] = [{'id': REAL_TILE_ID, 'manifest': f'/l2/tiles/{earlier_sha256}/tile.json',
+                             'manifestBytes': len(earlier_payload), 'manifestSha256': earlier_sha256}]
+        catalog_path.write_text(json.dumps(catalog), encoding='utf-8')
+        for seal in self.project_root.rglob('manifest/complete.json'):
+            seal.unlink()
+        with self.sealed_terrain():
+            run_tile_manifest_step(self.project_root, REAL_TILE_ID, self.store_root)
+        self.assertEqual(json.loads(catalog_path.read_text(encoding='utf-8'))['tiles'], [current_record])
+
 
 if __name__ == '__main__':
     unittest.main()
