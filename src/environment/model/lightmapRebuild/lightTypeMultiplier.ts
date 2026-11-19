@@ -1,4 +1,4 @@
-import { truncateToInt64LowDword } from "../x87IntegerConversion";
+import { truncateToInt64LowDword } from "../../../shared/math/x87IntegerConversion";
 import { DYNAMIC_LIGHT_CONSTANTS } from "./dynamicLightEngineConstants";
 import { requireByte, resolvedResult, type LightmapRebuildResult } from "./lightmapRebuildTypes";
 import { sineTableSine } from "./rotatorVector";

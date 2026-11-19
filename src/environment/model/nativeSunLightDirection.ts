@@ -3,7 +3,7 @@ import type { Vector3 } from "../../shared/math/vector3";
 import type { ReferenceConstantRow } from "../../shared/referenceConstant";
 import type { DayPart } from "./nativeEnvironmentManager";
 import { moonAngles, sunAngles } from "./nativeSunMoonDirection";
-import { truncateToInt32 } from "./x87IntegerConversion";
+import { truncateToInt32 } from "../../shared/math/x87IntegerConversion";
 
 export interface NativeSunLightDirectionInputs {
   readonly hour: number;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fColorFromPlane, saturatingAddBgra } from "../../src/environment/model/nativeColourBytes";
-import { floorToInt32, lowByte, truncateToInt32, truncateToInt64LowDword } from "../../src/environment/model/x87IntegerConversion";
+import { floorToInt32, lowByte, truncateToInt32, truncateToInt64LowDword } from "../../src/shared/math/x87IntegerConversion";
 
 describe("x87 integer conversion (FISTP under chop, _ftol2, appFloor)", () => {
   it("truncates toward zero inside the int32 range", () => {

@@ -1,4 +1,4 @@
-import { truncateToInt32 } from "../x87IntegerConversion";
+import { truncateToInt32 } from "../../../shared/math/x87IntegerConversion";
 import { createIntensityBuffer, falloffGeometry, type ShadowAttenuationInput } from "./lightAttenuationGeometry";
 import { LIGHTMAP_REBUILD_CONSTANTS } from "./lightmapRebuildEngineConstants";
 import { rectangleWidth, type NativeVector3 } from "./lightmapRebuildTypes";

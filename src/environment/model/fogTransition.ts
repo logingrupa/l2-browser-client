@@ -1,5 +1,5 @@
 import type { BgraBytes } from "./nativeColourBytes";
-import { lowByte, truncateToInt32 } from "./x87IntegerConversion";
+import { lowByte, truncateToInt32 } from "../../shared/math/x87IntegerConversion";
 
 export interface FogTransitionState {
   readonly targetColourBgra: BgraBytes;

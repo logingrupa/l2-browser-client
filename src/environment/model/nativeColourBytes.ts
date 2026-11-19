@@ -1,6 +1,6 @@
 import { HOURLY_LIGHTING_CONSTANTS } from "./hourlyLightingEngineConstants";
 import type { NativePlane } from "./nativePlane";
-import { floorToInt32 } from "./x87IntegerConversion";
+import { floorToInt32 } from "../../shared/math/x87IntegerConversion";
 
 export type BgraBytes = readonly [blue: number, green: number, red: number, alpha: number];
 export type RgbaBytes = readonly [red: number, green: number, blue: number, alpha: number];

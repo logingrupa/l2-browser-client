@@ -2,7 +2,7 @@ import { HOURLY_LIGHTING_CONSTANTS } from "./hourlyLightingEngineConstants";
 import { fColorFromPlane, saturatingAddBgra, type BgraBytes } from "./nativeColourBytes";
 import { scalePlane, type NativePlane } from "./nativePlane";
 import type { RgbBytes } from "./sampleNativeTimeTables";
-import { lowByte, truncateToInt32 } from "./x87IntegerConversion";
+import { lowByte, truncateToInt32 } from "../../shared/math/x87IntegerConversion";
 
 export type TerrainVertexStaticBase =
   | { readonly status: "resolved"; readonly value: BgraBytes }

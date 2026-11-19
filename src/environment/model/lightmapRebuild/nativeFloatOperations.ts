@@ -1,4 +1,4 @@
-import { floorToInt32, lowByte, truncateToInt32 } from "../x87IntegerConversion";
+import { floorToInt32, lowByte, truncateToInt32 } from "../../../shared/math/x87IntegerConversion";
 import type { NativeVector3 } from "./lightmapRebuildTypes";
 
 const float32Scratch = new Float32Array(1);

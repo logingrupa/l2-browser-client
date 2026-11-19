@@ -1,7 +1,7 @@
 import type { RotatorUnits } from "../../../shared/math/rotator";
 import type { DayPart } from "../nativeEnvironmentManager";
 import { moonAngles, sunAngles } from "../nativeSunMoonDirection";
-import { truncateToInt32 } from "../x87IntegerConversion";
+import { truncateToInt32 } from "../../../shared/math/x87IntegerConversion";
 import { DYNAMIC_LIGHT_CONSTANTS } from "./dynamicLightEngineConstants";
 import type { NativeVector3 } from "./lightmapRebuildTypes";
 import { sineTableCosine, sineTableSine } from "./rotatorVector";

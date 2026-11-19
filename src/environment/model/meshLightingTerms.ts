@@ -2,7 +2,7 @@ import { HOURLY_LIGHTING_CONSTANTS } from "./hourlyLightingEngineConstants";
 import { fColorFromPlane, type BgraBytes, type RgbaBytes } from "./nativeColourBytes";
 import type { NativePlane } from "./nativePlane";
 import type { RgbBytes } from "./sampleNativeTimeTables";
-import { lowByte, truncateToInt32 } from "./x87IntegerConversion";
+import { lowByte, truncateToInt32 } from "../../shared/math/x87IntegerConversion";
 
 export type AmbientLight<Reason extends string> =
   | { readonly status: "resolved"; readonly value: RgbaBytes }

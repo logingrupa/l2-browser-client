@@ -1,6 +1,6 @@
 import { saturatingAddBgra, type BgraBytes } from "../nativeColourBytes";
 import type { NativePlane } from "../nativePlane";
-import { floorToInt32, truncateToInt64LowDword } from "../x87IntegerConversion";
+import { floorToInt32, truncateToInt64LowDword } from "../../../shared/math/x87IntegerConversion";
 import { LIGHTMAP_REBUILD_CONSTANTS } from "./lightmapRebuildEngineConstants";
 import { rectangleWidth, type LightmapTexelRectangle } from "./lightmapRebuildTypes";
 
