@@ -42,8 +42,8 @@ interface FogReading {
 interface AmbientReading { readonly status: string; readonly value?: readonly number[] }
 interface HourlyLightingReading {
   readonly terms: { readonly hour: number; readonly staticMesh: { readonly ambient: AmbientReading }; readonly actor: { readonly ambient: AmbientReading } };
-  readonly terrain: { readonly gap: string | null; readonly lastRebuildHour: number | null; readonly heldReason: string | null;
-    readonly probe: { readonly intensity: number; readonly bgra: readonly number[] } | null };
+  readonly terrain: { readonly gap: string | null; readonly lastRebuildHour: number | null; readonly heldReason: string | null; readonly rebuildCount: number;
+    readonly probe: unknown; readonly staticBase: { readonly status: string; readonly reasons: readonly string[]; readonly lightsCoveringAVertex: number | null } };
   readonly staticMeshVisibility: { readonly gap: string | null; readonly placements: readonly { readonly sourceActor: string; readonly vertexZeroVisibility: number }[] };
 }
 interface WorldInspection {
@@ -139,39 +139,45 @@ function fixtureRowAt(hour: number, predicate: (row: HourlyLightingFixtureRow) =
 
 const fixtureAmbient = (row: HourlyLightingFixtureRow) => [...fixtureNumbers(row.output, "ambientRGB"), fixtureNumber(row.output, "alpha")];
 
-async function sendServerTimeAndReadLighting(page: Page, hour: number): Promise<LightingInspection> {
+interface LightingAtServerTime {
+  readonly atDispatch: LightingInspection;
+  readonly afterFrames: LightingInspection;
+}
+
+async function sendServerTimeAndReadLighting(page: Page, hour: number): Promise<LightingAtServerTime> {
   return page.evaluate(async gameMinutes => {
     const slice = window.__nativeSlice!;
+    const lightingWithoutSections = () => ({ ...slice.snapshot().world?.lighting as Record<string, unknown> | undefined, sections: undefined });
     slice.dispatch({ type: "set-server-time", gameMinutes });
+    const atDispatch = lightingWithoutSections();
     for (let frame = 0; frame < 3; frame += 1) await new Promise(resolveFrame => requestAnimationFrame(resolveFrame));
-    const lighting = slice.snapshot().world?.lighting as Record<string, unknown> | undefined;
-    return { ...lighting, sections: undefined } as unknown;
-  }, hour * minutesPerHour) as Promise<LightingInspection>;
+    return { atDispatch, afterFrames: lightingWithoutSections() } as unknown;
+  }, hour * minutesPerHour) as Promise<LightingAtServerTime>;
 }
 
 async function readHourlyLightingInputs(page: Page) {
   const readings = [];
   const { atlasChildCounts } = readHourlyLightingFixtures().context;
   for (const hour of fixtureHours) {
-    const inspection = await sendServerTimeAndReadLighting(page, hour), hourly = inspection.hourly!;
+    const { atDispatch, afterFrames: inspection } = await sendServerTimeAndReadLighting(page, hour), hourly = atDispatch.hourly!;
+    expect(atDispatch.environment).toMatchObject({ hour, hourSource: "server-time", targetType: 0 });
     expect(inspection.environment).toMatchObject({ hourSource: "server-time", targetType: 0 });
     expect(inspection.textureSlots!.map(slot => slot.childCount)).toEqual(atlasChildCounts);
     const bspRow = fixtureRowAt(hour, row => row.surfaceType === "BSP");
     for (const slot of inspection.textureSlots!.filter(entry => entry.childCount === fixtureNumber(bspRow.input, "atlasCount"))) {
       expect(slot.sunAffectedSlot, `texture ${slot.texture} at hour ${hour}`).toBe(fixtureNumber(bspRow.output, "selectedAtlasChild"));
     }
-    const terrainRow = fixtureRowAt(hour, row => row.surfaceType === "terrain" && row.controlWord === "0x7f");
-    expect(hourly.terrain).toMatchObject({ gap: null, heldReason: null });
-    expect(hourly.terrain.lastRebuildHour).toBeGreaterThanOrEqual(hour);
-    expect(hourly.terrain.probe).toEqual({ column: 134, row: 129, intensity: fixtureNumber(terrainRow.input, "truncatedIntensity"),
-      bgra: fixtureNumbers(terrainRow.output, "vertexBGRA") });
+    const { staticBase } = inspection.hourly!.terrain;
+    expect(staticBase.status, `tile ${tileId} serialized terrain lights cover a vertex`).toBe("unresolved");
+    expect(staticBase.lightsCoveringAVertex).toBeGreaterThan(0);
+    expect(inspection.hourly!.terrain).toMatchObject({ gap: null, heldReason: staticBase.reasons.join(", "), lastRebuildHour: null, rebuildCount: 0, probe: null });
     const visibilityRow = fixtureRowAt(hour, row => row.surfaceType === "staticMesh" && row.status === "conditional-authored-input-fixture");
     expect(hourly.staticMeshVisibility.placements.find(placement => placement.sourceActor === staticMeshVisibilityProbeActor)?.vertexZeroVisibility)
       .toBe(fixtureNumber(visibilityRow.output, "shaderVisibilityFloat"));
     const staticMeshRow = fixtureRowAt(hour, row => row.surfaceType === "staticMesh" && row.status === "conditional-input-fixture");
     expect(hourly.terms.staticMesh.ambient.value).toEqual(fixtureAmbient(staticMeshRow));
     expect(hourly.terms.actor.ambient.value).toEqual(fixtureAmbient(fixtureRowAt(hour, row => row.surfaceType === "actor")));
-    readings.push({ hour, textureSlots: inspection.textureSlots, hourly });
+    readings.push({ hour, textureSlots: inspection.textureSlots, hourly, terrainAfterFrames: inspection.hourly!.terrain });
   }
   return readings;
 }
