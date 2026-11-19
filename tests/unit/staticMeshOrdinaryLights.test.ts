@@ -254,6 +254,15 @@ describe("final instance colour from staged data: ordinary rebuild, then the hou
     expect(resolveStaticMeshHourlyEntries(list, withoutSun)).toEqual({ status: "unresolved", reason: `static-mesh-hourly-light-record-absent:${sunReference}` });
   });
 
+  it("names an hourly entry with a null light reference, set mask bits or not, as the hourly builder dereferences the entry actor unchecked (RM-19 0x10679960 at 0x10679b09)", () => {
+    const { list } = stagedOrdinarySubsetOf(pillarCase);
+    const records = recordsOf(pillarCase).lightsByExportIndex;
+    const nullFirstEntry = (visibility: Uint8Array) => ({ ...list, hourlyMasks: list.hourlyMasks.map((mask, index) => index === 0 ? { light: 0, visibility } : mask) });
+    expect(resolveStaticMeshHourlyEntries(nullFirstEntry(list.hourlyMasks[0]!.visibility), records)).toEqual({ status: "unresolved", reason: "static-mesh-hourly-light-null" });
+    expect(resolveStaticMeshHourlyEntries(nullFirstEntry(new Uint8Array(list.hourlyMasks[0]!.visibility.length)), records)).toEqual(
+      { status: "unresolved", reason: "static-mesh-hourly-light-null" });
+  });
+
   it("adds the hourly temporary stream onto the ordinary bytes and saturates at 255", () => {
     const blend = staticMeshHourlyEntryBlend(pillarCase.hourlyEntries.length, pillarCase.hour);
     const entries = staticMeshHourlyEntryContributions(blend, true, true);

@@ -8,8 +8,9 @@ export interface StaticMeshHourlyEntry {
   readonly cacheKept: boolean;
 }
 
-export const staticMeshHourlyLightReasons = {
+const staticMeshHourlyLightReasons = {
   recordAbsentPrefix: "static-mesh-hourly-light-record-absent:",
+  nullLight: "static-mesh-hourly-light-null",
 } as const;
 
 export const nullLightReference = 0;
@@ -38,7 +39,8 @@ export function resolveStaticMeshHourlyEntries(list: StaticMeshLightList, lights
   RebuildFieldResult<readonly StaticMeshHourlyEntry[]> {
   const entries: StaticMeshHourlyEntry[] = [];
   for (const mask of list.hourlyMasks) {
-    if (mask.light === nullLightReference || !staticMeshMaskSetsAnyVertex(mask.visibility, list.vertexCount)) {
+    if (mask.light === nullLightReference) return { status: "unresolved", reason: staticMeshHourlyLightReasons.nullLight };
+    if (!staticMeshMaskSetsAnyVertex(mask.visibility, list.vertexCount)) {
       entries.push({ visibility: mask.visibility, cacheKept: false });
       continue;
     }
