@@ -1,0 +1,2754 @@
+{
+ "schemaVersion": 1,
+ "kind": "static-mesh-light-gate-fixtures",
+ "source": {
+  "rm19FixtureInputs": {
+   "file": "20261113-roadmap/ordinary-static-lighting-rm19/data/fixture-inputs.json",
+   "sha256": "563a54e6a1fc99862eebf24f57a7d732fb4d16ea29f80466d416081b30a0b1e1"
+  },
+  "rm19IntegratedFixtures": {
+   "file": "20261113-roadmap/ordinary-static-lighting-rm19/rebuild/integrated-native-fixtures.json",
+   "sha256": "430158ac39b6520384f8fd4bc347b8279c27fc5b2036b4caf87fd61403d2e198"
+  },
+  "rm26Report": {
+   "file": "20261113-roadmap/static-mesh-lod.json",
+   "sha256": "cc3da3118e1b6c025f528e25f019d23a076d586838e2c840e07b8068cee31b3c"
+  },
+  "rm26Map": {
+   "file": "maps/20_20.unr",
+   "sha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4"
+  },
+  "wall5383Addendum": {
+   "file": "20261113-roadmap/static-mesh-lod-wall5383.json",
+   "sha256": "403c8581b65c0853ad165527e376bfbddc76207a5669f398a1210eddc533a688"
+  },
+  "rm27Report": {
+   "file": "20261113-roadmap/static-mesh-normal-transform.json",
+   "sha256": "f1260d513110d1c8558788924615734d9ee14e3c02f45bc4cb4196117baa622a"
+  }
+ },
+ "rm19LightCacheFlags": [
+  {
+   "exportIndex": 2,
+   "object": "20_21.NMovableSunLight0",
+   "actorClass": "Engine.NMovableSunLight",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 30,
+   "object": "20_21.Light143",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 40,
+   "object": "20_21.Light134",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 85,
+   "object": "20_21.Light234",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 86,
+   "object": "20_21.Light32",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 93,
+   "object": "20_21.Light242",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 101,
+   "object": "20_21.Light238",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 102,
+   "object": "20_21.Light244",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 104,
+   "object": "20_21.Light239",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 126,
+   "object": "20_21.Light235",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 133,
+   "object": "20_21.Light247",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 139,
+   "object": "20_21.Light236",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 154,
+   "object": "20_21.Light241",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 166,
+   "object": "20_21.Light240",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 172,
+   "object": "20_21.Light224",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 173,
+   "object": "20_21.Light237",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 193,
+   "object": "20_21.Light222",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 204,
+   "object": "20_21.Light226",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 264,
+   "object": "20_21.Light231",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 281,
+   "object": "20_21.Light488",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 282,
+   "object": "20_21.Light486",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 283,
+   "object": "20_21.Light487",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 289,
+   "object": "20_21.Light489",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 293,
+   "object": "20_21.Light96",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 297,
+   "object": "20_21.Light451",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 320,
+   "object": "20_21.Light249",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 321,
+   "object": "20_21.Light484",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  },
+  {
+   "exportIndex": 529,
+   "object": "20_21.Light29",
+   "actorClass": "Engine.Light",
+   "fields": [
+    {
+     "field": "bDynamicLight",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bLightChanged",
+     "provenance": "package-class-default",
+     "value": false
+    },
+    {
+     "field": "bDeleteMe",
+     "provenance": "package-class-default",
+     "value": false
+    }
+   ]
+  }
+ ],
+ "rm26Receivers": [
+  {
+   "exportIndex": 9216,
+   "instanceExportIndex": 11587,
+   "mesh": "Oren_HED_S.hed_Arch01",
+   "bSunAffect": false,
+   "ambientBGRA": [
+    40,
+    40,
+    40,
+    255
+   ],
+   "vertices": [
+    {
+     "vertexIndex": 0,
+     "meshPosition": [
+      -107.26940155029297,
+      -193.18780517578125,
+      -0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 1,
+     "meshPosition": [
+      -140.3083038330078,
+      -193.4243927001953,
+      -0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 2,
+     "meshPosition": [
+      -140.3083038330078,
+      -250.01870727539062,
+      0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "vertexCount": 60,
+   "scaleGlow": 1.0,
+   "localToWorld": [
+    -0.0015339801320806146,
+    0.9999988079071045,
+    0.0,
+    0,
+    -0.9999988079071045,
+    -0.0015339801320806146,
+    -0.0,
+    0,
+    -0.0,
+    -0.0,
+    1.0,
+    0,
+    14398.75390625,
+    82074.6875,
+    -3937.136962890625,
+    1
+   ],
+   "ordinaryEntries": [
+    {
+     "light": 147,
+     "maskHex": "f0fff03fb0ea0700",
+     "applied": 0
+    },
+    {
+     "light": 271,
+     "maskHex": "f9fff9bfb02a0c00",
+     "applied": 0
+    },
+    {
+     "light": 275,
+     "maskHex": "f9fff9bf20c00f00",
+     "applied": 0
+    },
+    {
+     "light": 158,
+     "maskHex": "f9fff9bfb0ea0f00",
+     "applied": 0
+    },
+    {
+     "light": 164,
+     "maskHex": "f9fff9bfb0ea0f00",
+     "applied": 0
+    },
+    {
+     "light": 84,
+     "maskHex": "0000000000000000",
+     "applied": 0
+    },
+    {
+     "light": 146,
+     "maskHex": "61aa1894b0ea0f00",
+     "applied": 0
+    }
+   ],
+   "hourlyEntries": [],
+   "lights": [
+    {
+     "exportIndex": 84,
+     "object": "20_20.Light184",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 146,
+     "object": "20_20.Light172",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 147,
+     "object": "20_20.Light268",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 158,
+     "object": "20_20.Light179",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 164,
+     "object": "20_20.Light171",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 271,
+     "object": "20_20.Light176",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 275,
+     "object": "20_20.Light175",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "exportIndex": 6055,
+   "instanceExportIndex": 11577,
+   "mesh": "Oren_HED_S.hed_Arch01",
+   "bSunAffect": false,
+   "ambientBGRA": [
+    40,
+    40,
+    40,
+    255
+   ],
+   "vertices": [
+    {
+     "vertexIndex": 0,
+     "meshPosition": [
+      -107.26940155029297,
+      -193.18780517578125,
+      -0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 1,
+     "meshPosition": [
+      -140.3083038330078,
+      -193.4243927001953,
+      -0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 2,
+     "meshPosition": [
+      -140.3083038330078,
+      -250.01870727539062,
+      0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "vertexCount": 60,
+   "scaleGlow": 1.0,
+   "localToWorld": [
+    -0.0015339801320806146,
+    0.9999988079071045,
+    0.0,
+    0,
+    -1.0499987006188007,
+    -0.0016106790655387726,
+    -0.0,
+    0,
+    -0.0,
+    -0.0,
+    1.0,
+    0,
+    13844.43359375,
+    82074.3125,
+    -3937.094970703125,
+    1
+   ],
+   "ordinaryEntries": [
+    {
+     "light": 244,
+     "maskHex": "f0fff03f20000000",
+     "applied": 0
+    },
+    {
+     "light": 254,
+     "maskHex": "f9fff9bf20e00f00",
+     "applied": 0
+    },
+    {
+     "light": 271,
+     "maskHex": "f9bff99fb0ea0f00",
+     "applied": 0
+    },
+    {
+     "light": 275,
+     "maskHex": "f9aff9bfb0ea0f00",
+     "applied": 0
+    },
+    {
+     "light": 158,
+     "maskHex": "61aa1880b0ea0f00",
+     "applied": 0
+    },
+    {
+     "light": 164,
+     "maskHex": "41a03895b0ea0b00",
+     "applied": 0
+    }
+   ],
+   "hourlyEntries": [],
+   "lights": [
+    {
+     "exportIndex": 158,
+     "object": "20_20.Light179",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 164,
+     "object": "20_20.Light171",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 244,
+     "object": "20_20.Light265",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 254,
+     "object": "20_20.Light264",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 271,
+     "object": "20_20.Light176",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 275,
+     "object": "20_20.Light175",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "exportIndex": 1548,
+   "instanceExportIndex": 11612,
+   "mesh": "Oren_HED_S.hed_Arch01",
+   "bSunAffect": false,
+   "ambientBGRA": [
+    40,
+    40,
+    40,
+    255
+   ],
+   "vertices": [
+    {
+     "vertexIndex": 0,
+     "meshPosition": [
+      -107.26940155029297,
+      -193.18780517578125,
+      -0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 1,
+     "meshPosition": [
+      -140.3083038330078,
+      -193.4243927001953,
+      -0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 2,
+     "meshPosition": [
+      -140.3083038330078,
+      -250.01870727539062,
+      0.0
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "vertexCount": 60,
+   "scaleGlow": 1.0,
+   "localToWorld": [
+    0.9999988079071045,
+    0.0015339801320806146,
+    0.0,
+    0,
+    -0.0015339801320806146,
+    0.9999988079071045,
+    -0.0,
+    0,
+    -0.0,
+    0.0,
+    1.0,
+    0,
+    13214.74609375,
+    80989.828125,
+    -3937.136962890625,
+    1
+   ],
+   "ordinaryEntries": [
+    {
+     "light": 110,
+     "maskHex": "0000000000000000",
+     "applied": 0
+    },
+    {
+     "light": 39,
+     "maskHex": "f02a000000000000",
+     "applied": 0
+    },
+    {
+     "light": 105,
+     "maskHex": "00a0f9b530000000",
+     "applied": 0
+    },
+    {
+     "light": 118,
+     "maskHex": "f9aa001000000f00",
+     "applied": 0
+    },
+    {
+     "light": 200,
+     "maskHex": "e9aa3895b0ea0f00",
+     "applied": 0
+    },
+    {
+     "light": 196,
+     "maskHex": "61aaf995b0ea0f00",
+     "applied": 0
+    },
+    {
+     "light": 301,
+     "maskHex": "60aa3015b0ea0700",
+     "applied": 0
+    },
+    {
+     "light": 209,
+     "maskHex": "61aa381500000000",
+     "applied": 0
+    },
+    {
+     "light": 221,
+     "maskHex": "61aa381500000000",
+     "applied": 0
+    }
+   ],
+   "hourlyEntries": [],
+   "lights": [
+    {
+     "exportIndex": 39,
+     "object": "20_20.Light169",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 105,
+     "object": "20_20.Light4",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 110,
+     "object": "20_20.Light302",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 118,
+     "object": "20_20.Light185",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 196,
+     "object": "20_20.Light218",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 200,
+     "object": "20_20.Light155",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 209,
+     "object": "20_20.Light178",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 221,
+     "object": "20_20.Light177",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 301,
+     "object": "20_20.Light305",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "exportIndex": 5327,
+   "instanceExportIndex": 12295,
+   "mesh": "Oren_HED_S.hed_arch16",
+   "bSunAffect": false,
+   "ambientBGRA": [
+    40,
+    40,
+    40,
+    255
+   ],
+   "vertices": [
+    {
+     "vertexIndex": 0,
+     "meshPosition": [
+      -303.2489929199219,
+      30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 1,
+     "meshPosition": [
+      -303.2489929199219,
+      -30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 2,
+     "meshPosition": [
+      -217.73739624023438,
+      -30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "vertexCount": 94,
+   "scaleGlow": 1.0,
+   "localToWorld": [
+    1.0,
+    0.0,
+    0.0,
+    0,
+    0.0,
+    1.0,
+    -0.0,
+    0,
+    -0.0,
+    0.0,
+    1.0,
+    0,
+    15034.845703125,
+    80475.453125,
+    -3481.068115234375,
+    1
+   ],
+   "ordinaryEntries": [
+    {
+     "light": 55,
+     "maskHex": "0ccf2ccb020ccf2ccb3e802a",
+     "applied": 0
+    },
+    {
+     "light": 128,
+     "maskHex": "01200080b20ccf2c8b3ea802",
+     "applied": 0
+    },
+    {
+     "light": 123,
+     "maskHex": "0ccf2c8bb2021028ca3e802a",
+     "applied": 0
+    }
+   ],
+   "hourlyEntries": [],
+   "lights": [
+    {
+     "exportIndex": 55,
+     "object": "20_20.Light234",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 123,
+     "object": "20_20.Light182",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 128,
+     "object": "20_20.Light129",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "exportIndex": 5336,
+   "instanceExportIndex": 12294,
+   "mesh": "Oren_HED_S.hed_arch16",
+   "bSunAffect": false,
+   "ambientBGRA": [
+    40,
+    40,
+    40,
+    255
+   ],
+   "vertices": [
+    {
+     "vertexIndex": 0,
+     "meshPosition": [
+      -303.2489929199219,
+      30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 1,
+     "meshPosition": [
+      -303.2489929199219,
+      -30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 2,
+     "meshPosition": [
+      -217.73739624023438,
+      -30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "vertexCount": 94,
+   "scaleGlow": 1.0,
+   "localToWorld": [
+    1.0,
+    0.0,
+    0.0,
+    0,
+    0.0,
+    1.0,
+    -0.0,
+    0,
+    -0.0,
+    0.0,
+    1.0,
+    0,
+    15035.357421875,
+    80796.21875,
+    -3481.068115234375,
+    1
+   ],
+   "ordinaryEntries": [
+    {
+     "light": 55,
+     "maskHex": "0ccf2ccba20ccf2ccb3e802a",
+     "applied": 0
+    },
+    {
+     "light": 128,
+     "maskHex": "220086e138ac0f8e63bc2a00",
+     "applied": 0
+    },
+    {
+     "light": 84,
+     "maskHex": "0de00401000ccf2c0b3ca802",
+     "applied": 0
+    },
+    {
+     "light": 102,
+     "maskHex": "0ccf2c0b000e5000003c802a",
+     "applied": 0
+    },
+    {
+     "light": 123,
+     "maskHex": "9c0f8e633811008061bc0228",
+     "applied": 0
+    }
+   ],
+   "hourlyEntries": [],
+   "lights": [
+    {
+     "exportIndex": 55,
+     "object": "20_20.Light234",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 84,
+     "object": "20_20.Light184",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 102,
+     "object": "20_20.Light183",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 123,
+     "object": "20_20.Light182",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 128,
+     "object": "20_20.Light129",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "exportIndex": 5335,
+   "instanceExportIndex": 12293,
+   "mesh": "Oren_HED_S.hed_arch16",
+   "bSunAffect": false,
+   "ambientBGRA": [
+    40,
+    40,
+    40,
+    255
+   ],
+   "vertices": [
+    {
+     "vertexIndex": 0,
+     "meshPosition": [
+      -303.2489929199219,
+      30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 1,
+     "meshPosition": [
+      -303.2489929199219,
+      -30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 2,
+     "meshPosition": [
+      -217.73739624023438,
+      -30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "vertexCount": 94,
+   "scaleGlow": 1.0,
+   "localToWorld": [
+    1.0,
+    0.0,
+    0.0,
+    0,
+    0.0,
+    1.0,
+    -0.0,
+    0,
+    -0.0,
+    0.0,
+    1.0,
+    0,
+    15035.119140625,
+    81116.546875,
+    -3481.068115234375,
+    1
+   ],
+   "ordinaryEntries": [
+    {
+     "light": 55,
+     "maskHex": "9c0f8ee318ac0f8ee3bc0228",
+     "applied": 0
+    },
+    {
+     "light": 128,
+     "maskHex": "3e00000000ac0f8e03240200",
+     "applied": 0
+    },
+    {
+     "light": 84,
+     "maskHex": "01200080b20ccf2c8b3ea802",
+     "applied": 0
+    },
+    {
+     "light": 102,
+     "maskHex": "0ccf2c8bb2021028cb3e802a",
+     "applied": 0
+    },
+    {
+     "light": 123,
+     "maskHex": "9c0f8e0300bd000800bc0228",
+     "applied": 0
+    }
+   ],
+   "hourlyEntries": [],
+   "lights": [
+    {
+     "exportIndex": 55,
+     "object": "20_20.Light234",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 84,
+     "object": "20_20.Light184",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 102,
+     "object": "20_20.Light183",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 123,
+     "object": "20_20.Light182",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 128,
+     "object": "20_20.Light129",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "exportIndex": 5374,
+   "instanceExportIndex": 12292,
+   "mesh": "Oren_HED_S.hed_arch16",
+   "bSunAffect": false,
+   "ambientBGRA": [
+    40,
+    40,
+    40,
+    255
+   ],
+   "vertices": [
+    {
+     "vertexIndex": 0,
+     "meshPosition": [
+      -303.2489929199219,
+      30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 1,
+     "meshPosition": [
+      -303.2489929199219,
+      -30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 2,
+     "meshPosition": [
+      -217.73739624023438,
+      -30.72480010986328,
+      -142.9425048828125
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "vertexCount": 94,
+   "scaleGlow": 1.0,
+   "localToWorld": [
+    1.0,
+    0.0,
+    0.0,
+    0,
+    0.0,
+    1.0,
+    -0.0,
+    0,
+    -0.0,
+    0.0,
+    1.0,
+    0,
+    15035.005859375,
+    81435.28125,
+    -3481.068115234375,
+    1
+   ],
+   "ordinaryEntries": [
+    {
+     "light": 156,
+     "maskHex": "0000000000040200003ca802",
+     "applied": 0
+    },
+    {
+     "light": 55,
+     "maskHex": "9c0f8ee318ac0f8ee3bc0228",
+     "applied": 0
+    },
+    {
+     "light": 84,
+     "maskHex": "220080e138ac0f8e63bc2a00",
+     "applied": 0
+    },
+    {
+     "light": 102,
+     "maskHex": "9c0f8ee33811000060bc0228",
+     "applied": 0
+    }
+   ],
+   "hourlyEntries": [],
+   "lights": [
+    {
+     "exportIndex": 55,
+     "object": "20_20.Light234",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 84,
+     "object": "20_20.Light184",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 102,
+     "object": "20_20.Light183",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 156,
+     "object": "20_20.Light267",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "exportIndex": 5383,
+   "instanceExportIndex": 12277,
+   "mesh": "Oren_HED_S.hed_arch14",
+   "bSunAffect": false,
+   "ambientBGRA": [
+    40,
+    40,
+    40,
+    255
+   ],
+   "vertices": [
+    {
+     "vertexIndex": 0,
+     "meshPosition": [
+      -294.21270751953125,
+      683.8156127929688,
+      -17.105199813842773
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 1,
+     "meshPosition": [
+      -251.44520568847656,
+      683.8156127929688,
+      -17.105199813842773
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "vertexIndex": 2,
+     "meshPosition": [
+      -245.17730712890625,
+      905.7426147460938,
+      -17.105199813842773
+     ],
+     "meshNormal": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "color0BGRA": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "vertexCount": 87,
+   "scaleGlow": 1.0,
+   "localToWorld": [
+    1.0,
+    0.0,
+    0.0,
+    0,
+    0.0,
+    1.0,
+    -0.0,
+    0,
+    -0.0,
+    0.0,
+    1.0,
+    0,
+    15035.115234375,
+    80930.265625,
+    -3591.871337890625,
+    1
+   ],
+   "ordinaryEntries": [
+    {
+     "light": 156,
+     "maskHex": "0000000000000000000080",
+     "applied": 0
+    },
+    {
+     "light": 147,
+     "maskHex": "0000000000000000000080",
+     "applied": 0
+    },
+    {
+     "light": 55,
+     "maskHex": "62df7b8f499c6da2706e8b",
+     "applied": 0
+    },
+    {
+     "light": 128,
+     "maskHex": "00000080499c2d07706e81",
+     "applied": 0
+    },
+    {
+     "light": 84,
+     "maskHex": "01000060489c6d00706e81",
+     "applied": 0
+    },
+    {
+     "light": 102,
+     "maskHex": "62df7b6c000000a008008a",
+     "applied": 0
+    },
+    {
+     "light": 123,
+     "maskHex": "62df7bef010000a3000080",
+     "applied": 0
+    }
+   ],
+   "hourlyEntries": [],
+   "lights": [
+    {
+     "exportIndex": 55,
+     "object": "20_20.Light234",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 84,
+     "object": "20_20.Light184",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 102,
+     "object": "20_20.Light183",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 123,
+     "object": "20_20.Light182",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 128,
+     "object": "20_20.Light129",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 147,
+     "object": "20_20.Light268",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    },
+    {
+     "exportIndex": 156,
+     "object": "20_20.Light267",
+     "actorClass": "Engine.Light",
+     "fields": [
+      {
+       "field": "bDynamicLight",
+       "provenance": "package-class-default",
+       "value": false
+      },
+      {
+       "field": "bLightChanged",
+       "provenance": "map-property-tag",
+       "value": true
+      },
+      {
+       "field": "bDeleteMe",
+       "provenance": "package-class-default",
+       "value": false
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "rm27Normals": {
+  "exportIndex": 4900,
+  "instanceExportIndex": 12504,
+  "mesh": "Oren_HED_S.hed_obj19",
+  "localToWorld": [
+   1.564000129699707,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   1.7000000476837158,
+   -0.0,
+   0.0,
+   -0.0,
+   0.0,
+   1.7000000476837158,
+   0.0,
+   10666.765625,
+   81116.3125,
+   -3617.970458984375,
+   1.0
+  ],
+  "vertices": [
+   {
+    "vertex": 104,
+    "localPosition": [
+     80.09700012207031,
+     -3.1291000843048096,
+     73.97219848632812
+    ],
+    "localNormal": [
+     -0.9332577586174011,
+     0.359207421541214,
+     -1.4071814291582996e-07
+    ],
+    "worldPosition": [
+     10792.037109375,
+     81110.9921875,
+     -3492.2177734375
+    ],
+    "worldNormal": [
+     -0.9225195646286011,
+     0.38595035672187805,
+     -1.511945839638429e-07
+    ]
+   },
+   {
+    "vertex": 18,
+    "localPosition": [
+     39.919898986816406,
+     -12.309200286865234,
+     140.56309509277344
+    ],
+    "localNormal": [
+     0.9471738338470459,
+     0.0,
+     -0.3207206130027771
+    ],
+    "worldPosition": [
+     10729.2001953125,
+     81095.390625,
+     -3379.01318359375
+    ],
+    "worldNormal": [
+     0.93845534324646,
+     0.0,
+     -0.34540051221847534
+    ]
+   },
+   {
+    "vertex": 0,
+    "localPosition": [
+     -44.35309982299805,
+     4.490900039672852,
+     157.3260040283203
+    ],
+    "localNormal": [
+     -0.9978092312812805,
+     0.0,
+     0.06615718454122543
+    ],
+    "worldPosition": [
+     10597.3974609375,
+     81123.9453125,
+     -3350.516357421875
+    ],
+    "worldNormal": [
+     -0.997413158416748,
+     0.0,
+     0.07188142836093903
+    ]
+   }
+  ]
+ }
+}
