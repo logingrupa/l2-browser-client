@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets_lib.gltf import json_bytes
-from native_store.gap_rows import read_gap_rows
+from native_store.gap_census import GAP_CENSUS_STEP_ORDER
+from native_store.gap_rows import read_gap_rows, write_gap_rows
 from native_store.store_paths import lane_work_root
 from native_store.worker_count_argument import MAXIMUM_WORKER_COUNT
 from native_store.unit_ledger import (RUNNING_MARKER_NAME, SEAL_RECORD_NAME, FreeDiskFloorRefusedError, MachineWindowRefusedError,
@@ -24,6 +25,8 @@ from world.convert_tile_batch import NOTHING_TO_DO_MESSAGE, TileBatchUsageError,
 from world.eligible_tile_selection import SealedTileStep, failed_step_row, seal_derived_step_row, step_level_rows
 from world.eligible_tiles import select_eligible_tiles
 from world.raw_map_step import read_tile_map_lock_record, tile_step_row, tile_unit_key
+from world.shared_sky_map import SHARED_SKY_STEP_NAME
+from world.tile_census import CENSUS_STEP
 from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATIVE_PATH, TileCensusError
 from world.tile_music import pinned_music_encoder
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, TileStepSealCheck, unit_step_seal
@@ -42,6 +45,7 @@ NON_TILE_MAP_COUNT = 10
 SYNTHETIC_OBJECT_GAP_REASON = 'decode-failed:synthetic unreadable object'
 SYNTHETIC_LAYOUT_GAP_REASON = 'map-licensee-unsupported:123/25'
 WORLD_GAP_ROWS_FOLDER = Path('artifacts/lane-store/world/gap-rows')
+RETIRED_WORLD_STEP_NAME = 'sky'
 
 
 class SimulatedProcessKill(BaseException):
@@ -318,6 +322,16 @@ class TileBatchOrderTests(TileBatchTestCase):
         self.run_batch(steps, limit=3)
         self.assertEqual(self.gap_row_file_bytes(), first_bytes)
         self.assertEqual(sorted(first_bytes), sorted(f'{step}.json' for step in SYNTHETIC_STEP_NAMES))
+
+    def test_a_batch_removes_the_gap_row_file_of_a_retired_world_step_and_keeps_every_live_world_step(self):
+        for step in (RETIRED_WORLD_STEP_NAME, CENSUS_STEP, SHARED_SKY_STEP_NAME, *TILE_STEP_NAMES):
+            write_gap_rows(self.project_root, 'world', step, [])
+        self.run_batch(LedgerBackedSteps(self.project_root))
+        self.assertEqual(sorted(self.gap_row_file_bytes()),
+                         sorted(f'{step}.json' for step in (CENSUS_STEP, SHARED_SKY_STEP_NAME, *TILE_STEP_NAMES)))
+
+    def test_every_world_gap_row_step_the_batch_keeps_is_a_census_step(self):
+        self.assertLessEqual(convert_tile_batch.WORLD_GAP_ROW_STEP_NAMES, set(GAP_CENSUS_STEP_ORDER))
 
     def test_the_single_step_row_follows_the_same_seal_rule_as_the_batch(self):
         steps = LedgerBackedSteps(self.project_root, object_gaps={('10_11', 'meshes'): 2})

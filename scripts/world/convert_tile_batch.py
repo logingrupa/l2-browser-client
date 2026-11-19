@@ -16,7 +16,7 @@ from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
 from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
 from native_store.lane_roots import create_lane_work_and_store_roots
 from native_store.share_identical_lane_files import share_identical_files_of_batch_lane
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
+from native_store.store_paths import REPOSITORY_ROOT, lane_gap_rows_folder, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from native_store.worker_count_argument import MAXIMUM_WORKER_COUNT, worker_count_argument
 from native_store.write_lane_catalog import write_lane_catalog
@@ -25,8 +25,9 @@ from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATU
                                            sealed_step_of_current_seal, step_level_rows, unit_step_evidence)
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, locked_tile_map_bytes, tile_unit_key
+from world.shared_sky_map import SHARED_SKY_STEP_NAME
 from world.terrain_seam_strip import SEAM_ROLE_TILE_STEPS, neighbour_tile_id
-from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT
+from world.tile_census import CENSUS_STEP, DEFAULT_CONVERSION_CLIENT_ROOT
 from world.world_lane_names import WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
 from world.tile_step_gap_rows import first_blocking_row
@@ -39,6 +40,7 @@ DEFAULT_TILE_BATCH_WORKER_COUNT = min(os.cpu_count() or 1, MAXIMUM_WORKER_COUNT)
 SETTLING_UNSEALED_STATUSES = (FAILED_STATUS, GAP_STATUS)
 SEAL_INSPECTION_ERRORS = (OSError, ValueError)
 NOTHING_TO_DO_MESSAGE = 'nothing to do: every eligible tile of the census has every registered step sealed'
+WORLD_GAP_ROW_STEP_NAMES = frozenset({CENSUS_STEP, SHARED_SKY_STEP_NAME, *TILE_STEP_NAMES})
 
 
 class TileBatchUsageError(ValueError):
@@ -146,6 +148,13 @@ def write_tile_step_rows(project_root, step_names, tile_ids, rows):
         desired_rows = sorted_gap_rows([*kept_rows, *(row for row in rows if row['step'] == step)])
         if desired_rows != current_rows:
             write_gap_rows(project_root, WORLD_LANE_NAME, step, desired_rows)
+    remove_gap_rows_of_retired_world_steps(project_root)
+
+
+def remove_gap_rows_of_retired_world_steps(project_root):
+    for gap_rows_path in sorted(lane_gap_rows_folder(project_root, WORLD_LANE_NAME).glob('*.json')):
+        if gap_rows_path.stem not in WORLD_GAP_ROW_STEP_NAMES:
+            gap_rows_path.unlink()
 
 
 def seam_input_raw_results(workers, seam_inputs, selected, source_identities, expected_costs, preflights_by_tile):
