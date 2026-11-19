@@ -117,9 +117,9 @@ class VerifyOnlyWalkTests(TemporaryStoreTestCase):
 
     def test_every_walk_reports_the_wrong_file_of_the_earlier_level_first(self):
         tile = SyntheticWorldTile(self.store_root)
-        write_file(self.store_root / tile.bsp_relative, b'other bytes')
-        (self.store_root / tile.sky_folder / 'sky.glb').unlink()
-        self.assert_every_walk_refuses(CatalogWriteError, f'pinned store file SHA-256 differs from its pin [0-9a-f]{{64}}: {tile.bsp_relative}$',
+        write_file(self.store_root / tile.sky_folder / 'sky.glb', b'other bytes')
+        (self.store_root / tile.bsp_relative).unlink()
+        self.assert_every_walk_refuses(CatalogWriteError, f'pinned store file SHA-256 differs from its pin [0-9a-f]{{64}}: {tile.sky_folder}/sky.glb$',
                                        self.store_root, tile.catalog())
 
     def test_every_walk_applies_the_store_file_path_rule_to_a_file_whose_bytes_match_its_pin(self):
