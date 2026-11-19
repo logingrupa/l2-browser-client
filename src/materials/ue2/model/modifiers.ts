@@ -53,9 +53,7 @@ export function texPannerMatrix(node: MaterialProgramNode, levelSeconds: number)
 export const texRotatorThirdColumnGap = "material-feature-unported:TexRotatorThirdColumn";
 
 function texRotatorMatrix(node: MaterialProgramNode, context: TextureCoordinateContext): TextureCoordinateEvaluation {
-  const evaluation = texRotatorRowMajorMatrix(node, context);
-  if (evaluation.status === "unported") return evaluation;
-  const rows = evaluation.rowMajorMatrix;
+  const rows = texRotatorRowMajorMatrix(node, context).rowMajorMatrix;
   const matrix: TextureCoordinateMatrix = [rows[0]!, rows[4]!, rows[8]!, rows[1]!, rows[5]!, rows[9]!];
   return rows[2] === 0 && rows[6] === 0 && rows[10] === 1 ? { status: "evaluated", matrix } : { status: "evaluated", matrix, carriesThirdColumn: true };
 }

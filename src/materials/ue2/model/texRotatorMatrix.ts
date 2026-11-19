@@ -1,4 +1,5 @@
 import { rotatorAxes, type RotatorUnits } from "../../../shared/math/rotator";
+import { floorToInt32, truncateToInt32 } from "../../../shared/math/x87IntegerConversion";
 import { TEXTURE_COORDINATE_CONSTANTS } from "./constants/textureCoordinateConstants";
 import { readBooleanField, readEnumOrdinal, readNumberField, readRotatorField } from "./materialFieldValues";
 import type { MaterialProgramNode } from "./materialProgram";
@@ -11,53 +12,32 @@ export interface TexRotatorInputs {
   readonly textureHeight: number;
 }
 
-export type TexRotatorEvaluation =
-  | { readonly status: "evaluated"; readonly effectiveRotation: RotatorUnits; readonly rowMajorMatrix: RowMajorTextureMatrix }
-  | { readonly status: "unported"; readonly reason: string };
-
-export const texRotatorTruncationRangeGap = "material-feature-unported:TexRotatorTruncationRange";
+export interface TexRotatorEvaluation {
+  readonly effectiveRotation: RotatorUnits;
+  readonly rowMajorMatrix: RowMajorTextureMatrix;
+}
 
 const rotatorModeOrdinals = TEXTURE_COORDINATE_CONSTANTS.rotatorModeOrdinals.runtimeDefault;
 const oscillationDivisor = TEXTURE_COORDINATE_CONSTANTS.rotatorOscillationDivisor.runtimeDefault;
 const fullTurnRadians = 2 * Math.PI;
-const int32Bound = 2 ** 31;
 const rotatorUnitsMask = 0xffff;
-const rotatorComponents = ["pitch", "yaw", "roll"] as const;
-type RotatorComponent = (typeof rotatorComponents)[number];
 
-function truncatedToInt32(value: number): number | null {
-  const truncated = Math.trunc(value);
-  return truncated >= -int32Bound && truncated < int32Bound ? truncated : null;
+function rotatorFromComponents(componentValue: (component: keyof RotatorUnits) => number): RotatorUnits {
+  return { pitch: componentValue("pitch"), yaw: componentValue("yaw"), roll: componentValue("roll") };
 }
 
-function rotatorFromComponents(componentValue: (component: RotatorComponent) => number | null): RotatorUnits | null {
-  const [pitch, yaw, roll] = rotatorComponents.map(componentValue);
-  if (pitch === null || pitch === undefined || yaw === null || yaw === undefined || roll === null || roll === undefined) return null;
-  return { pitch, yaw, roll };
-}
-
-function oscillationDelta(rate: number, amplitude: number, phase: number, levelTime: number): number | null {
+function oscillationDelta(rate: number, amplitude: number, phase: number, levelTime: number): number {
   const cycles = Math.fround(rate * levelTime / oscillationDivisor);
-  const wholeCycles = truncatedToInt32(Math.floor(cycles));
-  if (wholeCycles === null) return null;
-  return truncatedToInt32(Math.fround(Math.sin((cycles - wholeCycles + phase) * fullTurnRadians) * amplitude));
+  return truncateToInt32(Math.fround(Math.sin((cycles - floorToInt32(cycles) + phase) * fullTurnRadians) * amplitude));
 }
 
-function effectiveRotation(node: MaterialProgramNode, levelTime: number): RotatorUnits | null {
+function effectiveRotation(node: MaterialProgramNode, levelTime: number): RotatorUnits {
   const rotation = readRotatorField(node, "Rotation");
   const mode = readBooleanField(node, "ConstantRotation") ? rotatorModeOrdinals.constantlyRotating : readEnumOrdinal(node, "TexRotationType");
-  if (mode === rotatorModeOrdinals.constantlyRotating) {
-    return rotatorFromComponents(component => {
-      const truncated = truncatedToInt32(rotation[component] * levelTime);
-      return truncated === null ? null : truncated & rotatorUnitsMask;
-    });
-  }
+  if (mode === rotatorModeOrdinals.constantlyRotating) return rotatorFromComponents(component => truncateToInt32(rotation[component] * levelTime) & rotatorUnitsMask);
   if (mode !== rotatorModeOrdinals.oscillating) return rotation;
   const rate = readRotatorField(node, "OscillationRate"), amplitude = readRotatorField(node, "OscillationAmplitude"), phase = readRotatorField(node, "OscillationPhase");
-  return rotatorFromComponents(component => {
-    const delta = oscillationDelta(rate[component], amplitude[component], phase[component], levelTime);
-    return delta === null ? null : (rotation[component] + delta) | 0;
-  });
+  return rotatorFromComponents(component => (rotation[component] + oscillationDelta(rate[component], amplitude[component], phase[component], levelTime)) | 0);
 }
 
 function rotationRowMajorMatrix(rotation: RotatorUnits): RowMajorTextureMatrix {
@@ -78,12 +58,11 @@ function multiplyRowMajorMatricesToFloat32(left: RowMajorTextureMatrix, right: R
 
 export function texRotatorRowMajorMatrix(node: MaterialProgramNode, inputs: TexRotatorInputs): TexRotatorEvaluation {
   const rotation = effectiveRotation(node, Math.fround(inputs.levelSeconds));
-  if (rotation === null) return { status: "unported", reason: texRotatorTruncationRangeGap };
   const rotationMatrix = rotationRowMajorMatrix(rotation);
   const uOffset = Math.fround(readNumberField(node, "UOffset")), vOffset = Math.fround(readNumberField(node, "VOffset"));
-  if (uOffset === 0 && vOffset === 0) return { status: "evaluated", effectiveRotation: rotation, rowMajorMatrix: rotationMatrix };
+  if (uOffset === 0 && vOffset === 0) return { effectiveRotation: rotation, rowMajorMatrix: rotationMatrix };
   const uPivot = Math.fround(uOffset / inputs.textureWidth), vPivot = Math.fround(vOffset / inputs.textureHeight);
   const pivoted = multiplyRowMajorMatricesToFloat32(multiplyRowMajorMatricesToFloat32(translationRowMajorMatrix(-uPivot, -vPivot), rotationMatrix),
     translationRowMajorMatrix(uPivot, vPivot));
-  return { status: "evaluated", effectiveRotation: rotation, rowMajorMatrix: pivoted };
+  return { effectiveRotation: rotation, rowMajorMatrix: pivoted };
 }

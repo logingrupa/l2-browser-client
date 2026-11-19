@@ -10,7 +10,8 @@ import { readEnumOrdinal, readNumberField, readRotatorField } from "../../src/ma
 import { parseMaterialProgram, programNode, type MaterialProgram, type MaterialProgramNode } from "../../src/materials/ue2/model/materialProgram";
 import { IDENTITY_TEXTURE_COORDINATE_MATRIX, textureCoordinateChainMatrix, textureCoordinateModifierMatrix, texRotatorThirdColumnGap } from "../../src/materials/ue2/model/modifiers";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
-import { texRotatorRowMajorMatrix, texRotatorTruncationRangeGap, type RowMajorTextureMatrix } from "../../src/materials/ue2/model/texRotatorMatrix";
+import { texRotatorRowMajorMatrix, type RowMajorTextureMatrix } from "../../src/materials/ue2/model/texRotatorMatrix";
+import { truncateToInt32 } from "../../src/shared/math/x87IntegerConversion";
 import {
   field, nodeReference, programOf, rawStruct, reviewedNode, swatchTextureNode, swatchTexturePng, textureImageFor, type FixtureProgramField,
 } from "../support/materialProgramFixture";
@@ -60,6 +61,7 @@ const starFieldRotatorId = "l2_skies.Shaders.TexRotator1";
 const starFieldCaptureObject = "L2_Skies.Shaders.TexRotator1";
 const oceanRotatorCaptureObject = "FX_E_T.WaterSurfaceShaderSet.ocn_rot";
 const stagedSkyFolder = new URL("../fixtures/environment/skylevel-visibility/", import.meta.url);
+const integerIndefinite = truncateToInt32(2 ** 31);
 
 function bytesOfHex(hex: string): Uint8Array {
   return Uint8Array.from({ length: hex.length / 2 }, (_, index) => Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16));
@@ -125,9 +127,7 @@ function capturedRotator(object: string): CapturedRotator {
 }
 
 function evaluatedRowMajor(node: MaterialProgramNode, levelSeconds: number, textureWidth: number, textureHeight: number) {
-  const evaluation = texRotatorRowMajorMatrix(node, { levelSeconds, textureWidth, textureHeight });
-  if (evaluation.status !== "evaluated") throw new Error(evaluation.reason);
-  return evaluation;
+  return texRotatorRowMajorMatrix(node, { levelSeconds, textureWidth, textureHeight });
 }
 
 function nativeConstant(name: string): number {
@@ -207,11 +207,19 @@ describe("TexRotator rules beyond the RM-29 fixtures", () => {
     expect(evaluatedRowMajor(legacy, 1.25, 256, 128).effectiveRotation.yaw).toBe(1250);
   });
 
-  it("names a truncation outside int32, where the uncaptured CRT flag picks the _ftol2 path, instead of guessing its result", () => {
+  it("truncates a constant rotation outside int32 to the integer indefinite of the SSE2 _ftol2 path the CRT selects from cpuid, so a long session keeps evaluating", () => {
     const node = rotatorNodeOf([field("TexRotationType", 1), field("Rotation", rotatorStruct([0, 65535, 0]), "authored", "raw")]);
-    expect(texRotatorRowMajorMatrix(node, { levelSeconds: 40000, textureWidth: 256, textureHeight: 128 }))
-      .toEqual({ status: "unported", reason: texRotatorTruncationRangeGap });
-    expect(texRotatorRowMajorMatrix(node, { levelSeconds: 30000, textureWidth: 256, textureHeight: 128 }).status).toBe("evaluated");
+    expect(evaluatedRowMajor(node, 40000, 256, 128).effectiveRotation.yaw).toBe(integerIndefinite & 0xffff);
+    expect(evaluatedRowMajor(node, 30000, 256, 128).effectiveRotation.yaw).toBe((65535 * 30000) & 0xffff);
+    const longSession = rotatorProgram([field("TexRotationType", 1), field("Rotation", rotatorStruct([0, 65535, 0]), "authored", "raw")]);
+    expect(textureCoordinateChainMatrix(longSession, [rotatorId], context(40000)).status).toBe("evaluated");
+  });
+
+  it("adds the integer indefinite when an oscillation delta truncates outside int32", () => {
+    const node = rotatorNodeOf([field("TexRotationType", 2), field("Rotation", rotatorStruct([0, 5, 0]), "authored", "raw"),
+      field("OscillationRate", rotatorStruct([0, 65535, 0]), "authored", "raw"), field("OscillationAmplitude", rotatorStruct([0, 2147483647, 0]), "authored", "raw"),
+      field("OscillationPhase", rotatorStruct([0, 0, 0]), "authored", "raw")]);
+    expect(evaluatedRowMajor(node, 0.25, 256, 128).effectiveRotation).toEqual({ pitch: 0, yaw: (5 + integerIndefinite) | 0, roll: 0 });
   });
 
   it("evaluates a Pitch rotator as the innermost modifier and names its third column when an inner modifier would multiply it", () => {
@@ -230,6 +238,8 @@ describe("TexRotator rules beyond the RM-29 fixtures", () => {
       expect(row).toMatchObject({ status: "confirmed-interlude", interludeEvidence: expect.stringMatching(/^Engine\.dll 4dd2f63c UTexRotator::GetMatrix 0x105e0c00, .*RM-29 sky-texrotator\.json 945cce25/) });
       expect(row.runtimeDefault).toEqual(row.value);
     }
+    expect(TEXTURE_COORDINATE_CONSTANTS.rotatorModeOrdinals.provenance).toMatch(/Core\.dll 9462f87a .*0x1033fe34.*Engine\.dll 4dd2f63c .*0x11d8b2ec/);
+    expect(JSON.stringify(TEXTURE_COORDINATE_CONSTANTS)).not.toContain("TexRotatorTruncationRange");
     expect(ROTATOR_RULE_BY_USE["texture-rotator"]).toMatchObject({ status: "confirmed-interlude", runtimeDefault: "sine-table", value: "sine-table" });
     expect(ROTATOR_CONSTANTS.sineTableLength.runtimeDefault).toBe(fixtures.sineTable.entries);
   });
